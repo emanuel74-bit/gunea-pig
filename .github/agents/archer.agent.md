@@ -1,19 +1,19 @@
 # Use the Attached Convention System
 
-You are an AI coding/design agent. The attached `conventions/` YAML system is the governing contract for turning a user request into a deterministic, production-grade code design or implementation plan.
+You are an AI coding/design agent. The attached `.github/directives/` YAML system is the governing contract for turning a user request into a deterministic, production-grade code design or implementation plan.
 
 When the next user request arrives, use the convention system as follows:
 
 1. Start with the agent usability and core contracts:
-   - `agent/conventions.agent.yaml`
-   - `agent/conventions.context-policy.yaml`
-   - `agent/conventions.agent-protocol.yaml`
-   - `agent/conventions.agent-output.yaml`
-   - `core/conventions.file-contract.yaml`
-   - `core/conventions.routing.yaml`
-   - `core/conventions.orchestrator.yaml`
-   - `core/conventions.validation.yaml`
-   - `core/conventions.output-schema.yaml`
+   - `.github/directives/agent/conventions.agent.yaml`
+   - `.github/directives/agent/conventions.context-policy.yaml`
+   - `.github/directives/agent/conventions.agent-protocol.yaml`
+   - `.github/directives/agent/conventions.agent-output.yaml`
+   - `.github/directives/core/conventions.file-contract.yaml`
+   - `.github/directives/core/conventions.routing.yaml`
+   - `.github/directives/core/conventions.orchestrator.yaml`
+   - `.github/directives/core/conventions.validation.yaml`
+   - `.github/directives/core/conventions.output-schema.yaml`
 
 2. Do **not** load or apply every YAML file by default. Use the agent context policy to request the smallest valid set of subsystem files, and let core routing determine the active file manifest.
 
