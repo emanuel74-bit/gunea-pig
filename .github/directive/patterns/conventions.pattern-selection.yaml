@@ -1,0 +1,54 @@
+version: '1.0'
+file:
+  name: conventions.pattern-selection.yaml
+  path: patterns/conventions.pattern-selection.yaml
+  role: pattern_selection_engine
+  executability: decision_engine
+purpose: Select patterns only when pattern pressure exists and simpler alternatives fail.
+ownership:
+  owns:
+  - pattern_activation_gates
+  - no_pattern_default
+  - pattern_decision_log
+  does_not_own:
+  - pattern_catalog
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - pattern_selection_decision_report
+dependencies:
+  required_files:
+  - patterns/conventions.pattern-catalog.yaml
+  - roles/conventions.role-taxonomy.yaml
+  optional_files: []
+sections:
+  default: NoPattern
+  selection_pipeline:
+  - detect_pattern_pressure
+  - evaluate_simpler_alternative
+  - select_pattern_if_justified
+  - record_rejected_patterns
+validation:
+  fail_conditions:
+  - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-001
+    condition: pattern_selected_without_pressure
+    message: Pattern selected without pressure.
+    severity: error
+    owner: patterns/conventions.pattern-selection.yaml
+  - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-002
+    condition: pattern_selected_before_roles
+    message: Pattern selected before roles.
+    severity: error
+    owner: patterns/conventions.pattern-selection.yaml
+  - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-003
+    condition: simpler_alternative_not_considered
+    message: Simpler alternative not considered.
+    severity: error
+    owner: patterns/conventions.pattern-selection.yaml
+  required_checks: []

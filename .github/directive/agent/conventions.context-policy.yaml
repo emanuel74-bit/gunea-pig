@@ -1,0 +1,125 @@
+version: '1.0'
+file:
+  name: conventions.context-policy.yaml
+  path: agent/conventions.context-policy.yaml
+  role: agent_context_policy_contract
+  executability: router
+purpose: Define context-budget, context-request, and overload-prevention policy for agents without owning authoritative routing
+  or active file manifests.
+ownership:
+  owns:
+  - context_budget_modes
+  - context_request_policy
+  - context_summarization_policy
+  - minimum_context_recommendations
+  - context_overload_policy
+  does_not_own:
+  - authoritative_file_activation
+  - active_file_manifest
+  - conditional_activation
+  - pipeline_phase_activation
+  - global_pipeline_order
+activation:
+  mode: always
+  activates_when:
+  - agent_uses_convention_system
+  skips_when: []
+inputs:
+  required:
+  - user_request
+  optional:
+  - agent_mode
+  - behavior_contract
+  - risk_classification
+outputs:
+  produces:
+  - agent_context_request
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.routing.yaml
+  optional_files:
+  - core/conventions.output-schema.yaml
+sections:
+  context_budget_modes:
+    minimal:
+      max_subsystems: 4
+    standard:
+      max_subsystems: 8
+    expanded:
+      max_subsystems: 14
+    full_system:
+      max_subsystems: all
+      allowed_only_when:
+      - convention_system_generation
+      - system_wide_validation
+      - user_explicitly_requests_full_system
+  context_request_rules:
+    match_decision_rules:
+    - id: CTX-MODE-DISCUSSION-MINIMAL
+      match:
+        agent_mode: discussion_only
+        code_changes_requested: false
+      decision:
+        context_mode: minimal
+        request_core_routing_manifest: true
+    - id: CTX-REQUEST-ACTIONS
+      match:
+        artifact_changes_possible: true
+      decision:
+        request_subsystems:
+        - actions
+        core_routing_must_authorize: true
+        reason: Artifact changes require action taxonomy and resolution.
+    - id: CTX-REQUEST-CONTRACTS
+      match:
+        contract_change_possible: true
+      decision:
+        request_subsystems:
+        - contracts
+        core_routing_must_authorize: true
+        reason: Contract change requires compatibility classification.
+    - id: CTX-REQUEST-REFactoring
+      match:
+        request_mode: refactoring
+      decision:
+        request_subsystems:
+        - refactoring
+        - actions
+        - risk
+        - dependencies
+        core_routing_must_authorize: true
+    - id: AGENT-CONTEXT-REQUEST-REFACTORING
+      match:
+        request_mode: refactoring
+      decision:
+        request_subsystems:
+        - refactoring
+        - actions
+        - risk
+        - dependencies
+        core_routing_must_authorize: true
+        required_reason: Refactor request requires behavior preservation and strategy selection.
+  context_overload_policy:
+    absolute_rules:
+    - id: AGENT-CONTEXT-001
+      rule: Agents must not load the full convention system by default.
+      fail_condition: full_system_loaded_without_full_system_reason
+    - id: AGENT-CONTEXT-002
+      rule: Agents must not use a subsystem without an activation reason or core routing authorization.
+      fail_condition: subsystem_used_without_activation_reason
+validation:
+  required_checks:
+  - id: AGENT-CONTEXT-RC-001
+    check: agent_context_request_created_before_core_routing
+  fail_conditions:
+  - id: AGENT-CONTEXT-001
+    condition: full_system_loaded_without_full_system_reason
+    message: Full system context may only be requested for explicit system-wide tasks.
+    severity: error
+    owner: agent/conventions.context-policy.yaml
+  - id: AGENT-CONTEXT-002
+    condition: subsystem_used_without_activation_reason
+    message: Agent must not use a subsystem without activation reason or core routing authorization.
+    severity: error
+    owner: agent/conventions.context-policy.yaml

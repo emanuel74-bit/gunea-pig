@@ -1,0 +1,67 @@
+version: '1.0'
+file:
+  name: conventions.local-alignment.yaml
+  path: planning/conventions.local-alignment.yaml
+  role: local_convention_alignment_contract
+  executability: decision_engine
+purpose: Compare local codebase conventions against global conventions and decide which local conventions to follow or reject.
+ownership:
+  owns:
+  - local_convention_alignment_report_schema
+  - local_global_conflict_resolution
+  - evidence_thresholds
+  - deviation_recording
+  does_not_own:
+  - codebase_reconnaissance
+  - action_selection
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - local_alignment_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  classification:
+    compatible: follow_local
+    incompatible: reject_local
+    unclear: prefer_global
+    legacy_exception: do_not_copy
+  rule_sets:
+    absolute_rules:
+    - id: LOCAL-ALIGN-ABS-001
+      rule: Compatible local convention should be followed.
+      fail_condition: compatible_local_convention_ignored_without_reason
+    - id: LOCAL-ALIGN-ABS-002
+      rule: Global absolute rules override local convention.
+      fail_condition: local_convention_overrides_global_absolute_rule
+    - id: LOCAL-ALIGN-ABS-003
+      rule: Legacy violations must not be expanded.
+      fail_condition: legacy_violation_expanded
+    - id: LOCAL-ALIGN-ABS-004
+      rule: A single example is not a convention.
+      fail_condition: single_example_treated_as_convention
+validation:
+  fail_conditions:
+  - id: PLANNING-CONVENTIONS-LOCAL-ALIGNMENT-YAML-FC-001
+    condition: local_convention_used_without_compatibility_check
+    message: Local convention used without compatibility check.
+    severity: error
+    owner: planning/conventions.local-alignment.yaml
+  - id: PLANNING-CONVENTIONS-LOCAL-ALIGNMENT-YAML-FC-002
+    condition: global_absolute_rule_overridden_by_local_convention
+    message: Global absolute rule overridden by local convention.
+    severity: error
+    owner: planning/conventions.local-alignment.yaml
+  - id: PLANNING-CONVENTIONS-LOCAL-ALIGNMENT-YAML-FC-003
+    condition: single_example_treated_as_standard
+    message: Single example treated as standard.
+    severity: error
+    owner: planning/conventions.local-alignment.yaml
+  required_checks: []

@@ -1,0 +1,74 @@
+version: '1.0'
+file:
+  name: conventions.testing-matrix.yaml
+  path: testing/conventions.testing-matrix.yaml
+  role: testing_matrix_contract
+  executability: validator
+purpose: Derive required tests from roles, actions, risk, boundaries, contracts, and dependencies.
+ownership:
+  owns:
+  - role_to_test_requirements
+  - risk_to_test_depth
+  - boundary_contract_test_rules
+  - action_test_rules
+  does_not_own:
+  - test_type_definitions
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - testing_matrix_result
+dependencies:
+  required_files:
+  - testing/conventions.testing-taxonomy.yaml
+  - roles/conventions.role-taxonomy.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  optional_files: []
+sections:
+  action_test_rules:
+    extract_from_existing:
+    - characterization
+    - unit
+    - regression
+    split_existing:
+    - characterization
+    - regression
+    - integration
+    replace_existing:
+    - regression
+    - contract
+    no_code_change:
+    - validation_only
+  risk_to_test_depth:
+    low:
+    - targeted
+    medium:
+    - unit_or_integration
+    high:
+    - regression
+    - contract_or_integration
+    critical:
+    - regression
+    - contract
+    - integration
+    - rollback_review
+validation:
+  fail_conditions:
+  - id: TESTING-CONVENTIONS-TESTING-MATRIX-YAML-FC-001
+    condition: acceptance_criterion_without_test_mapping
+    message: Acceptance criterion without test mapping.
+    severity: error
+    owner: testing/conventions.testing-matrix.yaml
+  - id: TESTING-CONVENTIONS-TESTING-MATRIX-YAML-FC-002
+    condition: high_risk_without_regression_review
+    message: High risk without regression review.
+    severity: error
+    owner: testing/conventions.testing-matrix.yaml
+  required_checks: []

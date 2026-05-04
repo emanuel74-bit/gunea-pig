@@ -1,0 +1,312 @@
+version: '1.0'
+file:
+  name: conventions.contract-taxonomy.yaml
+  path: contracts/conventions.contract-taxonomy.yaml
+  role: contract_taxonomy_contract
+  executability: vocabulary
+purpose: Define contract types, stability levels, consumer types, consumer knowledge, and contract classification outputs.
+ownership:
+  owns:
+  - contract_type_enum
+  - contract_definitions
+  - contract_stability_levels
+  - contract_consumer_types
+  - consumer_knowledge_enum
+  - contract_risk_signals
+  does_not_own:
+  - compatibility_strategy_selection
+  - breaking_change_detection
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - contract_taxonomy_registry
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  contract_type_enum:
+    allowed:
+    - request_contract
+    - response_contract
+    - api_contract
+    - event_contract
+    - port_contract
+    - module_contract
+    - public_type_contract
+    - persistence_contract
+    - configuration_contract
+  contract_definitions:
+    request_contract:
+      definition: request_contract stable agreement across a boundary.
+      owner: request_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    response_contract:
+      definition: response_contract stable agreement across a boundary.
+      owner: response_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    api_contract:
+      definition: api_contract stable agreement across a boundary.
+      owner: api_contract_owner
+      consumer_types:
+      - external_consumer
+      - frontend_consumer
+      - sdk_consumer
+      boundary_types:
+      - public_api
+      - transport
+      stability_default: external_public
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    event_contract:
+      definition: event_contract stable agreement across a boundary.
+      owner: event_contract_owner
+      consumer_types:
+      - worker
+      - downstream_service
+      boundary_types:
+      - integration_event
+      - message_queue
+      stability_default: durable_versioned
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    port_contract:
+      definition: port_contract stable agreement across a boundary.
+      owner: port_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    module_contract:
+      definition: module_contract stable agreement across a boundary.
+      owner: module_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    public_type_contract:
+      definition: public_type_contract stable agreement across a boundary.
+      owner: public_type_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    persistence_contract:
+      definition: persistence_contract stable agreement across a boundary.
+      owner: persistence_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+    configuration_contract:
+      definition: configuration_contract stable agreement across a boundary.
+      owner: configuration_contract_owner
+      consumer_types:
+      - internal_module
+      boundary_types:
+      - module
+      stability_default: internal_stable
+      breaking_change_examples:
+      - remove_or_rename_required_shape
+      non_breaking_change_examples:
+      - add_optional_ignorable_shape
+      required_checks:
+      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
+        check: compatibility_review_if_public_or_module_shared
+  contract_stability_levels:
+    internal_unstable:
+      definition: internal_unstable
+      compatibility_required: false
+    internal_stable:
+      definition: internal_stable
+      compatibility_required: true
+    module_public:
+      definition: module_public
+      compatibility_required: true
+    external_public:
+      definition: external_public
+      compatibility_required: true
+    durable_versioned:
+      definition: durable_versioned
+      compatibility_required: true
+  contract_consumer_types:
+    internal_artifact:
+      definition: internal_artifact consumer.
+    internal_module:
+      definition: internal_module consumer.
+    shared_module:
+      definition: shared_module consumer.
+    frontend_consumer:
+      definition: frontend_consumer consumer.
+    external_consumer:
+      definition: external_consumer consumer.
+    sdk_consumer:
+      definition: sdk_consumer consumer.
+    downstream_service:
+      definition: downstream_service consumer.
+    worker:
+      definition: worker consumer.
+    repository:
+      definition: repository consumer.
+    migration:
+      definition: migration consumer.
+    projection:
+      definition: projection consumer.
+    read_model:
+      definition: read_model consumer.
+    runtime_system:
+      definition: runtime_system consumer.
+    operations:
+      definition: operations consumer.
+    test_consumer:
+      definition: test_consumer consumer.
+  consumer_knowledge_enum:
+    allowed:
+    - none
+    - all_known
+    - partially_known
+    - unknown
+  contract_change_type_enum:
+    allowed:
+    - none
+    - additive
+    - behavioral
+    - breaking
+    - unknown
+  contract_risk_signals:
+    request_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+    response_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+    api_contract:
+      minimum_risk_hint: high
+      emits_concerns:
+      - public_contract
+      emits_contexts:
+      - change_risk
+    event_contract:
+      minimum_risk_hint: high
+      emits_concerns:
+      - public_contract
+      emits_contexts:
+      - change_risk
+    port_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+    module_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+    public_type_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - public_contract
+      emits_contexts:
+      - change_risk
+    persistence_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+    configuration_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+validation:
+  fail_conditions:
+  - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-FC-001
+    condition: unknown_contract_type
+    message: Unknown contract type.
+    severity: error
+    owner: contracts/conventions.contract-taxonomy.yaml
+  - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-FC-002
+    condition: consumer_knowledge_missing_for_public_contract
+    message: Consumer knowledge missing for public contract.
+    severity: error
+    owner: contracts/conventions.contract-taxonomy.yaml
+  required_checks: []

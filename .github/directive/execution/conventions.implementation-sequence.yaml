@@ -1,0 +1,85 @@
+version: '1.0'
+file:
+  name: conventions.implementation-sequence.yaml
+  path: execution/conventions.implementation-sequence.yaml
+  role: implementation_sequence_planning_contract
+  executability: orchestrator
+purpose: Convert validated design into ordered, dependency-aware, checkpoint-grouped implementation plan.
+ownership:
+  owns:
+  - implementation_sequence_schema
+  - implementation_ordering_rules
+  - artifact_action_ordering_rules
+  - checkpoint_group_schema
+  - validation_cadence
+  does_not_own:
+  - architecture_decomposition
+  - action_selection
+  - feedback_loop_repair_logic
+activation:
+  mode: conditional
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - implementation_sequence_result
+dependencies:
+  required_files:
+  - actions/conventions.action-taxonomy.yaml
+  - planning/conventions.change-impact.yaml
+  - planning/conventions.decision-log.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  optional_files: []
+sections:
+  default_implementation_order:
+  - contracts_and_types
+  - domain_foundation
+  - pure_rules_and_policies
+  - transformations
+  - persistence_shapes
+  - repositories_and_ports
+  - adapters_and_clients
+  - application_execution
+  - transport_entrypoints
+  - wiring_and_exports
+  - tests
+  - final_validation
+  validation_cadence:
+    after_atomic_step:
+    - syntax_or_format_check_if_available
+    after_checkpoint_group:
+    - typecheck
+    - relevant_unit_tests
+    - architecture_boundary_checks
+    after_final_implementation:
+    - full_required_validation
+  temporary_failure_policy:
+  - Allowed only inside checkpoint_group with expiry
+  - Unexpected failures stop loop
+  - Final validation remains strict
+validation:
+  fail_conditions:
+  - id: EXECUTION-CONVENTIONS-IMPLEMENTATION-SEQUENCE-YAML-FC-001
+    condition: implementation_sequence_missing
+    message: Implementation sequence missing.
+    severity: error
+    owner: execution/conventions.implementation-sequence.yaml
+  - id: EXECUTION-CONVENTIONS-IMPLEMENTATION-SEQUENCE-YAML-FC-002
+    condition: checkpoint_group_missing_for_multi_step_incomplete_change
+    message: Checkpoint group missing for multi step incomplete change.
+    severity: error
+    owner: execution/conventions.implementation-sequence.yaml
+  - id: EXECUTION-CONVENTIONS-IMPLEMENTATION-SEQUENCE-YAML-FC-003
+    condition: expected_temporary_failure_without_expiry
+    message: Expected temporary failure without expiry.
+    severity: error
+    owner: execution/conventions.implementation-sequence.yaml
+  - id: EXECUTION-CONVENTIONS-IMPLEMENTATION-SEQUENCE-YAML-FC-004
+    condition: high_risk_step_without_validation_checkpoint
+    message: High risk step without validation checkpoint.
+    severity: error
+    owner: execution/conventions.implementation-sequence.yaml
+  required_checks: []

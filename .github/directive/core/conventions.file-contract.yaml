@@ -1,0 +1,677 @@
+version: '1.0'
+file:
+  name: conventions.file-contract.yaml
+  path: core/conventions.file-contract.yaml
+  role: universal_convention_file_contract
+  executability: schema
+purpose: Standardize the structure, reusable internal section schemas, rule formats,
+  output-schema expectations, and validation shape for every convention YAML file.
+ownership:
+  owns:
+  - universal_file_schema
+  - required_top_level_sections
+  - executability_levels
+  - shared_internal_section_schemas
+  - rule_format_standards
+  - validation_format_standards
+  - determinism_quality_rules
+  - coverage_quality_rules
+  - recurring_section_family_schemas
+  - enum_section_schema
+  - taxonomy_definition_section_schema
+  - file_index_section_schema
+  - execution_order_section_schema
+  - pipeline_section_schema
+  - policy_section_schema
+  - subsystem_contract_section_schema
+  - specialized_rules_section_schema
+  does_not_own:
+  - subsystem_specific_rules
+  - vocabulary_definitions
+  - routing_logic
+  - final_validation_logic
+activation:
+  mode: always
+  activates_when:
+  - any_convention_file_is_loaded
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - file_contract_schema
+dependencies:
+  required_files: []
+  optional_files:
+  - core/conventions.output-schema.yaml
+sections:
+  universal_file_schema:
+    required_top_level_sections:
+    - version
+    - file
+    - purpose
+    - ownership
+    - activation
+    - inputs
+    - outputs
+    - dependencies
+    - sections
+    - validation
+    file_required_fields:
+    - name
+    - path
+    - role
+    - executability
+    standard_top_level_shape:
+      version: '1.0'
+      file:
+        name: ''
+        path: ''
+        role: ''
+        executability: ''
+      purpose: ''
+      ownership:
+        owns: []
+        does_not_own: []
+      activation:
+        mode: ''
+        activates_when: []
+        skips_when: []
+      inputs:
+        required: []
+        optional: []
+      outputs:
+        produces: []
+      dependencies:
+        required_files: []
+        optional_files: []
+      sections: {}
+      validation:
+        required_checks: []
+        fail_conditions: []
+  executability_levels:
+    allowed:
+    - vocabulary
+    - decision_engine
+    - validator
+    - router
+    - orchestrator
+    - schema
+    - advisory_entrypoint
+    definitions:
+      vocabulary: Defines allowed terms, concepts, enums, and meanings.
+      decision_engine: Chooses outputs using deterministic rules.
+      validator: Checks rules and fail conditions.
+      router: Activates files, phases, or subsystems.
+      orchestrator: Orders phases and controls handoffs.
+      schema: Defines input/output structures.
+      advisory_entrypoint: Indexes subsystem files and execution order.
+  shared_internal_section_schemas:
+    risk_signal_schema:
+      required_fields:
+      - signal_id
+      - source
+      - minimum_risk_hint
+      - emits_concerns
+      - emits_contexts
+      optional_fields:
+      - escalate_when
+      - deescalate_when
+      - evidence_required
+      - examples
+      absolute_rules:
+      - id: RISK-SIGNAL-SCHEMA-ABS-001
+        rule: Risk signals are inputs to risk resolution and must not be treated as
+          final risk classification.
+        fail_condition: risk_signal_used_as_final_risk_classification
+      - id: RISK-SIGNAL-SCHEMA-ABS-002
+        rule: Risk signals must not assign final risk level outside risk resolution.
+        fail_condition: non_risk_file_assigns_final_risk_level
+    routing_rule_schema:
+      required_fields:
+      - id
+      - match
+      - activates
+      - required_outputs
+      optional_fields:
+      - reason
+      - required_files
+      - skipped_files
+      - fail_when
+    classification_record_schema:
+      required_fields:
+      - id
+      - type
+      - source_evidence
+      - confidence
+      optional_fields:
+      - selected_value
+      - alternatives
+      - required_followups
+      - risks
+      - affected_artifacts
+      - related_decisions
+    confidence_schema:
+      allowed_values:
+      - low
+      - medium
+      - high
+      definitions:
+        high: Explicit request, codebase evidence, deterministic rule, or validated
+          existing artifact.
+        medium: Reasonable inference and no high-risk unresolved uncertainty.
+        low: Insufficient evidence for final required decision.
+    evidence_record_schema:
+      required_fields:
+      - evidence_type
+      - source
+      - summary
+      - supports
+      optional_fields:
+      - confidence
+      - limitations
+      - related_artifacts
+      - source_location
+    followup_check_schema:
+      required_fields:
+      - check_id
+      - check_type
+      - owning_system
+      - required_output
+      optional_fields:
+      - applies_when
+      - blocking
+      - reason
+      - validation_phase
+    fail_condition_schema:
+      required_fields:
+      - id
+      - condition
+      - message
+      - severity
+      optional_fields:
+      - applies_when
+      - owner
+      - remediation
+      severity_values:
+      - error
+      - warning
+    example_schema:
+      required_fields:
+      - input
+      - expected_output
+      optional_fields:
+      - explanation
+      - invalid_output
+      - notes
+    collision_rule_schema:
+      required_fields:
+      - id
+      - candidates
+      - match
+      - resolution
+      optional_fields:
+      - priority
+      - reject_when
+      - reason
+      - examples
+    priority_rule_schema:
+      required_fields:
+      - id
+      - priority_order
+      optional_fields:
+      - applies_when
+      - tie_breakers
+      - fail_when_unresolved
+    match_decision_rule_schema:
+      required_fields:
+      - id
+      - match
+      - decision
+      optional_fields:
+      - priority
+      - reason
+      - examples
+      - fail_when
+    rule_set_container_schema:
+      purpose: Standardize internal sections that contain rules so loose prose rules
+        are not mixed with executable rules.
+      allowed_rule_groups:
+      - absolute_rules
+      - match_decision_rules
+      - priority_rules
+      - routing_rules
+      - validation_rules
+      - advisory_rules
+      rules:
+      - id: RULE-CONTAINER-001
+        rule: A section that contains rules must group them by standardized rule type.
+        fail_condition: section_contains_untyped_rules
+      - id: RULE-CONTAINER-002
+        rule: A section named rules must not be a list of strings.
+        fail_condition: sections_rules_list_detected
+      - id: RULE-CONTAINER-003
+        rule: Executable decision logic must use match_decision_rules, priority_rules,
+          routing_rules, validation_rules, or absolute_rules.
+        fail_condition: executable_logic_in_advisory_rule
+    advisory_rule_schema:
+      required_fields:
+      - id
+      - guidance
+      optional_fields:
+      - applies_when
+      - reason
+      - examples
+      rules:
+      - id: ADVISORY-RULE-001
+        rule: Advisory rules may explain preferences but must not select final decisions,
+          activate subsystems, or define fail conditions.
+        fail_condition: advisory_rule_contains_executable_decision
+    absolute_rule_schema:
+      required_fields:
+      - id
+      - rule
+      - fail_condition
+      optional_fields:
+      - applies_when
+      - reason
+      - examples
+      rules:
+      - id: ABSOLUTE-RULE-001
+        rule: Absolute rules must include a stable fail_condition.
+        fail_condition: absolute_rule_missing_fail_condition
+    legacy_prose_rules_section_policy:
+      purpose: Declare how to normalize older internal sections that use rules as
+        a plain list of strings.
+      normalization_rules:
+      - id: PROSE-NORMALIZE-001
+        match:
+          section_key: rules
+          value_type: list[string]
+        decision:
+          convert_to: rule_sets.absolute_rules_or_advisory_rules
+          remove_original_section: true
+      - id: PROSE-NORMALIZE-002
+        match:
+          rule_controls_decision_or_validation: true
+        decision:
+          convert_to: absolute_rules_or_match_decision_rules
+          forbidden: advisory_rule
+      - id: PROSE-NORMALIZE-003
+        match:
+          rule_is_explanatory_only: true
+        decision:
+          convert_to: advisory_rules
+      validation:
+        fail_conditions:
+        - id: PROSE-RULES-001
+          condition: untyped_prose_rules_section_present
+          message: Internal prose rules must be normalized into typed rule groups.
+          severity: error
+  prose_rule_policy:
+    allowed_when:
+    - rule is advisory
+    - rule is explanatory
+    - rule provides examples only
+    forbidden_when:
+    - rule chooses between roles, actions, patterns, compatibility strategies, routing,
+      or validation outcomes
+    required_label_for_prose: advisory_rule
+  determinism_quality_rules:
+    required:
+    - Decision files must include selection order or priority rules.
+    - Routing files must include activation conditions.
+    - Validation files must include stable fail condition IDs.
+    - Vocabulary files must not contain final decision logic.
+    forbidden:
+    - ambiguous default behavior
+    - implicit action selection
+    - silent assumptions
+    - duplicated vocabulary enums
+    - prose-only decision rules
+  coverage_quality_rules:
+    every_decision_axis_must_have:
+    - source_vocabulary
+    - resolution_or_selection_rule
+    - validation_rule
+    decision_axes:
+    - roles
+    - patterns
+    - actions
+    - risk
+    - boundaries
+    - contracts
+    - dependencies
+    - structure
+    - testing
+    - implementation_sequence
+  recurring_section_family_schemas:
+    purpose: Standardize repeated internal section families that appear across subsystem
+      files so agents can parse and validate them consistently.
+    enum_section_schema:
+      applies_to:
+      - '*_enum'
+      required_fields:
+      - allowed
+      optional_fields:
+      - deprecated
+      - aliases
+      - source_of_truth
+      - validation
+      rules:
+        absolute_rules:
+        - id: SECTION-ENUM-ABS-001
+          rule: Enum sections must define allowed values.
+          fail_condition: enum_section_missing_allowed_values
+        - id: SECTION-ENUM-ABS-002
+          rule: Enum values must be stable machine-readable strings.
+          fail_condition: enum_value_not_machine_readable
+        - id: SECTION-ENUM-ABS-003
+          rule: Shared enums must not be duplicated outside their source vocabulary.
+          fail_condition: shared_enum_redefined_outside_source_vocabulary
+      validation:
+        fail_conditions:
+        - id: SECTION-ENUM-001
+          condition: enum_section_missing_allowed_values
+          message: Every *_enum section must contain an allowed list.
+          severity: error
+        - id: SECTION-ENUM-002
+          condition: enum_value_not_machine_readable
+          message: Enum values must be stable machine-readable strings.
+          severity: error
+        - id: SECTION-ENUM-003
+          condition: shared_enum_redefined_outside_source_vocabulary
+          message: Shared enum values must only be defined in their source vocabulary
+            file.
+          severity: error
+    taxonomy_definition_section_schema:
+      applies_to:
+      - '*_definitions'
+      - '*_definition'
+      required_fields_per_entry:
+      - definition
+      optional_fields_per_entry:
+      - family
+      - owner
+      - choose_when
+      - reject_when
+      - must
+      - forbidden
+      - examples
+      - required_followups
+      - downstream_checks_required
+      - impact_surfaces
+      - risk_signals
+      - common_roles
+      - common_patterns
+      - typical_actions
+      rules:
+        absolute_rules:
+        - id: SECTION-DEFINITION-ABS-001
+          rule: Definition sections define vocabulary meaning only.
+          fail_condition: taxonomy_definition_selects_final_decision
+        - id: SECTION-DEFINITION-ABS-002
+          rule: Each taxonomy definition entry must include a definition field.
+          fail_condition: taxonomy_definition_entry_missing_definition
+        - id: SECTION-DEFINITION-ABS-003
+          rule: Decision selection belongs to a decision_engine file, not a taxonomy
+            definition section.
+          fail_condition: decision_logic_defined_inside_taxonomy_definition
+      validation:
+        fail_conditions:
+        - id: SECTION-DEFINITION-001
+          condition: taxonomy_definition_entry_missing_definition
+          message: Every taxonomy definition entry must include a definition field.
+          severity: error
+        - id: SECTION-DEFINITION-002
+          condition: taxonomy_definition_selects_final_decision
+          message: Taxonomy definition sections must not select final decisions.
+          severity: error
+    file_index_section_schema:
+      applies_to:
+      - '*_file_index'
+      required_shape: mapping_of_named_subsystem_roles_to_package_relative_file_paths
+      rules:
+        absolute_rules:
+        - id: SECTION-FILE-INDEX-ABS-001
+          rule: Every referenced file path must exist in the package.
+          fail_condition: file_index_references_missing_file
+        - id: SECTION-FILE-INDEX-ABS-002
+          rule: File index keys must describe subsystem role, not arbitrary labels.
+          fail_condition: file_index_key_not_role_descriptive
+        - id: SECTION-FILE-INDEX-ABS-003
+          rule: Entrypoint files may define file indexes; non-entrypoint files must
+            not define subsystem file indexes unless explicitly justified.
+          fail_condition: non_entrypoint_defines_file_index_without_reason
+      validation:
+        fail_conditions:
+        - id: SECTION-FILE-INDEX-001
+          condition: file_index_references_missing_file
+          message: A *_file_index section references a file that does not exist.
+          severity: error
+        - id: SECTION-FILE-INDEX-002
+          condition: non_entrypoint_defines_file_index_without_reason
+          message: Subsystem file indexes should be owned by entrypoint files.
+          severity: warning
+    execution_order_section_schema:
+      applies_to:
+      - '*_execution_order'
+      - global_execution_order
+      allowed_shapes:
+      - priority_order
+      - ordered_steps
+      - list_of_phase_names
+      rules:
+        absolute_rules:
+        - id: SECTION-EXEC-ORDER-ABS-001
+          rule: Execution order sections must define an ordered list of phase names.
+          fail_condition: execution_order_missing_ordered_steps
+        - id: SECTION-EXEC-ORDER-ABS-002
+          rule: Subsystem execution order is local only.
+          fail_condition: subsystem_execution_order_claims_global_authority
+        - id: SECTION-EXEC-ORDER-ABS-003
+          rule: Global execution order belongs only to core/conventions.orchestrator.yaml.
+          fail_condition: global_execution_order_defined_outside_orchestrator
+        - id: SECTION-EXEC-ORDER-ABS-004
+          rule: Local subsystem order must not contradict global orchestrator order.
+          fail_condition: local_execution_order_conflicts_with_global_orchestrator
+      validation:
+        fail_conditions:
+        - id: SECTION-EXEC-ORDER-001
+          condition: execution_order_missing_ordered_steps
+          message: Execution order sections must include priority_order, ordered_steps,
+            or a direct ordered list.
+          severity: error
+        - id: SECTION-EXEC-ORDER-002
+          condition: global_execution_order_defined_outside_orchestrator
+          message: Only core/conventions.orchestrator.yaml may define global_execution_order.
+          severity: error
+    pipeline_section_schema:
+      applies_to:
+      - '*_pipeline'
+      - validation_pipeline
+      required_fields_or_shape:
+      - steps
+      - ordered_list_of_steps
+      optional_fields:
+      - revision_points
+      - gates
+      - outputs_by_step
+      rules:
+        absolute_rules:
+        - id: SECTION-PIPELINE-ABS-001
+          rule: Pipeline steps must be ordered.
+          fail_condition: pipeline_steps_not_ordered
+        - id: SECTION-PIPELINE-ABS-002
+          rule: Each pipeline step should produce, consume, or validate an output.
+          fail_condition: pipeline_step_without_io_or_validation
+        - id: SECTION-PIPELINE-ABS-003
+          rule: Pipeline sections must not own global orchestration unless defined
+            in core/conventions.orchestrator.yaml.
+          fail_condition: pipeline_claims_global_orchestration_outside_core
+      validation:
+        fail_conditions:
+        - id: SECTION-PIPELINE-001
+          condition: pipeline_steps_not_ordered
+          message: Pipeline sections must define ordered steps.
+          severity: error
+        - id: SECTION-PIPELINE-002
+          condition: pipeline_claims_global_orchestration_outside_core
+          message: Subsystem pipelines must remain local and must not override the
+            core orchestrator.
+          severity: error
+    policy_section_schema:
+      applies_to:
+      - '*_policy'
+      allowed_rule_groups:
+      - absolute_rules
+      - match_decision_rules
+      - priority_rules
+      - validation_rules
+      - advisory_rules
+      rules:
+        absolute_rules:
+        - id: SECTION-POLICY-ABS-001
+          rule: Policy sections must use typed rule groups.
+          fail_condition: policy_section_contains_untyped_rules
+        - id: SECTION-POLICY-ABS-002
+          rule: Policy sections must not contain loose string rules.
+          fail_condition: policy_section_contains_loose_string_rule
+        - id: SECTION-POLICY-ABS-003
+          rule: Policies that block execution must define fail conditions.
+          fail_condition: blocking_policy_missing_fail_condition
+      validation:
+        fail_conditions:
+        - id: SECTION-POLICY-001
+          condition: policy_section_contains_untyped_rules
+          message: Policy sections must use typed rule groups such as absolute_rules
+            or match_decision_rules.
+          severity: error
+        - id: SECTION-POLICY-002
+          condition: blocking_policy_missing_fail_condition
+          message: Blocking policies must define a machine-readable fail condition.
+          severity: error
+    subsystem_contract_section_schema:
+      applies_to:
+      - '*_system_contract'
+      - '*_contract'
+      allowed_rule_groups:
+      - absolute_rules
+      - match_decision_rules
+      - priority_rules
+      - validation_rules
+      - advisory_rules
+      rules:
+        absolute_rules:
+        - id: SECTION-SUBSYSTEM-CONTRACT-ABS-001
+          rule: Subsystem contract sections define local subsystem guarantees and
+            constraints only.
+          fail_condition: subsystem_contract_claims_external_ownership
+        - id: SECTION-SUBSYSTEM-CONTRACT-ABS-002
+          rule: Subsystem contracts must not redefine responsibilities owned by other
+            subsystems.
+          fail_condition: subsystem_contract_redefines_external_rule
+        - id: SECTION-SUBSYSTEM-CONTRACT-ABS-003
+          rule: Subsystem contract sections must use typed rule groups when they contain
+            rules.
+          fail_condition: subsystem_contract_contains_untyped_rules
+      validation:
+        fail_conditions:
+        - id: SECTION-SUBSYSTEM-CONTRACT-001
+          condition: subsystem_contract_claims_external_ownership
+          message: Subsystem contracts must not claim ownership of another subsystem
+            responsibility.
+          severity: error
+        - id: SECTION-SUBSYSTEM-CONTRACT-002
+          condition: subsystem_contract_contains_untyped_rules
+          message: Subsystem contracts containing rules must use typed rule groups.
+          severity: error
+    specialized_rules_section_schema:
+      applies_to:
+      - '*_rules'
+      allowed_rule_groups:
+      - absolute_rules
+      - match_decision_rules
+      - priority_rules
+      - routing_rules
+      - validation_rules
+      - advisory_rules
+      rules:
+        absolute_rules:
+        - id: SECTION-SPECIALIZED-RULES-ABS-001
+          rule: Any *_rules section must use typed rule containers.
+          fail_condition: specialized_rules_section_contains_untyped_list
+        - id: SECTION-SPECIALIZED-RULES-ABS-002
+          rule: Decision-making *_rules sections must use match_decision_rules, priority_rules,
+            or collision_rule_schema.
+          fail_condition: specialized_rules_section_contains_prose_decision
+        - id: SECTION-SPECIALIZED-RULES-ABS-003
+          rule: Validation-oriented *_rules sections must use validation_rules or
+            structured fail_conditions.
+          fail_condition: specialized_validation_rules_not_structured
+      validation:
+        fail_conditions:
+        - id: SECTION-SPECIALIZED-RULES-001
+          condition: specialized_rules_section_contains_untyped_list
+          message: Specialized *_rules sections must not contain untyped prose lists.
+          severity: error
+        - id: SECTION-SPECIALIZED-RULES-002
+          condition: specialized_rules_section_contains_prose_decision
+          message: Decision logic in specialized rules sections must use executable
+            rule shapes.
+          severity: error
+validation:
+  required_checks:
+  - id: FILE-CONTRACT-RC-001
+    check: all_convention_files_follow_universal_file_schema
+  fail_conditions:
+  - id: FILE-CONTRACT-001
+    condition: convention_file_missing_required_top_level_section
+    message: Every convention file must follow the universal file contract.
+    severity: error
+    owner: core/conventions.file-contract.yaml
+  - id: FILE-CONTRACT-002
+    condition: decision_rule_is_prose_only
+    message: Decision rules must use a standard executable rule format.
+    severity: error
+    owner: core/conventions.file-contract.yaml
+  - id: FILE-CONTRACT-003
+    condition: untyped_prose_rules_section_present
+    message: Internal rules must use standardized typed rule groups instead of loose
+      prose lists.
+    severity: error
+    owner: core/conventions.file-contract.yaml
+  - id: FILE-CONTRACT-SECTION-001
+    condition: enum_section_missing_allowed_values
+    message: Every *_enum section must contain an allowed list.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-002
+    condition: taxonomy_definition_entry_missing_definition
+    message: Every taxonomy definition entry must include a definition field.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-003
+    condition: file_index_references_missing_file
+    message: Every file path referenced by a *_file_index section must exist.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-004
+    condition: execution_order_missing_ordered_steps
+    message: Every *_execution_order section must define an ordered step list.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-005
+    condition: pipeline_steps_not_ordered
+    message: Every *_pipeline section must define ordered steps.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-006
+    condition: policy_section_contains_untyped_rules
+    message: Every *_policy section must use typed rule groups for rules.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-007
+    condition: subsystem_contract_contains_untyped_rules
+    message: Every subsystem contract section containing rules must use typed rule
+      groups.
+    severity: error
+  - id: FILE-CONTRACT-SECTION-008
+    condition: specialized_rules_section_contains_untyped_list
+    message: Every *_rules section must use typed rule containers.
+    severity: error

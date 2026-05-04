@@ -1,0 +1,185 @@
+version: '1.0'
+file:
+  name: conventions.behavior-preservation.yaml
+  path: refactoring/conventions.behavior-preservation.yaml
+  role: refactor_behavior_preservation_requirements_contract
+  executability: validator
+purpose: Define behavior preservation and behavior-lock requirements for refactor-like changes without producing implementation
+  sequence or test taxonomy.
+ownership:
+  owns:
+  - behavior_preservation_requirement_rules
+  - behavior_lock_requirement_rules
+  - characterization_requirement_rules
+  - allowed_behavior_change_rules
+  does_not_own:
+  - behavior_contract_extraction
+  - refactor_strategy_selection
+  - artifact_action_selection
+  - test_taxonomy
+  - implementation_sequence
+  - compatibility_strategy_selection
+activation:
+  mode: conditional
+  activates_when:
+  - request_is_refactor_or_refactor_like
+  - artifact_action_may_change_existing_behavior
+  - extract_split_replace_inline_merge_or_move_action_selected
+  skips_when:
+  - no_existing_behavior_can_be_affected
+inputs:
+  required:
+  - behavior_contract
+  - codebase_reconnaissance_report
+  optional:
+  - artifact_action_table
+  - risk_classification
+  - contract_classification
+  - dependency_classification
+  - test_inventory
+outputs:
+  produces:
+  - behavior_preservation_requirements
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - planning/conventions.behavior-contract.yaml
+  - planning/conventions.codebase-reconnaissance.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  optional_files:
+  - actions/conventions.action-taxonomy.yaml
+  - testing/conventions.testing-matrix.yaml
+  - contracts/conventions.compatibility.yaml
+sections:
+  behavior_preservation_policy:
+    absolute_rules:
+    - id: BEHAVIOR-PRESERVE-ABS-001
+      rule: Refactoring must preserve externally observable behavior unless behavior change is explicitly accepted.
+      fail_condition: refactor_changes_behavior_without_explicit_acceptance
+    - id: BEHAVIOR-PRESERVE-ABS-002
+      rule: High-risk refactors require behavior-locking evidence before structural changes.
+      fail_condition: high_risk_refactor_without_behavior_lock
+  behavior_lock_requirement_rules:
+    match_decision_rules:
+    - id: BEHAVIOR-LOCK-EXTRACT-SPLIT-REPLACE
+      match:
+        artifact_action_table.selected_action:
+          any_of:
+          - extract_from_existing
+          - split_existing
+          - replace_existing
+          - inline_existing
+          - merge_existing
+      decision:
+        behavior_lock_required: 'yes'
+        required_followups:
+        - regression_test_review
+        - characterization_test_review
+        - call_site_analysis
+    - id: BEHAVIOR-LOCK-MOVE-RENAME-PRIVATE
+      match:
+        artifact_action_table.selected_action:
+          any_of:
+          - move_existing
+          - rename_existing
+        contract_classification.stability_level:
+          none_of:
+          - module_public
+          - external_public
+          - durable_versioned
+      decision:
+        behavior_lock_required: 'no'
+        required_followups:
+        - import_reference_validation
+        - targeted_validation
+    - id: BEHAVIOR-LOCK-PUBLIC-CONTRACT
+      match:
+        contract_classification.stability_level:
+          any_of:
+          - module_public
+          - external_public
+          - durable_versioned
+      decision:
+        behavior_lock_required: 'yes'
+        required_followups:
+        - contract_compatibility_check
+        - contract_test_review
+        - regression_test_review
+  characterization_requirement_rules:
+    match_decision_rules:
+    - id: CHARACTERIZATION-REQUIRED-WEAK-TESTS
+      match:
+        test_inventory.coverage_state:
+          any_of:
+          - weak
+          - unknown
+        risk_classification.risk_context:
+          contains: refactor_risk
+        risk_classification.risk_level:
+          any_of:
+          - medium
+          - high
+          - critical
+      decision:
+        characterization_tests_required: true
+        required_outputs:
+        - behavior_preservation_requirements
+        - test_plan
+    - id: CHARACTERIZATION-SKIPPABLE-PRIVATE-LOW-RISK
+      match:
+        risk_classification.risk_level: low
+        contract_classification.stability_level:
+          none_of:
+          - module_public
+          - external_public
+          - durable_versioned
+        existing_behavior_simple: true
+      decision:
+        characterization_tests_required: false
+        required_followups:
+        - targeted_validation
+  allowed_behavior_change_rules:
+    match_decision_rules:
+    - id: BEHAVIOR-CHANGE-EXPLICIT
+      match:
+        behavior_contract.requested_behavior_change: true
+        behavior_contract.acceptance_criteria_updated: true
+      decision:
+        allowed_behavior_change: 'yes'
+        required_followups:
+        - test_derivation
+        - decision_log_entry
+    - id: BEHAVIOR-CHANGE-IMPLICIT
+      match:
+        behavior_contract.requested_behavior_change: false
+        refactor_changes_behavior: true
+      decision:
+        allowed_behavior_change: 'no'
+        fail_when:
+        - implementation_continues
+validation:
+  required_checks:
+  - id: BEHAVIOR-PRESERVE-CHECK-001
+    check: behavior_preservation_requirements_exist_for_refactor
+    applies_when:
+      request_is_refactor_or_refactor_like: true
+  - id: BEHAVIOR-PRESERVE-CHECK-002
+    check: behavior_lock_rules_evaluated
+    applies_when:
+      artifact_action_may_change_existing_behavior: true
+  fail_conditions:
+  - id: BEHAVIOR-PRESERVE-001
+    condition: refactor_changes_behavior_without_explicit_acceptance
+    message: Refactor must not change behavior unless behavior change is explicitly accepted.
+    severity: error
+    owner: refactoring/conventions.behavior-preservation.yaml
+  - id: BEHAVIOR-PRESERVE-002
+    condition: high_risk_refactor_without_behavior_lock
+    message: High-risk refactor requires behavior-locking evidence before structural changes.
+    severity: error
+    owner: refactoring/conventions.behavior-preservation.yaml
+  - id: BEHAVIOR-PRESERVE-003
+    condition: characterization_required_but_missing
+    message: Characterization tests are required before this refactor can proceed.
+    severity: error
+    owner: refactoring/conventions.behavior-preservation.yaml

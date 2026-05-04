@@ -1,0 +1,248 @@
+version: '1.0'
+file:
+  name: conventions.refactor-strategy.yaml
+  path: refactoring/conventions.refactor-strategy.yaml
+  role: refactor_strategy_resolution_engine
+  executability: decision_engine
+purpose: Select the safest refactor strategy using artifact actions, behavior preservation requirements, global risk, and
+  codebase evidence without selecting artifact actions or implementation order.
+ownership:
+  owns:
+  - refactor_strategy_selection
+  - refactor_strategy_decision_rules
+  - refactor_blocking_conditions
+  - refactor_required_followups
+  does_not_own:
+  - refactor_strategy_definitions
+  - artifact_action_selection
+  - risk_level_resolution
+  - change_impact_analysis
+  - compatibility_strategy_selection
+  - dependency_classification
+  - implementation_sequence
+activation:
+  mode: conditional
+  activates_when:
+  - request_is_refactor_or_refactor_like
+  - artifact_action_set_contains_refactor_action
+  - design_revision_requires_structural_change
+  skips_when:
+  - request_is_new_feature_only_without_existing_artifact_change
+inputs:
+  required:
+  - behavior_contract
+  - refactor_taxonomy
+  - artifact_action_table
+  - risk_classification
+  - draft_role_signals
+  optional:
+  - behavior_preservation_requirements
+  - boundary_classification
+  - contract_classification
+  - compatibility_decision
+  - dependency_classification
+  - codebase_reconnaissance_report
+  - change_impact_report
+outputs:
+  produces:
+  - refactor_strategy_decision
+  - refactor_required_followups
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - refactoring/conventions.refactor-taxonomy.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - actions/conventions.action-resolution.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - roles/conventions.role-resolution.yaml
+  optional_files:
+  - refactoring/conventions.behavior-preservation.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - contracts/conventions.compatibility.yaml
+  - dependencies/conventions.import-rules.yaml
+sections:
+  strategy_selection_principles:
+    absolute_rules:
+    - id: REFACTOR-STRATEGY-ABS-001
+      rule: Refactor strategy coordinates artifact actions but must not replace artifact action resolution.
+      fail_condition: refactor_strategy_replaces_artifact_action_resolution
+    - id: REFACTOR-STRATEGY-ABS-002
+      rule: Refactor strategy must use global risk, action, contract, boundary, dependency, and behavior vocabularies.
+      fail_condition: refactor_strategy_redefines_global_vocabulary
+  refactor_strategy_selection_rules:
+    match_decision_rules:
+    - id: REFACTOR-STRATEGY-MOVE-RENAME
+      match:
+        artifact_action_table.selected_action:
+          any_of:
+          - move_existing
+          - rename_existing
+        behavior_contract.requested_behavior_change: false
+        contract_classification.stability_level:
+          none_of:
+          - module_public
+          - external_public
+          - durable_versioned
+      decision:
+        selected_strategy: move_or_rename_only
+        required_behavior_lock: 'no'
+        implementation_allowed: 'yes'
+        required_followups:
+        - dependency_validation
+        - targeted_validation
+    - id: REFACTOR-STRATEGY-EXTRACT-DELEGATE
+      match:
+        artifact_action_table.selected_action: extract_from_existing
+        source_artifact_remains_valid_after_delegation: true
+      decision:
+        selected_strategy: extract_then_delegate
+        required_behavior_lock: 'yes'
+        implementation_allowed: 'yes'
+        required_followups:
+        - behavior_preservation_review
+        - role_validation
+        - regression_test_review
+    - id: REFACTOR-STRATEGY-SPLIT-MIGRATE
+      match:
+        artifact_action_table.selected_action: split_existing
+      decision:
+        selected_strategy: split_then_migrate
+        required_behavior_lock: 'yes'
+        implementation_allowed: 'yes'
+        required_followups:
+        - call_site_analysis
+        - contract_compatibility_check_if_public
+        - behavior_preservation_review
+        - implementation_checkpoint_groups
+    - id: REFACTOR-STRATEGY-INLINE
+      match:
+        artifact_action_table.selected_action: inline_existing
+        caller_remains_single_responsibility: true
+      decision:
+        selected_strategy: inline_and_remove
+        required_behavior_lock: 'yes'
+        implementation_allowed: 'yes'
+        required_followups:
+        - caller_responsibility_check
+        - regression_test_review
+    - id: REFACTOR-STRATEGY-WRAP
+      match:
+        artifact_action_table.selected_action: wrap_existing
+        boundary_or_interface_mismatch: true
+      decision:
+        selected_strategy: wrap_with_adapter
+        required_behavior_lock: conditional
+        implementation_allowed: 'yes'
+        required_followups:
+        - boundary_validation
+        - contract_compatibility_check
+        - adapter_tests
+    - id: REFACTOR-STRATEGY-BRANCH-ABSTRACTION
+      match:
+        old_and_new_implementations_must_coexist: true
+        consumers_cannot_migrate_atomically: true
+      decision:
+        selected_strategy: branch_by_abstraction
+        required_behavior_lock: 'yes'
+        implementation_allowed: 'yes'
+        required_followups:
+        - contract_compatibility_check
+        - implementation_checkpoint_groups
+        - change_impact_analysis
+    - id: REFACTOR-STRATEGY-STRANGLER
+      match:
+        legacy_surface_large: true
+        incremental_routing_possible: true
+      decision:
+        selected_strategy: strangler_refactor
+        required_behavior_lock: 'yes'
+        implementation_allowed: 'yes'
+        required_followups:
+        - routing_plan_required_by_execution
+        - contract_compatibility_check
+        - observability_review_if_available
+    - id: REFACTOR-STRATEGY-NO-REFACTOR
+      match:
+        refactor_value_unproven: true
+        risk_classification.risk_level:
+          any_of:
+          - high
+          - critical
+      decision:
+        selected_strategy: no_refactor
+        required_behavior_lock: 'no'
+        implementation_allowed: 'no'
+        blocking_reason: High-risk refactor requires clear value and safety evidence.
+        fail_when:
+        - refactor_continues_without_value_evidence
+  refactor_strategy_decision_schema:
+    required_fields:
+    - selected_strategy
+    - strategy_reason
+    - artifact_actions_referenced
+    - required_behavior_lock
+    - implementation_allowed
+    - required_followups
+    - confidence
+    optional_fields:
+    - rejected_strategies
+    - blocking_reason
+    - related_contracts
+    - related_dependencies
+  revision_rules:
+    match_decision_rules:
+    - id: REFACTOR-REVISE-PUBLIC-CONSUMERS
+      match:
+        change_impact_report.public_consumers_found: true
+      decision:
+        revision_required: true
+        required_followups:
+        - contract_compatibility_check
+        - consumer_impact_review
+    - id: REFACTOR-REVISE-DEPENDENCY-CYCLE
+      match:
+        dependency_validation_report.dependency_cycle_detected: true
+      decision:
+        revision_required: true
+        implementation_allowed: 'no'
+        blocking_reason: Refactor strategy introduced or exposed a dependency cycle.
+    - id: REFACTOR-REVISE-NO-BEHAVIOR-LOCK
+      match:
+        behavior_preservation_requirements.behavior_lock_required: 'yes'
+        test_plan.behavior_lock_present: false
+      decision:
+        revision_required: true
+        implementation_allowed: 'no'
+        required_followups:
+        - test_derivation
+validation:
+  required_checks:
+  - id: REFACTOR-STRATEGY-CHECK-001
+    check: refactor_strategy_selected_when_refactor_active
+    applies_when:
+      request_is_refactor_or_refactor_like: true
+  - id: REFACTOR-STRATEGY-CHECK-002
+    check: selected_strategy_defined_in_taxonomy
+    applies_when:
+      refactor_strategy_decision_exists: true
+  fail_conditions:
+  - id: REFACTOR-STRATEGY-001
+    condition: selected_refactor_strategy_not_in_taxonomy
+    message: Selected refactor strategy must be defined in refactor taxonomy.
+    severity: error
+    owner: refactoring/conventions.refactor-strategy.yaml
+  - id: REFACTOR-STRATEGY-002
+    condition: high_risk_refactor_without_behavior_preservation_requirements
+    message: High-risk refactor requires behavior preservation requirements.
+    severity: error
+    owner: refactoring/conventions.refactor-strategy.yaml
+  - id: REFACTOR-STRATEGY-003
+    condition: refactor_strategy_selected_without_artifact_actions
+    message: Refactor strategy must be grounded in artifact actions.
+    severity: error
+    owner: refactoring/conventions.refactor-strategy.yaml
+  - id: REFACTOR-STRATEGY-004
+    condition: blocked_refactor_continues
+    message: Blocked refactor must not proceed to implementation.
+    severity: error
+    owner: refactoring/conventions.refactor-strategy.yaml

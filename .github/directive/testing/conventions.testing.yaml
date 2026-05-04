@@ -1,0 +1,39 @@
+version: '1.0'
+file:
+  name: conventions.testing.yaml
+  path: testing/conventions.testing.yaml
+  role: testing_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for testing taxonomy and matrix.
+ownership:
+  owns:
+  - testing_system_metadata
+  - testing_file_index
+  - testing_system_execution_order
+  does_not_own:
+  - test_type_definitions
+  - test_matrix_details
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - testing_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  testing_file_index:
+    taxonomy: testing/conventions.testing-taxonomy.yaml
+    matrix: testing/conventions.testing-matrix.yaml
+  testing_system_execution_order:
+  - load_testing_taxonomy
+  - derive_tests_from_behavior_roles_actions_risk
+  - produce_test_plan
+validation:
+  required_checks: []
+  fail_conditions: []

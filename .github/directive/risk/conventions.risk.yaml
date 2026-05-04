@@ -1,0 +1,40 @@
+version: '1.0'
+file:
+  name: conventions.risk.yaml
+  path: risk/conventions.risk.yaml
+  role: risk_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for risk taxonomy and risk resolution.
+ownership:
+  owns:
+  - risk_system_metadata
+  - risk_file_index
+  - risk_system_execution_order
+  does_not_own:
+  - risk_definitions
+  - risk_resolution_details
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - risk_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  risk_file_index:
+    taxonomy: risk/conventions.risk-taxonomy.yaml
+    resolution: risk/conventions.risk-resolution.yaml
+  risk_system_execution_order:
+  - load_risk_taxonomy
+  - classify_risk
+  - validate_risk_classification
+  - produce_risk_system_result
+validation:
+  required_checks: []
+  fail_conditions: []

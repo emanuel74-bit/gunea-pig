@@ -1,0 +1,395 @@
+version: '1.0'
+file:
+  name: conventions.boundary-taxonomy.yaml
+  path: boundaries/conventions.boundary-taxonomy.yaml
+  role: boundary_taxonomy_contract
+  executability: vocabulary
+purpose: Define boundary vocabulary, ownership, crossing, translation, and sensitivity defaults.
+ownership:
+  owns:
+  - boundary_type_enum
+  - boundary_definitions
+  - boundary_ownership_rules
+  - boundary_crossing_rules
+  - boundary_translation_rules
+  - boundary_risk_signals
+  does_not_own:
+  - dependency_import_rules
+  - contract_compatibility_rules
+  - risk_resolution_process
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - boundary_taxonomy_registry
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  boundary_type_enum:
+    allowed:
+    - transport
+    - public_api
+    - module
+    - domain
+    - application
+    - infrastructure
+    - persistence
+    - external_system
+    - integration_event
+    - message_queue
+    - webhook
+    - security
+    - tenant
+    - runtime_wiring
+  boundary_definitions:
+    transport:
+      definition: transport boundary where ownership/trust/layer/model changes.
+      owner: transport_owner
+      crossing_signals:
+      - transport
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    public_api:
+      definition: public_api boundary where ownership/trust/layer/model changes.
+      owner: public_api_owner
+      crossing_signals:
+      - public_api
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: always
+      default_risk_concerns:
+      - public_contract
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    module:
+      definition: module boundary where ownership/trust/layer/model changes.
+      owner: module_owner
+      crossing_signals:
+      - module
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    domain:
+      definition: domain boundary where ownership/trust/layer/model changes.
+      owner: domain_owner
+      crossing_signals:
+      - domain
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - domain_to_infrastructure
+      - domain_to_transport
+      - domain_to_persistence_model
+      - domain_to_external_system
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    application:
+      definition: application boundary where ownership/trust/layer/model changes.
+      owner: application_owner
+      crossing_signals:
+      - application
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    infrastructure:
+      definition: infrastructure boundary where ownership/trust/layer/model changes.
+      owner: infrastructure_owner
+      crossing_signals:
+      - infrastructure
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    persistence:
+      definition: persistence boundary where ownership/trust/layer/model changes.
+      owner: persistence_owner
+      crossing_signals:
+      - persistence
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    external_system:
+      definition: external_system boundary where ownership/trust/layer/model changes.
+      owner: external_system_owner
+      crossing_signals:
+      - external_system
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    integration_event:
+      definition: integration_event boundary where ownership/trust/layer/model changes.
+      owner: integration_event_owner
+      crossing_signals:
+      - integration_event
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    message_queue:
+      definition: message_queue boundary where ownership/trust/layer/model changes.
+      owner: message_queue_owner
+      crossing_signals:
+      - message_queue
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    webhook:
+      definition: webhook boundary where ownership/trust/layer/model changes.
+      owner: webhook_owner
+      crossing_signals:
+      - webhook
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    security:
+      definition: security boundary where ownership/trust/layer/model changes.
+      owner: security_owner
+      crossing_signals:
+      - security
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    tenant:
+      definition: tenant boundary where ownership/trust/layer/model changes.
+      owner: tenant_owner
+      crossing_signals:
+      - tenant
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - tenant_boundary
+      - security
+      - data_loss
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+    runtime_wiring:
+      definition: runtime_wiring boundary where ownership/trust/layer/model changes.
+      owner: runtime_wiring_owner
+      crossing_signals:
+      - runtime_wiring
+      allowed_crossing_direction:
+      - explicit_allowed_direction_required
+      forbidden_crossing:
+      - forbidden_crossing_without_validation
+      translation_required: conditional
+      contract_required: conditional
+      default_risk_concerns:
+      - behavior
+      required_checks:
+      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
+        check: boundary_validation
+  boundary_risk_signals:
+    transport:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    public_api:
+      minimum_risk_hint: high
+      emits_concerns:
+      - public_contract
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    module:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    domain:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    application:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    infrastructure:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    persistence:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    external_system:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    integration_event:
+      minimum_risk_hint: high
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    message_queue:
+      minimum_risk_hint: high
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    webhook:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    security:
+      minimum_risk_hint: high
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+    tenant:
+      minimum_risk_hint: critical
+      emits_concerns:
+      - tenant_boundary
+      - security
+      - data_loss
+      emits_contexts:
+      - design_risk
+      - change_risk
+    runtime_wiring:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - design_risk
+      - change_risk
+validation:
+  fail_conditions:
+  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-FC-001
+    condition: unknown_boundary_type
+    message: Unknown boundary type.
+    severity: error
+    owner: boundaries/conventions.boundary-taxonomy.yaml
+  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-FC-002
+    condition: boundary_crossed_without_translation_when_required
+    message: Boundary crossed without translation when required.
+    severity: error
+    owner: boundaries/conventions.boundary-taxonomy.yaml
+  required_checks: []

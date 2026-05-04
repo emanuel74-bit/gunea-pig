@@ -1,0 +1,41 @@
+version: '1.0'
+file:
+  name: conventions.boundaries.yaml
+  path: boundaries/conventions.boundaries.yaml
+  role: boundary_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for boundary taxonomy and validation.
+ownership:
+  owns:
+  - boundary_system_metadata
+  - boundary_file_index
+  - boundary_system_execution_order
+  does_not_own:
+  - boundary_definitions
+  - detailed_boundary_validation
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - boundaries_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  boundary_file_index:
+    taxonomy: boundaries/conventions.boundary-taxonomy.yaml
+    validation: boundaries/conventions.boundary-validation.yaml
+  boundary_system_execution_order:
+  - load_boundary_taxonomy
+  - classify_boundaries
+  - validate_boundary_crossings
+  - route_boundary_required_checks
+  - produce_boundary_system_result
+validation:
+  required_checks: []
+  fail_conditions: []

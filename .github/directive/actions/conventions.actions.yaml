@@ -1,0 +1,40 @@
+version: '1.0'
+file:
+  name: conventions.actions.yaml
+  path: actions/conventions.actions.yaml
+  role: artifact_action_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for action taxonomy and action resolution.
+ownership:
+  owns:
+  - action_system_metadata
+  - action_file_index
+  - action_system_execution_order
+  does_not_own:
+  - action_definitions
+  - action_resolution_details
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - actions_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  action_file_index:
+    taxonomy: actions/conventions.action-taxonomy.yaml
+    resolution: actions/conventions.action-resolution.yaml
+  action_system_execution_order:
+  - load_action_taxonomy
+  - resolve_artifact_actions
+  - validate_action_resolution
+  - produce_action_system_result
+validation:
+  required_checks: []
+  fail_conditions: []

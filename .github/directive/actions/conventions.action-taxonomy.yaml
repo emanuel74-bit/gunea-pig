@@ -1,0 +1,509 @@
+version: '1.0'
+file:
+  name: conventions.action-taxonomy.yaml
+  path: actions/conventions.action-taxonomy.yaml
+  role: artifact_action_taxonomy_contract
+  executability: vocabulary
+purpose: Define artifact action vocabulary, families, priority, validity rules, followups, impact surfaces, and action collisions.
+ownership:
+  owns:
+  - artifact_action_enum
+  - artifact_action_families
+  - artifact_action_definition_schema
+  - artifact_action_definitions
+  - artifact_action_priority
+  - action_specific_validity_rules
+  - action_risk_signals
+  - artifact_action_collision_rules
+  does_not_own:
+  - action_selection_process
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - action_taxonomy_registry
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  artifact_action_enum:
+    allowed:
+    - create_new
+    - reuse_existing
+    - modify_existing
+    - extract_from_existing
+    - split_existing
+    - merge_existing
+    - wrap_existing
+    - move_existing
+    - rename_existing
+    - replace_existing
+    - inline_existing
+    - deprecate_existing
+    - delete_existing
+    - no_code_change
+  artifact_action_families:
+    non_change:
+    - no_code_change
+    - reuse_existing
+    additive_change:
+    - create_new
+    - wrap_existing
+    in_place_change:
+    - modify_existing
+    - rename_existing
+    - move_existing
+    decomposition_change:
+    - extract_from_existing
+    - split_existing
+    - inline_existing
+    consolidation_change:
+    - merge_existing
+    - replace_existing
+    lifecycle_change:
+    - deprecate_existing
+    - delete_existing
+  artifact_action_definitions:
+    no_code_change:
+      family: non_change
+      definition: Declare no production code change is required.
+      choose_when:
+      - declare no production code change is required.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      - record evidence
+      - prove existing behavior satisfies request
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    reuse_existing:
+      family: non_change
+      definition: Use an existing artifact as-is.
+      choose_when:
+      - use an existing artifact as-is.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    create_new:
+      family: additive_change
+      definition: Create a new artifact.
+      choose_when:
+      - create a new artifact.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      - create_new_by_default
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    wrap_existing:
+      family: additive_change
+      definition: Wrap existing behavior behind a boundary.
+      choose_when:
+      - wrap existing behavior behind a boundary.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    modify_existing:
+      family: in_place_change
+      definition: Modify an existing artifact while preserving responsibility.
+      choose_when:
+      - modify an existing artifact while preserving responsibility.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    rename_existing:
+      family: in_place_change
+      definition: Rename artifact or symbol without behavior change.
+      choose_when:
+      - rename artifact or symbol without behavior change.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    move_existing:
+      family: in_place_change
+      definition: Move artifact without behavior change.
+      choose_when:
+      - move artifact without behavior change.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    extract_from_existing:
+      family: decomposition_change
+      definition: Extract useful behavior into focused artifact.
+      choose_when:
+      - extract useful behavior into focused artifact.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    split_existing:
+      family: decomposition_change
+      definition: Split mixed artifact into focused artifacts.
+      choose_when:
+      - split mixed artifact into focused artifacts.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      - call_site_analysis
+      - regression_test_review
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    inline_existing:
+      family: decomposition_change
+      definition: Inline unjustified artifact into valid caller.
+      choose_when:
+      - inline unjustified artifact into valid caller.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    merge_existing:
+      family: consolidation_change
+      definition: Merge duplicated same responsibility artifacts.
+      choose_when:
+      - merge duplicated same responsibility artifacts.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    replace_existing:
+      family: consolidation_change
+      definition: Replace invalid artifact with valid one and migrate consumers.
+      choose_when:
+      - replace invalid artifact with valid one and migrate consumers.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      - consumer_migration
+      - compatibility_plan
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    deprecate_existing:
+      family: lifecycle_change
+      definition: Mark artifact as no longer preferred while preserving compatibility.
+      choose_when:
+      - mark artifact as no longer preferred while preserving compatibility.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+    delete_existing:
+      family: lifecycle_change
+      definition: Delete unused obsolete artifact safely.
+      choose_when:
+      - delete unused obsolete artifact safely.
+      reject_when:
+      - preconditions are not met
+      must:
+      - record reason
+      - validate output artifacts
+      forbidden:
+      - silent behavior change
+      - bypassing validation
+      produces:
+      - artifact_action_table_entry
+      required_followups:
+      - final_validation
+      downstream_checks_required:
+      - final_validation
+      impact_surfaces:
+      - internal_private
+      risk_profile: medium
+  artifact_action_priority:
+    principle: least_necessary_change_before_more_disruptive_change
+    priority_order:
+    - no_code_change
+    - reuse_existing
+    - modify_existing
+    - rename_existing
+    - move_existing
+    - extract_from_existing
+    - split_existing
+    - wrap_existing
+    - replace_existing
+    - inline_existing
+    - merge_existing
+    - create_new
+    - deprecate_existing
+    - delete_existing
+  artifact_action_collision_rules:
+    modify_existing_vs_extract_from_existing: modify when same responsibility remains cohesive; extract when desired behavior
+      is mixed with unrelated responsibilities
+    wrap_existing_vs_replace_existing: wrap when behavior is useful behind unsafe interface; replace when artifact is fundamentally
+      invalid
+    inline_existing_vs_delete_existing: inline when behavior still needed; delete when behavior no longer needed
+  action_risk_signals:
+    create_new:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    reuse_existing:
+      minimum_risk_hint: low
+      emits_contexts:
+      - design_risk
+      emits_concerns: []
+    modify_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    extract_from_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    split_existing:
+      minimum_risk_hint: high
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    merge_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    wrap_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    move_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    rename_existing:
+      minimum_risk_hint: low
+      emits_contexts:
+      - change_risk
+      emits_concerns: []
+    replace_existing:
+      minimum_risk_hint: high
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    inline_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    deprecate_existing:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    delete_existing:
+      minimum_risk_hint: high
+      emits_contexts:
+      - change_risk
+      emits_concerns:
+      - behavior
+    no_code_change:
+      minimum_risk_hint: low
+      emits_contexts:
+      - design_risk
+      emits_concerns: []
+validation:
+  fail_conditions:
+  - id: ACTIONS-CONVENTIONS-ACTION-TAXONOMY-YAML-FC-001
+    condition: action_definition_duplicated_outside_taxonomy
+    message: Action definition duplicated outside taxonomy.
+    severity: error
+    owner: actions/conventions.action-taxonomy.yaml
+  - id: ACTIONS-CONVENTIONS-ACTION-TAXONOMY-YAML-FC-002
+    condition: unknown_action
+    message: Unknown action.
+    severity: error
+    owner: actions/conventions.action-taxonomy.yaml
+  - id: ACTIONS-CONVENTIONS-ACTION-TAXONOMY-YAML-FC-003
+    condition: action_missing_validity_rules
+    message: Action missing validity rules.
+    severity: error
+    owner: actions/conventions.action-taxonomy.yaml
+  required_checks: []

@@ -1,0 +1,57 @@
+version: '1.0'
+file:
+  name: conventions.structure.yaml
+  path: architecture/conventions.structure.yaml
+  role: structure_renderer_contract
+  executability: decision_engine
+purpose: Render physical folder and file tree from architecture, actions, roles, and structure strategy.
+ownership:
+  owns:
+  - structure_rendering
+  - file_tree_output
+  - placement_application
+  does_not_own:
+  - architecture_decomposition
+  - role_resolution
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - structure_result
+dependencies:
+  required_files:
+  - architecture/conventions.architecture.yaml
+  - architecture/conventions.structure-strategy.yaml
+  - roles/conventions.role-placement.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - dependencies/conventions.import-rules.yaml
+  optional_files: []
+sections:
+  rendering_rules:
+  - Structure renders architecture
+  - Structure fills only unspecified folder hierarchy details
+  - Use post_action_artifact_candidates
+  - Do not let structure redefine architecture
+validation:
+  fail_conditions:
+  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-001
+    condition: structure_rendered_before_role_assignment
+    message: Structure rendered before role assignment.
+    severity: error
+    owner: architecture/conventions.structure.yaml
+  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-002
+    condition: structure_defines_new_capability
+    message: Structure defines new capability.
+    severity: error
+    owner: architecture/conventions.structure.yaml
+  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-003
+    condition: dependency_constraints_missing
+    message: Dependency constraints missing.
+    severity: error
+    owner: architecture/conventions.structure.yaml
+  required_checks: []

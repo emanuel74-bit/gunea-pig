@@ -1,0 +1,166 @@
+version: '1.0'
+file:
+  name: conventions.boundary-validation.yaml
+  path: boundaries/conventions.boundary-validation.yaml
+  role: boundary_validation_contract
+  executability: validator
+purpose: Validate boundary classifications and crossings and route required followup checks.
+ownership:
+  owns:
+  - boundary_validation_rules
+  - boundary_crossing_validation
+  - boundary_leak_detection
+  - boundary_required_check_routing
+  - boundary_validation_output
+  does_not_own:
+  - boundary_type_definitions
+  - dependency_direction_rules
+  - contract_compatibility_strategy
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - boundary_validation_validation_report
+dependencies:
+  required_files:
+  - boundaries/conventions.boundary-taxonomy.yaml
+  optional_files: []
+sections:
+  boundary_required_check_routing:
+    transport:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: transport boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    public_api:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: public_api boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    module:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: module boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    domain:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: domain boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    application:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: application boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    infrastructure:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: infrastructure boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    persistence:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: persistence boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    external_system:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: external_system boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    integration_event:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: integration_event boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    message_queue:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: message_queue boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    webhook:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: webhook boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    security:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: security boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    tenant:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: tenant boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+    runtime_wiring:
+      activates:
+      - system: risk
+        file: risk/conventions.risk-resolution.yaml
+        reason: runtime_wiring boundary emits risk signals
+      required_outputs:
+      - boundary_validation_report
+  boundary_leak_detection:
+    transport_leak:
+    - request_response_dto_used_in_domain
+    persistence_leak:
+    - orm_model_used_as_domain_entity
+    external_system_leak:
+    - provider_payload_used_in_domain
+    security_leak:
+    - secret_logged_or_returned
+    tenant_leak:
+    - query_without_tenant_scope
+validation:
+  fail_conditions:
+  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-001
+    condition: unknown_boundary_type
+    message: Unknown boundary type.
+    severity: error
+    owner: boundaries/conventions.boundary-validation.yaml
+  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-002
+    condition: forbidden_boundary_crossing
+    message: Forbidden boundary crossing.
+    severity: error
+    owner: boundaries/conventions.boundary-validation.yaml
+  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-003
+    condition: public_boundary_without_contract_classification
+    message: Public boundary without contract classification.
+    severity: error
+    owner: boundaries/conventions.boundary-validation.yaml
+  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-004
+    condition: boundary_required_routing_output_missing
+    message: Boundary required routing output missing.
+    severity: error
+    owner: boundaries/conventions.boundary-validation.yaml
+  required_checks: []

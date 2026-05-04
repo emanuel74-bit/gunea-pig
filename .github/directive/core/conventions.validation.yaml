@@ -1,0 +1,155 @@
+version: '1.0'
+file:
+  name: conventions.validation.yaml
+  path: core/conventions.validation.yaml
+  role: cross_system_validation_contract
+  executability: validator
+purpose: Validate every active subsystem and every cross-system handoff in the 42-file system.
+ownership:
+  owns:
+  - final_cross_system_validation
+  - active_system_validation
+  - vocabulary_reference_integrity
+  - handoff_validation
+  - fail_conditions
+  does_not_own:
+  - vocabulary_definitions
+  - routing
+  - phase_execution
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - validation_validation_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  agent_usability_validation:
+    fail_conditions:
+    - id: AGENT-CORE-001
+      condition: agent_subsystem_claims_authoritative_routing
+      message: Agent subsystem must not claim ownership of active_file_manifest.
+      severity: error
+      owner: core/conventions.validation.yaml
+    - id: AGENT-CORE-002
+      condition: decision_engine_loaded_without_source_vocabulary
+      message: Decision engines must not run without their source vocabulary.
+      severity: error
+      owner: core/conventions.validation.yaml
+  file_contract_validation:
+    fail_conditions:
+    - id: FILE-CONTRACT-CORE-001
+      condition: convention_file_missing_required_top_level_section
+      message: Every convention file must follow the universal file contract.
+      severity: error
+      owner: core/conventions.validation.yaml
+  validation_pipeline:
+  - validate_activation_manifest
+  - validate_vocabulary_source_of_truth
+  - validate_behavior_contract
+  - validate_decision_log_baseline
+  - validate_risk_classification
+  - validate_boundary_classification_if_active
+  - validate_contract_classification_if_active
+  - validate_dependency_classification_if_active
+  - validate_codebase_reconnaissance_if_active
+  - validate_local_alignment_if_active
+  - validate_architecture
+  - validate_action_resolution_if_active
+  - validate_post_action_artifacts_if_active
+  - validate_roles
+  - validate_patterns_if_active
+  - validate_role_pattern_compatibility_if_active
+  - validate_change_impact_if_active
+  - validate_structure
+  - validate_testing_if_active
+  - validate_implementation_sequence_if_active
+  - validate_feedback_loop_if_active
+  - validate_decision_log_final
+  - produce_validation_report
+  - validate_draft_role_signals_if_active
+  - validate_behavior_preservation_requirements_if_active
+  - validate_refactor_strategy_decision_if_active
+  vocabulary_source_of_truth_validation:
+  - unknown_vocabulary_value_used
+  - enum_value_duplicated_outside_source_vocabulary
+  - artifact_action_used_without_action_taxonomy_reference
+  - risk_level_used_without_risk_taxonomy_reference
+  - boundary_type_used_without_boundary_taxonomy_reference
+  - contract_type_used_without_contract_taxonomy_reference
+  - dependency_type_used_without_dependency_taxonomy_reference
+  handoff_validation:
+  - architecture_started_without_behavior_contract
+  - contract_classification_without_boundary_classification
+  - role_assignment_used_initial_artifact_candidates_instead_of_post_action_artifacts
+  - implementation_sequence_missing_change_impact_or_test_plan
+  - feedback_loop_missing_implementation_sequence
+  fail_conditions:
+  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-001
+    condition: silent_assumption_detected
+    message: Silent assumption detected.
+    severity: error
+    owner: core/conventions.validation.yaml
+  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-002
+    condition: blocking_uncertainty_unresolved
+    message: Blocking uncertainty unresolved.
+    severity: error
+    owner: core/conventions.validation.yaml
+  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-003
+    condition: forbidden_dependency_direction
+    message: Forbidden dependency direction.
+    severity: error
+    owner: core/conventions.validation.yaml
+  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-004
+    condition: breaking_change_without_compatibility_strategy
+    message: Breaking change without compatibility strategy.
+    severity: error
+    owner: core/conventions.validation.yaml
+  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-005
+    condition: no_code_change_without_behavior_evidence
+    message: No code change without behavior evidence.
+    severity: error
+    owner: core/conventions.validation.yaml
+  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-006
+    condition: duplicate_vocabulary_source
+    message: Duplicate vocabulary source.
+    severity: error
+    owner: core/conventions.validation.yaml
+  refactoring_validation:
+    fail_conditions:
+    - id: CORE-REFACTOR-001
+      condition: refactor_active_without_behavior_preservation_requirements
+      message: Active refactor requires behavior preservation requirements.
+      severity: error
+    - id: CORE-REFACTOR-002
+      condition: refactor_strategy_not_grounded_in_artifact_actions
+      message: Refactor strategy must be grounded in artifact actions.
+      severity: error
+    - id: CORE-REFACTOR-003
+      condition: high_risk_refactor_without_checkpoint_sequence
+      message: High-risk refactor requires checkpointed implementation sequence.
+      severity: error
+    - id: CORE-REFACTOR-004
+      condition: refactor_redefines_global_vocabulary
+      message: Refactor subsystem must use global vocabularies instead of redefining local equivalents.
+      severity: error
+validation:
+  required_checks: []
+  fail_conditions:
+  - id: CORE-VALIDATION-REFACTOR-001
+    condition: refactor_active_without_behavior_preservation_requirements
+    message: Active refactor requires behavior preservation requirements.
+    severity: error
+    owner: core/conventions.validation.yaml
+  - id: CORE-VALIDATION-REFACTOR-002
+    condition: refactor_strategy_not_grounded_in_artifact_actions
+    message: Refactor strategy must be grounded in artifact actions.
+    severity: error
+    owner: core/conventions.validation.yaml

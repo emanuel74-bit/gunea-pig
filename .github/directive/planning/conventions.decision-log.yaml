@@ -1,0 +1,80 @@
+version: '1.0'
+file:
+  name: conventions.decision-log.yaml
+  path: planning/conventions.decision-log.yaml
+  role: decision_log_and_assumption_control_contract
+  executability: decision_engine
+purpose: Record important decisions, assumptions, uncertainty, affected artifacts, rejected alternatives, and revisions throughout the pipeline.
+ownership:
+  owns:
+  - decision_log_schema
+  - assumption_register_schema
+  - uncertainty_register_schema
+  - affected_artifact_record_schema
+  - decision_revision_policy
+  does_not_own:
+  - behavior_contract_extraction
+  - action_selection
+  - risk_resolution
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - decision_log_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  affected_artifact_record_schema:
+    required_fields:
+    - artifact_id
+    - artifact_name
+    - artifact_role
+    - artifact_scope
+    - artifact_action
+    - change_type
+    - affected_responsibility
+    - impact_surface
+    - downstream_checks_required
+  rule_sets:
+    absolute_rules:
+    - id: DECISION-LOG-ABS-001
+      rule: Silent assumptions are forbidden.
+      fail_condition: silent_assumption_detected
+    - id: DECISION-LOG-ABS-002
+      rule: Important decisions must record selected option, rejected alternatives, reason, confidence, and convention rule used.
+      fail_condition: important_decision_missing_required_record
+    - id: DECISION-LOG-ABS-003
+      rule: Every artifact-changing decision must include affected_artifacts.
+      fail_condition: artifact_changing_decision_without_affected_artifacts
+    - id: DECISION-LOG-ABS-004
+      rule: Decision revisions must be recorded.
+      fail_condition: decision_revision_not_recorded
+validation:
+  fail_conditions:
+  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-001
+    condition: silent_assumption_detected
+    message: Silent assumption detected.
+    severity: error
+    owner: planning/conventions.decision-log.yaml
+  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-002
+    condition: artifact_changing_decision_without_affected_artifacts
+    message: Artifact changing decision without affected artifacts.
+    severity: error
+    owner: planning/conventions.decision-log.yaml
+  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-003
+    condition: blocking_uncertainty_unresolved
+    message: Blocking uncertainty unresolved.
+    severity: error
+    owner: planning/conventions.decision-log.yaml
+  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-004
+    condition: low_confidence_required_decision_in_final_plan
+    message: Low confidence required decision in final plan.
+    severity: error
+    owner: planning/conventions.decision-log.yaml
+  required_checks: []

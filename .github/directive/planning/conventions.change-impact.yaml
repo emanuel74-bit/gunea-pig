@@ -1,0 +1,79 @@
+version: '1.0'
+file:
+  name: conventions.change-impact.yaml
+  path: planning/conventions.change-impact.yaml
+  role: change_impact_analysis_contract
+  executability: decision_engine
+purpose: Determine downstream impact of planned actions across call sites, contracts, tests, migrations, runtime paths, and
+  integrations.
+ownership:
+  owns:
+  - change_impact_schema
+  - impact_categories
+  - unknown_impact_policy
+  - compatibility_plan_rules
+  - change_impact_risk_signals
+  does_not_own:
+  - artifact_action_selection
+  - role_assignment
+  - test_derivation
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - change_impact_result
+dependencies:
+  required_files:
+  - actions/conventions.action-taxonomy.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  optional_files: []
+sections:
+  impact_categories:
+  - call_site_impact
+  - contract_impact
+  - test_impact
+  - data_migration_impact
+  - integration_impact
+  - dependency_architecture_impact
+  unknown_impact_policy:
+  - Unknown high-risk impact blocks implementation sequencing
+  - Unknown call sites block delete and split decisions
+  change_impact_risk_signals:
+    public_contract_changed:
+      minimum_risk_hint: high
+      emits_concerns:
+      - public_contract
+    migration_required:
+      minimum_risk_hint: high
+      emits_concerns:
+      - migration
+validation:
+  fail_conditions:
+  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-001
+    condition: artifact_action_without_impact_review
+    message: Artifact action without impact review.
+    severity: error
+    owner: planning/conventions.change-impact.yaml
+  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-002
+    condition: contract_change_without_compatibility_plan
+    message: Contract change without compatibility plan.
+    severity: error
+    owner: planning/conventions.change-impact.yaml
+  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-003
+    condition: migration_required_but_not_planned
+    message: Migration required but not planned.
+    severity: error
+    owner: planning/conventions.change-impact.yaml
+  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-004
+    condition: call_sites_not_accounted_for
+    message: Call sites not accounted for.
+    severity: error
+    owner: planning/conventions.change-impact.yaml
+  required_checks: []

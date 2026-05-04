@@ -1,0 +1,197 @@
+version: '1.0'
+file:
+  name: conventions.routing.yaml
+  path: core/conventions.routing.yaml
+  role: routing_contract
+  executability: router
+purpose: Route requests to active convention files and ensure referenced vocabularies are loaded.
+ownership:
+  owns:
+  - request_type_classification
+  - active_file_manifest
+  - vocabulary_activation_rules
+  - subsystem_activation_rules
+  - no_code_change_route
+  does_not_own:
+  - vocabulary_definitions
+  - final_validation
+  - phase_execution
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - active_file_manifest
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  agent_integration:
+    consumes:
+    - agent_context_request
+    - user_request
+    - behavior_contract
+    - risk_classification
+    produces:
+    - active_file_manifest
+    rules:
+    - id: ROUTING-AGENT-001
+      match:
+        agent_context_request_exists: true
+      decision:
+        core_routing_remains_authoritative: true
+        agent_request_is_advisory: true
+  file_groups:
+    core:
+    - core/conventions.file-contract.yaml
+    - core/conventions.orchestrator.yaml
+    - core/conventions.output-schema.yaml
+    - core/conventions.routing.yaml
+    - core/conventions.validation.yaml
+    roles:
+    - roles/conventions.role-collisions.yaml
+    - roles/conventions.role-placement.yaml
+    - roles/conventions.role-resolution.yaml
+    - roles/conventions.role-taxonomy.yaml
+    - roles/conventions.roles.yaml
+    patterns:
+    - patterns/conventions.pattern-catalog.yaml
+    - patterns/conventions.pattern-restrictions.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - patterns/conventions.patterns.yaml
+    - patterns/conventions.role-pattern-compatibility.yaml
+    actions:
+    - actions/conventions.action-resolution.yaml
+    - actions/conventions.action-taxonomy.yaml
+    - actions/conventions.actions.yaml
+    risk:
+    - risk/conventions.risk-resolution.yaml
+    - risk/conventions.risk-taxonomy.yaml
+    - risk/conventions.risk.yaml
+    boundaries:
+    - boundaries/conventions.boundaries.yaml
+    - boundaries/conventions.boundary-taxonomy.yaml
+    - boundaries/conventions.boundary-validation.yaml
+    contracts:
+    - contracts/conventions.compatibility.yaml
+    - contracts/conventions.contract-taxonomy.yaml
+    - contracts/conventions.contracts.yaml
+    dependencies:
+    - dependencies/conventions.dependencies.yaml
+    - dependencies/conventions.dependency-taxonomy.yaml
+    - dependencies/conventions.import-rules.yaml
+    architecture:
+    - architecture/conventions.architecture.yaml
+    - architecture/conventions.structure-strategy.yaml
+    - architecture/conventions.structure.yaml
+    testing:
+    - testing/conventions.testing-matrix.yaml
+    - testing/conventions.testing-taxonomy.yaml
+    - testing/conventions.testing.yaml
+    planning:
+    - planning/conventions.behavior-contract.yaml
+    - planning/conventions.change-impact.yaml
+    - planning/conventions.codebase-reconnaissance.yaml
+    - planning/conventions.decision-log.yaml
+    - planning/conventions.local-alignment.yaml
+    execution:
+    - execution/conventions.feedback-loop.yaml
+    - execution/conventions.implementation-sequence.yaml
+    refactoring:
+    - refactoring/conventions.behavior-preservation.yaml
+    - refactoring/conventions.refactor-strategy.yaml
+    - refactoring/conventions.refactor-taxonomy.yaml
+    - refactoring/conventions.refactoring.yaml
+  always_active_for_code_requests:
+  - core/conventions.output-schema.yaml
+  - planning/conventions.behavior-contract.yaml
+  - planning/conventions.decision-log.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - risk/conventions.risk-resolution.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  conditional_activation_rules:
+    codebase_reconnaissance:
+    - existing_codebase_context_available
+    - request_modifies_existing_codebase
+    local_alignment:
+    - local_conventions_detected
+    actions:
+    - artifact_candidates_exist
+    - request_requires_code_change
+    contracts:
+    - public_api_boundary_detected
+    - contract_change_possible
+    boundary_validation:
+    - boundary_crossing_detected
+    dependency_rules:
+    - dependency_relationships_exist
+    - imports_or_wiring_change
+    patterns:
+    - pattern_pressure_detected
+    change_impact:
+    - artifact_action_table_exists
+    - risk_level >= medium
+    testing:
+    - production_code_created_or_changed
+    - risk_level >= medium
+    execution_sequence:
+    - implementation_requested
+    - validated_final_plan_exists
+    feedback_loop:
+    - code_changes_are_executed
+    - implementation_sequence_plan_exists
+    refactoring:
+    - request_is_refactor_or_refactor_like
+    - artifact_action_set_contains_refactor_action
+    - design_revision_requires_structural_change
+  no_code_change_route:
+    required_files:
+    - planning/conventions.behavior-contract.yaml
+    - planning/conventions.codebase-reconnaissance.yaml
+    - actions/conventions.action-taxonomy.yaml
+    - actions/conventions.action-resolution.yaml
+    - planning/conventions.decision-log.yaml
+    - core/conventions.validation.yaml
+    skip_files_when_validated:
+    - architecture/conventions.structure.yaml
+    - execution/conventions.implementation-sequence.yaml
+    - execution/conventions.feedback-loop.yaml
+  routing_rules:
+    match_decision_rules:
+    - id: ROUTING-REFACTORING-001
+      match:
+        request_is_refactor_or_refactor_like: true
+      decision:
+        activate_file_group: refactoring
+        required_outputs:
+        - refactor_strategy_decision
+        - behavior_preservation_requirements
+validation:
+  fail_conditions:
+  - id: CORE-CONVENTIONS-ROUTING-YAML-FC-001
+    condition: behavior_contract_not_activated_for_code_request
+    message: Behavior contract not activated for code request.
+    severity: error
+    owner: core/conventions.routing.yaml
+  - id: CORE-CONVENTIONS-ROUTING-YAML-FC-002
+    condition: file_uses_vocabulary_without_declared_dependency
+    message: File uses vocabulary without declared dependency.
+    severity: error
+    owner: core/conventions.routing.yaml
+  - id: CORE-CONVENTIONS-ROUTING-YAML-FC-003
+    condition: implementation_sequence_activated_without_validated_plan
+    message: Implementation sequence activated without validated plan.
+    severity: error
+    owner: core/conventions.routing.yaml
+  - id: CORE-ROUTING-REFACTOR-001
+    condition: refactor_request_without_refactoring_group_activation
+    message: Refactor-like requests must activate the refactoring file group.
+    severity: error
+    owner: core/conventions.routing.yaml
+  required_checks: []

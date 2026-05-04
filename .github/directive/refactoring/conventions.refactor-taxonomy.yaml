@@ -1,0 +1,232 @@
+version: '1.0'
+file:
+  name: conventions.refactor-taxonomy.yaml
+  path: refactoring/conventions.refactor-taxonomy.yaml
+  role: refactor_strategy_taxonomy_contract
+  executability: vocabulary
+purpose: Define shared refactor strategy vocabulary and refactor-local risk signals without selecting strategies or replacing
+  artifact actions.
+ownership:
+  owns:
+  - refactor_strategy_enum
+  - refactor_intent_categories
+  - refactor_strategy_definitions
+  - refactor_risk_signals
+  does_not_own:
+  - refactor_strategy_selection
+  - artifact_action_selection
+  - risk_level_resolution
+  - behavior_preservation_requirements
+  - implementation_sequence
+  - change_impact_analysis
+activation:
+  mode: reference_only
+  activates_when:
+  - request_is_refactor_or_refactor_like
+  - refactor_strategy_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional:
+  - behavior_contract
+  - artifact_action_table
+  - risk_classification
+outputs:
+  produces:
+  - refactor_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - actions/conventions.action-taxonomy.yaml
+  optional_files:
+  - contracts/conventions.contract-taxonomy.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+sections:
+  refactor_strategy_enum:
+    allowed:
+    - no_refactor
+    - characterization_first
+    - move_or_rename_only
+    - extract_then_delegate
+    - split_then_migrate
+    - inline_and_remove
+    - merge_duplicates
+    - wrap_with_adapter
+    - replace_with_facade
+    - branch_by_abstraction
+    - strangler_refactor
+    - parallel_implementation
+    - compatibility_adapter
+    - incremental_migration
+  refactor_intent_categories:
+    improve_role_clarity:
+      definition: Make artifact responsibility, suffix, or role clearer.
+    improve_boundary_safety:
+      definition: Prevent model, dependency, or trust leakage across boundaries.
+    reduce_duplication:
+      definition: Remove duplicated responsibility or logic.
+    reduce_coupling:
+      definition: Reduce illegal or harmful dependencies.
+    preserve_behavior_while_restructuring:
+      definition: Change structure while preserving externally observable behavior.
+    enable_future_change:
+      definition: Restructure to make a future implementation safer or simpler.
+  refactor_strategy_definitions:
+    no_refactor:
+      definition: Do not refactor because the refactor is unnecessary, unsafe, or out of scope.
+      typical_actions:
+      - no_code_change
+      - reuse_existing
+    characterization_first:
+      definition: Lock current behavior with tests/evidence before structural changes.
+      typical_actions:
+      - modify_existing
+      required_followups:
+      - regression_test_review
+    move_or_rename_only:
+      definition: Move or rename artifacts without behavior change.
+      typical_actions:
+      - move_existing
+      - rename_existing
+    extract_then_delegate:
+      definition: Extract behavior into focused artifact and update source to delegate.
+      typical_actions:
+      - extract_from_existing
+      - modify_existing
+    split_then_migrate:
+      definition: Split mixed artifact into focused artifacts and migrate call sites.
+      typical_actions:
+      - split_existing
+      - modify_existing
+      - deprecate_existing
+    inline_and_remove:
+      definition: Inline unjustified abstraction into its only valid caller and remove it.
+      typical_actions:
+      - inline_existing
+      - delete_existing
+    merge_duplicates:
+      definition: Merge duplicated responsibilities into one canonical artifact.
+      typical_actions:
+      - merge_existing
+      - delete_existing
+      - deprecate_existing
+    wrap_with_adapter:
+      definition: Place behavior behind wrapper/adapter to protect a boundary.
+      typical_actions:
+      - wrap_existing
+    replace_with_facade:
+      definition: Introduce stable facade while replacing invalid internals.
+      typical_actions:
+      - create_new
+      - replace_existing
+      - deprecate_existing
+    branch_by_abstraction:
+      definition: Introduce abstraction so old and new implementations can coexist safely.
+      typical_actions:
+      - create_new
+      - wrap_existing
+      - replace_existing
+      - deprecate_existing
+    strangler_refactor:
+      definition: Incrementally route behavior from legacy implementation to new implementation.
+      typical_actions:
+      - create_new
+      - wrap_existing
+      - replace_existing
+      - deprecate_existing
+    parallel_implementation:
+      definition: Build new implementation alongside old before switching consumers.
+      typical_actions:
+      - create_new
+      - replace_existing
+      - deprecate_existing
+    compatibility_adapter:
+      definition: Preserve old contract through adapter translation while internals change.
+      typical_actions:
+      - wrap_existing
+      - replace_existing
+    incremental_migration:
+      definition: Migrate consumers, data, or call sites gradually through planned checkpoints.
+      typical_actions:
+      - move_existing
+      - replace_existing
+      - deprecate_existing
+  refactor_risk_signals:
+    purpose: Emit local refactor risk signals consumed by risk resolution. These signals never assign final risk.
+    signals:
+      move_or_rename_only:
+        signal_id: REFACTOR-RISK-MOVE-RENAME
+        source: refactoring/conventions.refactor-taxonomy.yaml
+        minimum_risk_hint: low
+        emits_concerns: []
+        emits_contexts:
+        - refactor_risk
+        escalate_when:
+        - public_import_path_changes
+        - module_boundary_changes
+      extract_then_delegate:
+        signal_id: REFACTOR-RISK-EXTRACT-DELEGATE
+        source: refactoring/conventions.refactor-taxonomy.yaml
+        minimum_risk_hint: medium
+        emits_concerns:
+        - behavior
+        emits_contexts:
+        - refactor_risk
+        - change_risk
+      split_then_migrate:
+        signal_id: REFACTOR-RISK-SPLIT-MIGRATE
+        source: refactoring/conventions.refactor-taxonomy.yaml
+        minimum_risk_hint: high
+        emits_concerns:
+        - behavior
+        - runtime_wiring
+        emits_contexts:
+        - refactor_risk
+        - change_risk
+      branch_by_abstraction:
+        signal_id: REFACTOR-RISK-BRANCH-ABSTRACTION
+        source: refactoring/conventions.refactor-taxonomy.yaml
+        minimum_risk_hint: high
+        emits_concerns:
+        - behavior
+        - runtime_wiring
+        emits_contexts:
+        - refactor_risk
+        - implementation_risk
+      strangler_refactor:
+        signal_id: REFACTOR-RISK-STRANGLER
+        source: refactoring/conventions.refactor-taxonomy.yaml
+        minimum_risk_hint: high
+        emits_concerns:
+        - behavior
+        - public_contract
+        emits_contexts:
+        - refactor_risk
+        - change_risk
+      compatibility_adapter:
+        signal_id: REFACTOR-RISK-COMPATIBILITY-ADAPTER
+        source: refactoring/conventions.refactor-taxonomy.yaml
+        minimum_risk_hint: medium
+        emits_concerns:
+        - public_contract
+        emits_contexts:
+        - refactor_risk
+        - design_risk
+validation:
+  required_checks:
+  - id: REFACTOR-TAXONOMY-CHECK-001
+    check: refactor_strategy_values_defined
+    applies_when:
+      refactor_strategy_values_are_referenced: true
+  fail_conditions:
+  - id: REFACTOR-TAXONOMY-001
+    condition: unknown_refactor_strategy_used
+    message: Refactor strategy must be defined in refactor taxonomy.
+    severity: error
+    owner: refactoring/conventions.refactor-taxonomy.yaml
+  - id: REFACTOR-TAXONOMY-002
+    condition: refactor_taxonomy_selects_strategy
+    message: Refactor taxonomy defines strategy meanings but must not select a strategy.
+    severity: error
+    owner: refactoring/conventions.refactor-taxonomy.yaml

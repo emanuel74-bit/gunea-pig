@@ -1,0 +1,123 @@
+version: '1.0'
+file:
+  name: conventions.agent-protocol.yaml
+  path: agent/conventions.agent-protocol.yaml
+  role: agent_interaction_protocol_contract
+  executability: decision_engine
+purpose: Define agent request modes, ask/proceed behavior, user interaction guardrails, and reporting cadence without owning
+  global pipeline order.
+ownership:
+  owns:
+  - agent_request_mode_classification
+  - ask_proceed_policy
+  - user_interaction_protocol
+  - progress_reporting_policy
+  - discussion_vs_execution_guardrails
+  does_not_own:
+  - global_execution_order
+  - phase_gates
+  - subsystem_handoffs
+  - authoritative_routing
+  - final_validation
+activation:
+  mode: always
+  activates_when:
+  - agent_uses_convention_system
+  skips_when: []
+inputs:
+  required:
+  - user_request
+  optional:
+  - risk_classification
+  - uncertainty_register
+  - decision_log
+outputs:
+  produces:
+  - agent_mode
+  - agent_interaction_decisions
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agent/conventions.context-policy.yaml
+  optional_files:
+  - risk/conventions.risk-taxonomy.yaml
+  - planning/conventions.decision-log.yaml
+sections:
+  agent_request_mode_rules:
+    match_decision_rules:
+    - id: AGENT-MODE-DISCUSSION
+      match:
+        user_intent: discussion_only
+      decision:
+        agent_mode: discussion_only
+        forbidden_actions:
+        - edit_files
+        - generate_package_unless_requested
+        required_outputs:
+        - direct_answer
+        - proposed_next_step_if_relevant
+    - id: AGENT-MODE-IMPLEMENTATION
+      match:
+        user_intent: implementation
+        code_changes_requested: true
+      decision:
+        agent_mode: implementation
+        required_outputs:
+        - behavior_contract
+        - implementation_sequence
+        - validation_result
+    - id: AGENT-MODE-REFACTORING
+      match:
+        user_intent: refactoring
+      decision:
+        agent_mode: refactoring
+        required_outputs:
+        - behavior_preservation_plan
+        - refactor_strategy
+        - artifact_actions
+        - impact_analysis
+        - validation_plan
+  ask_proceed_policy:
+    match_decision_rules:
+    - id: ASK-BLOCKING-HIGH-RISK
+      match:
+        uncertainty_risk:
+        - high
+        - critical
+        confidence: low
+      decision:
+        action: ask_user_or_fail_closed
+        forbidden_actions:
+        - proceed_with_assumption
+    - id: PROCEED-LOW-RISK-REVERSIBLE
+      match:
+        uncertainty_risk: low
+        reversible: true
+        safe_default_exists: true
+      decision:
+        action: proceed_with_recorded_assumption
+        required_outputs:
+        - assumption_register_entry
+  interaction_guardrails:
+    absolute_rules:
+    - id: AGENT-PROTOCOL-001
+      rule: Discussion-only mode must not modify files.
+      fail_condition: discussion_only_mode_modified_files
+    - id: AGENT-PROTOCOL-002
+      rule: Blocking uncertainty must be asked, resolved, or fail closed.
+      fail_condition: blocking_uncertainty_assumed_silently
+validation:
+  required_checks:
+  - id: AGENT-PROTOCOL-RC-001
+    check: agent_mode_selected
+  fail_conditions:
+  - id: AGENT-PROTOCOL-001
+    condition: discussion_only_mode_modified_files
+    message: Discussion-only mode must not modify files.
+    severity: error
+    owner: agent/conventions.agent-protocol.yaml
+  - id: AGENT-PROTOCOL-002
+    condition: blocking_uncertainty_assumed_silently
+    message: Blocking uncertainty must be asked, resolved, or fail closed.
+    severity: error
+    owner: agent/conventions.agent-protocol.yaml

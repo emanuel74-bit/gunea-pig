@@ -1,0 +1,100 @@
+version: '1.0'
+file:
+  name: conventions.agent-output.yaml
+  path: agent/conventions.agent-output.yaml
+  role: agent_output_format_contract
+  executability: schema
+purpose: Define standardized user-facing and machine-facing output formats for agent responses, plans, acceptance proposals,
+  and validation summaries.
+ownership:
+  owns:
+  - agent_output_modes
+  - acceptance_proposal_schema
+  - response_contracts_by_mode
+  - summary_requirements
+  does_not_own:
+  - pipeline_execution
+  - subsystem_decision_logic
+  - final_validation_logic
+activation:
+  mode: always
+  activates_when:
+  - agent_formats_user_response
+  skips_when: []
+inputs:
+  required:
+  - agent_mode
+  optional:
+  - validation_report
+  - changed_files
+  - decision_log
+outputs:
+  produces:
+  - agent_response_contract
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.output-schema.yaml
+  optional_files:
+  - agent/conventions.agent-protocol.yaml
+sections:
+  agent_output_mode_rules:
+    match_decision_rules:
+    - id: OUTPUT-DISCUSSION-STEP
+      match:
+        agent_mode: discussion_only
+        iterative_design: true
+      decision:
+        output_mode: discussion_step
+        required_sections:
+        - step_name
+        - proposed_change
+        - rationale
+        - acceptance_proposal
+    - id: OUTPUT-IMPLEMENTATION-SUMMARY
+      match:
+        agent_mode: implementation
+        files_changed: true
+      decision:
+        output_mode: execution_summary
+        required_sections:
+        - changed_files
+        - validation_results
+        - generated_artifacts
+        - unresolved_items
+    - id: OUTPUT-PACKAGE-SUMMARY
+      match:
+        agent_mode: convention_system_editing
+        package_generated: true
+      decision:
+        output_mode: convention_package_summary
+        required_sections:
+        - file_count
+        - added_files
+        - removed_files
+        - updated_files
+        - validation_result
+        - download_link_if_created
+  acceptance_proposal_schema:
+    required_fields:
+    - step
+    - area
+    - status
+    - proposed_files_or_updates
+    - key_principles
+    - next_step
+    optional_fields:
+    - file_count_change
+    - added_sections
+    - updated_dependencies
+    - validation_updates
+validation:
+  required_checks:
+  - id: AGENT-OUTPUT-RC-001
+    check: agent_response_matches_selected_output_mode
+  fail_conditions:
+  - id: AGENT-OUTPUT-001
+    condition: agent_response_missing_required_section
+    message: Agent response must include all required sections for the selected output mode.
+    severity: error
+    owner: agent/conventions.agent-output.yaml

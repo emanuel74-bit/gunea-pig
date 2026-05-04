@@ -1,0 +1,103 @@
+version: '1.0'
+file:
+  name: conventions.refactoring.yaml
+  path: refactoring/conventions.refactoring.yaml
+  role: refactoring_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Provide entrypoint, file index, local phase contract, and subsystem contract for safe behavior-preserving refactoring
+  without owning global orchestration.
+ownership:
+  owns:
+  - refactoring_system_metadata
+  - refactoring_file_index
+  - refactoring_local_phase_contract
+  - refactoring_system_contract
+  does_not_own:
+  - global_pipeline_order
+  - refactor_strategy_definitions
+  - refactor_strategy_selection
+  - behavior_preservation_validation
+  - artifact_action_selection
+  - implementation_sequence
+  - change_impact_analysis
+activation:
+  mode: entrypoint
+  activates_when:
+  - request_is_refactor_or_refactor_like
+  - refactoring_subsystem_requested
+  skips_when:
+  - request_is_new_feature_only_without_existing_artifact_change
+inputs:
+  required:
+  - behavior_contract
+  optional:
+  - artifact_action_table
+  - risk_classification
+  - codebase_reconnaissance_report
+  - change_impact_report
+outputs:
+  produces:
+  - refactoring_system_result
+  - refactor_strategy_decision
+  - behavior_preservation_requirements
+  - refactor_required_followups
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - refactoring/conventions.refactor-taxonomy.yaml
+  - refactoring/conventions.refactor-strategy.yaml
+  - refactoring/conventions.behavior-preservation.yaml
+  optional_files:
+  - actions/conventions.action-resolution.yaml
+  - risk/conventions.risk-resolution.yaml
+  - planning/conventions.change-impact.yaml
+sections:
+  refactoring_file_index:
+    taxonomy: refactoring/conventions.refactor-taxonomy.yaml
+    strategy: refactoring/conventions.refactor-strategy.yaml
+    behavior_preservation: refactoring/conventions.behavior-preservation.yaml
+  refactoring_local_phase_contract:
+    local_order:
+    - load_refactor_taxonomy
+    - evaluate_behavior_preservation_requirements
+    - select_refactor_strategy
+    - validate_refactor_strategy_decision
+    global_order_owner: core/conventions.orchestrator.yaml
+  refactoring_system_contract:
+    absolute_rules:
+    - id: REFACTOR-SYSTEM-ABS-001
+      rule: Refactoring must preserve behavior unless behavior change is explicitly accepted.
+      fail_condition: refactor_changes_behavior_without_explicit_acceptance
+    - id: REFACTOR-SYSTEM-ABS-002
+      rule: Refactor strategy must coordinate artifact actions, not replace artifact action selection.
+      fail_condition: refactor_strategy_replaces_artifact_action_resolution
+    - id: REFACTOR-SYSTEM-ABS-003
+      rule: Refactor strategy must use global vocabularies rather than redefining risk, contract, boundary, dependency, or
+        action values.
+      fail_condition: refactor_redefines_global_vocabulary
+validation:
+  required_checks:
+  - id: REFACTOR-SYSTEM-CHECK-001
+    check: refactoring_files_follow_file_contract
+    applies_when:
+      refactoring_subsystem_active: true
+  - id: REFACTOR-SYSTEM-CHECK-002
+    check: refactor_strategy_decision_exists_when_refactor_active
+    applies_when:
+      request_is_refactor_or_refactor_like: true
+  fail_conditions:
+  - id: REFACTOR-SYSTEM-001
+    condition: refactor_strategy_decision_missing
+    message: Refactor-like requests require a refactor strategy decision.
+    severity: error
+    owner: refactoring/conventions.refactoring.yaml
+  - id: REFACTOR-SYSTEM-002
+    condition: refactor_strategy_replaces_artifact_action_resolution
+    message: Refactor strategy must coordinate artifact actions, not replace them.
+    severity: error
+    owner: refactoring/conventions.refactoring.yaml
+  - id: REFACTOR-SYSTEM-003
+    condition: refactor_changes_behavior_without_explicit_acceptance
+    message: Behavior-changing refactor requires explicit accepted behavior change.
+    severity: error
+    owner: refactoring/conventions.refactoring.yaml
