@@ -19,18 +19,22 @@ class EnvironmentVariables {
   declare S3_SECRET_ACCESS_KEY: string;
 
   @IsString()
+  declare S3_BUCKET_VIDEOS: string;
+
+  @IsString()
   declare S3_BUCKET_SCAN_RESULTS: string;
 
   @IsString()
-  declare VDF_SCAN_PATH: string;
+  declare STAGING_SCAN_PATH: string;
 
   @IsOptional()
   @IsString()
   S3_ENDPOINT: string = '';
 
   @IsOptional()
-  @IsString()
-  S3_BUCKET_VIDEOS: string = 'videos';
+  @IsInt()
+  @Min(1)
+  STAGING_CONCURRENCY: number = 5;
 
   @IsOptional()
   @IsString()
@@ -68,7 +72,7 @@ class EnvironmentVariables {
   HOSTNAME: string = '';
 }
 
-export interface VdfScanConfig {
+export interface PipelineConfig {
   mongoUri: string;
   rabbitmqUrl: string;
   s3: {
@@ -79,27 +83,32 @@ export interface VdfScanConfig {
     bucketVideos: string;
     bucketScanResults: string;
   };
+  staging: {
+    scanPath: string;
+    concurrency: number;
+  };
   vdf: {
     cliPath: string;
-    scanPath: string;
     batchSize: number;
     batchClaimTtlSeconds: number;
     scannerProfile: string;
     scannerVersion: string;
     resultRetentionSeconds: number;
   };
-  thresholdPolicy: SimilarityThresholdPolicy;
+  grouping: {
+    thresholdPolicy: SimilarityThresholdPolicy;
+  };
   logLevel: string;
   ownerId: string;
 }
 
-export function buildConfig(): VdfScanConfig {
+export function buildConfig(): PipelineConfig {
   const validated = plainToInstance(EnvironmentVariables, process.env, {
     enableImplicitConversion: true,
   });
   const errors = validateSync(validated, { skipMissingProperties: false });
   if (errors.length > 0) {
-    throw new Error(`[vdf-scan-service] Invalid configuration:\n${errors.toString()}`);
+    throw new Error(`[pipeline-service] Invalid configuration:\n${errors.toString()}`);
   }
 
   return {
@@ -113,26 +122,31 @@ export function buildConfig(): VdfScanConfig {
       bucketVideos: validated.S3_BUCKET_VIDEOS,
       bucketScanResults: validated.S3_BUCKET_SCAN_RESULTS,
     },
+    staging: {
+      scanPath: validated.STAGING_SCAN_PATH,
+      concurrency: validated.STAGING_CONCURRENCY,
+    },
     vdf: {
       cliPath: validated.VDF_CLI_PATH,
-      scanPath: validated.VDF_SCAN_PATH,
       batchSize: validated.VDF_BATCH_SIZE,
       batchClaimTtlSeconds: validated.VDF_BATCH_CLAIM_TTL_SECONDS,
       scannerProfile: validated.VDF_SCANNER_PROFILE,
       scannerVersion: validated.VDF_SCANNER_VERSION,
       resultRetentionSeconds: validated.VDF_RESULT_RETENTION_SECONDS,
     },
-    thresholdPolicy: {
-      storeEdgeScore: parseFloat(process.env.GROUPING_SIMILARITY_STORE_EDGE_SCORE ?? '0.88'),
-      autoMergeGroupScore: parseFloat(process.env.GROUPING_SIMILARITY_AUTO_MERGE_SCORE ?? '0.93'),
-      strongDuplicateScore: parseFloat(
-        process.env.GROUPING_SIMILARITY_STRONG_DUPLICATE_SCORE ?? '0.98',
-      ),
-      requireManualReviewBelow: parseFloat(
-        process.env.GROUPING_SIMILARITY_AUTO_MERGE_SCORE ?? '0.93',
-      ),
+    grouping: {
+      thresholdPolicy: {
+        storeEdgeScore: parseFloat(process.env.GROUPING_SIMILARITY_STORE_EDGE_SCORE ?? '0.88'),
+        autoMergeGroupScore: parseFloat(process.env.GROUPING_SIMILARITY_AUTO_MERGE_SCORE ?? '0.93'),
+        strongDuplicateScore: parseFloat(
+          process.env.GROUPING_SIMILARITY_STRONG_DUPLICATE_SCORE ?? '0.98',
+        ),
+        requireManualReviewBelow: parseFloat(
+          process.env.GROUPING_SIMILARITY_AUTO_MERGE_SCORE ?? '0.93',
+        ),
+      },
     },
     logLevel: validated.LOG_LEVEL,
-    ownerId: validated.HOSTNAME || `vdf-scanner-${process.pid}`,
+    ownerId: validated.HOSTNAME || `pipeline-worker-${process.pid}`,
   };
 }

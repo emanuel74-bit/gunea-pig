@@ -10,11 +10,12 @@ import {
   S3Adapter,
   RabbitMQPublisher,
 } from '@gunea-pig/shared';
-import { BatchClaimer } from './batch/batch-claimer';
-import { VdfRunner } from './batch/vdf-runner';
-import { Purger } from './batch/purger';
-import { ManifestService } from './services/manifest.service';
-import { ScanOrchestratorService } from './services/scan-orchestrator.service';
+import { ScanOrchestrator } from './application/scan.orchestrator';
+import { BatchClaimerService } from './infrastructure/batch-claimer.service';
+import { VdfRunnerAdapter } from './infrastructure/vdf-runner.adapter';
+import { ScanPurgerService } from './infrastructure/scan-purger.service';
+import { VdfManifestNormalizer } from './infrastructure/vdf-manifest.normalizer';
+import { VideoScanRepository } from './infrastructure/video-scan.repository';
 import { buildConfig } from './config';
 import { VDF_SCAN_CONFIG, SCAN_OUTPUT_DIR } from './injection-tokens';
 
@@ -34,15 +35,14 @@ const config = buildConfig();
     ]),
   ],
   providers: [
-    // Config token — injected via @Inject(VDF_SCAN_CONFIG)
     { provide: VDF_SCAN_CONFIG, useValue: config },
-    // Scan output dir — injected via @Inject(SCAN_OUTPUT_DIR)
     { provide: SCAN_OUTPUT_DIR, useValue: config.vdf.scanPath },
-    BatchClaimer,
-    VdfRunner,
-    ManifestService,
-    Purger,
-    ScanOrchestratorService,
+    VideoScanRepository,
+    BatchClaimerService,
+    VdfRunnerAdapter,
+    VdfManifestNormalizer,
+    ScanPurgerService,
+    ScanOrchestrator,
     {
       provide: S3Adapter,
       useFactory: () =>

@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
 import {
   VideoDocument,
   VideoSchema,
@@ -10,27 +9,17 @@ import {
   SimilarityEdgeSchema,
   SimilarityGroupDocument,
   SimilarityGroupSchema,
-  S3Adapter,
-  RabbitMQPublisher,
 } from '@gunea-pig/shared';
-import { ScanCompletedConsumer } from './consumers/scan-completed.consumer';
+import { ScanCompletedConsumer } from './transport/scan-completed.consumer';
 import { ProcessScanHandler } from './application/process-scan.handler';
 import { ScanResultClient } from './infrastructure/scan-result.client';
 import { SimilarityEdgeRepository } from './infrastructure/similarity-edge.repository';
 import { SimilarityGroupRepository } from './infrastructure/similarity-group.repository';
 import { VideoSimilarityRepository } from './infrastructure/video-similarity.repository';
 import { ScanBatchRepository } from './infrastructure/scan-batch.repository';
-import { buildConfig, GROUPING_CONFIG } from './config';
-
-const config = buildConfig();
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRoot(config.mongoUri, {
-      serverSelectionTimeoutMS: 10_000,
-      socketTimeoutMS: 45_000,
-    }),
     MongooseModule.forFeature([
       { name: VideoDocument.name, schema: VideoSchema },
       { name: ScanBatchDocument.name, schema: ScanBatchSchema },
@@ -40,31 +29,12 @@ const config = buildConfig();
   ],
   controllers: [ScanCompletedConsumer],
   providers: [
-    { provide: GROUPING_CONFIG, useValue: config },
     ProcessScanHandler,
     ScanResultClient,
     SimilarityEdgeRepository,
     SimilarityGroupRepository,
     VideoSimilarityRepository,
     ScanBatchRepository,
-    {
-      provide: S3Adapter,
-      useFactory: () =>
-        new S3Adapter({
-          endpoint: config.s3.endpoint,
-          region: config.s3.region,
-          accessKeyId: config.s3.accessKeyId,
-          secretAccessKey: config.s3.secretAccessKey,
-        }),
-    },
-    {
-      provide: RabbitMQPublisher,
-      useFactory: async () => {
-        const publisher = new RabbitMQPublisher(config.rabbitmqUrl);
-        await publisher.connect();
-        return publisher;
-      },
-    },
   ],
 })
-export class AppModule {}
+export class GroupingModule {}

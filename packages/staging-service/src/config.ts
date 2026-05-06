@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsInt, IsString, Min, validateSync } from 'class-validator';
+import { IsInt, IsOptional, IsString, Min, validateSync } from 'class-validator';
 
 class EnvironmentVariables {
   @IsString()
@@ -23,26 +23,18 @@ class EnvironmentVariables {
   @IsString()
   declare STAGING_SCAN_PATH: string;
 
+  @IsOptional()
+  @IsString()
+  S3_ENDPOINT: string = '';
+
+  @IsOptional()
   @IsInt()
   @Min(1)
   STAGING_CONCURRENCY: number = 5;
 
-  @IsString()
-  S3_ENDPOINT: string = '';
-
+  @IsOptional()
   @IsString()
   LOG_LEVEL: string = 'info';
-}
-
-export function validateConfig(config: Record<string, unknown>) {
-  const validated = plainToInstance(EnvironmentVariables, config, {
-    enableImplicitConversion: true,
-  });
-  const errors = validateSync(validated, { skipMissingProperties: false });
-  if (errors.length > 0) {
-    throw new Error(`Config validation error: ${errors.toString()}`);
-  }
-  return validated;
 }
 
 export interface StagingConfig {
@@ -61,18 +53,26 @@ export interface StagingConfig {
 }
 
 export function buildConfig(): StagingConfig {
+  const validated = plainToInstance(EnvironmentVariables, process.env, {
+    enableImplicitConversion: true,
+  });
+  const errors = validateSync(validated, { skipMissingProperties: false });
+  if (errors.length > 0) {
+    throw new Error(`[staging-service] Invalid configuration:\n${errors.toString()}`);
+  }
+
   return {
-    mongoUri: process.env.MONGODB_URI ?? '',
-    rabbitmqUrl: process.env.RABBITMQ_URL ?? '',
+    mongoUri: validated.MONGODB_URI,
+    rabbitmqUrl: validated.RABBITMQ_URL,
     s3: {
-      endpoint: process.env.S3_ENDPOINT || undefined,
-      region: process.env.S3_REGION ?? 'us-east-1',
-      accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
-      secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? '',
-      bucketVideos: process.env.S3_BUCKET_VIDEOS ?? 'videos',
+      endpoint: validated.S3_ENDPOINT || undefined,
+      region: validated.S3_REGION,
+      accessKeyId: validated.S3_ACCESS_KEY_ID,
+      secretAccessKey: validated.S3_SECRET_ACCESS_KEY,
+      bucketVideos: validated.S3_BUCKET_VIDEOS,
     },
-    stagingScanPath: process.env.STAGING_SCAN_PATH ?? '/mnt/scan-staging',
-    stagingConcurrency: parseInt(process.env.STAGING_CONCURRENCY ?? '5', 10),
-    logLevel: process.env.LOG_LEVEL ?? 'info',
+    stagingScanPath: validated.STAGING_SCAN_PATH,
+    stagingConcurrency: validated.STAGING_CONCURRENCY,
+    logLevel: validated.LOG_LEVEL,
   };
 }

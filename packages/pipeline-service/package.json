@@ -1,10 +1,10 @@
 {
-  "name": "@gunea-pig/vdf-scan-service",
+  "name": "@gunea-pig/pipeline-service",
   "version": "1.0.0",
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/vdf-scan-service/src/main.js",
+    "start": "node dist/pipeline-service/src/main.js",
     "start:dev": "ts-node -r tsconfig-paths/register src/main.ts",
     "lint": "eslint src --ext .ts"
   },

@@ -8,7 +8,30 @@ import { buildConfig } from './config';
 async function bootstrap(): Promise<void> {
   const config = buildConfig();
 
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] });
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [config.rabbitmqUrl],
+      queue: QUEUE_NAMES.STAGING_NEW_VIDEO,
+      queueOptions: {
+        durable: true,
+        arguments: {
+          'x-dead-letter-exchange': QUEUE_EXCHANGES.VIDEO_EVENTS_DLX,
+          'x-dead-letter-routing-key': ROUTING_KEYS.DEAD_VIDEO_READY,
+        },
+      },
+      exchangeType: 'topic',
+      exchange: QUEUE_EXCHANGES.VIDEO_EVENTS,
+      routingKey: ROUTING_KEYS.VIDEO_READY_FOR_SCAN,
+      prefetchCount: config.staging.concurrency,
+      noAck: false,
+      isGlobalPrefetchCount: false,
+    },
+  });
+
+  app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.RMQ,
     options: {
       urls: [config.rabbitmqUrl],
@@ -38,11 +61,11 @@ async function bootstrap(): Promise<void> {
     process.exit(0);
   });
 
-  await app.listen();
-  process.stdout.write('[grouping-service] Listening for ScanCompletedEvent\n');
+  await app.startAllMicroservices();
+  process.stdout.write('[pipeline-service] Listening for events\n');
 }
 
 bootstrap().catch((err: Error) => {
-  process.stderr.write(`[grouping-service] Fatal startup error: ${err.message}\n`);
+  process.stderr.write(`[pipeline-service] Fatal startup error: ${err.message}\n`);
   process.exit(1);
 });

@@ -1,14 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
-import {
-  VideoDocument,
-  VideoSchema,
-} from '@gunea-pig/shared';
-import { StagingHandler } from './handlers/staging.handler';
-import { VideoMongoService } from './services/video-mongo.service';
-import { FileStagingService } from './services/file-staging.service';
-import { S3Adapter } from '@gunea-pig/shared';
+import { VideoDocument, VideoSchema, S3Adapter } from '@gunea-pig/shared';
+import { VideoReadyConsumer } from './transport/video-ready.consumer';
+import { StageVideoHandler } from './application/stage-video.handler';
+import { VideoRepository } from './infrastructure/video.repository';
+import { FileStagingAdapter } from './infrastructure/file-staging.adapter';
 import { buildConfig } from './config';
 
 const config = buildConfig();
@@ -20,13 +17,12 @@ const config = buildConfig();
       serverSelectionTimeoutMS: 10_000,
       socketTimeoutMS: 45_000,
     }),
-    MongooseModule.forFeature([
-      { name: VideoDocument.name, schema: VideoSchema },
-    ]),
+    MongooseModule.forFeature([{ name: VideoDocument.name, schema: VideoSchema }]),
   ],
-  controllers: [StagingHandler],
+  controllers: [VideoReadyConsumer],
   providers: [
-    VideoMongoService,
+    StageVideoHandler,
+    VideoRepository,
     {
       provide: S3Adapter,
       useFactory: () =>
@@ -38,8 +34,8 @@ const config = buildConfig();
         }),
     },
     {
-      provide: FileStagingService,
-      useFactory: (s3: S3Adapter) => new FileStagingService(s3, config.stagingScanPath),
+      provide: FileStagingAdapter,
+      useFactory: (s3: S3Adapter) => new FileStagingAdapter(s3, config.stagingScanPath),
       inject: [S3Adapter],
     },
   ],
