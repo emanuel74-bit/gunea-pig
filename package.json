@@ -11,9 +11,7 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "build:shared": "npm run build -w packages/shared",
-    "build:staging": "npm run build -w packages/staging-service",
-    "build:scanner": "npm run build -w packages/vdf-scan-service",
-    "build:grouping": "npm run build -w packages/grouping-service",
+    "build:pipeline": "npm run build -w packages/pipeline-service",
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   }
