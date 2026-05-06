@@ -48,41 +48,189 @@ sections:
     - testing_risk
   risk_concerns:
     behavior:
-      definition: behavior concern.
+      definition: Risk that externally observable behavior changes, regresses, or diverges from the behavior contract.
+      detection_signals:
+      - behavior_signal_detected
+      - behavior_surface_changed
+      requires_review_when:
+      - behavior_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     public_contract:
-      definition: public_contract concern.
+      definition: Risk that a public/API/module/event contract changes in a way consumers can observe or break.
+      detection_signals:
+      - public_contract_signal_detected
+      - public_contract_surface_changed
+      requires_review_when:
+      - public_contract_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     security:
-      definition: security concern.
+      definition: Risk affecting confidentiality, integrity, availability, trust boundaries, or secure defaults.
+      detection_signals:
+      - security_signal_detected
+      - security_surface_changed
+      requires_review_when:
+      - security_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     authentication:
-      definition: authentication concern.
+      definition: Risk affecting identity verification, session validity, credentials, or auth flow correctness.
+      detection_signals:
+      - authentication_signal_detected
+      - authentication_surface_changed
+      requires_review_when:
+      - authentication_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     authorization:
-      definition: authorization concern.
+      definition: Risk affecting permissions, access checks, role scope, tenant access, or policy enforcement.
+      detection_signals:
+      - authorization_signal_detected
+      - authorization_surface_changed
+      requires_review_when:
+      - authorization_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     tenant_boundary:
-      definition: tenant_boundary concern.
+      definition: Risk that data, permissions, or behavior leaks across tenant/account/workspace boundaries.
+      detection_signals:
+      - tenant_boundary_signal_detected
+      - tenant_boundary_surface_changed
+      requires_review_when:
+      - tenant_boundary_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     persistence:
-      definition: persistence concern.
+      definition: Risk affecting stored data shape, read/write consistency, repository behavior, or durability.
+      detection_signals:
+      - persistence_signal_detected
+      - persistence_surface_changed
+      requires_review_when:
+      - persistence_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     migration:
-      definition: migration concern.
+      definition: Risk from schema/data migrations, backfills, rollback behavior, or version compatibility.
+      detection_signals:
+      - migration_signal_detected
+      - migration_surface_changed
+      requires_review_when:
+      - migration_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     data_loss:
-      definition: data_loss concern.
+      definition: Risk that existing or future persisted data may be lost, corrupted, made unreachable, or incorrectly transformed.
+      detection_signals:
+      - data_loss_signal_detected
+      - data_loss_surface_changed
+      requires_review_when:
+      - data_loss_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     external_integration:
-      definition: external_integration concern.
+      definition: Risk from third-party APIs, queues, webhooks, SDKs, providers, network behavior, or external contracts.
+      detection_signals:
+      - external_integration_signal_detected
+      - external_integration_surface_changed
+      requires_review_when:
+      - external_integration_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     payment:
-      definition: payment concern.
+      definition: Risk affecting money movement, billing, pricing, invoices, refunds, payment provider callbacks, or financial
+        correctness.
+      detection_signals:
+      - payment_signal_detected
+      - payment_surface_changed
+      requires_review_when:
+      - payment_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     async_processing:
-      definition: async_processing concern.
+      definition: Risk from asynchronous execution where ordering, visibility, retries, delays, concurrency, or eventual consistency
+        affects behavior.
+      detection_signals:
+      - async_processing_signal_detected
+      - async_processing_surface_changed
+      requires_review_when:
+      - async_processing_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     idempotency:
-      definition: idempotency concern.
+      definition: Risk that repeated requests/messages/jobs produce duplicate side effects or fail to safely handle retries.
+      detection_signals:
+      - idempotency_signal_detected
+      - idempotency_surface_changed
+      requires_review_when:
+      - idempotency_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     retry:
-      definition: retry concern.
+      definition: Risk that retry behavior causes duplicate work, stuck loops, backoff failures, timeout amplification, or
+        inconsistent state.
+      detection_signals:
+      - retry_signal_detected
+      - retry_surface_changed
+      requires_review_when:
+      - retry_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     performance:
-      definition: performance concern.
+      definition: Risk that latency, throughput, memory, CPU, or query cost regresses.
+      detection_signals:
+      - performance_signal_detected
+      - performance_surface_changed
+      requires_review_when:
+      - performance_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     observability:
-      definition: observability concern.
+      definition: Risk that failures cannot be detected, traced, logged, or diagnosed in operation.
+      detection_signals:
+      - observability_signal_detected
+      - observability_surface_changed
+      requires_review_when:
+      - observability_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     runtime_wiring:
-      definition: runtime_wiring concern.
+      definition: Risk from DI/provider registration, module imports, lifecycle ordering, or runtime configuration.
+      detection_signals:
+      - runtime_wiring_signal_detected
+      - runtime_wiring_surface_changed
+      requires_review_when:
+      - runtime_wiring_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
     testing_gap:
-      definition: testing_gap concern.
+      definition: Risk that required behavior, regression surface, failure mode, or contract compatibility lacks executable
+        validation.
+      detection_signals:
+      - testing_gap_signal_detected
+      - testing_gap_surface_changed
+      requires_review_when:
+      - testing_gap_surface_changed
+      - risk_level_high_or_unknown
+      must_not_be_used_for:
+      - local_renaming_without_global_taxonomy_match
   risk_levels:
     low:
       definition: low severity risk.
@@ -152,6 +300,8 @@ sections:
     - rollback_or_recovery_plan
     - integration_or_contract_test_review
     - final_validation
+  semantic_depth_restoration:
+    enriched_generic_risk_concern_definitions: true
 validation:
   fail_conditions:
   - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-FC-001

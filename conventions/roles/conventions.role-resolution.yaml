@@ -130,6 +130,68 @@ sections:
         artifact_crosses_io_boundary: true
       tie_breakers:
       - choose service only when no boundary-specific role applies
+  canonical_role_evaluation_order: &id003
+  - detect_transport_layer
+  - detect_execution_layer
+  - detect_decision_layer
+  - detect_transformation_layer
+  - detect_domain_layer
+  - detect_data_layer
+  - detect_integration_layer
+  - detect_construction_layer
+  - detect_validation_layer
+  - detect_resolution_layer
+  - detect_structure_layer
+  - detect_config_layer
+  - detect_error_layer
+  - detect_type_layer
+  - detect_constants_layer
+  - fallback
+  canonical_role_input_contract: &id002
+    class_description:
+      responsibilities: []
+      has_side_effects: boolean
+      mutates_state: boolean
+      depends_on_external_systems: boolean
+      contains_business_rules: boolean
+      is_pure_functional: boolean
+      scope: single_action | multi_step | utility | structural | data | decision
+      input_output_shape: none | transforms | validates | constructs
+      interacts_with:
+      - http
+      - websocket
+      - database
+      - external_api
+      - event_system
+      - none
+  canonical_role_classifier_system: &id001
+    name: class-role-classifier
+    purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
+      and constraints.
+
+      '
+    philosophy:
+    - Every class has exactly one role
+    - Roles are defined by responsibility, not naming
+    - If multiple roles apply → decomposition required
+    - If unclear → fail_closed
+    - Behavior defines placement, not intention
+    enforcement:
+      mode: strict
+      ambiguity_policy: fail_closed
+      multi_role_policy: reject_and_decompose
+  semantic_depth_restoration:
+    restored_from: conventions.roles.yaml
+    restoration_scope:
+    - system
+    - input
+    - evaluation_order
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source:
+    system: *id001
+    input: *id002
+    evaluation_order: *id003
 validation:
   fail_conditions:
   - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-001

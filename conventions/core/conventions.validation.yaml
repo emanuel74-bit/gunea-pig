@@ -149,6 +149,37 @@ sections:
     - trigger_left_active_without_resolution
     - downstream_phase_consumed_invalidated_output
     - revision_request_missing_required_field
+  semantic_depth_validation:
+    fail_conditions:
+    - id: CORE-SEMANTIC-001
+      condition: definition_is_generic_placeholder
+      message: Vocabulary definitions must not be generated placeholders or name-only descriptions.
+      severity: error
+    - id: CORE-SEMANTIC-002
+      condition: enum_value_missing_semantic_definition
+      message: Every enum value in a taxonomy must have a semantic definition or canonical source record.
+      severity: error
+    - id: CORE-SEMANTIC-003
+      condition: decision_value_missing_choose_or_reject_criteria
+      message: Decision-engine values must include choose_when/use_when/signals or explicit rejection/blocking criteria.
+      severity: error
+    - id: CORE-SEMANTIC-004
+      condition: canonical_source_content_thinned
+      message: Canonical source content must be preserved under normalized schema and must not be replaced with summaries.
+      severity: error
+    - id: CORE-SEMANTIC-005
+      condition: taxonomy_entry_missing_detection_signals
+      message: Taxonomy entries that drive agent behavior must include detection signals or a canonical source equivalent.
+      severity: error
+  validation_algorithms:
+    semantic_depth_validation_algorithm:
+      steps:
+      - load_taxonomy_files
+      - check_enum_values_have_definitions
+      - detect_placeholder_definitions
+      - check_decision_values_have_use_when_or_signals
+      - verify_canonical_restored_source_when_source_file_available
+      - emit_failures
 validation:
   required_checks: []
   fail_conditions:

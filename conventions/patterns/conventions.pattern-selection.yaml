@@ -34,6 +34,76 @@ sections:
   - evaluate_simpler_alternative
   - select_pattern_if_justified
   - record_rejected_patterns
+  canonical_decision_flow: &id001
+  - step: detect_primary_intent
+    action: 'Match feature description against category triggers (creational / structural / behavioral)
+
+      '
+  - step: detect_problem_signals
+    action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
+      \  - structure composition issues\n"
+  - step: candidate_patterns
+    action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
+  - step: eliminate_conflicts
+    action: 'Remove patterns where avoid_when conditions are triggered
+
+      '
+  - step: rank_patterns
+    criteria:
+    - simplicity
+    - minimal abstraction
+    - alignment with problem
+    - scalability
+  - step: output
+    format:
+      primary_pattern: string
+      alternatives:
+      - string
+      reasoning: text explanation
+      confidence: low|medium|high
+  canonical_heuristics: &id002
+  - rule: avoid_pattern_if_simple_solution_exists
+  - rule: do_not_use_singleton_for_convenience
+  - rule: prefer_strategy_over_conditionals
+  - rule: prefer_composition_over_inheritance
+  - rule: avoid_overengineering_for_small_features
+  canonical_input_schema: &id003
+    feature_description: string
+    constraints:
+      scalability: low|medium|high
+      flexibility: low|medium|high
+      performance: low|medium|high
+    signals:
+      dynamic_behavior: boolean
+      complex_creation: boolean
+      many_dependencies: boolean
+      conditional_logic: boolean
+  canonical_output_schema: &id004
+    primary_pattern: string
+    category: creational|structural|behavioral
+    alternatives:
+    - string
+    reasoning: string
+    tradeoffs:
+      pros:
+      - string
+      cons:
+      - string
+    confidence: low|medium|high
+  semantic_depth_restoration:
+    restored_from: conventions.pattern.yaml
+    restoration_scope:
+    - decision_flow
+    - heuristics
+    - input_schema
+    - output_schema
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source:
+    decision_flow: *id001
+    heuristics: *id002
+    input_schema: *id003
+    output_schema: *id004
 validation:
   fail_conditions:
   - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-001

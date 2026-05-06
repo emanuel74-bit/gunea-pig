@@ -43,6 +43,105 @@ sections:
     keep_flat_when:
     - few artifacts
     - readability improves
+  canonical_structure_strategy_source:
+  - classify_feature_modules
+  - validate_feature_based_structure
+  - classify_folder_by_depth
+  - validate_layer_assignment
+  - validate_internal_module_structure
+  - validate_dependency_graph
+  - validate_data_flow
+  - validate_execution_constraints
+  - validate_cross_module_rules
+  - validate_file_rules
+  - validate_naming
+  - validate_shared_code
+  - validate_scalability
+  - detect_anti_patterns
+  - validate_heuristics
+  canonical_structure_hierarchy_and_layers: &id001
+    feature_structure:
+      rule: Each module represents a distinct business capability
+      constraints:
+      - Modules MUST be independently understandable
+      - Modules MUST be independently testable
+      - No implicit cross-module coupling
+      detection:
+        positive:
+        - top-level folders represent domains
+        negative:
+        - top-level folders named by technical type
+      violation:
+      - structure organized by technical type
+    module_structure:
+      required_folders:
+      - controllers
+      - services
+      - domain
+      - repositories
+      optional_folders:
+      - dto
+      - mappers
+      - types
+      - policies
+      - validators
+      - events
+      - interfaces
+      constraints:
+      - each folder MUST have a single responsibility
+      - no cross-folder leakage
+      - files MUST belong to exactly one layer
+    architecture_layers:
+      layers:
+      - transport
+      - application
+      - domain
+      - infrastructure
+      mapping:
+        controllers: transport
+        services: application
+        domain: domain
+        repositories: infrastructure
+      dependency_direction:
+        rule: dependencies MUST be unidirectional and inward
+        constraints:
+        - no reverse dependencies
+        - no circular dependencies
+        allowed:
+          transport:
+          - application
+          application:
+          - domain
+          - interfaces
+          domain: []
+          infrastructure:
+          - domain
+          - interfaces
+    file_rules:
+      single_responsibility:
+        rule: each file MUST represent exactly one intent
+      single_export:
+        rule: one primary export per file
+      naming:
+        must:
+        - reflect exact behavior
+        forbidden:
+        - utils
+        - helpers
+        - common
+      size:
+        max_lines: 200
+  semantic_depth_restoration:
+    restored_from: conventions.structure.yaml
+    restoration_scope:
+    - evaluation_order
+    - feature_structure
+    - module_structure
+    - architecture_layers
+    - file_rules
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source: *id001
 validation:
   fail_conditions:
   - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-STRATEGY-YAML-FC-001

@@ -38,6 +38,59 @@ sections:
   - select_patterns
   - validate_restrictions
   - validate_role_pattern_compatibility
+  canonical_system: &id001
+    name: design-pattern-selector
+    purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
+      rules derived from the Refactoring.Guru catalog.
+
+      '
+    philosophy:
+    - Pattern follows problem, not preference
+    - Classify intent before selecting pattern
+    - Avoid over-engineering
+    - Prefer simplest valid pattern
+  canonical_classification: &id002
+    categories:
+      creational:
+        description: 'Focused on object creation mechanisms that increase flexibility and reuse.
+
+          '
+        triggers:
+        - object creation is complex
+        - object type decided at runtime
+        - avoid direct constructor usage
+        - control instance lifecycle
+        - reduce coupling to concrete classes
+      structural:
+        description: 'Focused on composing classes and objects into larger structures.
+
+          '
+        triggers:
+        - combine multiple components
+        - wrap or adapt existing code
+        - simplify complex subsystem
+        - optimize memory usage
+        - control access to object
+      behavioral:
+        description: 'Focused on communication and responsibility between objects.
+
+          '
+        triggers:
+        - multiple objects interact
+        - behavior changes at runtime
+        - decouple sender and receiver
+        - define workflows or chains
+        - encapsulate algorithms
+  semantic_depth_restoration:
+    restored_from: conventions.pattern.yaml
+    restoration_scope:
+    - system
+    - classification
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source:
+    system: *id001
+    classification: *id002
 validation:
   required_checks: []
   fail_conditions: []

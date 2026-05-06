@@ -37,6 +37,258 @@ sections:
   - Structure fills only unspecified folder hierarchy details
   - Use post_action_artifact_candidates
   - Do not let structure redefine architecture
+  canonical_structure_contract_v5: &id001
+    meta:
+      role: senior_software_architect
+      objective: 'Deterministically design and enforce a production-grade codebase using strict layering, intent-driven decomposition,
+        and enforceable constraints.
+
+        '
+      philosophy:
+      - Decomposition precedes structure
+      - Intent defines artifact
+      - No ambiguity allowed
+      - Consistency over convenience
+      - Design must be derivable, not guessed
+      - structure reflects business capabilities
+      - strict separation of concerns
+      - small, focused, composable units only
+      enforcement_mode: strict
+      ambiguity_policy: fail_closed
+    global_principles:
+      must:
+      - single_responsibility_principle
+      - high_cohesion
+      - low_coupling
+      - feature_based_structure
+      - strict_module_boundaries
+      - explicit_naming
+      - independent_modules
+      guarantees:
+      - developer_can_locate_any_feature_in_seconds
+      - no_prior_knowledge_required_to_navigate
+      - linear_scalability_of_structure
+    evaluation_order:
+    - classify_feature_modules
+    - validate_feature_based_structure
+    - classify_folder_by_depth
+    - validate_layer_assignment
+    - validate_internal_module_structure
+    - validate_dependency_graph
+    - validate_data_flow
+    - validate_execution_constraints
+    - validate_cross_module_rules
+    - validate_file_rules
+    - validate_naming
+    - validate_shared_code
+    - validate_scalability
+    - detect_anti_patterns
+    - validate_heuristics
+    feature_structure:
+      rule: Each module represents a distinct business capability
+      constraints:
+      - Modules MUST be independently understandable
+      - Modules MUST be independently testable
+      - No implicit cross-module coupling
+      detection:
+        positive:
+        - top-level folders represent domains
+        negative:
+        - top-level folders named by technical type
+      violation:
+      - structure organized by technical type
+    module_structure:
+      required_folders:
+      - controllers
+      - services
+      - domain
+      - repositories
+      optional_folders:
+      - dto
+      - mappers
+      - types
+      - policies
+      - validators
+      - events
+      - interfaces
+      constraints:
+      - each folder MUST have a single responsibility
+      - no cross-folder leakage
+      - files MUST belong to exactly one layer
+    architecture_layers:
+      layers:
+      - transport
+      - application
+      - domain
+      - infrastructure
+      mapping:
+        controllers: transport
+        services: application
+        domain: domain
+        repositories: infrastructure
+      dependency_direction:
+        rule: dependencies MUST be unidirectional and inward
+        constraints:
+        - no reverse dependencies
+        - no circular dependencies
+        allowed:
+          transport:
+          - application
+          application:
+          - domain
+          - interfaces
+          domain: []
+          infrastructure:
+          - domain
+          - interfaces
+    internal_rules:
+      controllers:
+        must_not:
+        - contain business logic
+        - call repositories
+      services:
+        must:
+        - represent single intent
+        - be composable
+        - be stateless
+        must_not:
+        - contain infrastructure logic
+        - use raw persistence models
+      domain:
+        must:
+        - be pure
+        - contain core business rules
+        must_not:
+        - depend on frameworks
+        - perform IO
+      repositories:
+        must:
+        - encapsulate persistence
+        - hide database/ORM
+        must_not:
+        - leak internal models
+    file_rules:
+      single_responsibility:
+        rule: each file MUST represent exactly one intent
+      single_export:
+        rule: one primary export per file
+      naming:
+        must:
+        - reflect exact behavior
+        forbidden:
+        - utils
+        - helpers
+        - common
+      size:
+        max_lines: 200
+    service_rules:
+      constraints:
+      - services MUST be stateless
+      - services MUST be small and composable
+      - services MUST implement one intent only
+      split_conditions:
+      - multiple responsibilities
+      - growing orchestration complexity
+    domain_rules:
+      location: domain/
+      must:
+      - contain core business rules
+      - be pure
+      must_not:
+      - import frameworks
+      - import infrastructure
+      - perform IO
+    repository_rules:
+      location: repositories/
+      constraints:
+      - ALL persistence logic MUST live here
+      - no repository usage outside services
+    data_transformation:
+      dto:
+        role: external contracts
+      mappers:
+        role: boundary isolation
+      constraints:
+      - no raw persistence models outside repositories
+      - mapping layer MUST isolate transformations
+      - domain must not depend on DTOs
+    cross_module_rules:
+      communication:
+        allowed:
+        - services
+        - interfaces
+        forbidden:
+        - deep imports
+        - bypassing module boundaries
+        - cross_module_internal_access
+    shared_code:
+      allowed:
+      - cross-cutting concerns
+      - truly generic utilities
+      forbidden:
+      - mixed domain logic
+      - dumping folders
+    type_rules:
+      allowed_locations:
+      - types/
+      - dto/
+      forbidden:
+      - inline scattered types
+    scalability:
+      rules:
+      - design for change
+      - prefer extensibility over shortcuts
+      - avoid tight coupling
+      guarantees:
+      - new features added without modifying existing modules
+      - no cross-module coupling introduced
+    data_flow:
+      canonical:
+      - ENTRY -> APPLICATION -> DECISION -> DOMAIN -> INFRASTRUCTURE
+      rules:
+      - flow MUST be unidirectional
+      - APPLICATION orchestrates but does not persist
+      - INFRASTRUCTURE handles all IO
+    anti_patterns:
+      folder_by_type:
+        signal:
+        - global technical folders
+      god_module:
+        signal:
+        - multiple domains in one module
+      god_service:
+        signal:
+        - multiple intents in one service
+      scattered_logic:
+        signal:
+        - related logic across unrelated folders
+      deep_nesting:
+        signal:
+        - unclear nested structure
+    refactoring:
+      steps:
+      - identify capabilities
+      - decompose to atomic units
+      - classify intents
+      - assign layers
+      - split responsibilities
+      - rename for clarity
+      - remove duplication
+      - enforce boundaries
+    heuristics:
+      completion_condition:
+      - no rule violations
+      - all units single intent
+      - all dependencies valid
+      - structure is derivable and unambiguous
+  semantic_depth_restoration:
+    restored_from: conventions.structure.yaml
+    restoration_scope:
+    - architecture_contract_v5
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source:
+    architecture_contract_v5: *id001
 validation:
   fail_conditions:
   - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-001

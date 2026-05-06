@@ -86,28 +86,56 @@ sections:
     - stub
     - spy
     - test_factory
+    - selector
+    - domain
+    - event
+    - listener
+    - publisher
+    - dto
+    - error
+    - types
+    - constants
+    - enum
+    - util
   role_definitions:
     module:
-      definition: module artifact role.
-      choose_when:
-      - artifact responsibility matches module
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .module.ts
+      match: &id055
+        scope: structural
+      rules: &id056
+      - wires dependencies
+      forbidden: &id057
+      - contains_business_rules
+      output: module
+      canonical_source: conventions.roles.yaml#roles
+      definition: module role. wires dependencies
     controller:
-      definition: controller artifact role.
-      choose_when:
-      - artifact responsibility matches controller
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .controller.ts
+      match: &id001
+        interacts_with:
+        - http
+      rules: &id002
+      - handles incoming requests
+      - delegates logic outward
+      forbidden: &id003
+      - contains_business_rules
+      - has_side_effects
+      output: controller
+      canonical_source: conventions.roles.yaml#roles
+      definition: controller role. handles incoming requests delegates logic outward
     gateway:
-      definition: gateway artifact role.
-      choose_when:
-      - artifact responsibility matches gateway
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .gateway.ts
+      match: &id004
+        interacts_with:
+        - websocket
+      rules: &id005
+      - manages connections
+      - handles real-time messaging
+      forbidden: &id006
+      - contains_business_rules
+      output: gateway
+      canonical_source: conventions.roles.yaml#roles
+      definition: gateway role. manages connections handles real-time messaging
     webhook:
       definition: webhook artifact role.
       choose_when:
@@ -130,19 +158,27 @@ sections:
       - multiple primary responsibilities detected
       suffix: .producer.ts
     service:
-      definition: service artifact role.
-      choose_when:
-      - artifact responsibility matches service
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .service.ts
+      match: &id009
+        has_side_effects: true
+        scope: multi_step
+      rules: &id010
+      - coordinates dependencies
+      - owns side effects
+      output: service
+      canonical_source: conventions.roles.yaml#roles
+      definition: service role. coordinates dependencies owns side effects
     use_case:
-      definition: use_case artifact role.
-      choose_when:
-      - artifact responsibility matches use_case
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .use-case.ts
+      match: &id007
+        scope: single_action
+        contains_business_rules: true
+      rules: &id008
+      - one input → one outcome
+      - encapsulates full action
+      output: use_case
+      canonical_source: conventions.roles.yaml#roles
+      definition: use_case role. one input → one outcome encapsulates full action
     handler:
       definition: handler artifact role.
       choose_when:
@@ -165,12 +201,17 @@ sections:
       - multiple primary responsibilities detected
       suffix: .query.ts
     orchestrator:
-      definition: orchestrator artifact role.
-      choose_when:
-      - artifact responsibility matches orchestrator
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .orchestrator.ts
+      match: &id011
+        scope: multi_step
+        contains_business_rules: false
+      rules: &id012
+      - controls execution flow
+      forbidden: &id013
+      - contains_business_rules
+      output: orchestrator
+      canonical_source: conventions.roles.yaml#roles
+      definition: orchestrator role. controls execution flow
     workflow:
       definition: workflow artifact role.
       choose_when:
@@ -179,12 +220,16 @@ sections:
       - multiple primary responsibilities detected
       suffix: .workflow.ts
     policy:
-      definition: policy artifact role.
-      choose_when:
-      - artifact responsibility matches policy
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .policy.ts
+      match: &id014
+        contains_business_rules: true
+        mutates_state: false
+        has_side_effects: false
+      rules: &id015
+      - returns decision
+      output: policy
+      canonical_source: conventions.roles.yaml#roles
+      definition: policy role. returns decision
     rule:
       definition: rule artifact role.
       choose_when:
@@ -193,12 +238,15 @@ sections:
       - multiple primary responsibilities detected
       suffix: .rule.ts
     specification:
-      definition: specification artifact role.
-      choose_when:
-      - artifact responsibility matches specification
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .specification.ts
+      match: &id016
+        contains_business_rules: true
+        is_composable: true
+      rules: &id017
+      - composable logic
+      output: specification
+      canonical_source: conventions.roles.yaml#roles
+      definition: specification role. composable logic
     invariant:
       definition: invariant artifact role.
       choose_when:
@@ -242,12 +290,17 @@ sections:
       - multiple primary responsibilities detected
       suffix: .domain-event.ts
     repository:
-      definition: repository artifact role.
-      choose_when:
-      - artifact responsibility matches repository
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .repository.ts
+      match: &id036
+        interacts_with:
+        - database
+      rules: &id037
+      - data access abstraction
+      forbidden: &id038
+      - contains_business_rules
+      output: repository
+      canonical_source: conventions.roles.yaml#roles
+      definition: repository role. data access abstraction
     port:
       definition: port artifact role.
       choose_when:
@@ -256,40 +309,53 @@ sections:
       - multiple primary responsibilities detected
       suffix: .port.ts
     adapter:
-      definition: adapter artifact role.
-      choose_when:
-      - artifact responsibility matches adapter
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .adapter.ts
+      match: &id043
+        transforms_interfaces: true
+      rules: &id044
+      - bridges systems
+      output: adapter
+      canonical_source: conventions.roles.yaml#roles
+      definition: adapter role. bridges systems
     client:
-      definition: client artifact role.
-      choose_when:
-      - artifact responsibility matches client
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .client.ts
+      match: &id041
+        interacts_with:
+        - external_api
+      rules: &id042
+      - external communication
+      output: client
+      canonical_source: conventions.roles.yaml#roles
+      definition: client role. external communication
     mapper:
-      definition: mapper artifact role.
-      choose_when:
-      - artifact responsibility matches mapper
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .mapper.ts
+      match: &id022
+        input_output_shape: transforms
+        is_pure_functional: true
+      rules: &id023
+      - shape transformation
+      output: mapper
+      canonical_source: conventions.roles.yaml#roles
+      definition: mapper role. shape transformation
     normalizer:
-      definition: normalizer artifact role.
-      choose_when:
-      - artifact responsibility matches normalizer
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .normalizer.ts
+      match: &id024
+        scope: utility
+      rules: &id025
+      - standardizes values
+      output: normalizer
+      canonical_source: conventions.roles.yaml#roles
+      definition: normalizer role. standardizes values
     formatter:
-      definition: formatter artifact role.
-      choose_when:
-      - artifact responsibility matches formatter
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .formatter.ts
+      match: &id026
+        scope: utility
+        output_formatting: true
+      rules: &id027
+      - presentation transformation
+      output: formatter
+      canonical_source: conventions.roles.yaml#roles
+      definition: formatter role. presentation transformation
     parser:
       definition: parser artifact role.
       choose_when:
@@ -305,40 +371,51 @@ sections:
       - multiple primary responsibilities detected
       suffix: .serializer.ts
     factory:
-      definition: factory artifact role.
-      choose_when:
-      - artifact responsibility matches factory
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .factory.ts
+      match: &id045
+        input_output_shape: constructs
+      rules: &id046
+      - creates objects
+      output: factory
+      canonical_source: conventions.roles.yaml#roles
+      definition: factory role. creates objects
     builder:
-      definition: builder artifact role.
-      choose_when:
-      - artifact responsibility matches builder
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .builder.ts
+      match: &id047
+        step_by_step_construction: true
+      rules: &id048
+      - incremental build
+      output: builder
+      canonical_source: conventions.roles.yaml#roles
+      definition: builder role. incremental build
     strategy:
-      definition: strategy artifact role.
-      choose_when:
-      - artifact responsibility matches strategy
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .strategy.ts
+      match: &id053
+        interchangeable_algorithms: true
+      rules: &id054
+      - multiple implementations
+      output: strategy
+      canonical_source: conventions.roles.yaml#roles
+      definition: strategy role. multiple implementations
     validator:
-      definition: validator artifact role.
-      choose_when:
-      - artifact responsibility matches validator
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .validator.ts
+      match: &id049
+        input_output_shape: validates
+      rules: &id050
+      - validation only
+      output: validator
+      canonical_source: conventions.roles.yaml#roles
+      definition: validator role. validation only
     guard:
-      definition: guard artifact role.
-      choose_when:
-      - artifact responsibility matches guard
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .guard.ts
+      match: &id020
+        scope: decision
+        context_based: true
+      rules: &id021
+      - authorization logic
+      output: guard
+      canonical_source: conventions.roles.yaml#roles
+      definition: guard role. authorization logic
     interceptor:
       definition: interceptor artifact role.
       choose_when:
@@ -354,12 +431,14 @@ sections:
       - multiple primary responsibilities detected
       suffix: .middleware.ts
     schema:
-      definition: schema artifact role.
-      choose_when:
-      - artifact responsibility matches schema
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .schema.ts
+      match: &id039
+        scope: data
+      rules: &id040
+      - defines structure only
+      output: schema
+      canonical_source: conventions.roles.yaml#roles
+      definition: schema role. defines structure only
     model:
       definition: model artifact role.
       choose_when:
@@ -396,12 +475,14 @@ sections:
       - multiple primary responsibilities detected
       suffix: .read-model.ts
     resolver:
-      definition: resolver artifact role.
-      choose_when:
-      - artifact responsibility matches resolver
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .resolver.ts
+      match: &id051
+        dynamic_resolution: true
+      rules: &id052
+      - resolves implementation
+      output: resolver
+      canonical_source: conventions.roles.yaml#roles
+      definition: resolver role. resolves implementation
     presenter:
       definition: presenter artifact role.
       choose_when:
@@ -410,12 +491,14 @@ sections:
       - multiple primary responsibilities detected
       suffix: .presenter.ts
     config:
-      definition: config artifact role.
-      choose_when:
-      - artifact responsibility matches config
-      reject_when:
-      - multiple primary responsibilities detected
       suffix: .config.ts
+      match: &id060
+        scope: configuration
+      rules: &id061
+      - static values
+      output: config
+      canonical_source: conventions.roles.yaml#roles
+      definition: config role. static values
     provider:
       definition: provider artifact role.
       choose_when:
@@ -479,8 +562,294 @@ sections:
       reject_when:
       - multiple primary responsibilities detected
       suffix: .test-factory.ts
+    selector:
+      suffix: .selector.ts
+      match: &id018
+        scope: decision
+      rules: &id019
+      - chooses one option
+      output: selector
+      canonical_source: conventions.roles.yaml#roles
+      definition: selector role. chooses one option
+    domain:
+      suffix: .domain.ts
+      match: &id028
+        contains_business_rules: true
+        mutates_state: true
+        depends_on_external_systems: false
+      rules: &id029
+      - encapsulates core business logic
+      output: domain
+      canonical_source: conventions.roles.yaml#roles
+      definition: domain role. encapsulates core business logic
+    event:
+      suffix: .event.ts
+      match: &id030
+        is_immutable: true
+      rules: &id031
+      - represents something that happened
+      output: event
+      canonical_source: conventions.roles.yaml#roles
+      definition: event role. represents something that happened
+    listener:
+      suffix: .listener.ts
+      match: &id032
+        interacts_with:
+        - event_system
+      rules: &id033
+      - reacts to events
+      output: listener
+      canonical_source: conventions.roles.yaml#roles
+      definition: listener role. reacts to events
+    publisher:
+      suffix: .publisher.ts
+      match: &id034
+        interacts_with:
+        - event_system
+        has_side_effects: true
+      rules: &id035
+      - emits events
+      output: publisher
+      canonical_source: conventions.roles.yaml#roles
+      definition: publisher role. emits events
+    dto:
+      suffix: .dto.ts
+      match: &id058
+        scope: data
+        transport_related: true
+      rules: &id059
+      - transport shape
+      output: dto
+      canonical_source: conventions.roles.yaml#roles
+      definition: dto role. transport shape
+    error:
+      suffix: .error.ts
+      match: &id062
+        represents_error: true
+      rules: &id063
+      - error definition
+      output: error
+      canonical_source: conventions.roles.yaml#roles
+      definition: error role. error definition
+    types:
+      suffix: .types.ts
+      match: &id064
+        type_only: true
+      rules: &id065
+      - no runtime code
+      output: types
+      canonical_source: conventions.roles.yaml#roles
+      definition: types role. no runtime code
+    constants:
+      suffix: .const.ts
+      match: &id066
+        scope: constants
+      rules: &id067
+      - static values
+      output: constants
+      canonical_source: conventions.roles.yaml#roles
+      definition: constants role. static values
+    enum:
+      suffix: .enum.ts
+      match: &id068
+        finite_set: true
+      rules: &id069
+      - controlled values
+      output: enum
+      canonical_source: conventions.roles.yaml#roles
+      definition: enum role. controlled values
+    util:
+      suffix: .util.ts
+      match: &id070
+        scope: utility
+      rules: &id071
+      - stateless helper
+      warning: last resort role
+      output: util
+      canonical_source: conventions.roles.yaml#roles
+      definition: util role. stateless helper
   suffix_policy:
     required: role suffix must reflect resolved role unless framework convention requires otherwise
+  canonical_role_definitions: &id072
+    controller:
+      suffix: .controller.ts
+      match: *id001
+      rules: *id002
+      forbidden: *id003
+      output: controller
+    gateway:
+      suffix: .gateway.ts
+      match: *id004
+      rules: *id005
+      forbidden: *id006
+      output: gateway
+    use_case:
+      suffix: .use-case.ts
+      match: *id007
+      rules: *id008
+      output: use_case
+    service:
+      suffix: .service.ts
+      match: *id009
+      rules: *id010
+      output: service
+    orchestrator:
+      suffix: .orchestrator.ts
+      match: *id011
+      rules: *id012
+      forbidden: *id013
+      output: orchestrator
+    policy:
+      suffix: .policy.ts
+      match: *id014
+      rules: *id015
+      output: policy
+    specification:
+      suffix: .specification.ts
+      match: *id016
+      rules: *id017
+      output: specification
+    selector:
+      suffix: .selector.ts
+      match: *id018
+      rules: *id019
+      output: selector
+    guard:
+      suffix: .guard.ts
+      match: *id020
+      rules: *id021
+      output: guard
+    mapper:
+      suffix: .mapper.ts
+      match: *id022
+      rules: *id023
+      output: mapper
+    normalizer:
+      suffix: .normalizer.ts
+      match: *id024
+      rules: *id025
+      output: normalizer
+    formatter:
+      suffix: .formatter.ts
+      match: *id026
+      rules: *id027
+      output: formatter
+    domain:
+      suffix: .domain.ts
+      match: *id028
+      rules: *id029
+      output: domain
+    event:
+      suffix: .event.ts
+      match: *id030
+      rules: *id031
+      output: event
+    listener:
+      suffix: .listener.ts
+      match: *id032
+      rules: *id033
+      output: listener
+    publisher:
+      suffix: .publisher.ts
+      match: *id034
+      rules: *id035
+      output: publisher
+    repository:
+      suffix: .repository.ts
+      match: *id036
+      rules: *id037
+      forbidden: *id038
+      output: repository
+    schema:
+      suffix: .schema.ts
+      match: *id039
+      rules: *id040
+      output: schema
+    client:
+      suffix: .client.ts
+      match: *id041
+      rules: *id042
+      output: client
+    adapter:
+      suffix: .adapter.ts
+      match: *id043
+      rules: *id044
+      output: adapter
+    factory:
+      suffix: .factory.ts
+      match: *id045
+      rules: *id046
+      output: factory
+    builder:
+      suffix: .builder.ts
+      match: *id047
+      rules: *id048
+      output: builder
+    validator:
+      suffix: .validator.ts
+      match: *id049
+      rules: *id050
+      output: validator
+    resolver:
+      suffix: .resolver.ts
+      match: *id051
+      rules: *id052
+      output: resolver
+    strategy:
+      suffix: .strategy.ts
+      match: *id053
+      rules: *id054
+      output: strategy
+    module:
+      suffix: .module.ts
+      match: *id055
+      rules: *id056
+      forbidden: *id057
+      output: module
+    dto:
+      suffix: .dto.ts
+      match: *id058
+      rules: *id059
+      output: dto
+    config:
+      suffix: .config.ts
+      match: *id060
+      rules: *id061
+      output: config
+    error:
+      suffix: .error.ts
+      match: *id062
+      rules: *id063
+      output: error
+    types:
+      suffix: .types.ts
+      match: *id064
+      rules: *id065
+      output: types
+    constants:
+      suffix: .const.ts
+      match: *id066
+      rules: *id067
+      output: constants
+    enum:
+      suffix: .enum.ts
+      match: *id068
+      rules: *id069
+      output: enum
+    util:
+      suffix: .util.ts
+      match: *id070
+      rules: *id071
+      warning: last resort role
+      output: util
+  semantic_depth_restoration:
+    restored_from: conventions.roles.yaml
+    restoration_scope:
+    - roles
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source:
+    roles: *id072
 validation:
   fail_conditions:
   - id: ROLES-CONVENTIONS-ROLE-TAXONOMY-YAML-FC-001

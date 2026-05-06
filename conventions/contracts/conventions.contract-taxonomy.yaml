@@ -43,7 +43,7 @@ sections:
     - configuration_contract
   contract_definitions:
     request_contract:
-      definition: request_contract stable agreement across a boundary.
+      definition: Consumer-visible input shape and semantics required by an operation, API, handler, command, or message consumer.
       owner: request_contract_owner
       consumer_types:
       - internal_module
@@ -57,8 +57,15 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - request_contract_shape_changed
+      - request_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     response_contract:
-      definition: response_contract stable agreement across a boundary.
+      definition: Consumer-visible output shape and semantics returned by an operation, API, handler, query, or message producer.
       owner: response_contract_owner
       consumer_types:
       - internal_module
@@ -72,8 +79,16 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - response_contract_shape_changed
+      - response_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     api_contract:
-      definition: api_contract stable agreement across a boundary.
+      definition: Stable agreement exposed by an HTTP/RPC/GraphQL/SDK/module API, including methods, paths, params, auth and
+        error semantics.
       owner: api_contract_owner
       consumer_types:
       - external_consumer
@@ -90,8 +105,16 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - api_contract_shape_changed
+      - api_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     event_contract:
-      definition: event_contract stable agreement across a boundary.
+      definition: Stable agreement for emitted or consumed events/messages, including payload, version, ordering, idempotency
+        and compatibility.
       owner: event_contract_owner
       consumer_types:
       - worker
@@ -107,8 +130,15 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - event_contract_shape_changed
+      - event_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     port_contract:
-      definition: port_contract stable agreement across a boundary.
+      definition: Interface/port that defines how application/domain code depends on infrastructure or external capabilities.
       owner: port_contract_owner
       consumer_types:
       - internal_module
@@ -122,8 +152,15 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - port_contract_shape_changed
+      - port_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     module_contract:
-      definition: module_contract stable agreement across a boundary.
+      definition: Public exports and allowed imports for a module; internal files are not part of the contract.
       owner: module_contract_owner
       consumer_types:
       - internal_module
@@ -137,8 +174,15 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - module_contract_shape_changed
+      - module_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     public_type_contract:
-      definition: public_type_contract stable agreement across a boundary.
+      definition: Type/interface/class exported for consumers where field/name/semantics changes may be breaking.
       owner: public_type_contract_owner
       consumer_types:
       - internal_module
@@ -152,8 +196,15 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - public_type_contract_shape_changed
+      - public_type_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     persistence_contract:
-      definition: persistence_contract stable agreement across a boundary.
+      definition: Stored data shape, repository semantics, migration compatibility, and read/write invariants.
       owner: persistence_contract_owner
       consumer_types:
       - internal_module
@@ -167,8 +218,15 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - persistence_contract_shape_changed
+      - persistence_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
     configuration_contract:
-      definition: configuration_contract stable agreement across a boundary.
+      definition: Environment/configuration keys, defaults, validation rules, and runtime wiring assumptions.
       owner: configuration_contract_owner
       consumer_types:
       - internal_module
@@ -182,6 +240,13 @@ sections:
       required_checks:
       - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
         check: compatibility_review_if_public_or_module_shared
+      detection_signals:
+      - configuration_contract_shape_changed
+      - configuration_contract_consumer_visible_semantics_changed
+      compatibility_questions:
+      - Is a required field removed or renamed?
+      - Can old consumers keep working?
+      - Is versioning or adapter/migration required?
   contract_stability_levels:
     internal_unstable:
       definition: internal_unstable
@@ -200,35 +265,110 @@ sections:
       compatibility_required: true
   contract_consumer_types:
     internal_artifact:
-      definition: internal_artifact consumer.
+      definition: internal_artifact is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     internal_module:
-      definition: internal_module consumer.
+      definition: internal_module is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     shared_module:
-      definition: shared_module consumer.
+      definition: shared_module is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     frontend_consumer:
-      definition: frontend_consumer consumer.
+      definition: frontend_consumer is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     external_consumer:
-      definition: external_consumer consumer.
+      definition: external_consumer is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     sdk_consumer:
-      definition: sdk_consumer consumer.
+      definition: sdk_consumer is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     downstream_service:
-      definition: downstream_service consumer.
+      definition: downstream_service is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     worker:
-      definition: worker consumer.
+      definition: worker is a consumer category that may depend on a contract and therefore may require compatibility review
+        when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     repository:
-      definition: repository consumer.
+      definition: repository is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     migration:
-      definition: migration consumer.
+      definition: migration is a consumer category that may depend on a contract and therefore may require compatibility review
+        when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     projection:
-      definition: projection consumer.
+      definition: projection is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     read_model:
-      definition: read_model consumer.
+      definition: read_model is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     runtime_system:
-      definition: runtime_system consumer.
+      definition: runtime_system is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     operations:
-      definition: operations consumer.
+      definition: operations is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
     test_consumer:
-      definition: test_consumer consumer.
+      definition: test_consumer is a consumer category that may depend on a contract and therefore may require compatibility
+        review when that contract changes.
+      must_record:
+      - knowledge_level
+      - affected_contracts
+      - migration_need
   consumer_knowledge_enum:
     allowed:
     - none
@@ -297,6 +437,8 @@ sections:
       - behavior
       emits_contexts:
       - change_risk
+  semantic_depth_restoration:
+    enriched_generic_contract_definitions: true
 validation:
   fail_conditions:
   - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-FC-001

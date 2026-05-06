@@ -44,75 +44,145 @@ sections:
     - test_only_dependency
   dependency_type_definitions:
     static_import:
-      definition: static_import dependency relationship.
+      definition: Compile-time import/reference between files or modules that affects dependency direction and bundling.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - static_import_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     dynamic_import:
-      definition: dynamic_import dependency relationship.
+      definition: Runtime-loaded import/reference where dependency may be conditional, lazy, or harder to discover statically.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - dynamic_import_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     constructor_injection:
-      definition: constructor_injection dependency relationship.
+      definition: Dependency supplied through constructor parameters, usually DI-managed and explicit at object creation.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - constructor_injection_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     provider_binding:
-      definition: provider_binding dependency relationship.
+      definition: DI/container binding that maps abstractions/tokens to implementations.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - provider_binding_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     runtime_registration:
-      definition: runtime_registration dependency relationship.
+      definition: Runtime module/plugin/provider registration that changes behavior without direct import at call site.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - runtime_registration_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     event_publication:
-      definition: event_publication dependency relationship.
+      definition: Dependency from publisher to event contract and downstream event consumers.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - event_publication_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     message_subscription:
-      definition: message_subscription dependency relationship.
+      definition: Dependency from consumer to queue/topic/event contract and delivery semantics.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - message_subscription_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     callback_registration:
-      definition: callback_registration dependency relationship.
+      definition: Dependency created when code registers callbacks/hooks/listeners into another component or framework.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - callback_registration_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     configuration_reference:
-      definition: configuration_reference dependency relationship.
+      definition: Dependency on config/env/feature flags/runtime settings.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - configuration_reference_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
     test_only_dependency:
-      definition: test_only_dependency dependency relationship.
+      definition: Dependency valid only in test scope and forbidden from production paths.
       validation_focus:
       - dependency_direction
       - boundary_legality
       common_risks:
       - invalid_dependency
+      detection_signals:
+      - test_only_dependency_detected
+      - depends_on_external_symbol_or_runtime_binding
+      validation_questions:
+      - Does this dependency obey layer direction?
+      - Does it cross a boundary?
+      - Is an abstraction/adapter required?
   dependency_scope_enum:
     allowed:
     - same_artifact
@@ -209,6 +279,8 @@ sections:
       emits_contexts:
       - implementation_risk
       emits_concerns: []
+  semantic_depth_restoration:
+    enriched_generic_dependency_definitions: true
 validation:
   fail_conditions:
   - id: DEPENDENCIES-CONVENTIONS-DEPENDENCY-TAXONOMY-YAML-FC-001

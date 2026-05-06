@@ -56,6 +56,14 @@ sections:
     - Result
     - ContractVersioning
     - ServiceLocator
+    - Singleton
+    - Prototype
+    - Bridge
+    - Composite
+    - Flyweight
+    - Iterator
+    - Memento
+    - Visitor
   pattern_definitions:
     NoPattern:
       definition: Default when no pattern pressure exists.
@@ -65,197 +73,571 @@ sections:
       - no pattern pressure
       - simpler direct design is sufficient
     Strategy:
-      definition: Strategy design pattern.
-      activation_signals:
-      - Strategy pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Strategy pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id039
+      - multiple interchangeable algorithms
+      signals: &id040
+      - if/else selecting behavior
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     FactoryMethod:
-      definition: FactoryMethod design pattern.
-      activation_signals:
-      - FactoryMethod pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'FactoryMethod pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: creational
+      use_when: &id003
+      - subclasses decide object type
+      - object creation varies by context
+      signals: &id004
+      - switch/if on type
+      - constructor logic branching
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     AbstractFactory:
-      definition: AbstractFactory design pattern.
-      activation_signals:
-      - AbstractFactory pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'AbstractFactory pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: creational
+      use_when: &id005
+      - families of related objects
+      - must enforce compatibility between objects
+      signals: &id006
+      - multiple related product types
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Builder:
-      definition: Builder design pattern.
-      activation_signals:
-      - Builder pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Builder pattern. Category: creational. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: creational
+      use_when: &id007
+      - complex object construction
+      - step-by-step creation
+      signals: &id008
+      - many optional parameters
+      - telescoping constructor
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Adapter:
-      definition: Adapter design pattern.
-      activation_signals:
-      - Adapter pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Adapter pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id011
+      - incompatible interfaces
+      - reuse legacy/external code
+      signals: &id012
+      - interface mismatch
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Facade:
-      definition: Facade design pattern.
-      activation_signals:
-      - Facade pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Facade pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id019
+      - simplify complex subsystem
+      - provide unified interface
+      signals: &id020
+      - many dependencies hidden behind one API
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Proxy:
-      definition: Proxy design pattern.
-      activation_signals:
-      - Proxy pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Proxy pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id023
+      - control access to object
+      - lazy loading / remote access
+      signals: &id024
+      - intercept calls
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Decorator:
-      definition: Decorator design pattern.
-      activation_signals:
-      - Decorator pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Decorator pattern. Category: structural. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id017
+      - add behavior dynamically
+      - avoid subclass explosion
+      signals: &id018
+      - stackable responsibilities
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Command:
-      definition: Command design pattern.
-      activation_signals:
-      - Command pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Command pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id027
+      - encapsulate actions as objects
+      - support undo/redo
+      signals: &id028
+      - queue, log, or execute commands
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     ChainOfResponsibility:
-      definition: ChainOfResponsibility design pattern.
-      activation_signals:
-      - ChainOfResponsibility pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'ChainOfResponsibility pattern. Category: behavioral. Use only when its canonical use_when/signals match
+        the problem and simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id025
+      - multiple handlers for request
+      - decouple sender from receiver
+      signals: &id026
+      - pass request along chain
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Observer:
-      definition: Observer design pattern.
-      activation_signals:
-      - Observer pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Observer pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id035
+      - event-driven updates
+      - publish/subscribe
+      signals: &id036
+      - state change notifications
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Mediator:
-      definition: Mediator design pattern.
-      activation_signals:
-      - Mediator pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'Mediator pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id031
+      - reduce direct dependencies between components
+      signals: &id032
+      - many-to-many communication chaos
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     TemplateMethod:
-      definition: TemplateMethod design pattern.
-      activation_signals:
-      - TemplateMethod pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'TemplateMethod pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id041
+      - algorithm skeleton with overridable steps
+      signals: &id042
+      - shared workflow with variations
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     State:
-      definition: State design pattern.
-      activation_signals:
-      - State pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
+      definition: 'State pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id037
+      - object behavior depends on state
+      signals: &id038
+      - large conditional state machine
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
     Specification:
-      definition: Specification design pattern.
+      definition: Encapsulates a business predicate or rule so it can be combined, reused, and tested without embedding rule
+        logic in orchestration code.
       activation_signals:
       - Specification pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Specification_pressure_detected
+      signals:
+      - Specification_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     Policy:
-      definition: Policy design pattern.
+      definition: Encapsulates a configurable decision rule or policy choice where behavior varies by business rule but does
+        not require a full Strategy hierarchy.
       activation_signals:
       - Policy pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Policy_pressure_detected
+      signals:
+      - Policy_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     Repository:
-      definition: Repository design pattern.
+      definition: Encapsulates persistence access behind a domain/application-facing collection-like abstraction and prevents
+        raw storage models from leaking outward.
       activation_signals:
       - Repository pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Repository_pressure_detected
+      signals:
+      - Repository_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     UnitOfWork:
-      definition: UnitOfWork design pattern.
+      definition: Coordinates multiple persistence operations into one transactional boundary when consistency across repositories
+        is required.
       activation_signals:
       - UnitOfWork pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - UnitOfWork_pressure_detected
+      signals:
+      - UnitOfWork_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     CQRS:
-      definition: CQRS design pattern.
+      definition: Separates command/write models from query/read models when read/write concerns, scaling, or model shapes
+        diverge significantly.
       activation_signals:
       - CQRS pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - CQRS_pressure_detected
+      signals:
+      - CQRS_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     Outbox:
-      definition: Outbox design pattern.
+      definition: Persists outbound messages/events with state changes so asynchronous publication can be retried without
+        losing consistency.
       activation_signals:
       - Outbox pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Outbox_pressure_detected
+      signals:
+      - Outbox_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     Saga:
-      definition: Saga design pattern.
+      definition: Coordinates a long-running distributed workflow through steps, compensations, and durable state when a single
+        transaction is impossible.
       activation_signals:
       - Saga pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Saga_pressure_detected
+      signals:
+      - Saga_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     Pipeline:
-      definition: Pipeline design pattern.
+      definition: Composes ordered processing stages where each stage transforms or validates data and sequencing is a first-class
+        concern.
       activation_signals:
       - Pipeline pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Pipeline_pressure_detected
+      signals:
+      - Pipeline_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     DomainEvent:
-      definition: DomainEvent design pattern.
+      definition: Represents a meaningful domain occurrence used to decouple producers from downstream reactions within or
+        across boundaries.
       activation_signals:
       - DomainEvent pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - DomainEvent_pressure_detected
+      signals:
+      - DomainEvent_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     AntiCorruptionLayer:
-      definition: AntiCorruptionLayer design pattern.
+      definition: Protects the domain from an external system model by translating concepts, contracts, and errors at the
+        integration boundary.
       activation_signals:
       - AntiCorruptionLayer pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - AntiCorruptionLayer_pressure_detected
+      signals:
+      - AntiCorruptionLayer_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     Result:
-      definition: Result design pattern.
+      definition: Represents success/failure explicitly without exceptions for expected domain/application outcomes.
       activation_signals:
       - Result pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - Result_pressure_detected
+      signals:
+      - Result_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     ContractVersioning:
-      definition: ContractVersioning design pattern.
+      definition: Maintains compatibility across contract evolution through versions, adapters, migrations, or explicit deprecation
+        paths.
       activation_signals:
       - ContractVersioning pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      use_when:
+      - ContractVersioning_pressure_detected
+      signals:
+      - ContractVersioning_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
     ServiceLocator:
-      definition: ServiceLocator design pattern.
+      definition: Centralized runtime dependency lookup; generally disallowed because it hides dependencies and weakens testability
+        except in constrained framework integration cases.
       activation_signals:
       - ServiceLocator pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
       status: disallowed
+      use_when:
+      - ServiceLocator_pressure_detected
+      signals:
+      - ServiceLocator_specific_problem_shape
+      avoid_when:
+      - simpler_no_pattern_design_is_sufficient
+      canonical_source: semantic_depth_restoration
+    Singleton:
+      definition: 'Singleton pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: creational
+      use_when: &id001
+      - exactly one instance is required
+      - global shared resource
+      signals: []
+      avoid_when: &id002
+      - testability is critical
+      - hidden dependencies are undesirable
+      canonical_source: conventions.pattern.yaml#patterns
+    Prototype:
+      definition: 'Prototype pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: creational
+      use_when: &id009
+      - clone existing objects
+      - object creation is expensive
+      signals: &id010
+      - copying objects frequently
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
+    Bridge:
+      definition: 'Bridge pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id013
+      - separate abstraction from implementation
+      - avoid class explosion
+      signals: &id014
+      - multiple dimensions of variation
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
+    Composite:
+      definition: 'Composite pattern. Category: structural. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id015
+      - tree structure
+      - treat individual and group uniformly
+      signals: &id016
+      - recursive composition
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
+    Flyweight:
+      definition: 'Flyweight pattern. Category: structural. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: structural
+      use_when: &id021
+      - large number of similar objects
+      - memory optimization needed
+      signals: &id022
+      - shared intrinsic state
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
+    Iterator:
+      definition: 'Iterator pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id029
+      - traverse collection without exposing structure
+      signals: &id030
+      - custom traversal logic
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
+    Memento:
+      definition: 'Memento pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id033
+      - save/restore object state
+      signals: &id034
+      - undo history
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
+    Visitor:
+      definition: 'Visitor pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
+      category: behavioral
+      use_when: &id043
+      - add operations without modifying classes
+      signals: &id044
+      - stable structure, changing behavior
+      avoid_when: []
+      canonical_source: conventions.pattern.yaml#patterns
   disallowed_patterns:
   - ServiceLocator
+  canonical_pattern_catalog: &id046
+    Singleton:
+      category: creational
+      use_when: *id001
+      avoid_when: *id002
+    FactoryMethod:
+      category: creational
+      use_when: *id003
+      signals: *id004
+    AbstractFactory:
+      category: creational
+      use_when: *id005
+      signals: *id006
+    Builder:
+      category: creational
+      use_when: *id007
+      signals: *id008
+    Prototype:
+      category: creational
+      use_when: *id009
+      signals: *id010
+    Adapter:
+      category: structural
+      use_when: *id011
+      signals: *id012
+    Bridge:
+      category: structural
+      use_when: *id013
+      signals: *id014
+    Composite:
+      category: structural
+      use_when: *id015
+      signals: *id016
+    Decorator:
+      category: structural
+      use_when: *id017
+      signals: *id018
+    Facade:
+      category: structural
+      use_when: *id019
+      signals: *id020
+    Flyweight:
+      category: structural
+      use_when: *id021
+      signals: *id022
+    Proxy:
+      category: structural
+      use_when: *id023
+      signals: *id024
+    ChainOfResponsibility:
+      category: behavioral
+      use_when: *id025
+      signals: *id026
+    Command:
+      category: behavioral
+      use_when: *id027
+      signals: *id028
+    Iterator:
+      category: behavioral
+      use_when: *id029
+      signals: *id030
+    Mediator:
+      category: behavioral
+      use_when: *id031
+      signals: *id032
+    Memento:
+      category: behavioral
+      use_when: *id033
+      signals: *id034
+    Observer:
+      category: behavioral
+      use_when: *id035
+      signals: *id036
+    State:
+      category: behavioral
+      use_when: *id037
+      signals: *id038
+    Strategy:
+      category: behavioral
+      use_when: *id039
+      signals: *id040
+    TemplateMethod:
+      category: behavioral
+      use_when: *id041
+      signals: *id042
+    Visitor:
+      category: behavioral
+      use_when: *id043
+      signals: *id044
+  canonical_pattern_categories: &id045
+    categories:
+      creational:
+        description: 'Focused on object creation mechanisms that increase flexibility and reuse.
+
+          '
+        triggers:
+        - object creation is complex
+        - object type decided at runtime
+        - avoid direct constructor usage
+        - control instance lifecycle
+        - reduce coupling to concrete classes
+      structural:
+        description: 'Focused on composing classes and objects into larger structures.
+
+          '
+        triggers:
+        - combine multiple components
+        - wrap or adapt existing code
+        - simplify complex subsystem
+        - optimize memory usage
+        - control access to object
+      behavioral:
+        description: 'Focused on communication and responsibility between objects.
+
+          '
+        triggers:
+        - multiple objects interact
+        - behavior changes at runtime
+        - decouple sender and receiver
+        - define workflows or chains
+        - encapsulate algorithms
+  semantic_depth_restoration:
+    restored_from: conventions.pattern.yaml
+    restoration_scope:
+    - classification
+    - patterns
+    restoration_policy: canonical_source_preserved_under_standard_file_contract
+    do_not_replace_with_summary: true
+  canonical_restored_source:
+    classification: *id045
+    patterns: *id046
 validation:
   fail_conditions:
   - id: PATTERNS-CONVENTIONS-PATTERN-CATALOG-YAML-FC-001

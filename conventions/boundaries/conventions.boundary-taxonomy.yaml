@@ -49,7 +49,8 @@ sections:
     - runtime_wiring
   boundary_definitions:
     transport:
-      definition: transport boundary where ownership/trust/layer/model changes.
+      definition: Boundary where external transport protocol/data enters or leaves the system, such as HTTP, GraphQL, WebSocket,
+        CLI, or message handlers.
       owner: transport_owner
       crossing_signals:
       - transport
@@ -64,8 +65,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - transport_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     public_api:
-      definition: public_api boundary where ownership/trust/layer/model changes.
+      definition: Boundary exposed to external or cross-module consumers with compatibility obligations.
       owner: public_api_owner
       crossing_signals:
       - public_api
@@ -81,8 +93,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - public_api_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     module:
-      definition: module boundary where ownership/trust/layer/model changes.
+      definition: Boundary between feature modules or package-level public APIs; internal implementation must not be deep-imported.
       owner: module_owner
       crossing_signals:
       - module
@@ -97,8 +120,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - module_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     domain:
-      definition: domain boundary where ownership/trust/layer/model changes.
+      definition: Boundary protecting pure business rules from application, transport, and infrastructure concerns.
       owner: domain_owner
       crossing_signals:
       - domain
@@ -116,8 +150,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - domain_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     application:
-      definition: application boundary where ownership/trust/layer/model changes.
+      definition: Boundary where orchestration/use-case logic coordinates domain and infrastructure through abstractions.
       owner: application_owner
       crossing_signals:
       - application
@@ -132,8 +177,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - application_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     infrastructure:
-      definition: infrastructure boundary where ownership/trust/layer/model changes.
+      definition: Boundary where IO, frameworks, persistence, network, and external systems are implemented.
       owner: infrastructure_owner
       crossing_signals:
       - infrastructure
@@ -148,8 +204,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - infrastructure_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     persistence:
-      definition: persistence boundary where ownership/trust/layer/model changes.
+      definition: Boundary between domain/application models and stored database/ORM/document representations.
       owner: persistence_owner
       crossing_signals:
       - persistence
@@ -164,8 +231,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - persistence_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     external_system:
-      definition: external_system boundary where ownership/trust/layer/model changes.
+      definition: Boundary between owned code and a third-party or separate service with independent behavior/availability.
       owner: external_system_owner
       crossing_signals:
       - external_system
@@ -180,8 +258,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - external_system_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     integration_event:
-      definition: integration_event boundary where ownership/trust/layer/model changes.
+      definition: Boundary represented by event/message contracts exchanged across modules/services.
       owner: integration_event_owner
       crossing_signals:
       - integration_event
@@ -196,8 +285,20 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - integration_event_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     message_queue:
-      definition: message_queue boundary where ownership/trust/layer/model changes.
+      definition: Boundary where asynchronous message publication/consumption changes ordering, retry, idempotency, or delivery
+        semantics.
       owner: message_queue_owner
       crossing_signals:
       - message_queue
@@ -212,8 +313,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - message_queue_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     webhook:
-      definition: webhook boundary where ownership/trust/layer/model changes.
+      definition: Boundary where external systems call into this service through a remote event/API contract.
       owner: webhook_owner
       crossing_signals:
       - webhook
@@ -228,8 +340,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - webhook_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     security:
-      definition: security boundary where ownership/trust/layer/model changes.
+      definition: Boundary where trust, identity, permissions, secret handling, or secure defaults change.
       owner: security_owner
       crossing_signals:
       - security
@@ -244,8 +367,19 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - security_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     tenant:
-      definition: tenant boundary where ownership/trust/layer/model changes.
+      definition: Boundary separating data, permissions, configuration, or behavior between tenants/accounts/workspaces.
       owner: tenant_owner
       crossing_signals:
       - tenant
@@ -262,8 +396,20 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - tenant_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
     runtime_wiring:
-      definition: runtime_wiring boundary where ownership/trust/layer/model changes.
+      definition: Boundary created by DI/provider/module registration where compile-time structure and runtime object graph
+        differ.
       owner: runtime_wiring_owner
       crossing_signals:
       - runtime_wiring
@@ -278,6 +424,17 @@ sections:
       required_checks:
       - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
         check: boundary_validation
+      detection_signals:
+      - runtime_wiring_entry_or_exit_point
+      - ownership_or_trust_changes
+      must_define:
+      - owner
+      - allowed_crossing_direction
+      - translation_required
+      - contract_required
+      must_not:
+      - cross_without_validation
+      - leak_internal_model_across_boundary
   boundary_risk_signals:
     transport:
       minimum_risk_hint: medium
@@ -380,6 +537,8 @@ sections:
       emits_contexts:
       - design_risk
       - change_risk
+  semantic_depth_restoration:
+    enriched_generic_boundary_definitions: true
 validation:
   fail_conditions:
   - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-FC-001
