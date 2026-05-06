@@ -1,0 +1,224 @@
+version: '1.0'
+file:
+  name: conventions.dependency-taxonomy.yaml
+  path: dependencies/conventions.dependency-taxonomy.yaml
+  role: dependency_taxonomy_contract
+  executability: vocabulary
+purpose: Define dependency types, scopes, direction vocabulary, relationship schema, and classification output.
+ownership:
+  owns:
+  - dependency_type_enum
+  - dependency_scope_enum
+  - dependency_direction_vocabulary
+  - dependency_relationship_schema
+  - dependency_classification_schema
+  - dependency_risk_signals
+  does_not_own:
+  - import_validation_rules
+  - architecture_layer_definitions
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - dependency_taxonomy_registry
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  dependency_type_enum:
+    allowed:
+    - static_import
+    - dynamic_import
+    - constructor_injection
+    - provider_binding
+    - runtime_registration
+    - event_publication
+    - message_subscription
+    - callback_registration
+    - configuration_reference
+    - test_only_dependency
+  dependency_type_definitions:
+    static_import:
+      definition: static_import dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    dynamic_import:
+      definition: dynamic_import dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    constructor_injection:
+      definition: constructor_injection dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    provider_binding:
+      definition: provider_binding dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    runtime_registration:
+      definition: runtime_registration dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    event_publication:
+      definition: event_publication dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    message_subscription:
+      definition: message_subscription dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    callback_registration:
+      definition: callback_registration dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    configuration_reference:
+      definition: configuration_reference dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+    test_only_dependency:
+      definition: test_only_dependency dependency relationship.
+      validation_focus:
+      - dependency_direction
+      - boundary_legality
+      common_risks:
+      - invalid_dependency
+  dependency_scope_enum:
+    allowed:
+    - same_artifact
+    - same_flow
+    - same_module
+    - cross_module
+    - shared_kernel
+    - external_package
+    - external_system
+    - test_scope
+  dependency_direction_vocabulary:
+    layer_directions:
+    - transport_to_application
+    - application_to_domain
+    - application_to_port
+    - domain_to_domain
+    - domain_to_infrastructure
+    - domain_to_transport
+    - infrastructure_to_port
+    - infrastructure_to_external_system
+    - test_to_artifact_under_test
+    - production_to_test_support
+    module_directions:
+    - same_module_internal
+    - module_to_public_export
+    - module_to_private_internal
+    - shared_to_feature_specific
+    - feature_to_shared
+    - cross_module_public_api
+  dependency_relationship_schema:
+    required_fields:
+    - dependency_id
+    - dependency_type
+    - source_artifact
+    - target_artifact
+    - source_role
+    - target_role
+    - source_layer
+    - target_layer
+    - dependency_scope
+    - boundary_crossed
+    - direction
+  dependency_risk_signals:
+    static_import:
+      minimum_risk_hint: low
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+    dynamic_import:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+    constructor_injection:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+    provider_binding:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns:
+      - runtime_wiring
+    runtime_registration:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns:
+      - runtime_wiring
+    event_publication:
+      minimum_risk_hint: high
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+    message_subscription:
+      minimum_risk_hint: high
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+    callback_registration:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+    configuration_reference:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns:
+      - runtime_wiring
+    test_only_dependency:
+      minimum_risk_hint: medium
+      emits_contexts:
+      - implementation_risk
+      emits_concerns: []
+validation:
+  fail_conditions:
+  - id: DEPENDENCIES-CONVENTIONS-DEPENDENCY-TAXONOMY-YAML-FC-001
+    condition: unknown_dependency_type
+    message: Unknown dependency type.
+    severity: error
+    owner: dependencies/conventions.dependency-taxonomy.yaml
+  - id: DEPENDENCIES-CONVENTIONS-DEPENDENCY-TAXONOMY-YAML-FC-002
+    condition: dependency_scope_missing
+    message: Dependency scope missing.
+    severity: error
+    owner: dependencies/conventions.dependency-taxonomy.yaml
+  required_checks: []

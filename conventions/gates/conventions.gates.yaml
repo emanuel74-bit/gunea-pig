@@ -1,0 +1,40 @@
+version: '1.0'
+file:
+  name: conventions.gates.yaml
+  path: gates/conventions.gates.yaml
+  role: gates_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for gate taxonomy, templates, and validation.
+ownership:
+  owns:
+  - gates_file_index
+  - gates_subsystem_contract
+  does_not_own:
+  - phase_contracts
+  - mission_profile_selection
+activation:
+  mode: entrypoint
+  activates_when:
+  - gate_validation_required
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - gates_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  - gates/conventions.gate-templates.yaml
+  - gates/conventions.gate-validation.yaml
+  optional_files: []
+sections:
+  gates_file_index:
+    taxonomy: gates/conventions.gate-taxonomy.yaml
+    templates: gates/conventions.gate-templates.yaml
+    validation: gates/conventions.gate-validation.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

@@ -1,0 +1,36 @@
+version: '1.0'
+file:
+  name: conventions.handoffs.yaml
+  path: handoffs/conventions.handoffs.yaml
+  role: handoffs_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for phase handoff schemas and validation.
+ownership:
+  owns:
+  - handoffs_file_index
+  does_not_own:
+  - alpha_runtime_scheduling
+activation:
+  mode: entrypoint
+  activates_when:
+  - phase_handoff_validation_required
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - handoffs_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - handoffs/conventions.handoff-schema.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  optional_files: []
+sections:
+  handoffs_file_index:
+    schema: handoffs/conventions.handoff-schema.yaml
+    validation: handoffs/conventions.handoff-validation.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

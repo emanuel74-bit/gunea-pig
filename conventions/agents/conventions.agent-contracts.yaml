@@ -1,0 +1,537 @@
+version: '1.0'
+file:
+  name: conventions.agent-contracts.yaml
+  path: agents/conventions.agent-contracts.yaml
+  role: agent_responsibility_contract
+  executability: validator
+purpose: Define responsibility boundaries and phase ownership for every fixed agent.
+ownership:
+  owns:
+  - agent_contract_schema
+  - agent_contract_registry
+  - phase_ownership_mapping
+  does_not_own:
+  - agent_vocabulary
+  - permission_profiles
+activation:
+  mode: conditional
+  activates_when:
+  - agent_contract_validation_required
+  skips_when: []
+inputs:
+  required:
+  - agent_taxonomy
+  - phase_catalog
+  optional: []
+outputs:
+  produces:
+  - agent_contract_registry
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  optional_files: []
+sections:
+  agent_contract_schema:
+    required_fields:
+    - agent_id
+    - category
+    - responsibility
+    - owned_phases
+    - allowed_decisions
+    - forbidden_decisions
+    - must_do
+    - must_not_do
+    - escalation_rules
+  agent_contract_registry:
+  - agent_id: alpha_controller
+    category: controller
+    responsibility: 'Own and execute phases: mission_profile_selection, mission_initialization, active_context_manifest, phase_accounting,
+      trigger_review, report_artifact_validation.'
+    owned_phases: &id001
+    - mission_profile_selection
+    - mission_initialization
+    - active_context_manifest
+    - phase_accounting
+    - trigger_review
+    - report_artifact_validation
+    allowed_decisions:
+    - produce_outputs_for_mission_profile_selection
+    - produce_outputs_for_mission_initialization
+    - produce_outputs_for_active_context_manifest
+    - produce_outputs_for_phase_accounting
+    - produce_outputs_for_trigger_review
+    - produce_outputs_for_report_artifact_validation
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: behavior_agent
+    category: understanding
+    responsibility: 'Own and execute phases: behavior_contract.'
+    owned_phases: &id002
+    - behavior_contract
+    allowed_decisions:
+    - produce_outputs_for_behavior_contract
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: reconnaissance_agent
+    category: understanding
+    responsibility: 'Own and execute phases: codebase_reconnaissance, local_alignment.'
+    owned_phases: &id003
+    - codebase_reconnaissance
+    - local_alignment
+    allowed_decisions:
+    - produce_outputs_for_codebase_reconnaissance
+    - produce_outputs_for_local_alignment
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: classification_agent
+    category: classification
+    responsibility: 'Own and execute phases: risk_classification, boundary_contract_classification, dependency_classification.'
+    owned_phases: &id004
+    - risk_classification
+    - boundary_contract_classification
+    - dependency_classification
+    allowed_decisions:
+    - produce_outputs_for_risk_classification
+    - produce_outputs_for_boundary_contract_classification
+    - produce_outputs_for_dependency_classification
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: architecture_agent
+    category: design
+    responsibility: 'Own and execute phases: architecture_decomposition.'
+    owned_phases: &id005
+    - architecture_decomposition
+    allowed_decisions:
+    - produce_outputs_for_architecture_decomposition
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: role_agent
+    category: design
+    responsibility: 'Own and execute phases: draft_role_pass, final_role_assignment.'
+    owned_phases: &id006
+    - draft_role_pass
+    - final_role_assignment
+    allowed_decisions:
+    - produce_outputs_for_draft_role_pass
+    - produce_outputs_for_final_role_assignment
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: pattern_agent
+    category: design
+    responsibility: 'Own and execute phases: pattern_pressure_detection, pattern_selection.'
+    owned_phases: &id007
+    - pattern_pressure_detection
+    - pattern_selection
+    allowed_decisions:
+    - produce_outputs_for_pattern_pressure_detection
+    - produce_outputs_for_pattern_selection
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: artifact_action_agent
+    category: design
+    responsibility: 'Own and execute phases: artifact_reuse_analysis, artifact_action_resolution.'
+    owned_phases: &id008
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    allowed_decisions:
+    - produce_outputs_for_artifact_reuse_analysis
+    - produce_outputs_for_artifact_action_resolution
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: refactor_strategy_agent
+    category: design
+    responsibility: 'Own and execute phases: refactor_strategy_selection.'
+    owned_phases: &id009
+    - refactor_strategy_selection
+    allowed_decisions:
+    - produce_outputs_for_refactor_strategy_selection
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: impact_agent
+    category: design
+    responsibility: 'Own and execute phases: call_site_impact_analysis, change_impact_analysis.'
+    owned_phases: &id010
+    - call_site_impact_analysis
+    - change_impact_analysis
+    allowed_decisions:
+    - produce_outputs_for_call_site_impact_analysis
+    - produce_outputs_for_change_impact_analysis
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: structure_agent
+    category: design
+    responsibility: 'Own and execute phases: structure_rendering.'
+    owned_phases: &id011
+    - structure_rendering
+    allowed_decisions:
+    - produce_outputs_for_structure_rendering
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: testing_agent
+    category: verification_planning
+    responsibility: 'Own and execute phases: test_derivation.'
+    owned_phases: &id012
+    - test_derivation
+    allowed_decisions:
+    - produce_outputs_for_test_derivation
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: execution_planning_agent
+    category: execution_planning
+    responsibility: 'Own and execute phases: implementation_sequence, checkpoint_validation_plan.'
+    owned_phases: &id013
+    - implementation_sequence
+    - checkpoint_validation_plan
+    allowed_decisions:
+    - produce_outputs_for_implementation_sequence
+    - produce_outputs_for_checkpoint_validation_plan
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: pre_implementation_gate_agent
+    category: execution_planning
+    responsibility: 'Own and execute phases: pre_implementation_gate.'
+    owned_phases: &id014
+    - pre_implementation_gate
+    allowed_decisions:
+    - produce_outputs_for_pre_implementation_gate
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: implementation_agent
+    category: execution
+    responsibility: 'Own and execute phases: implementation.'
+    owned_phases: &id015
+    - implementation
+    allowed_decisions:
+    - produce_outputs_for_implementation
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: validation_agent
+    category: repair_validation
+    responsibility: 'Own and execute phases: post_implementation_validation, final_validation.'
+    owned_phases: &id016
+    - post_implementation_validation
+    - final_validation
+    allowed_decisions:
+    - produce_outputs_for_post_implementation_validation
+    - produce_outputs_for_final_validation
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: failure_analysis_agent
+    category: repair_validation
+    responsibility: 'Own and execute phases: failure_classification.'
+    owned_phases: &id017
+    - failure_classification
+    allowed_decisions:
+    - produce_outputs_for_failure_classification
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  - agent_id: repair_agent
+    category: repair_validation
+    responsibility: 'Own and execute phases: feedback_repair.'
+    owned_phases: &id018
+    - feedback_repair
+    allowed_decisions:
+    - produce_outputs_for_feedback_repair
+    forbidden_decisions:
+    - perform_unowned_phase_work
+    - bypass_gates
+    - weaken_contracts
+    must_do:
+    - follow_phase_contract
+    - write_required_reports
+    - record_evidence
+    must_not_do:
+    - silently_skip_required_work
+    - write_unallowed_files
+    escalation_rules:
+      escalate_when:
+      - required_input_missing
+      - output_gate_failed
+      - permission_violation_detected
+      escalation_target: alpha_controller
+  phase_ownership:
+    alpha_controller: *id001
+    behavior_agent: *id002
+    reconnaissance_agent: *id003
+    classification_agent: *id004
+    architecture_agent: *id005
+    role_agent: *id006
+    pattern_agent: *id007
+    artifact_action_agent: *id008
+    refactor_strategy_agent: *id009
+    impact_agent: *id010
+    structure_agent: *id011
+    testing_agent: *id012
+    execution_planning_agent: *id013
+    pre_implementation_gate_agent: *id014
+    implementation_agent: *id015
+    validation_agent: *id016
+    failure_analysis_agent: *id017
+    repair_agent: *id018
+  agent_contract_validation_algorithm:
+    steps:
+    - load_agent_taxonomy
+    - load_agent_contracts
+    - assert_one_contract_per_agent
+    - assert_owned_phases_exist
+    - assert_every_phase_has_one_owner
+validation:
+  required_checks: []
+  fail_conditions: []

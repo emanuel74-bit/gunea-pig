@@ -1,0 +1,69 @@
+version: '1.0'
+file:
+  name: conventions.codebase-reconnaissance.yaml
+  path: planning/conventions.codebase-reconnaissance.yaml
+  role: codebase_reconnaissance_contract
+  executability: decision_engine
+purpose: Inspect existing codebase before architecture to find related features, reusable artifacts, local conventions, and extractable behavior.
+ownership:
+  owns:
+  - codebase_reconnaissance_report_schema
+  - search_target_derivation
+  - similar_feature_discovery
+  - reusable_artifact_discovery
+  - extractable_behavior_discovery
+  does_not_own:
+  - local_convention_conflict_resolution
+  - artifact_action_decisions
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - codebase_reconnaissance_report
+dependencies:
+  required_files:
+  - planning/conventions.behavior-contract.yaml
+  - actions/conventions.action-taxonomy.yaml
+  optional_files: []
+sections:
+  discovery_outputs:
+  - similar_features_found
+  - existing_capabilities_found
+  - reusable_artifacts
+  - reusable_behavior_candidates
+  - relocation_candidates
+  - rename_candidates
+  - replacement_candidates
+  - inline_candidates
+  - no_code_change_candidates
+  rule_sets:
+    absolute_rules:
+    - id: RECON-ABS-001
+      rule: Codebase reconnaissance may detect extractable behavior but must not decide extraction.
+      fail_condition: reconnaissance_decides_artifact_action
+    - id: RECON-ABS-002
+      rule: The agent must not claim codebase reconnaissance without codebase context or evidence.
+      fail_condition: reconnaissance_claimed_without_codebase_context
+validation:
+  fail_conditions:
+  - id: PLANNING-CONVENTIONS-CODEBASE-RECONNAISSANCE-YAML-FC-001
+    condition: architecture_started_without_reconnaissance_when_codebase_available
+    message: Architecture started without reconnaissance when codebase available.
+    severity: error
+    owner: planning/conventions.codebase-reconnaissance.yaml
+  - id: PLANNING-CONVENTIONS-CODEBASE-RECONNAISSANCE-YAML-FC-002
+    condition: new_artifact_created_without_existing_artifact_check
+    message: New artifact created without existing artifact check.
+    severity: error
+    owner: planning/conventions.codebase-reconnaissance.yaml
+  - id: PLANNING-CONVENTIONS-CODEBASE-RECONNAISSANCE-YAML-FC-003
+    condition: reconnaissance_claimed_without_codebase_context
+    message: Reconnaissance claimed without codebase context.
+    severity: error
+    owner: planning/conventions.codebase-reconnaissance.yaml
+  required_checks: []

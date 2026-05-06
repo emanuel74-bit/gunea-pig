@@ -1,0 +1,12 @@
+report_id: ""
+phase_id: ""
+status: "pending"
+summary: ""
+inputs_consumed: []
+decisions: []
+evidence_refs: []
+triggers_emitted: []
+gate_result:
+  gate_id: ""
+  status: "pending"
+  failures: []

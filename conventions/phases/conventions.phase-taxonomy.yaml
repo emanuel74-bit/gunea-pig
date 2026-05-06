@@ -1,0 +1,161 @@
+version: '1.0'
+file:
+  name: conventions.phase-taxonomy.yaml
+  path: phases/conventions.phase-taxonomy.yaml
+  role: global_phase_vocabulary_contract
+  executability: vocabulary
+purpose: Define the global 32-phase vocabulary, categories, statuses, and definitions.
+ownership:
+  owns:
+  - phase_enum
+  - phase_category_enum
+  - phase_status_enum
+  - phase_definitions
+  does_not_own:
+  - runtime_scheduling
+  - mission_profile_selection
+activation:
+  mode: reference_only
+  activates_when:
+  - phase_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - phase_taxonomy
+  - phase_catalog
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  phase_status_enum:
+    allowed:
+    - pending
+    - executed
+    - skipped
+    - blocked
+    - deferred
+    - invalidated
+  phase_category_enum:
+    allowed:
+    - classification
+    - design
+    - execution
+    - execution_planning
+    - mission_control
+    - repair
+    - reporting
+    - understanding
+    - validation
+    - verification_planning
+  phase_enum:
+    allowed:
+    - mission_profile_selection
+    - mission_initialization
+    - active_context_manifest
+    - phase_accounting
+    - behavior_contract
+    - codebase_reconnaissance
+    - local_alignment
+    - risk_classification
+    - boundary_contract_classification
+    - dependency_classification
+    - architecture_decomposition
+    - draft_role_pass
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    - refactor_strategy_selection
+    - call_site_impact_analysis
+    - change_impact_analysis
+    - final_role_assignment
+    - pattern_selection
+    - structure_rendering
+    - test_derivation
+    - implementation_sequence
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - failure_classification
+    - feedback_repair
+    - post_implementation_validation
+    - trigger_review
+    - report_artifact_validation
+    - final_validation
+  phase_category_mapping:
+    mission_profile_selection: mission_control
+    mission_initialization: mission_control
+    active_context_manifest: mission_control
+    phase_accounting: mission_control
+    behavior_contract: understanding
+    codebase_reconnaissance: understanding
+    local_alignment: understanding
+    risk_classification: classification
+    boundary_contract_classification: classification
+    dependency_classification: classification
+    architecture_decomposition: design
+    draft_role_pass: design
+    pattern_pressure_detection: design
+    artifact_reuse_analysis: design
+    artifact_action_resolution: design
+    refactor_strategy_selection: design
+    call_site_impact_analysis: design
+    change_impact_analysis: design
+    final_role_assignment: design
+    pattern_selection: design
+    structure_rendering: design
+    test_derivation: verification_planning
+    implementation_sequence: execution_planning
+    checkpoint_validation_plan: execution_planning
+    pre_implementation_gate: validation
+    implementation: execution
+    failure_classification: repair
+    feedback_repair: repair
+    post_implementation_validation: validation
+    trigger_review: validation
+    report_artifact_validation: reporting
+    final_validation: validation
+  phase_definitions:
+    mission_profile_selection: Mission Profile Selection phase.
+    mission_initialization: Mission Initialization phase.
+    active_context_manifest: Active Context Manifest phase.
+    phase_accounting: Phase Accounting phase.
+    behavior_contract: Behavior Contract phase.
+    codebase_reconnaissance: Codebase Reconnaissance phase.
+    local_alignment: Local Alignment phase.
+    risk_classification: Risk Classification phase.
+    boundary_contract_classification: Boundary Contract Classification phase.
+    dependency_classification: Dependency Classification phase.
+    architecture_decomposition: Architecture Decomposition phase.
+    draft_role_pass: Draft Role Pass phase.
+    pattern_pressure_detection: Pattern Pressure Detection phase.
+    artifact_reuse_analysis: Artifact Reuse Analysis phase.
+    artifact_action_resolution: Artifact Action Resolution phase.
+    refactor_strategy_selection: Refactor Strategy Selection phase.
+    call_site_impact_analysis: Call Site Impact Analysis phase.
+    change_impact_analysis: Change Impact Analysis phase.
+    final_role_assignment: Final Role Assignment phase.
+    pattern_selection: Pattern Selection phase.
+    structure_rendering: Structure Rendering phase.
+    test_derivation: Test Derivation phase.
+    implementation_sequence: Implementation Sequence phase.
+    checkpoint_validation_plan: Checkpoint Validation Plan phase.
+    pre_implementation_gate: Pre Implementation Gate phase.
+    implementation: Implementation phase.
+    failure_classification: Failure Classification phase.
+    feedback_repair: Feedback Repair phase.
+    post_implementation_validation: Post Implementation Validation phase.
+    trigger_review: Trigger Review phase.
+    report_artifact_validation: Report Artifact Validation phase.
+    final_validation: Final Validation phase.
+  phase_addition_policy:
+    absolute_rules:
+    - id: PHASE-TAXONOMY-ABS-001
+      rule: Mission profiles must not define new phases.
+      fail_condition: mission_profile_defines_unknown_phase
+validation:
+  required_checks: []
+  fail_conditions: []

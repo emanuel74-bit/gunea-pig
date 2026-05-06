@@ -1,0 +1,58 @@
+version: '1.0'
+file:
+  name: conventions.gate-validation.yaml
+  path: gates/conventions.gate-validation.yaml
+  role: gate_validation_contract
+  executability: validator
+purpose: Define gate validation rules and algorithms.
+ownership:
+  owns:
+  - gate_validation_rules
+  - gate_validation_algorithm
+  does_not_own:
+  - gate_vocabulary
+  - gate_templates
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - gate_validation_required
+  skips_when: []
+inputs:
+  required:
+  - gate_template_registry
+  - phase_contract
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - gate_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  - gates/conventions.gate-templates.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files: []
+sections:
+  gate_validation_rules:
+    absolute_rules:
+    - id: GATE-VALIDATION-ABS-001
+      rule: No phase can start before entry gate passes.
+      fail_condition: phase_started_before_entry_gate_passed
+    - id: GATE-VALIDATION-ABS-002
+      rule: No phase can be marked executed before output gate passes.
+      fail_condition: phase_marked_executed_without_output_gate
+  gate_validation_algorithm:
+    steps:
+    - load_phase_contract
+    - load_gate_ref
+    - load_gate_template_or_record
+    - load_mission_state
+    - run_required_checks
+    - evaluate_pass_fail
+    - write_gate_result
+    - block_or_continue
+validation:
+  required_checks: []
+  fail_conditions: []

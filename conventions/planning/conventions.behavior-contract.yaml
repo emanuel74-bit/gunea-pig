@@ -1,0 +1,87 @@
+version: '1.0'
+file:
+  name: conventions.behavior-contract.yaml
+  path: planning/conventions.behavior-contract.yaml
+  role: behavior_contract_extraction_contract
+  executability: decision_engine
+purpose: Convert a raw request into explicit expected behavior before architecture, roles, patterns, structure, or implementation.
+ownership:
+  owns:
+  - behavior_contract_schema
+  - requirement_classification
+  - acceptance_criteria_rules
+  - behavior_preservation_rules
+  - scope_extraction_rules
+  - boundary_detection_rules
+  - ambiguity_policy
+  - behavior_risk_signals
+  does_not_own:
+  - architecture_decomposition
+  - role_assignment
+  - implementation_sequence
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - behavior_contract
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  behavior_contract_schema:
+    required:
+    - request_summary
+    - request_type
+    - user_intent
+    - functional_requirements
+    - acceptance_criteria
+    - scope
+    - assumptions
+    - open_questions
+    - confidence
+  behavior_risk_signals:
+    security_terms:
+      minimum_risk_hint: high
+      emits_concerns:
+      - security
+    payment_terms:
+      minimum_risk_hint: critical
+      emits_concerns:
+      - payment
+  rule_sets:
+    absolute_rules:
+    - id: BEHAVIOR-CONTRACT-ABS-001
+      rule: Architecture must not start before behavior contract exists.
+      fail_condition: architecture_started_without_behavior_contract
+    - id: BEHAVIOR-CONTRACT-ABS-002
+      rule: Every business rule must later receive an owner.
+      fail_condition: business_rule_without_owner
+    - id: BEHAVIOR-CONTRACT-ABS-003
+      rule: Every acceptance criterion must map to a test expectation.
+      fail_condition: acceptance_criterion_without_test_expectation
+    - id: BEHAVIOR-CONTRACT-ABS-004
+      rule: Silent assumptions are forbidden.
+      fail_condition: silent_assumption_detected
+validation:
+  fail_conditions:
+  - id: PLANNING-CONVENTIONS-BEHAVIOR-CONTRACT-YAML-FC-001
+    condition: behavior_contract_missing
+    message: Behavior contract missing.
+    severity: error
+    owner: planning/conventions.behavior-contract.yaml
+  - id: PLANNING-CONVENTIONS-BEHAVIOR-CONTRACT-YAML-FC-002
+    condition: acceptance_criteria_missing
+    message: Acceptance criteria missing.
+    severity: error
+    owner: planning/conventions.behavior-contract.yaml
+  - id: PLANNING-CONVENTIONS-BEHAVIOR-CONTRACT-YAML-FC-003
+    condition: silent_assumption_detected
+    message: Silent assumption detected.
+    severity: error
+    owner: planning/conventions.behavior-contract.yaml
+  required_checks: []

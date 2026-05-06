@@ -1,0 +1,71 @@
+version: '1.0'
+file:
+  name: conventions.rerun-policy.yaml
+  path: revisions/conventions.rerun-policy.yaml
+  role: rerun_and_revision_policy_contract
+  executability: validator
+purpose: Define revision approval, rerun modes, and rerun algorithm.
+ownership:
+  owns:
+  - revision_approval_policy
+  - rerun_policy
+  - rerun_mode_enum
+  - revision_rerun_algorithm
+  does_not_own:
+  - mission_state_storage
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - revision_request_exists
+  skips_when: []
+inputs:
+  required:
+  - revision_request
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - revision_rerun_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files: []
+sections:
+  rerun_mode_enum:
+    allowed:
+    - rerun_single_phase
+    - rerun_phase_and_dependents
+    - rerun_from_phase_forward
+    - revalidate_dependents_only
+    - block_until_manual_resolution
+  revision_approval_policy:
+    decision_authority: alpha_controller
+    approval_rules:
+    - id: REVISION-APPROVAL-001
+      match:
+        revision_reason:
+        - required_input_missing
+        - required_output_schema_invalid
+      decision:
+        default_action: rerun_target_phase
+  rerun_policy:
+    absolute_rules:
+    - id: RERUN-ABS-001
+      rule: A rerun must create a new output version or replacement record.
+      fail_condition: rerun_overwrote_prior_output_without_record
+  revision_rerun_algorithm:
+    steps:
+    - load_revision_request
+    - validate_revision_request
+    - classify_revision_reason
+    - select_revision_action
+    - invalidate_affected_outputs
+    - find_dependent_outputs
+    - update_active_phase_plan
+    - write_revision_history
+validation:
+  required_checks: []
+  fail_conditions: []

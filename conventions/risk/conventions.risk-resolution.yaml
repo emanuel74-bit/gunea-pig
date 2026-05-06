@@ -1,0 +1,82 @@
+version: '1.0'
+file:
+  name: conventions.risk-resolution.yaml
+  path: risk/conventions.risk-resolution.yaml
+  role: risk_resolution_engine
+  executability: decision_engine
+purpose: Collect risk signals from vocabularies and produce final risk classification.
+ownership:
+  owns:
+  - risk_classification_process
+  - risk_signal_detection
+  - risk_level_selection
+  - risk_based_activation_rules
+  - risk_based_validation_depth
+  does_not_own:
+  - risk_vocabulary
+  - impact_analysis
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - risk_resolution_decision_report
+dependencies:
+  required_files:
+  - risk/conventions.risk-taxonomy.yaml
+  optional_files:
+  - refactoring/conventions.refactor-taxonomy.yaml
+sections:
+  risk_signal_sources:
+    behavior_risk_signals: planning/conventions.behavior-contract.yaml
+    action_risk_signals: actions/conventions.action-taxonomy.yaml
+    boundary_risk_signals: boundaries/conventions.boundary-taxonomy.yaml
+    contract_risk_signals: contracts/conventions.contract-taxonomy.yaml
+    dependency_risk_signals: dependencies/conventions.dependency-taxonomy.yaml
+    change_impact_risk_signals: planning/conventions.change-impact.yaml
+    refactor_risk_signals:
+      source: refactoring/conventions.refactor-taxonomy.yaml
+  risk_resolution_pipeline:
+  - load_risk_taxonomy
+  - collect_risk_signals
+  - normalize_risk_signals
+  - classify_risk_contexts
+  - classify_risk_concerns
+  - apply_minimum_risk_hints
+  - apply_cross_signal_escalation_rules
+  - assign_final_risk_level
+  - assign_required_checks
+  - produce_risk_classification
+  rule_sets:
+    absolute_rules:
+    - id: RISK-RESOLUTION-ABS-001
+      rule: Vocabulary files emit risk signals only.
+      fail_condition: vocabulary_file_assigns_final_risk
+    - id: RISK-RESOLUTION-ABS-002
+      rule: Risk resolution owns final risk classification.
+      fail_condition: final_risk_resolved_outside_risk_resolution
+    - id: RISK-RESOLUTION-ABS-003
+      rule: Risk may be revised after actions, impact analysis, or implementation feedback.
+      fail_condition: risk_revision_point_ignored
+validation:
+  fail_conditions:
+  - id: RISK-CONVENTIONS-RISK-RESOLUTION-YAML-FC-001
+    condition: non_risk_file_assigns_final_risk_level
+    message: Non risk file assigns final risk level.
+    severity: error
+    owner: risk/conventions.risk-resolution.yaml
+  - id: RISK-CONVENTIONS-RISK-RESOLUTION-YAML-FC-002
+    condition: risk_signal_uses_unknown_risk_concern
+    message: Risk signal uses unknown risk concern.
+    severity: error
+    owner: risk/conventions.risk-resolution.yaml
+  - id: RISK-CONVENTIONS-RISK-RESOLUTION-YAML-FC-003
+    condition: final_risk_classification_missing_signal_sources
+    message: Final risk classification missing signal sources.
+    severity: error
+    owner: risk/conventions.risk-resolution.yaml
+  required_checks: []

@@ -1,0 +1,87 @@
+version: '1.0'
+file:
+  name: conventions.mission-state.yaml
+  path: missions/conventions.mission-state.yaml
+  role: mission_state_and_phase_accounting_contract
+  executability: schema
+purpose: Define Alpha-controlled mission state, active phase plan, phase accounting, trigger storage, and revision storage.
+ownership:
+  owns:
+  - mission_state_schema
+  - active_phase_plan_schema
+  - phase_accounting_schema
+  - trigger_instance_storage
+  - revision_instance_storage
+  does_not_own:
+  - trigger_vocabulary
+  - revision_policy
+  - phase_gate_logic
+activation:
+  mode: conditional
+  activates_when:
+  - mission_state_required
+  skips_when: []
+inputs:
+  required:
+  - mission_profile
+  - phase_taxonomy
+  optional: []
+outputs:
+  produces:
+  - mission_state
+  - phase_accounting_report
+  - trigger_registry
+  - revision_registry
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - missions/conventions.mission-profiles.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  optional_files: []
+sections:
+  mission_state_schema:
+    required_fields:
+    - mission_id
+    - selected_profile
+    - current_phase
+    - active_phase_plan
+    - phase_statuses
+    - report_registry_ref
+    - active_triggers
+    - blocked_items
+    - implementation_allowed
+  mission_state_record_shape:
+    mission_id: ''
+    selected_profile: ''
+    current_phase: ''
+    implementation_allowed: false
+    active_phase_plan:
+      ordered_phases: []
+      required_phases: []
+      conditional_phases: []
+      forbidden_phases: []
+    phase_statuses: []
+    active_triggers: []
+    revision_history: []
+    invalidated_outputs: []
+  phase_accounting_schema:
+    required_fields:
+    - phase_id
+    - status
+    - reason
+    - evidence_refs
+    - required_outputs
+    - produced_outputs
+    - gate_status
+  mission_state_validation_algorithm:
+    steps:
+    - load_mission_state
+    - assert_phase_statuses_exist
+    - assert_active_triggers_handled_before_implementation
+    - assert_implementation_allowed
+    - assert_final_state_has_no_blockers
+validation:
+  required_checks: []
+  fail_conditions: []

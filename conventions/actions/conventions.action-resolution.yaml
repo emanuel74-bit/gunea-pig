@@ -1,0 +1,76 @@
+version: '1.0'
+file:
+  name: conventions.action-resolution.yaml
+  path: actions/conventions.action-resolution.yaml
+  role: artifact_action_resolution_engine
+  executability: decision_engine
+purpose: Select the correct artifact action for each artifact candidate.
+ownership:
+  owns:
+  - artifact_action_decision_process
+  - action_selection_pipeline
+  - artifact_candidate_matching
+  - post_action_artifact_candidate_generation
+  - artifact_action_validation_report
+  does_not_own:
+  - artifact_action_definitions
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - action_resolution_decision_report
+dependencies:
+  required_files:
+  - actions/conventions.action-taxonomy.yaml
+  - planning/conventions.behavior-contract.yaml
+  - planning/conventions.codebase-reconnaissance.yaml
+  optional_files: []
+sections:
+  action_selection_pipeline:
+  - load_action_taxonomy
+  - match_artifact_candidates_to_existing_artifacts
+  - evaluate_no_code_change
+  - evaluate_reuse_existing
+  - evaluate_in_place_actions
+  - evaluate_decomposition_actions
+  - evaluate_additive_actions
+  - evaluate_consolidation_actions
+  - evaluate_lifecycle_actions
+  - resolve_action_collisions
+  - produce_artifact_action_table
+  - produce_post_action_artifact_candidates
+  artifact_action_table_schema:
+    required_fields:
+    - desired_artifact
+    - desired_responsibility
+    - selected_action
+    - reason
+    - confidence
+validation:
+  fail_conditions:
+  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-001
+    condition: artifact_without_action
+    message: Artifact without action.
+    severity: error
+    owner: actions/conventions.action-resolution.yaml
+  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-002
+    condition: selected_action_not_in_action_taxonomy
+    message: Selected action not in action taxonomy.
+    severity: error
+    owner: actions/conventions.action-resolution.yaml
+  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-003
+    condition: create_new_without_existing_artifact_check
+    message: Create new without existing artifact check.
+    severity: error
+    owner: actions/conventions.action-resolution.yaml
+  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-004
+    condition: no_code_change_without_evidence
+    message: No code change without evidence.
+    severity: error
+    owner: actions/conventions.action-resolution.yaml
+  required_checks: []

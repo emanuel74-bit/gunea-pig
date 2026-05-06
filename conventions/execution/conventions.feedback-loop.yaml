@@ -1,0 +1,77 @@
+version: '1.0'
+file:
+  name: conventions.feedback-loop.yaml
+  path: execution/conventions.feedback-loop.yaml
+  role: implementation_feedback_loop_contract
+  executability: orchestrator
+purpose: Govern implement-check-repair cycle with failure classification, expected temporary failures, and design revision
+  routing.
+ownership:
+  owns:
+  - feedback_loop_schema
+  - failure_classification
+  - temporary_failure_policy
+  - repair_path_rules
+  - continue_stop_policy
+  does_not_own:
+  - implementation_sequence_planning
+  - architecture_decomposition
+activation:
+  mode: conditional
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - feedback_loop_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  feedback_loop:
+  - implement_next_step
+  - run_relevant_checks
+  - classify_failures
+  - decide_repair_path
+  - repair_code_or_plan
+  - rerun_checks
+  - update_decision_log
+  - continue_or_stop
+  failure_classification:
+    syntax_failure: local_code_repair
+    type_failure: local_or_contract_repair
+    test_failure: behavior_or_test_repair
+    architecture_violation: design_revision
+    contract_violation: compatibility_or_contract_revision
+    dependency_violation: structure_or_dependency_revision
+    expected_temporary: continue_until_expiry
+  anti_patterns:
+  - blindly_editing_until_tests_pass
+  - changing_tests_to_match_wrong_behavior
+  - continuing_after_required_check_failure
+  - contract_failure_treated_as_local_failure
+validation:
+  fail_conditions:
+  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-001
+    condition: failure_not_classified
+    message: Failure not classified.
+    severity: error
+    owner: execution/conventions.feedback-loop.yaml
+  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-002
+    condition: required_check_failed_but_pipeline_continued
+    message: Required check failed but pipeline continued.
+    severity: error
+    owner: execution/conventions.feedback-loop.yaml
+  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-003
+    condition: temporary_failure_remaining_after_checkpoint
+    message: Temporary failure remaining after checkpoint.
+    severity: error
+    owner: execution/conventions.feedback-loop.yaml
+  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-004
+    condition: design_revision_made_without_decision_log_update
+    message: Design revision made without decision log update.
+    severity: error
+    owner: execution/conventions.feedback-loop.yaml
+  required_checks: []

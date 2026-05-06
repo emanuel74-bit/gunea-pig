@@ -1,0 +1,290 @@
+version: '1.0'
+file:
+  name: conventions.output-schema.yaml
+  path: core/conventions.output-schema.yaml
+  role: shared_output_schema_contract
+  executability: schema
+purpose: Define shared output schemas and reference shared vocabulary sources without redefining their enum values.
+ownership:
+  owns:
+  - shared_primitives
+  - shared_output_schemas
+  - vocabulary_output_schemas
+  - planning_output_schemas
+  - execution_output_schemas
+  - validation_report_schema
+  does_not_own:
+  - role_definitions
+  - pattern_definitions
+  - action_definitions
+  - risk_resolution_rules
+  - boundary_definitions
+  - contract_definitions
+  - dependency_rules
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - output_schema_registry
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  agent_output_schemas:
+    agent_mode_schema:
+      owner_file: agent/conventions.agent-protocol.yaml
+      required_fields:
+      - agent_mode
+    agent_context_request_schema:
+      owner_file: agent/conventions.context-policy.yaml
+      required_fields:
+      - request_mode
+      - context_mode
+      - requested_subsystems
+      - activation_reasons
+    agent_response_contract_schema:
+      owner_file: agent/conventions.agent-output.yaml
+      required_fields:
+      - output_mode
+      - required_sections
+  shared_primitives:
+    role_enum:
+      source_of_truth: roles/conventions.role-taxonomy.yaml
+    pattern_enum:
+      source_of_truth: patterns/conventions.pattern-catalog.yaml
+    artifact_action_enum:
+      source_of_truth: actions/conventions.action-taxonomy.yaml
+    risk_level_enum:
+      source_of_truth: risk/conventions.risk-taxonomy.yaml
+    risk_context_enum:
+      source_of_truth: risk/conventions.risk-taxonomy.yaml
+    risk_concern_enum:
+      source_of_truth: risk/conventions.risk-taxonomy.yaml
+    boundary_type_enum:
+      source_of_truth: boundaries/conventions.boundary-taxonomy.yaml
+    contract_type_enum:
+      source_of_truth: contracts/conventions.contract-taxonomy.yaml
+    compatibility_strategy_enum:
+      source_of_truth: contracts/conventions.compatibility.yaml
+    dependency_type_enum:
+      source_of_truth: dependencies/conventions.dependency-taxonomy.yaml
+  output_schema_registry:
+    core_outputs:
+    - activation_manifest_schema
+    - validation_report_schema
+    - final_execution_manifest_schema
+    vocabulary_outputs:
+    - role_assignment_table_schema
+    - pattern_decision_log_schema
+    - artifact_action_table_schema
+    - post_action_artifact_candidates_schema
+    - artifact_action_validation_report_schema
+    - risk_classification_schema
+    - boundary_classification_schema
+    - boundary_validation_report_schema
+    - contract_classification_schema
+    - compatibility_decision_schema
+    - dependency_classification_schema
+    - dependency_validation_report_schema
+    planning_outputs:
+    - behavior_contract_schema
+    - codebase_reconnaissance_report_schema
+    - local_convention_alignment_report_schema
+    - change_impact_report_schema
+    - decision_log_schema
+    - assumption_register_schema
+    - uncertainty_register_schema
+    architecture_outputs:
+    - architecture_blueprint_schema
+    - artifact_candidate_schema
+    - structure_plan_schema
+    - final_file_tree_schema
+    testing_outputs:
+    - test_plan_schema
+    execution_outputs:
+    - implementation_sequence_plan_schema
+    - checkpoint_group_schema
+    - expected_temporary_failure_schema
+    - execution_report_schema
+    - failure_report_schema
+    - repair_plan_schema
+  schemas:
+    artifact_action_table_schema:
+      required_fields:
+      - desired_artifact
+      - desired_responsibility
+      - selected_action
+      - reason
+      - confidence
+      selected_action_source: actions/conventions.action-taxonomy.yaml
+      optional_fields:
+      - desired_role
+      - existing_target
+      - source_artifact
+      - target_artifact
+      - replacement_artifact
+      - canonical_artifact
+      - evidence
+      - reuse_blockers
+      - required_followups
+      - risks
+      - affected_artifacts
+    risk_classification_schema:
+      required_fields:
+      - risk_level
+      - risk_context
+      - risk_concerns
+      - signals
+      - required_extra_checks
+      - confidence
+    affected_artifact_record_schema:
+      required_fields:
+      - artifact_id
+      - artifact_name
+      - artifact_role
+      - artifact_scope
+      - artifact_action
+      - change_type
+      - affected_responsibility
+      - impact_surface
+      - downstream_checks_required
+      artifact_action_source: actions/conventions.action-taxonomy.yaml
+    checkpoint_group_schema:
+      required_fields:
+      - group_id
+      - name
+      - steps
+      - temporary_incomplete_allowed
+      - required_checks_after_group
+      optional_fields:
+      - expected_temporary_failures
+      - risk
+      - rollback_notes
+  required_output_schemas:
+    refactoring:
+    - refactor_taxonomy_schema
+    - behavior_preservation_requirements_schema
+    - refactor_strategy_decision_schema
+    - refactor_required_followups_schema
+    - refactoring_system_result_schema
+  refactoring_output_schemas:
+    refactor_strategy_decision_schema:
+      output_name: refactor_strategy_decision
+      owner_file: refactoring/conventions.refactor-strategy.yaml
+      produced_by_phase: select_refactor_strategy_if_active
+      consumed_by_phases:
+      - analyze_change_impact_if_active
+      - derive_tests_if_needed
+      - draft_implementation_sequence_if_needed
+      - validate_final_plan
+      source_vocabularies:
+        refactor_strategy: refactoring/conventions.refactor-taxonomy.yaml
+        artifact_action: actions/conventions.action-taxonomy.yaml
+        risk: risk/conventions.risk-taxonomy.yaml
+      schema:
+        required_fields:
+        - selected_strategy
+        - strategy_reason
+        - artifact_actions_referenced
+        - required_behavior_lock
+        - implementation_allowed
+        - required_followups
+        - confidence
+        optional_fields:
+        - rejected_strategies
+        - blocking_reason
+        - related_contracts
+        - related_dependencies
+      validation:
+        fail_conditions:
+        - id: REFACTOR-OUTPUT-001
+          condition: selected_strategy_not_in_refactor_taxonomy
+          message: Selected refactor strategy must be defined in refactor taxonomy.
+          severity: error
+    behavior_preservation_requirements_schema:
+      output_name: behavior_preservation_requirements
+      owner_file: refactoring/conventions.behavior-preservation.yaml
+      produced_by_phase: evaluate_behavior_preservation_requirements_if_refactor_active
+      consumed_by_phases:
+      - select_refactor_strategy_if_active
+      - derive_tests_if_needed
+      - draft_implementation_sequence_if_needed
+      - validate_final_plan
+      schema:
+        required_fields:
+        - behavior_lock_required
+        - preservation_scope
+        - allowed_behavior_change
+        - required_followups
+        - confidence
+        optional_fields:
+        - characterization_tests_required
+        - behavior_lock_evidence
+        - blocking_reason
+      validation:
+        fail_conditions:
+        - id: BEHAVIOR-PRESERVE-OUTPUT-001
+          condition: behavior_lock_required_but_missing_evidence
+          message: Behavior lock requirements must cite required evidence when locking is required.
+          severity: error
+  role_output_schemas:
+    draft_role_signals_schema:
+      output_name: draft_role_signals
+      owner_file: roles/conventions.role-resolution.yaml
+      produced_by_phase: draft_role_pass
+      consumed_by_phases:
+      - resolve_artifact_actions_if_active
+      - select_refactor_strategy_if_active
+      - detect_pattern_pressure_if_needed
+      schema:
+        required_fields:
+        - artifact_candidate
+        - provisional_roles
+        - role_signal_evidence
+        - mixed_responsibility_signals
+        - confidence
+        optional_fields:
+        - likely_split_targets
+        - likely_extraction_targets
+        - role_collision_warnings
+        - forbidden_role_warnings
+  runtime_output_schemas_added_in_steps_36_to_41:
+  - phase_contract_registry
+  - agent_contract_registry
+  - agent_permission_profiles
+  - mission_profiles
+  - report_artifact_registry
+  - mission_state_schema
+  - gate_record_schema
+  - trigger_record_schema
+  - handoff_schema
+  - revision_request_schema
+validation:
+  fail_conditions:
+  - id: CORE-CONVENTIONS-OUTPUT-SCHEMA-YAML-FC-001
+    condition: enum_value_duplicated_outside_source_vocabulary
+    message: Enum value duplicated outside source vocabulary.
+    severity: error
+    owner: core/conventions.output-schema.yaml
+  - id: CORE-CONVENTIONS-OUTPUT-SCHEMA-YAML-FC-002
+    condition: unknown_vocabulary_value_used
+    message: Unknown vocabulary value used.
+    severity: error
+    owner: core/conventions.output-schema.yaml
+  - id: CORE-CONVENTIONS-OUTPUT-SCHEMA-YAML-FC-003
+    condition: schema_missing_required_field
+    message: Schema missing required field.
+    severity: error
+    owner: core/conventions.output-schema.yaml
+  - id: OUTPUT-SCHEMA-REFACTOR-001
+    condition: refactor_outputs_missing_from_output_schema
+    message: Refactor outputs must be declared in output schema.
+    severity: error
+    owner: core/conventions.output-schema.yaml
+  required_checks: []

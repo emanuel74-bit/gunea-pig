@@ -1,0 +1,67 @@
+version: '1.0'
+file:
+  name: conventions.gate-taxonomy.yaml
+  path: gates/conventions.gate-taxonomy.yaml
+  role: gate_vocabulary_contract
+  executability: vocabulary
+purpose: Define gate vocabulary, statuses, severities, and gate record shape.
+ownership:
+  owns:
+  - gate_type_enum
+  - gate_status_enum
+  - gate_severity_enum
+  - gate_record_schema
+  does_not_own:
+  - gate_templates
+  - gate_validation_algorithm
+activation:
+  mode: reference_only
+  activates_when:
+  - gate_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - gate_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  gate_type_enum:
+    allowed:
+    - entry_gate
+    - output_gate
+    - handoff_gate
+    - skip_gate
+    - trigger_gate
+    - pre_implementation_gate
+    - post_implementation_gate
+    - final_gate
+  gate_status_enum:
+    allowed:
+    - pending
+    - passed
+    - failed
+    - blocked
+    - skipped
+  gate_severity_enum:
+    allowed:
+    - info
+    - warning
+    - error
+    - blocking
+  gate_record_schema:
+    required_fields:
+    - gate_id
+    - gate_type
+    - phase_id
+    - required_checks
+    - pass_when
+    - fail_when
+    - severity
+validation:
+  required_checks: []
+  fail_conditions: []

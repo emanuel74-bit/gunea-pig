@@ -1,0 +1,46 @@
+version: '1.0'
+file:
+  name: conventions.invalidation-policy.yaml
+  path: revisions/conventions.invalidation-policy.yaml
+  role: invalidation_policy_contract
+  executability: validator
+purpose: Define invalidation policy for unsafe outputs and dependent reports.
+ownership:
+  owns:
+  - invalidation_policy
+  - invalidation_validation_rules
+  does_not_own:
+  - mission_state_storage
+  - report_artifact_registry
+activation:
+  mode: conditional
+  activates_when:
+  - output_invalidation_required
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - invalidated_output
+  optional: []
+outputs:
+  produces:
+  - invalidation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  - missions/conventions.mission-state.yaml
+  - reports/conventions.report-artifacts.yaml
+  optional_files: []
+sections:
+  invalidation_policy:
+    absolute_rules:
+    - id: INVALIDATION-ABS-001
+      rule: Invalidated output must include reason, invalidating phase, and replacement requirement.
+      fail_condition: invalidated_output_missing_required_metadata
+    - id: INVALIDATION-ABS-002
+      rule: Every downstream report that consumed invalidated output must be invalidated or revalidated.
+      fail_condition: downstream_report_not_revalidated_after_invalidation
+validation:
+  required_checks: []
+  fail_conditions: []

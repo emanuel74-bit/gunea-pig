@@ -1,0 +1,22 @@
+phase_execution_request:
+  mission_id: ""
+  phase_id: ""
+  owner_agent: ""
+  claude_subagent_name: ""
+  injected_prompt_ref: ""
+  phase_contract_ref:
+    file: "conventions/phases/conventions.phase-contracts.yaml"
+    phase_id: ""
+  permission_profile_ref:
+    file: "conventions/agents/conventions.agent-permissions.yaml"
+    agent_id: ""
+  required_inputs: []
+  optional_inputs: []
+  required_outputs: []
+  optional_outputs: []
+  allowed_conventions: []
+  must_do: []
+  must_not_do: []
+  write_scope:
+    allowed: []
+    forbidden: []

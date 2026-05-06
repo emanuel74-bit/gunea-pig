@@ -1,0 +1,36 @@
+version: '1.0'
+file:
+  name: conventions.reports.yaml
+  path: reports/conventions.reports.yaml
+  role: reports_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for persistent report artifacts and report validation.
+ownership:
+  owns:
+  - reports_file_index
+  - reports_subsystem_contract
+  does_not_own:
+  - phase_order
+  - mission_profile_selection
+activation:
+  mode: entrypoint
+  activates_when:
+  - persistent_reports_required
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - reports_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-artifacts.yaml
+  optional_files: []
+sections:
+  reports_file_index:
+    report_artifacts: reports/conventions.report-artifacts.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

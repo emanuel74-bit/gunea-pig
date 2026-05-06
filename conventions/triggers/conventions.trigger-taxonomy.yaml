@@ -1,0 +1,93 @@
+version: '1.0'
+file:
+  name: conventions.trigger-taxonomy.yaml
+  path: triggers/conventions.trigger-taxonomy.yaml
+  role: trigger_vocabulary_contract
+  executability: vocabulary
+purpose: Define trigger types, statuses, and trigger record schema.
+ownership:
+  owns:
+  - trigger_type_enum
+  - trigger_status_enum
+  - trigger_record_schema
+  does_not_own:
+  - trigger_resolution_matrix
+  - mission_state_storage
+activation:
+  mode: reference_only
+  activates_when:
+  - trigger_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - trigger_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  trigger_status_enum:
+    allowed:
+    - active
+    - scheduled
+    - resolved
+    - blocked
+    - invalidated
+  trigger_type_enum:
+    allowed:
+    - behavior_change_requested
+    - public_contract_change_possible
+    - public_contract_change_confirmed
+    - security_sensitive_behavior_possible
+    - existing_artifact_found
+    - dependency_wiring_changed
+    - mixed_responsibility_possible
+    - mixed_responsibility_detected
+    - likely_extract_target_detected
+    - likely_split_target_detected
+    - role_collision_possible
+    - pattern_pressure_possible
+    - pattern_pressure_detected
+    - pattern_selection_required
+    - refactor_like_action_selected
+    - behavior_lock_required
+    - checkpointed_sequence_required
+    - compatibility_decision_required
+    - boundary_validation_required
+    - dependency_validation_required
+    - high_risk_detected
+    - dynamic_reference_risk_detected
+    - consumer_impact_detected
+    - call_site_update_required
+    - additional_contract_review_required
+    - risk_reclassification_required
+    - phase_revision_required
+    - approval_before_implementation_required
+    - implementation_blocked
+    - implementation_allowed
+    - implementation_failure_detected
+    - validation_required
+    - unexpected_file_changed
+    - post_validation_failed
+    - repair_required
+    - final_validation_ready
+    - required_report_missing
+    - report_schema_invalid
+    - mission_complete
+    - mission_blocked
+    - rerun_required
+  trigger_record_schema:
+    required_fields:
+    - trigger_id
+    - trigger_type
+    - emitted_by_phase
+    - status
+    - required_phase_or_action
+    - reason
+    - evidence_refs
+validation:
+  required_checks: []
+  fail_conditions: []

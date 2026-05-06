@@ -1,0 +1,124 @@
+version: '1.0'
+file:
+  name: conventions.gate-templates.yaml
+  path: gates/conventions.gate-templates.yaml
+  role: gate_template_contract
+  executability: template_registry
+purpose: Define reusable standard and special gate templates.
+ownership:
+  owns:
+  - standard_gate_templates
+  - special_gate_records
+  does_not_own:
+  - gate_type_enum
+  - gate_validation_algorithm
+activation:
+  mode: conditional
+  activates_when:
+  - gate_templates_required
+  skips_when: []
+inputs:
+  required:
+  - gate_taxonomy
+  optional: []
+outputs:
+  produces:
+  - gate_template_registry
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  optional_files: []
+sections:
+  gate_registry_policy:
+    absolute_rules:
+    - id: GATE-REGISTRY-ABS-001
+      rule: Every executable phase must have entry, output, and handoff gates.
+      fail_condition: phase_missing_required_gate
+  templates:
+    standard_entry_gate_template:
+      gate_type: entry_gate
+      applies_to: all_executable_phases
+      required_checks:
+      - phase_exists_in_phase_taxonomy
+      - required_inputs_exist
+      - agent_permission_profile_exists
+      pass_when:
+      - all_required_checks_pass
+      fail_when:
+      - required_input_missing
+      - agent_permission_missing
+      severity: blocking
+      blocking: true
+    standard_output_gate_template:
+      gate_type: output_gate
+      applies_to: all_executable_phases
+      required_checks:
+      - required_outputs_exist
+      - required_outputs_match_report_schema
+      - phase_must_do_items_satisfied
+      - agent_writes_within_allowed_scope
+      pass_when:
+      - all_required_checks_pass
+      fail_when:
+      - required_output_missing
+      - output_schema_invalid
+      - agent_wrote_unallowed_file
+      severity: blocking
+      blocking: true
+    standard_handoff_gate_template:
+      gate_type: handoff_gate
+      applies_to: all_phase_handoffs
+      required_checks:
+      - source_phase_output_gate_passed
+      - source_output_not_invalidated
+      - target_phase_declares_input
+      - target_agent_may_read_input
+      pass_when:
+      - all_required_checks_pass
+      fail_when:
+      - source_output_gate_failed
+      - source_output_invalidated
+      - target_phase_does_not_declare_input
+      severity: blocking
+      blocking: true
+    pre_implementation_gate_record:
+      gate_id: gate.pre_implementation_gate.output
+      gate_type: pre_implementation_gate
+      phase_id: pre_implementation_gate
+      required_checks:
+      - mission_state_exists
+      - required_reports_exist
+      - test_plan_exists
+      - implementation_sequence_exists
+      - checkpoint_validation_plan_exists
+      - no_active_unresolved_triggers
+      pass_when:
+      - implementation_allowed_true
+      - all_required_checks_pass
+      fail_when:
+      - required_report_file_missing
+      - active_trigger_exists
+      severity: blocking
+      blocking: true
+    final_gate_record:
+      gate_id: gate.final_validation.output
+      gate_type: final_gate
+      phase_id: final_validation
+      required_checks:
+      - all_required_phases_accounted_for
+      - no_unresolved_active_triggers
+      - required_reports_exist
+      - report_artifact_validation_passed
+      pass_when:
+      - final_status_is_passed
+      - all_required_checks_pass
+      fail_when:
+      - phase_missing_accounting_status
+      - unresolved_active_trigger_exists
+      - required_report_file_missing
+      severity: blocking
+      blocking: true
+validation:
+  required_checks: []
+  fail_conditions: []

@@ -1,0 +1,63 @@
+version: '1.0'
+file:
+  name: conventions.agent.yaml
+  path: agent/conventions.agent.yaml
+  role: agent_usability_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Provide the entrypoint, file index, execution order, and subsystem contract for agent usability, context policy,
+  interaction protocol, and output formatting.
+ownership:
+  owns:
+  - agent_system_metadata
+  - agent_file_index
+  - agent_system_execution_order
+  - agent_system_contract
+  does_not_own:
+  - context_policy_details
+  - agent_mode_decision_details
+  - output_schema_details
+  - core_routing
+  - core_orchestration
+activation:
+  mode: entrypoint
+  activates_when:
+  - agent_needs_usability_subsystem_index
+  skips_when: []
+inputs:
+  required:
+  - user_request
+  optional:
+  - agent_context_request
+  - agent_mode
+outputs:
+  produces:
+  - agent_system_result
+dependencies:
+  required_files:
+  - agent/conventions.context-policy.yaml
+  - agent/conventions.agent-protocol.yaml
+  - agent/conventions.agent-output.yaml
+  optional_files:
+  - core/conventions.routing.yaml
+  - core/conventions.orchestrator.yaml
+sections:
+  agent_file_index:
+    context_policy: agent/conventions.context-policy.yaml
+    protocol: agent/conventions.agent-protocol.yaml
+    output: agent/conventions.agent-output.yaml
+  agent_system_execution_order:
+  - classify_agent_request_mode
+  - produce_agent_context_request
+  - request_authoritative_manifest_from_core_routing
+  - follow_core_orchestrator
+  - format_agent_response
+validation:
+  required_checks:
+  - id: AGENT-RC-001
+    check: agent_entrypoint_references_all_agent_files
+  fail_conditions:
+  - id: AGENT-001
+    condition: agent_subsystem_claims_authoritative_routing
+    message: Agent subsystem must not own authoritative routing or active file manifests.
+    severity: error
+    owner: agent/conventions.agent.yaml

@@ -1,0 +1,50 @@
+version: '1.0'
+file:
+  name: conventions.handoff-schema.yaml
+  path: handoffs/conventions.handoff-schema.yaml
+  role: phase_handoff_schema_contract
+  executability: schema
+purpose: Define phase handoff records and lifecycle states.
+ownership:
+  owns:
+  - phase_handoff_schema
+  - handoff_lifecycle_state_enum
+  does_not_own:
+  - report_artifact_registry
+  - alpha_runtime_scheduling
+activation:
+  mode: reference_only
+  activates_when:
+  - phase_handoff_schema_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - handoff_schema
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  handoff_lifecycle_state_enum:
+    allowed:
+    - pending
+    - valid
+    - blocked
+    - invalidated
+    - replaced
+  phase_handoff_schema:
+    required_fields:
+    - handoff_id
+    - source_phase
+    - target_phase
+    - source_outputs
+    - target_required_inputs
+    - source_gate_status
+    - lifecycle_state
+    - evidence_refs
+validation:
+  required_checks: []
+  fail_conditions: []

@@ -1,0 +1,70 @@
+version: '1.0'
+file:
+  name: conventions.revision-taxonomy.yaml
+  path: revisions/conventions.revision-taxonomy.yaml
+  role: revision_vocabulary_contract
+  executability: vocabulary
+purpose: Define revision reasons, actions, statuses, and request schema.
+ownership:
+  owns:
+  - revision_reason_enum
+  - revision_action_enum
+  - revision_status_enum
+  - revision_request_schema
+  does_not_own:
+  - rerun_policy
+  - mission_state_storage
+activation:
+  mode: reference_only
+  activates_when:
+  - revision_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - revision_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  revision_reason_enum:
+    allowed:
+    - required_input_missing
+    - required_input_incomplete
+    - required_input_contradicted
+    - required_output_schema_invalid
+    - phase_scope_violation_detected
+    - dependency_edge_violation_detected
+    - trigger_requires_prior_phase_update
+    - implementation_revealed_design_gap
+    - validation_revealed_behavior_gap
+    - report_artifact_invalid
+  revision_action_enum:
+    allowed:
+    - rerun_target_phase
+    - amend_target_report
+    - invalidate_target_output
+    - replace_target_output
+    - rerun_from_target_phase_forward
+    - block_mission
+  revision_status_enum:
+    allowed:
+    - requested
+    - approved
+    - rejected
+    - applied
+    - superseded
+  revision_request_schema:
+    required_fields:
+    - revision_id
+    - requested_by_phase
+    - target_phase
+    - reason
+    - required_action
+    - invalidated_outputs
+validation:
+  required_checks: []
+  fail_conditions: []

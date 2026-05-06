@@ -1,0 +1,74 @@
+version: '1.0'
+file:
+  name: conventions.alpha-controller.yaml
+  path: multi-agent/conventions.alpha-controller.yaml
+  role: alpha_runtime_controller_contract
+  executability: orchestrator
+purpose: 'Define Alpha runtime responsibilities: phase scheduling, agent activation, gates, triggers, handoffs, revisions,
+  and mission state updates.'
+ownership:
+  owns:
+  - active_phase_plan_execution
+  - phase_agent_invocation_rules
+  - alpha_mission_state_update_rules
+  - alpha_trigger_handling_rules
+  does_not_own:
+  - global_pipeline_laws
+  - phase_output_content
+activation:
+  mode: conditional
+  activates_when:
+  - multi_agent_execution_enabled
+  - mission_profile_selected
+  skips_when: []
+inputs:
+  required:
+  - mission_profile
+  - mission_state
+  - phase_contract_registry
+  - agent_contract_registry
+  - pipeline_contract_constraints
+  optional: []
+outputs:
+  produces:
+  - alpha_execution_result
+  - updated_mission_state
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.pipeline-contract.yaml
+  - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-prompts.yaml
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.rerun-policy.yaml
+  optional_files: []
+sections:
+  agent_activation_contract:
+    required_steps:
+    - resolve_phase
+    - resolve_owner_agent
+    - validate_agent_exists
+    - load_agent_prompt
+    - load_agent_permissions
+    - build_phase_input_bundle
+    - run_entry_gate
+    - invoke_agent_executor
+    - collect_phase_result
+    - run_output_gate
+  alpha_execution_algorithm:
+    steps:
+    - select_next_phase
+    - validate_entry_gate
+    - inject_agent_prompt
+    - invoke_owner_agent
+    - validate_output_gate
+    - register_triggers
+    - validate_handoffs
+    - process_revision_requests
+    - update_mission_state
+    - select_next_or_block
+validation:
+  required_checks: []
+  fail_conditions: []

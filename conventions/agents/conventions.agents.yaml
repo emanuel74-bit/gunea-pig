@@ -1,0 +1,42 @@
+version: '1.0'
+file:
+  name: conventions.agents.yaml
+  path: agents/conventions.agents.yaml
+  role: agents_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for fixed agent roster, contracts, permissions, and prompts.
+ownership:
+  owns:
+  - agents_file_index
+  - agents_subsystem_contract
+  does_not_own:
+  - phase_vocabulary
+  - runtime_phase_scheduling
+activation:
+  mode: entrypoint
+  activates_when:
+  - multi_agent_execution_enabled
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - agents_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - agents/conventions.agent-prompts.yaml
+  optional_files: []
+sections:
+  agents_file_index:
+    taxonomy: agents/conventions.agent-taxonomy.yaml
+    contracts: agents/conventions.agent-contracts.yaml
+    permissions: agents/conventions.agent-permissions.yaml
+    prompts: agents/conventions.agent-prompts.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

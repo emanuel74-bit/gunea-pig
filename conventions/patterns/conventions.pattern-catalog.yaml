@@ -1,0 +1,271 @@
+version: '1.0'
+file:
+  name: conventions.pattern-catalog.yaml
+  path: patterns/conventions.pattern-catalog.yaml
+  role: pattern_catalog_contract
+  executability: vocabulary
+purpose: Define pattern vocabulary including classic, enterprise, conditional, and disallowed patterns.
+ownership:
+  owns:
+  - pattern_enum
+  - pattern_definitions
+  - pattern_categories
+  does_not_own:
+  - pattern_selection_process
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - pattern_catalog_registry
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  pattern_enum:
+    allowed:
+    - NoPattern
+    - Strategy
+    - FactoryMethod
+    - AbstractFactory
+    - Builder
+    - Adapter
+    - Facade
+    - Proxy
+    - Decorator
+    - Command
+    - ChainOfResponsibility
+    - Observer
+    - Mediator
+    - TemplateMethod
+    - State
+    - Specification
+    - Policy
+    - Repository
+    - UnitOfWork
+    - CQRS
+    - Outbox
+    - Saga
+    - Pipeline
+    - DomainEvent
+    - AntiCorruptionLayer
+    - Result
+    - ContractVersioning
+    - ServiceLocator
+  pattern_definitions:
+    NoPattern:
+      definition: Default when no pattern pressure exists.
+      activation_signals:
+      - NoPattern pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Strategy:
+      definition: Strategy design pattern.
+      activation_signals:
+      - Strategy pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    FactoryMethod:
+      definition: FactoryMethod design pattern.
+      activation_signals:
+      - FactoryMethod pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    AbstractFactory:
+      definition: AbstractFactory design pattern.
+      activation_signals:
+      - AbstractFactory pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Builder:
+      definition: Builder design pattern.
+      activation_signals:
+      - Builder pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Adapter:
+      definition: Adapter design pattern.
+      activation_signals:
+      - Adapter pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Facade:
+      definition: Facade design pattern.
+      activation_signals:
+      - Facade pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Proxy:
+      definition: Proxy design pattern.
+      activation_signals:
+      - Proxy pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Decorator:
+      definition: Decorator design pattern.
+      activation_signals:
+      - Decorator pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Command:
+      definition: Command design pattern.
+      activation_signals:
+      - Command pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    ChainOfResponsibility:
+      definition: ChainOfResponsibility design pattern.
+      activation_signals:
+      - ChainOfResponsibility pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Observer:
+      definition: Observer design pattern.
+      activation_signals:
+      - Observer pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Mediator:
+      definition: Mediator design pattern.
+      activation_signals:
+      - Mediator pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    TemplateMethod:
+      definition: TemplateMethod design pattern.
+      activation_signals:
+      - TemplateMethod pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    State:
+      definition: State design pattern.
+      activation_signals:
+      - State pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Specification:
+      definition: Specification design pattern.
+      activation_signals:
+      - Specification pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Policy:
+      definition: Policy design pattern.
+      activation_signals:
+      - Policy pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Repository:
+      definition: Repository design pattern.
+      activation_signals:
+      - Repository pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    UnitOfWork:
+      definition: UnitOfWork design pattern.
+      activation_signals:
+      - UnitOfWork pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    CQRS:
+      definition: CQRS design pattern.
+      activation_signals:
+      - CQRS pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Outbox:
+      definition: Outbox design pattern.
+      activation_signals:
+      - Outbox pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Saga:
+      definition: Saga design pattern.
+      activation_signals:
+      - Saga pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Pipeline:
+      definition: Pipeline design pattern.
+      activation_signals:
+      - Pipeline pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    DomainEvent:
+      definition: DomainEvent design pattern.
+      activation_signals:
+      - DomainEvent pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    AntiCorruptionLayer:
+      definition: AntiCorruptionLayer design pattern.
+      activation_signals:
+      - AntiCorruptionLayer pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    Result:
+      definition: Result design pattern.
+      activation_signals:
+      - Result pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    ContractVersioning:
+      definition: ContractVersioning design pattern.
+      activation_signals:
+      - ContractVersioning pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+    ServiceLocator:
+      definition: ServiceLocator design pattern.
+      activation_signals:
+      - ServiceLocator pressure detected
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      status: disallowed
+  disallowed_patterns:
+  - ServiceLocator
+validation:
+  fail_conditions:
+  - id: PATTERNS-CONVENTIONS-PATTERN-CATALOG-YAML-FC-001
+    condition: unknown_pattern
+    message: Unknown pattern.
+    severity: error
+    owner: patterns/conventions.pattern-catalog.yaml
+  - id: PATTERNS-CONVENTIONS-PATTERN-CATALOG-YAML-FC-002
+    condition: disallowed_pattern_selected
+    message: Disallowed pattern selected.
+    severity: error
+    owner: patterns/conventions.pattern-catalog.yaml
+  required_checks: []

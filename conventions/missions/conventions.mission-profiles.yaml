@@ -1,0 +1,935 @@
+version: '1.0'
+file:
+  name: conventions.mission-profiles.yaml
+  path: missions/conventions.mission-profiles.yaml
+  role: mission_profile_selection_and_configuration_contract
+  executability: decision_engine
+purpose: Define mission profile vocabulary and configuration over existing global phases.
+ownership:
+  owns:
+  - mission_profile_enum
+  - mission_profile_schema
+  - mission_profile_selection_rules
+  - mission_profiles
+  does_not_own:
+  - phase_vocabulary
+  - phase_contract_definitions
+activation:
+  mode: conditional
+  activates_when:
+  - mission_profile_selection_required
+  skips_when: []
+inputs:
+  required:
+  - mission_request
+  - phase_taxonomy
+  optional: []
+outputs:
+  produces:
+  - mission_profile
+  - mission_phase_plan
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - reports/conventions.report-artifacts.yaml
+  optional_files: []
+sections:
+  mission_profile_enum:
+    allowed:
+    - small_feature
+    - medium_feature
+    - bugfix
+    - large_refactor
+    - cleanup_only
+    - api_contract_change
+    - integration_change
+    - persistence_change
+    - test_only
+    - convention_system_edit
+  gate_strictness_enum:
+    allowed:
+    - light
+    - standard
+    - strict
+    - strict_on_regression
+    - strict_on_no_behavior_change
+    - strict_on_compatibility
+    - strict_on_boundary_and_failure_modes
+    - strict_on_data_safety
+    - strict_on_convention_integrity
+  mission_profile_selection_rules:
+    match_decision_rules:
+    - id: MISSION-SELECT-USER-EXPLICIT
+      priority: 1
+      match:
+        user_selected_profile_present: true
+      decision:
+        selected_profile: user_selected_profile
+    - id: MISSION-SELECT-DEFAULT
+      priority: 99
+      match:
+        request_type: unknown
+      decision:
+        selected_profile: medium_feature
+  mission_profiles:
+    small_feature:
+      mission_profile_id: small_feature
+      purpose: Small Feature mission profile.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - behavior_contract
+      - codebase_reconnaissance
+      - risk_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id001
+      - local_alignment
+      - boundary_contract_classification
+      - dependency_classification
+      - refactor_strategy_selection
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - failure_classification
+      - feedback_repair
+      - trigger_review
+      - phase_accounting
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - draft-role-signals
+      - failure-report
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-convention-candidates
+      - mission-profile
+      - pattern-decision-log
+      - pattern-pressure
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - regression-test-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - validation-summary
+      gate_strictness: standard
+      allowed_code_edit_scope:
+      - affected_scope
+      - related_tests_scope
+      skip_policy:
+        allowed_skips: *id001
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    medium_feature:
+      mission_profile_id: medium_feature
+      purpose: Medium Feature mission profile.
+      required_phases: &id005
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - local_alignment
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id002
+      - refactor_strategy_selection
+      - failure_classification
+      - feedback_repair
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - boundary-contract-classification
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - compatibility-decision
+      - consumer-impact
+      - dependency-classification
+      - dependency-validation
+      - draft-role-signals
+      - failure-report
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-alignment
+      - local-convention-candidates
+      - mission-profile
+      - pattern-decision-log
+      - pattern-pressure
+      - phase-accounting
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - regression-test-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - trigger-review
+      - validation-summary
+      gate_strictness: strict
+      allowed_code_edit_scope:
+      - affected_scope
+      - related_tests_scope
+      skip_policy:
+        allowed_skips: *id002
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    bugfix:
+      mission_profile_id: bugfix
+      purpose: Bugfix mission profile.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - behavior_contract
+      - codebase_reconnaissance
+      - risk_classification
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - failure_classification
+      - feedback_repair
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id003
+      - local_alignment
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - refactor_strategy_selection
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - trigger_review
+      - phase_accounting
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - artifact-actions
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - consumer-impact
+      - failure-classification
+      - failure-report
+      - feedback-repair-result
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-convention-candidates
+      - mission-profile
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - regression-test-plan
+      - repair-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - test-plan
+      - validation-summary
+      gate_strictness: strict_on_regression
+      allowed_code_edit_scope:
+      - bugfix_target_scope
+      - regression_tests_scope
+      skip_policy:
+        allowed_skips: *id003
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    large_refactor:
+      mission_profile_id: large_refactor
+      purpose: Large Refactor mission profile.
+      required_phases: &id007
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - local_alignment
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - refactor_strategy_selection
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - failure_classification
+      - feedback_repair
+      - post_implementation_validation
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: []
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - behavior-preservation-requirements
+      - boundary-contract-classification
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - compatibility-decision
+      - consumer-impact
+      - dependency-classification
+      - dependency-validation
+      - draft-role-signals
+      - failure-classification
+      - failure-report
+      - feedback-repair-result
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-alignment
+      - local-convention-candidates
+      - mission-profile
+      - pattern-decision-log
+      - pattern-pressure
+      - phase-accounting
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - refactor-required-followups
+      - refactor-strategy
+      - regression-test-plan
+      - repair-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - trigger-review
+      - validation-summary
+      gate_strictness: strict
+      allowed_code_edit_scope:
+      - affected_modules_after_impact_analysis
+      - affected_tests_after_test_derivation
+      skip_policy:
+        allowed_skips: []
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    cleanup_only:
+      mission_profile_id: cleanup_only
+      purpose: Cleanup Only mission profile.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - behavior_contract
+      - codebase_reconnaissance
+      - local_alignment
+      - risk_classification
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id004
+      - dependency_classification
+      - boundary_contract_classification
+      - refactor_strategy_selection
+      - final_role_assignment
+      - structure_rendering
+      - failure_classification
+      - feedback_repair
+      - trigger_review
+      - phase_accounting
+      forbidden_phases:
+      - pattern_pressure_detection
+      - pattern_selection
+      required_reports:
+      - active-context-manifest
+      - artifact-actions
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - consumer-impact
+      - failure-report
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-alignment
+      - local-convention-candidates
+      - mission-profile
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - regression-test-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - test-plan
+      - validation-summary
+      gate_strictness: strict_on_no_behavior_change
+      allowed_code_edit_scope:
+      - cleanup_target_scope
+      - tests_only_when_reference_updates_required
+      skip_policy:
+        allowed_skips: *id004
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    api_contract_change:
+      mission_profile_id: api_contract_change
+      purpose: Api Contract Change mission profile.
+      required_phases: *id005
+      conditional_phases: &id006
+      - local_alignment
+      - refactor_strategy_selection
+      - failure_classification
+      - feedback_repair
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - boundary-contract-classification
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - compatibility-decision
+      - consumer-impact
+      - dependency-classification
+      - dependency-validation
+      - draft-role-signals
+      - failure-report
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-alignment
+      - local-convention-candidates
+      - mission-profile
+      - pattern-decision-log
+      - pattern-pressure
+      - phase-accounting
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - regression-test-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - trigger-review
+      - validation-summary
+      gate_strictness: strict_on_compatibility
+      allowed_code_edit_scope:
+      - contract_surface_scope
+      - contract_consumer_update_scope
+      - contract_tests_scope
+      skip_policy:
+        allowed_skips: *id006
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    integration_change:
+      mission_profile_id: integration_change
+      purpose: Integration Change mission profile.
+      required_phases: *id007
+      conditional_phases: &id008
+      - refactor_strategy_selection
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - behavior-preservation-requirements
+      - boundary-contract-classification
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - compatibility-decision
+      - consumer-impact
+      - dependency-classification
+      - dependency-validation
+      - draft-role-signals
+      - failure-classification
+      - failure-report
+      - feedback-repair-result
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-alignment
+      - local-convention-candidates
+      - mission-profile
+      - pattern-decision-log
+      - pattern-pressure
+      - phase-accounting
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - refactor-required-followups
+      - refactor-strategy
+      - regression-test-plan
+      - repair-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - trigger-review
+      - validation-summary
+      gate_strictness: strict_on_boundary_and_failure_modes
+      allowed_code_edit_scope:
+      - integration_boundary_scope
+      - client_adapter_gateway_scope
+      - integration_tests_scope
+      skip_policy:
+        allowed_skips: *id008
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    persistence_change:
+      mission_profile_id: persistence_change
+      purpose: Persistence Change mission profile.
+      required_phases: *id007
+      conditional_phases: &id009
+      - local_alignment
+      - refactor_strategy_selection
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - behavior-preservation-requirements
+      - boundary-contract-classification
+      - call-site-impact
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - compatibility-decision
+      - consumer-impact
+      - dependency-classification
+      - dependency-validation
+      - draft-role-signals
+      - failure-classification
+      - failure-report
+      - feedback-repair-result
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-alignment
+      - local-convention-candidates
+      - mission-profile
+      - pattern-decision-log
+      - pattern-pressure
+      - phase-accounting
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - refactor-required-followups
+      - refactor-strategy
+      - regression-test-plan
+      - repair-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - trigger-review
+      - validation-summary
+      gate_strictness: strict_on_data_safety
+      allowed_code_edit_scope:
+      - repository_scope
+      - migration_scope
+      - data_access_tests_scope
+      skip_policy:
+        allowed_skips: *id009
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    test_only:
+      mission_profile_id: test_only
+      purpose: Test Only mission profile.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - behavior_contract
+      - codebase_reconnaissance
+      - test_derivation
+      - implementation
+      - post_implementation_validation
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id010
+      - risk_classification
+      - failure_classification
+      - feedback_repair
+      - trigger_review
+      - phase_accounting
+      forbidden_phases:
+      - local_alignment
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - refactor_strategy_selection
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      required_reports:
+      - active-context-manifest
+      - assumptions
+      - behavior-contract
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-results
+      - codebase-reconnaissance
+      - failure-report
+      - final-unresolved-items
+      - implementation-result
+      - local-convention-candidates
+      - mission-profile
+      - post-implementation-validation
+      - regression-test-plan
+      - report-artifact-validation
+      - report-registry
+      - test-plan
+      - validation-summary
+      gate_strictness: strict_on_no_production_change
+      allowed_code_edit_scope:
+      - tests_only
+      skip_policy:
+        allowed_skips: *id010
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+    convention_system_edit:
+      mission_profile_id: convention_system_edit
+      purpose: Convention System Edit mission profile.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - change_impact_analysis
+      - final_role_assignment
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id011
+      - local_alignment
+      - pattern_pressure_detection
+      - pattern_selection
+      - refactor_strategy_selection
+      - call_site_impact_analysis
+      - failure_classification
+      - feedback_repair
+      forbidden_phases: []
+      required_reports:
+      - active-context-manifest
+      - architecture-blueprint
+      - artifact-actions
+      - artifact-candidates
+      - artifact-reuse-analysis
+      - assumptions
+      - behavior-contract
+      - boundary-contract-classification
+      - change-impact
+      - changed-file-manifest
+      - characterization-test-plan
+      - checkpoint-groups
+      - checkpoint-results
+      - checkpoint-validation-plan
+      - codebase-reconnaissance
+      - compatibility-decision
+      - consumer-impact
+      - dependency-classification
+      - dependency-validation
+      - draft-role-signals
+      - failure-report
+      - final-file-tree
+      - final-role-assignment
+      - final-unresolved-items
+      - implementation-result
+      - implementation-sequence
+      - local-convention-candidates
+      - mission-profile
+      - phase-accounting
+      - post-action-artifact-candidates
+      - post-implementation-validation
+      - pre-implementation-gate
+      - regression-test-plan
+      - report-artifact-validation
+      - report-registry
+      - risk-classification
+      - role-collision-resolution
+      - structure-plan
+      - test-plan
+      - trigger-review
+      - validation-summary
+      gate_strictness: strict_on_convention_integrity
+      allowed_code_edit_scope:
+      - conventions_yaml_scope
+      - validator_schema_scope
+      skip_policy:
+        allowed_skips: *id011
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - high_risk_detected
+      - phase_revision_required
+      - implementation_failure_detected
+      phase_overrides: {}
+  mission_profile_validation_algorithm:
+    steps:
+    - load_phase_taxonomy
+    - load_mission_profiles
+    - assert_profile_phases_exist
+    - assert_no_phase_state_conflict
+    - assert_required_reports_exist
+validation:
+  required_checks: []
+  fail_conditions: []

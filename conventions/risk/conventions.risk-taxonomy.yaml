@@ -1,0 +1,167 @@
+version: '1.0'
+file:
+  name: conventions.risk-taxonomy.yaml
+  path: risk/conventions.risk-taxonomy.yaml
+  role: risk_taxonomy_contract
+  executability: vocabulary
+purpose: Define risk levels, contexts, concerns, signals, escalation rules, and required checks by risk level.
+ownership:
+  owns:
+  - risk_level_enum
+  - risk_context_enum
+  - risk_concern_taxonomy
+  - risk_signal_definitions
+  - risk_escalation_rules
+  - required_checks_by_risk_level
+  does_not_own:
+  - risk_classification_process
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - risk_taxonomy_registry
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  risk_level_enum:
+    allowed:
+    - low
+    - medium
+    - high
+    - critical
+  risk_context_enum:
+    allowed:
+    - design_risk
+    - implementation_risk
+    - change_risk
+    - refactor_risk
+    - integration_risk
+    - migration_risk
+    - runtime_risk
+    - operational_risk
+    - testing_risk
+  risk_concerns:
+    behavior:
+      definition: behavior concern.
+    public_contract:
+      definition: public_contract concern.
+    security:
+      definition: security concern.
+    authentication:
+      definition: authentication concern.
+    authorization:
+      definition: authorization concern.
+    tenant_boundary:
+      definition: tenant_boundary concern.
+    persistence:
+      definition: persistence concern.
+    migration:
+      definition: migration concern.
+    data_loss:
+      definition: data_loss concern.
+    external_integration:
+      definition: external_integration concern.
+    payment:
+      definition: payment concern.
+    async_processing:
+      definition: async_processing concern.
+    idempotency:
+      definition: idempotency concern.
+    retry:
+      definition: retry concern.
+    performance:
+      definition: performance concern.
+    observability:
+      definition: observability concern.
+    runtime_wiring:
+      definition: runtime_wiring concern.
+    testing_gap:
+      definition: testing_gap concern.
+  risk_levels:
+    low:
+      definition: low severity risk.
+      required_checks:
+      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
+        check: final_validation
+    medium:
+      definition: medium severity risk.
+      required_checks:
+      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
+        check: final_validation
+    high:
+      definition: high severity risk.
+      required_checks:
+      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
+        check: final_validation
+    critical:
+      definition: critical severity risk.
+      required_checks:
+      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
+        check: final_validation
+  context_sensitive_risk_rules:
+    design_risk:
+      emphasize:
+      - required_checks_for_design_risk
+    implementation_risk:
+      emphasize:
+      - required_checks_for_implementation_risk
+    change_risk:
+      emphasize:
+      - required_checks_for_change_risk
+    refactor_risk:
+      emphasize:
+      - required_checks_for_refactor_risk
+    integration_risk:
+      emphasize:
+      - required_checks_for_integration_risk
+    migration_risk:
+      emphasize:
+      - required_checks_for_migration_risk
+    runtime_risk:
+      emphasize:
+      - required_checks_for_runtime_risk
+    operational_risk:
+      emphasize:
+      - required_checks_for_operational_risk
+    testing_risk:
+      emphasize:
+      - required_checks_for_testing_risk
+  required_checks_by_risk_level:
+    low:
+    - behavior_contract_exists
+    - final_validation
+    medium:
+    - codebase_reconnaissance_if_context_available
+    - artifact_action_validation
+    - dependency_validation
+    - final_validation
+    high:
+    - change_impact_analysis
+    - compatibility_review_if_contract_boundary
+    - test_plan
+    - checkpoint_grouped_implementation_sequence
+    - final_validation
+    critical:
+    - blocking_uncertainties_resolved
+    - rollback_or_recovery_plan
+    - integration_or_contract_test_review
+    - final_validation
+validation:
+  fail_conditions:
+  - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-FC-001
+    condition: risk_level_set_without_risk_context
+    message: Risk level set without risk context.
+    severity: error
+    owner: risk/conventions.risk-taxonomy.yaml
+  - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-FC-002
+    condition: critical_signal_not_escalated_to_critical
+    message: Critical signal not escalated to critical.
+    severity: error
+    owner: risk/conventions.risk-taxonomy.yaml
+  required_checks: []

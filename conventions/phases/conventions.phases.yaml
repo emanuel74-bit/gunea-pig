@@ -1,0 +1,38 @@
+version: '1.0'
+file:
+  name: conventions.phases.yaml
+  path: phases/conventions.phases.yaml
+  role: phases_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for phase taxonomy and phase contracts.
+ownership:
+  owns:
+  - phases_file_index
+  - phases_subsystem_contract
+  does_not_own:
+  - agent_capabilities
+  - mission_profile_selection
+activation:
+  mode: entrypoint
+  activates_when:
+  - phase_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - phases_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-contracts.yaml
+  optional_files: []
+sections:
+  phases_file_index:
+    taxonomy: phases/conventions.phase-taxonomy.yaml
+    contracts: phases/conventions.phase-contracts.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

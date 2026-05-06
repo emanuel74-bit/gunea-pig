@@ -1,0 +1,160 @@
+version: '1.0'
+file:
+  name: conventions.role-resolution.yaml
+  path: roles/conventions.role-resolution.yaml
+  role: role_resolution_engine
+  executability: decision_engine
+purpose: Resolve draft role signals before action/refactor decisions and final authoritative roles for post-action artifacts.
+ownership:
+  owns:
+  - role_decision_process
+  - role_assignment_table_schema
+  - specific_before_generic_rules
+  - draft_role_pass
+  - draft_role_signals_schema
+  - final_role_assignment
+  does_not_own:
+  - role_definitions
+  - action_resolution
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - draft_role_signals
+  - role_assignment_table
+  - role_resolution_decision_report
+dependencies:
+  required_files:
+  - roles/conventions.role-taxonomy.yaml
+  - actions/conventions.action-taxonomy.yaml
+  optional_files: []
+sections:
+  role_resolution_pipeline:
+  - load_role_taxonomy
+  - read_post_action_artifact_candidates
+  - detect_responsibility_signals
+  - choose_specific_role_before_generic
+  - reject_multi_role_artifacts
+  - produce_role_assignment_table
+  role_assignment_passes:
+    draft_role_pass:
+      authority: advisory
+      runs_after:
+      - generate_artifact_candidates
+      - codebase_reconnaissance_if_active
+      runs_before:
+      - resolve_artifact_actions_if_active
+      - select_refactor_strategy_if_active
+      produces:
+      - draft_role_signals
+      may:
+      - detect_role_signals
+      - identify_mixed_responsibilities
+      - identify_role_collision_risk
+      - suggest_likely_target_roles_for_extraction_or_split
+      - inform_artifact_action_selection
+      - inform_refactor_strategy_selection
+      must_not:
+      - finalize_file_names
+      - finalize_folder_placement
+      - bind_suffixes_as_authoritative
+      - override_artifact_action_decision
+      - replace_final_role_assignment
+    final_role_assignment:
+      authority: binding
+      runs_after:
+      - resolve_artifact_actions_if_active
+      - select_refactor_strategy_if_active
+      - validate_post_action_artifacts_if_active
+      produces:
+      - role_assignment_table
+  draft_role_signal_rules:
+    match_decision_rules:
+    - id: DRAFT-ROLE-MIXED-RESPONSIBILITY
+      match:
+        artifact_candidate_contains_multiple_role_signals: true
+      decision:
+        emit_mixed_responsibility_signal: true
+        required_followups:
+        - action_resolution_review
+        - refactor_strategy_review
+    - id: DRAFT-ROLE-EXTRACTION-TARGET
+      match:
+        behavior_has_specific_role_signal: true
+        source_artifact_has_unrelated_dependencies: true
+      decision:
+        suggest_likely_extraction_target: true
+        required_followups:
+        - artifact_action_resolution
+  rule_sets:
+    absolute_rules:
+    - id: ROLE-RESOLUTION-ABS-001
+      rule: Service is not the default role.
+      fail_condition: service_selected_as_default_without_specific_rejection
+    - id: ROLE-RESOLUTION-ABS-002
+      rule: Specific roles must be considered before generic roles.
+      fail_condition: generic_role_selected_before_specific_role_review
+    priority_rules:
+    - id: ROLE-RESOLUTION-PRIORITY-001
+      priority_order:
+      - specific_role
+      - service
+      applies_when:
+        role_candidates_include_specific_role: true
+      tie_breakers:
+      - choose the most specific valid role with matching responsibility evidence
+    - id: ROLE-RESOLUTION-PRIORITY-002
+      priority_order:
+      - policy
+      - rule
+      - specification
+      - invariant
+      - service
+      applies_when:
+        artifact_contains_business_rule: true
+      tie_breakers:
+      - choose service only when orchestration or side-effect coordination is the primary responsibility
+    - id: ROLE-RESOLUTION-PRIORITY-003
+      priority_order:
+      - adapter
+      - client
+      - repository
+      - port
+      - service
+      applies_when:
+        artifact_crosses_io_boundary: true
+      tie_breakers:
+      - choose service only when no boundary-specific role applies
+validation:
+  fail_conditions:
+  - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-001
+    condition: role_assignment_missing
+    message: Role assignment missing.
+    severity: error
+    owner: roles/conventions.role-resolution.yaml
+  - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-002
+    condition: generic_role_selected_without_justification
+    message: Generic role selected without justification.
+    severity: error
+    owner: roles/conventions.role-resolution.yaml
+  - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-003
+    condition: role_assignment_used_initial_candidates_instead_of_post_action_artifacts
+    message: Role assignment used initial candidates instead of post action artifacts.
+    severity: error
+    owner: roles/conventions.role-resolution.yaml
+  - id: ROLE-DRAFT-001
+    condition: draft_role_pass_treated_as_authoritative
+    message: Draft role pass is advisory and must not finalize roles, names, or placement.
+    severity: error
+    owner: roles/conventions.role-resolution.yaml
+  - id: ROLE-FINAL-001
+    condition: final_role_assignment_missing_after_action_resolution
+    message: Final role assignment must run after action/refactor decisions.
+    severity: error
+    owner: roles/conventions.role-resolution.yaml
+  required_checks: []

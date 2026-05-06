@@ -1,0 +1,38 @@
+version: '1.0'
+file:
+  name: conventions.missions.yaml
+  path: missions/conventions.missions.yaml
+  role: missions_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for mission profiles and mission state.
+ownership:
+  owns:
+  - missions_file_index
+  does_not_own:
+  - phase_vocabulary
+  - agent_permissions
+activation:
+  mode: entrypoint
+  activates_when:
+  - mission_profile_selection_required
+  skips_when: []
+inputs:
+  required:
+  - mission_request
+  optional: []
+outputs:
+  produces:
+  - missions_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profiles.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files: []
+sections:
+  missions_file_index:
+    profiles: missions/conventions.mission-profiles.yaml
+    state: missions/conventions.mission-state.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

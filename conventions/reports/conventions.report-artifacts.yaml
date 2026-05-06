@@ -1,0 +1,1339 @@
+version: '1.0'
+file:
+  name: conventions.report-artifacts.yaml
+  path: reports/conventions.report-artifacts.yaml
+  role: persistent_report_artifact_contract
+  executability: schema
+purpose: Define persistent report artifacts, compact report schema, evidence references, registry, and validation rules.
+ownership:
+  owns:
+  - report_artifact_registry
+  - compact_report_schema
+  - evidence_reference_schema
+  - report_registry_schema
+  - report_validation_rules
+  does_not_own:
+  - logical_output_schema_definitions
+  - phase_gate_logic
+activation:
+  mode: conditional
+  activates_when:
+  - persistent_reports_required
+  skips_when: []
+inputs:
+  required:
+  - mission_profile
+  - phase_taxonomy
+  optional: []
+outputs:
+  produces:
+  - report_registry
+  - report_artifact_validation_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.output-schema.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  optional_files: []
+sections:
+  report_format_enum:
+    allowed:
+    - yaml
+    - markdown
+    - json
+  report_lifecycle_state_enum:
+    allowed:
+    - expected
+    - produced
+    - validated
+    - missing
+    - invalid
+    - invalidated
+    - replaced
+  compact_report_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+  evidence_reference_schema:
+    required_fields:
+    - evidence_ref_id
+    - source_file
+    - source_record_id
+    - supports
+  report_artifact_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - path
+    - format
+    - owner_agent
+    - required_fields
+    - consumed_by_phases
+    - lifecycle_state
+  report_artifact_registry:
+  - report_id: mission-profile
+    phase_id: mission_profile_selection
+    path: .ai/reports/00-mission-profile.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - mission_initialization
+    - active_context_manifest
+    lifecycle_state: expected
+    schema_reference: mission_profile_schema
+    evidence_required: false
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: report-registry
+    phase_id: mission_initialization
+    path: .ai/reports/report-registry.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - active_context_manifest
+    - report_artifact_validation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: report_registry_schema
+    evidence_required: false
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: active-context-manifest
+    phase_id: active_context_manifest
+    path: .ai/reports/01-active-context-manifest.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - behavior_contract
+    - codebase_reconnaissance
+    - architecture_decomposition
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: active_context_manifest_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: phase-accounting
+    phase_id: phase_accounting
+    path: .ai/reports/phase-accounting.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - pre_implementation_gate
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: phase_accounting_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: behavior-contract
+    phase_id: behavior_contract
+    path: .ai/reports/02-behavior-contract.yaml
+    format: yaml
+    owner_agent: behavior_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - codebase_reconnaissance
+    - risk_classification
+    - architecture_decomposition
+    - test_derivation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: behavior_contract_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: assumptions
+    phase_id: behavior_contract
+    path: .ai/reports/assumptions.yaml
+    format: yaml
+    owner_agent: behavior_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: assumptions_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: codebase-reconnaissance
+    phase_id: codebase_reconnaissance
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+    format: yaml
+    owner_agent: reconnaissance_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - local_alignment
+    - risk_classification
+    - artifact_reuse_analysis
+    - call_site_impact_analysis
+    lifecycle_state: expected
+    schema_reference: codebase_reconnaissance_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: true
+  - report_id: local-convention-candidates
+    phase_id: codebase_reconnaissance
+    path: .ai/reports/local-convention-candidates.yaml
+    format: yaml
+    owner_agent: reconnaissance_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - local_alignment
+    lifecycle_state: expected
+    schema_reference: local_convention_candidates_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: local-alignment
+    phase_id: local_alignment
+    path: .ai/reports/local-alignment.yaml
+    format: yaml
+    owner_agent: reconnaissance_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - architecture_decomposition
+    - structure_rendering
+    - implementation_sequence
+    lifecycle_state: expected
+    schema_reference: local_alignment_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: risk-classification
+    phase_id: risk_classification
+    path: .ai/reports/risk-classification.yaml
+    format: yaml
+    owner_agent: classification_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - artifact_action_resolution
+    - refactor_strategy_selection
+    - change_impact_analysis
+    - test_derivation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: risk_classification_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: boundary-contract-classification
+    phase_id: boundary_contract_classification
+    path: .ai/reports/boundary-contract-classification.yaml
+    format: yaml
+    owner_agent: classification_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - artifact_action_resolution
+    - change_impact_analysis
+    - test_derivation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: boundary_contract_classification_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: compatibility-decision
+    phase_id: boundary_contract_classification
+    path: .ai/reports/compatibility-decision.yaml
+    format: yaml
+    owner_agent: classification_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - change_impact_analysis
+    - test_derivation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: compatibility_decision_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: dependency-classification
+    phase_id: dependency_classification
+    path: .ai/reports/dependency-classification.yaml
+    format: yaml
+    owner_agent: classification_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    - structure_rendering
+    - implementation_sequence
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: dependency_classification_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: dependency-validation
+    phase_id: dependency_classification
+    path: .ai/reports/dependency-validation.yaml
+    format: yaml
+    owner_agent: classification_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - structure_rendering
+    - pre_implementation_gate
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: dependency_validation_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: architecture-blueprint
+    phase_id: architecture_decomposition
+    path: .ai/reports/architecture-blueprint.yaml
+    format: yaml
+    owner_agent: architecture_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - draft_role_pass
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - structure_rendering
+    lifecycle_state: expected
+    schema_reference: architecture_blueprint_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: artifact-candidates
+    phase_id: architecture_decomposition
+    path: .ai/reports/artifact-candidates.yaml
+    format: yaml
+    owner_agent: architecture_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - draft_role_pass
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    lifecycle_state: expected
+    schema_reference: artifact_candidates_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: draft-role-signals
+    phase_id: draft_role_pass
+    path: .ai/reports/04-draft-role-signals.yaml
+    format: yaml
+    owner_agent: role_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    lifecycle_state: expected
+    schema_reference: draft_role_signals_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: pattern-pressure
+    phase_id: pattern_pressure_detection
+    path: .ai/reports/pattern-pressure.yaml
+    format: yaml
+    owner_agent: pattern_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - artifact_action_resolution
+    - pattern_selection
+    - structure_rendering
+    lifecycle_state: expected
+    schema_reference: pattern_pressure_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: artifact-reuse-analysis
+    phase_id: artifact_reuse_analysis
+    path: .ai/reports/artifact-reuse-analysis.yaml
+    format: yaml
+    owner_agent: artifact_action_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - artifact_action_resolution
+    - refactor_strategy_selection
+    - change_impact_analysis
+    lifecycle_state: expected
+    schema_reference: artifact_reuse_analysis_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: artifact-actions
+    phase_id: artifact_action_resolution
+    path: .ai/reports/05-artifact-actions.yaml
+    format: yaml
+    owner_agent: artifact_action_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - refactor_strategy_selection
+    - call_site_impact_analysis
+    - change_impact_analysis
+    - final_role_assignment
+    - test_derivation
+    lifecycle_state: expected
+    schema_reference: artifact_actions_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: post-action-artifact-candidates
+    phase_id: artifact_action_resolution
+    path: .ai/reports/post-action-artifact-candidates.yaml
+    format: yaml
+    owner_agent: artifact_action_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - final_role_assignment
+    - structure_rendering
+    - implementation_sequence
+    lifecycle_state: expected
+    schema_reference: post_action_artifact_candidates_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: refactor-strategy
+    phase_id: refactor_strategy_selection
+    path: .ai/reports/06-refactor-strategy.yaml
+    format: yaml
+    owner_agent: refactor_strategy_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - call_site_impact_analysis
+    - change_impact_analysis
+    - test_derivation
+    - implementation_sequence
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: refactor_strategy_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: behavior-preservation-requirements
+    phase_id: refactor_strategy_selection
+    path: .ai/reports/behavior-preservation-requirements.yaml
+    format: yaml
+    owner_agent: refactor_strategy_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - test_derivation
+    - implementation_sequence
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: behavior_preservation_requirements_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: refactor-required-followups
+    phase_id: refactor_strategy_selection
+    path: .ai/reports/refactor-required-followups.yaml
+    format: yaml
+    owner_agent: refactor_strategy_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - trigger_review
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: refactor_required_followups_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: call-site-impact
+    phase_id: call_site_impact_analysis
+    path: .ai/reports/call-site-impact.yaml
+    format: yaml
+    owner_agent: impact_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - change_impact_analysis
+    - test_derivation
+    - implementation_sequence
+    lifecycle_state: expected
+    schema_reference: call_site_impact_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: true
+  - report_id: change-impact
+    phase_id: change_impact_analysis
+    path: .ai/reports/07-change-impact.yaml
+    format: yaml
+    owner_agent: impact_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - final_role_assignment
+    - test_derivation
+    - implementation_sequence
+    - pre_implementation_gate
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: change_impact_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: true
+  - report_id: consumer-impact
+    phase_id: change_impact_analysis
+    path: .ai/reports/consumer-impact.yaml
+    format: yaml
+    owner_agent: impact_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - test_derivation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: consumer_impact_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: final-role-assignment
+    phase_id: final_role_assignment
+    path: .ai/reports/08-final-role-assignment.yaml
+    format: yaml
+    owner_agent: role_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - pattern_selection
+    - structure_rendering
+    - test_derivation
+    - implementation_sequence
+    lifecycle_state: expected
+    schema_reference: final_role_assignment_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: role-collision-resolution
+    phase_id: final_role_assignment
+    path: .ai/reports/role-collision-resolution.yaml
+    format: yaml
+    owner_agent: role_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - structure_rendering
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: role_collision_resolution_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: pattern-decision-log
+    phase_id: pattern_selection
+    path: .ai/reports/pattern-decision-log.yaml
+    format: yaml
+    owner_agent: pattern_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - structure_rendering
+    - implementation_sequence
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: pattern_decision_log_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: structure-plan
+    phase_id: structure_rendering
+    path: .ai/reports/structure-plan.yaml
+    format: yaml
+    owner_agent: structure_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - test_derivation
+    - implementation_sequence
+    - pre_implementation_gate
+    lifecycle_state: expected
+    schema_reference: structure_plan_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: final-file-tree
+    phase_id: structure_rendering
+    path: .ai/reports/final-file-tree.yaml
+    format: yaml
+    owner_agent: structure_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - implementation_sequence
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: final_file_tree_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: test-plan
+    phase_id: test_derivation
+    path: .ai/reports/09-test-plan.yaml
+    format: yaml
+    owner_agent: testing_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - implementation_sequence
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - post_implementation_validation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: test_plan_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: regression-test-plan
+    phase_id: test_derivation
+    path: .ai/reports/regression-test-plan.yaml
+    format: yaml
+    owner_agent: testing_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - implementation
+    - post_implementation_validation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: regression_test_plan_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: characterization-test-plan
+    phase_id: test_derivation
+    path: .ai/reports/characterization-test-plan.yaml
+    format: yaml
+    owner_agent: testing_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - implementation
+    - post_implementation_validation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: characterization_test_plan_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: implementation-sequence
+    phase_id: implementation_sequence
+    path: .ai/reports/10-implementation-sequence.yaml
+    format: yaml
+    owner_agent: execution_planning_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - post_implementation_validation
+    lifecycle_state: expected
+    schema_reference: implementation_sequence_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: checkpoint-groups
+    phase_id: implementation_sequence
+    path: .ai/reports/checkpoint-groups.yaml
+    format: yaml
+    owner_agent: execution_planning_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - checkpoint_validation_plan
+    - implementation
+    lifecycle_state: expected
+    schema_reference: checkpoint_groups_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: checkpoint-validation-plan
+    phase_id: checkpoint_validation_plan
+    path: .ai/reports/checkpoint-validation-plan.yaml
+    format: yaml
+    owner_agent: execution_planning_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - pre_implementation_gate
+    - implementation
+    - feedback_repair
+    - post_implementation_validation
+    lifecycle_state: expected
+    schema_reference: checkpoint_validation_plan_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: pre-implementation-gate
+    phase_id: pre_implementation_gate
+    path: .ai/reports/pre-implementation-gate.yaml
+    format: yaml
+    owner_agent: pre_implementation_gate_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - implementation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: pre_implementation_gate_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: changed-file-manifest
+    phase_id: implementation
+    path: .ai/reports/changed-file-manifest.yaml
+    format: yaml
+    owner_agent: implementation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - post_implementation_validation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: changed_file_manifest_schema
+    evidence_required: false
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: implementation-result
+    phase_id: implementation
+    path: .ai/reports/implementation-result.yaml
+    format: yaml
+    owner_agent: implementation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - post_implementation_validation
+    - failure_classification
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: implementation_result_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: checkpoint-results
+    phase_id: implementation
+    path: .ai/reports/checkpoint-results.yaml
+    format: yaml
+    owner_agent: implementation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - post_implementation_validation
+    - failure_classification
+    lifecycle_state: expected
+    schema_reference: checkpoint_results_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: post-implementation-validation
+    phase_id: post_implementation_validation
+    path: .ai/reports/post-implementation-validation.yaml
+    format: yaml
+    owner_agent: validation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - failure_classification
+    - feedback_repair
+    - trigger_review
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: post_implementation_validation_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: true
+  - report_id: failure-report
+    phase_id: post_implementation_validation
+    path: .ai/reports/failure-report.yaml
+    format: yaml
+    owner_agent: validation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - failure_classification
+    - feedback_repair
+    lifecycle_state: expected
+    schema_reference: failure_report_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: true
+  - report_id: failure-classification
+    phase_id: failure_classification
+    path: .ai/reports/failure-classification.yaml
+    format: yaml
+    owner_agent: failure_analysis_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - feedback_repair
+    - trigger_review
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: failure_classification_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: repair-plan
+    phase_id: feedback_repair
+    path: .ai/reports/repair-plan.yaml
+    format: yaml
+    owner_agent: repair_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - post_implementation_validation
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: repair_plan_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: feedback-repair-result
+    phase_id: feedback_repair
+    path: .ai/reports/feedback-repair-result.yaml
+    format: yaml
+    owner_agent: repair_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - post_implementation_validation
+    - trigger_review
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: feedback_repair_result_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: revision-request
+    phase_id: multi_phase
+    path: .ai/reports/revision-request.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - trigger_review
+    - phase_accounting
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: revision_request_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: trigger-review
+    phase_id: trigger_review
+    path: .ai/reports/trigger-review.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - phase_accounting
+    - pre_implementation_gate
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: trigger_review_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: report-artifact-validation
+    phase_id: report_artifact_validation
+    path: .ai/reports/report-artifact-validation.yaml
+    format: yaml
+    owner_agent: alpha_controller
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases:
+    - final_validation
+    lifecycle_state: expected
+    schema_reference: report_artifact_validation_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: validation-summary
+    phase_id: final_validation
+    path: .ai/reports/99-validation-summary.yaml
+    format: yaml
+    owner_agent: validation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases: []
+    lifecycle_state: expected
+    schema_reference: validation_summary_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  - report_id: final-unresolved-items
+    phase_id: final_validation
+    path: .ai/reports/final-unresolved-items.yaml
+    format: yaml
+    owner_agent: validation_agent
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    consumed_by_phases: []
+    lifecycle_state: expected
+    schema_reference: final_unresolved_items_schema
+    evidence_required: true
+    compact_required: true
+    full_evidence_allowed: false
+  report_validation_algorithm:
+    steps:
+    - load_report_artifact_registry
+    - load_mission_required_reports
+    - assert_required_reports_defined
+    - assert_required_report_files_exist
+    - assert_required_fields_present
+    - assert_no_console_only_output
+validation:
+  required_checks: []
+  fail_conditions: []

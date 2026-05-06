@@ -1,0 +1,37 @@
+version: '1.0'
+file:
+  name: conventions.triggers.yaml
+  path: triggers/conventions.triggers.yaml
+  role: triggers_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for trigger vocabulary and trigger resolution.
+ownership:
+  owns:
+  - triggers_file_index
+  does_not_own:
+  - mission_state_storage
+  - phase_contracts
+activation:
+  mode: entrypoint
+  activates_when:
+  - triggers_are_emitted
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - triggers_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  optional_files: []
+sections:
+  triggers_file_index:
+    taxonomy: triggers/conventions.trigger-taxonomy.yaml
+    resolution: triggers/conventions.trigger-resolution.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

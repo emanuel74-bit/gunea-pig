@@ -1,0 +1,69 @@
+version: '1.0'
+file:
+  name: conventions.phase-execution.yaml
+  path: multi-agent/conventions.phase-execution.yaml
+  role: phase_agent_execution_loop_contract
+  executability: orchestrator
+purpose: Define how Alpha invokes phase agents, builds phase input bundles, restricts context, and collects outputs.
+ownership:
+  owns:
+  - phase_execution_loop
+  - phase_input_bundle_schema
+  - phase_execution_result_schema
+  - prompt_injection_rules
+  does_not_own:
+  - phase_contract_definitions
+  - agent_contract_definitions
+activation:
+  mode: conditional
+  activates_when:
+  - phase_agent_invocation_requested
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - phase_contract
+  - owner_agent_contract
+  - agent_permission_profile
+  optional: []
+outputs:
+  produces:
+  - phase_execution_result
+  - phase_output_file
+  - phase_gate_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - multi-agent/conventions.alpha-controller.yaml
+  - phases/conventions.phase-contracts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - agents/conventions.agent-prompts.yaml
+  - reports/conventions.report-artifacts.yaml
+  optional_files: []
+sections:
+  phase_input_bundle_schema:
+    required_fields:
+    - phase_id
+    - owner_agent
+    - injected_prompt_ref
+    - required_input_files
+    - allowed_convention_files
+    - required_output_files
+    - forbidden_actions
+  phase_execution_result_schema:
+    required_fields:
+    - phase_id
+    - owner_agent
+    - status
+    - consumed_inputs
+    - produced_outputs
+    - gate_result
+    - discovered_triggers
+  phase_execution_prompt_injection:
+    absolute_rules:
+    - id: PHASE-EXEC-PROMPT-ABS-001
+      rule: Alpha must inject the owning agent prompt before phase execution.
+      fail_condition: phase_agent_invoked_without_prompt
+validation:
+  required_checks: []
+  fail_conditions: []

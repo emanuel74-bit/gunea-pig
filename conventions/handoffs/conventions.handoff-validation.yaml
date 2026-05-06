@@ -1,0 +1,55 @@
+version: '1.0'
+file:
+  name: conventions.handoff-validation.yaml
+  path: handoffs/conventions.handoff-validation.yaml
+  role: phase_handoff_validation_contract
+  executability: validator
+purpose: Define handoff validation rules and algorithm.
+ownership:
+  owns:
+  - handoff_validation_rules
+  - handoff_validation_algorithm
+  does_not_own:
+  - phase_output_schema
+  - trigger_resolution
+activation:
+  mode: conditional
+  activates_when:
+  - phase_handoff_validation_required
+  skips_when: []
+inputs:
+  required:
+  - source_phase_output
+  - target_phase_contract
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - handoff_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - handoffs/conventions.handoff-schema.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files: []
+sections:
+  handoff_validation_rules:
+    absolute_rules:
+    - id: HANDOFF-VALIDATION-ABS-001
+      rule: A downstream phase may consume only outputs whose output gate passed.
+      fail_condition: downstream_phase_consumed_failed_output
+    - id: HANDOFF-VALIDATION-ABS-002
+      rule: A downstream phase may not consume invalidated outputs.
+      fail_condition: downstream_phase_consumed_invalidated_output
+  handoff_validation_algorithm:
+    steps:
+    - load_source_phase_result
+    - load_target_phase_contract
+    - assert_source_output_gate_passed
+    - assert_source_output_not_invalidated
+    - assert_target_declares_inputs
+    - assert_target_agent_can_read
+    - create_handoff_record
+validation:
+  required_checks: []
+  fail_conditions: []

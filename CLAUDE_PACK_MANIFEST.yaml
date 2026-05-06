@@ -1,0 +1,14 @@
+package: sync_conventions_system_claude_code
+version: '1.0'
+regular_yaml_files: 83
+claude_subagents: 18
+skills:
+- sync-alpha-start
+- sync-alpha-next
+- sync-alpha-run-phase
+- sync-alpha-validate
+- sync-alpha-resume
+notes:
+- YAML source of truth is under conventions/.
+- Claude subagents are generated into .claude/agents/.
+- Hooks are optional and enforcement mode requires SYNC_ALPHA_ENFORCE=1.

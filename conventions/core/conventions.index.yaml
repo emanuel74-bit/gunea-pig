@@ -1,0 +1,813 @@
+version: '1.0'
+file:
+  name: conventions.index.yaml
+  path: core/conventions.index.yaml
+  role: convention_source_lookup_index
+  executability: router
+purpose: Provide a deterministic lookup index for source-of-truth vocabulary, validators, schemas, phases, agents, mission
+  profiles, and reports.
+ownership:
+  owns:
+  - concept_to_source_file_lookup
+  - subsystem_file_index
+  - output_schema_lookup
+  - validator_lookup
+  - phase_to_contract_lookup
+  - agent_to_contract_lookup
+  does_not_own:
+  - runtime_phase_activation
+  - active_phase_plan
+  - phase_scheduling
+  - agent_activation
+activation:
+  mode: reference_only
+  activates_when:
+  - agent_needs_vocabulary_source
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - convention_lookup_result
+  - file_index
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  file_index_schema:
+    required_fields:
+    - file_id
+    - file_path
+    - subsystem
+    - file_role
+    - executability
+    - provides
+  file_index:
+  - file_id: actions.conventions.action-resolution
+    file_path: actions/conventions.action-resolution.yaml
+    subsystem: actions
+    file_role: artifact_action_resolution_engine
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: actions.conventions.action-taxonomy
+    file_path: actions/conventions.action-taxonomy.yaml
+    subsystem: actions
+    file_role: artifact_action_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: actions.conventions.actions
+    file_path: actions/conventions.actions.yaml
+    subsystem: actions
+    file_role: artifact_action_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: agent.conventions.agent-output
+    file_path: agent/conventions.agent-output.yaml
+    subsystem: agent
+    file_role: agent_output_format_contract
+    executability: schema
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: agent.conventions.agent-protocol
+    file_path: agent/conventions.agent-protocol.yaml
+    subsystem: agent
+    file_role: agent_interaction_protocol_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: agent.conventions.agent
+    file_path: agent/conventions.agent.yaml
+    subsystem: agent
+    file_role: agent_usability_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: agent.conventions.context-policy
+    file_path: agent/conventions.context-policy.yaml
+    subsystem: agent
+    file_role: agent_context_policy_contract
+    executability: router
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: agents.conventions.agent-contracts
+    file_path: agents/conventions.agent-contracts.yaml
+    subsystem: agents
+    file_role: agent_responsibility_contract
+    executability: validator
+    provides:
+      concepts:
+      - agent
+      outputs: []
+      validators: []
+  - file_id: agents.conventions.agent-permissions
+    file_path: agents/conventions.agent-permissions.yaml
+    subsystem: agents
+    file_role: agent_tool_and_file_permission_contract
+    executability: validator
+    provides:
+      concepts:
+      - agent
+      outputs: []
+      validators: []
+  - file_id: agents.conventions.agent-prompts
+    file_path: agents/conventions.agent-prompts.yaml
+    subsystem: agents
+    file_role: agent_runtime_prompt_injection_contract
+    executability: prompt_registry
+    provides:
+      concepts:
+      - agent
+      outputs: []
+      validators: []
+  - file_id: agents.conventions.agent-taxonomy
+    file_path: agents/conventions.agent-taxonomy.yaml
+    subsystem: agents
+    file_role: fixed_agent_vocabulary_contract
+    executability: vocabulary
+    provides:
+      concepts:
+      - agent
+      outputs: []
+      validators: []
+  - file_id: agents.conventions.agents
+    file_path: agents/conventions.agents.yaml
+    subsystem: agents
+    file_role: agents_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - agent
+      outputs: []
+      validators: []
+  - file_id: architecture.conventions.architecture
+    file_path: architecture/conventions.architecture.yaml
+    subsystem: architecture
+    file_role: architecture_decomposition_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: architecture.conventions.structure-strategy
+    file_path: architecture/conventions.structure-strategy.yaml
+    subsystem: architecture
+    file_role: structure_strategy_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: architecture.conventions.structure
+    file_path: architecture/conventions.structure.yaml
+    subsystem: architecture
+    file_role: structure_renderer_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: boundaries.conventions.boundaries
+    file_path: boundaries/conventions.boundaries.yaml
+    subsystem: boundaries
+    file_role: boundary_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: boundaries.conventions.boundary-taxonomy
+    file_path: boundaries/conventions.boundary-taxonomy.yaml
+    subsystem: boundaries
+    file_role: boundary_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: boundaries.conventions.boundary-validation
+    file_path: boundaries/conventions.boundary-validation.yaml
+    subsystem: boundaries
+    file_role: boundary_validation_contract
+    executability: validator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: contracts.conventions.compatibility
+    file_path: contracts/conventions.compatibility.yaml
+    subsystem: contracts
+    file_role: contract_compatibility_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: contracts.conventions.contract-taxonomy
+    file_path: contracts/conventions.contract-taxonomy.yaml
+    subsystem: contracts
+    file_role: contract_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: contracts.conventions.contracts
+    file_path: contracts/conventions.contracts.yaml
+    subsystem: contracts
+    file_role: contract_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: core.conventions.file-contract
+    file_path: core/conventions.file-contract.yaml
+    subsystem: core
+    file_role: universal_convention_file_contract
+    executability: schema
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: core.conventions.output-schema
+    file_path: core/conventions.output-schema.yaml
+    subsystem: core
+    file_role: shared_output_schema_contract
+    executability: schema
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: core.conventions.pipeline-contract
+    file_path: core/conventions.pipeline-contract.yaml
+    subsystem: core
+    file_role: canonical_pipeline_semantics_contract
+    executability: orchestrator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: core.conventions.validation
+    file_path: core/conventions.validation.yaml
+    subsystem: core
+    file_role: cross_system_validation_contract
+    executability: validator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: dependencies.conventions.dependencies
+    file_path: dependencies/conventions.dependencies.yaml
+    subsystem: dependencies
+    file_role: dependency_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: dependencies.conventions.dependency-taxonomy
+    file_path: dependencies/conventions.dependency-taxonomy.yaml
+    subsystem: dependencies
+    file_role: dependency_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: dependencies.conventions.import-rules
+    file_path: dependencies/conventions.import-rules.yaml
+    subsystem: dependencies
+    file_role: dependency_import_and_direction_rules_contract
+    executability: validator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: execution.conventions.feedback-loop
+    file_path: execution/conventions.feedback-loop.yaml
+    subsystem: execution
+    file_role: implementation_feedback_loop_contract
+    executability: orchestrator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: execution.conventions.implementation-sequence
+    file_path: execution/conventions.implementation-sequence.yaml
+    subsystem: execution
+    file_role: implementation_sequence_planning_contract
+    executability: orchestrator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: gates.conventions.gate-taxonomy
+    file_path: gates/conventions.gate-taxonomy.yaml
+    subsystem: gates
+    file_role: gate_vocabulary_contract
+    executability: vocabulary
+    provides:
+      concepts:
+      - gate
+      outputs: []
+      validators: []
+  - file_id: gates.conventions.gate-templates
+    file_path: gates/conventions.gate-templates.yaml
+    subsystem: gates
+    file_role: gate_template_contract
+    executability: template_registry
+    provides:
+      concepts:
+      - gate
+      outputs: []
+      validators: []
+  - file_id: gates.conventions.gate-validation
+    file_path: gates/conventions.gate-validation.yaml
+    subsystem: gates
+    file_role: gate_validation_contract
+    executability: validator
+    provides:
+      concepts:
+      - gate
+      outputs: []
+      validators: []
+  - file_id: gates.conventions.gates
+    file_path: gates/conventions.gates.yaml
+    subsystem: gates
+    file_role: gates_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - gate
+      outputs: []
+      validators: []
+  - file_id: handoffs.conventions.handoff-schema
+    file_path: handoffs/conventions.handoff-schema.yaml
+    subsystem: handoffs
+    file_role: phase_handoff_schema_contract
+    executability: schema
+    provides:
+      concepts:
+      - handoff
+      outputs: []
+      validators: []
+  - file_id: handoffs.conventions.handoff-validation
+    file_path: handoffs/conventions.handoff-validation.yaml
+    subsystem: handoffs
+    file_role: phase_handoff_validation_contract
+    executability: validator
+    provides:
+      concepts:
+      - handoff
+      outputs: []
+      validators: []
+  - file_id: handoffs.conventions.handoffs
+    file_path: handoffs/conventions.handoffs.yaml
+    subsystem: handoffs
+    file_role: handoffs_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - handoff
+      outputs: []
+      validators: []
+  - file_id: missions.conventions.mission-profiles
+    file_path: missions/conventions.mission-profiles.yaml
+    subsystem: missions
+    file_role: mission_profile_selection_and_configuration_contract
+    executability: decision_engine
+    provides:
+      concepts:
+      - mission
+      outputs: []
+      validators: []
+  - file_id: missions.conventions.mission-state
+    file_path: missions/conventions.mission-state.yaml
+    subsystem: missions
+    file_role: mission_state_and_phase_accounting_contract
+    executability: schema
+    provides:
+      concepts:
+      - mission
+      outputs: []
+      validators: []
+  - file_id: missions.conventions.missions
+    file_path: missions/conventions.missions.yaml
+    subsystem: missions
+    file_role: missions_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - mission
+      outputs: []
+      validators: []
+  - file_id: multi-agent.conventions.alpha-controller
+    file_path: multi-agent/conventions.alpha-controller.yaml
+    subsystem: multi-agent
+    file_role: alpha_runtime_controller_contract
+    executability: orchestrator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: multi-agent.conventions.multi-agent
+    file_path: multi-agent/conventions.multi-agent.yaml
+    subsystem: multi-agent
+    file_role: multi_agent_runtime_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: multi-agent.conventions.phase-execution
+    file_path: multi-agent/conventions.phase-execution.yaml
+    subsystem: multi-agent
+    file_role: phase_agent_execution_loop_contract
+    executability: orchestrator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: patterns.conventions.pattern-catalog
+    file_path: patterns/conventions.pattern-catalog.yaml
+    subsystem: patterns
+    file_role: pattern_catalog_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: patterns.conventions.pattern-restrictions
+    file_path: patterns/conventions.pattern-restrictions.yaml
+    subsystem: patterns
+    file_role: pattern_restriction_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: patterns.conventions.pattern-selection
+    file_path: patterns/conventions.pattern-selection.yaml
+    subsystem: patterns
+    file_role: pattern_selection_engine
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: patterns.conventions.patterns
+    file_path: patterns/conventions.patterns.yaml
+    subsystem: patterns
+    file_role: pattern_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: patterns.conventions.role-pattern-compatibility
+    file_path: patterns/conventions.role-pattern-compatibility.yaml
+    subsystem: patterns
+    file_role: role_pattern_compatibility_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: phases.conventions.phase-contracts
+    file_path: phases/conventions.phase-contracts.yaml
+    subsystem: phases
+    file_role: phase_contract_definition_and_validation_contract
+    executability: validator
+    provides:
+      concepts:
+      - phase
+      outputs: []
+      validators: []
+  - file_id: phases.conventions.phase-taxonomy
+    file_path: phases/conventions.phase-taxonomy.yaml
+    subsystem: phases
+    file_role: global_phase_vocabulary_contract
+    executability: vocabulary
+    provides:
+      concepts:
+      - phase
+      outputs: []
+      validators: []
+  - file_id: phases.conventions.phases
+    file_path: phases/conventions.phases.yaml
+    subsystem: phases
+    file_role: phases_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - phase
+      outputs: []
+      validators: []
+  - file_id: planning.conventions.behavior-contract
+    file_path: planning/conventions.behavior-contract.yaml
+    subsystem: planning
+    file_role: behavior_contract_extraction_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: planning.conventions.change-impact
+    file_path: planning/conventions.change-impact.yaml
+    subsystem: planning
+    file_role: change_impact_analysis_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: planning.conventions.codebase-reconnaissance
+    file_path: planning/conventions.codebase-reconnaissance.yaml
+    subsystem: planning
+    file_role: codebase_reconnaissance_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: planning.conventions.decision-log
+    file_path: planning/conventions.decision-log.yaml
+    subsystem: planning
+    file_role: decision_log_and_assumption_control_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: planning.conventions.local-alignment
+    file_path: planning/conventions.local-alignment.yaml
+    subsystem: planning
+    file_role: local_convention_alignment_contract
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: refactoring.conventions.behavior-preservation
+    file_path: refactoring/conventions.behavior-preservation.yaml
+    subsystem: refactoring
+    file_role: refactor_behavior_preservation_requirements_contract
+    executability: validator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: refactoring.conventions.refactor-strategy
+    file_path: refactoring/conventions.refactor-strategy.yaml
+    subsystem: refactoring
+    file_role: refactor_strategy_resolution_engine
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: refactoring.conventions.refactor-taxonomy
+    file_path: refactoring/conventions.refactor-taxonomy.yaml
+    subsystem: refactoring
+    file_role: refactor_strategy_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: refactoring.conventions.refactoring
+    file_path: refactoring/conventions.refactoring.yaml
+    subsystem: refactoring
+    file_role: refactoring_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: reports.conventions.report-artifacts
+    file_path: reports/conventions.report-artifacts.yaml
+    subsystem: reports
+    file_role: persistent_report_artifact_contract
+    executability: schema
+    provides:
+      concepts:
+      - report
+      outputs: []
+      validators: []
+  - file_id: reports.conventions.reports
+    file_path: reports/conventions.reports.yaml
+    subsystem: reports
+    file_role: reports_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - report
+      outputs: []
+      validators: []
+  - file_id: revisions.conventions.invalidation-policy
+    file_path: revisions/conventions.invalidation-policy.yaml
+    subsystem: revisions
+    file_role: invalidation_policy_contract
+    executability: validator
+    provides:
+      concepts:
+      - revision
+      outputs: []
+      validators: []
+  - file_id: revisions.conventions.rerun-policy
+    file_path: revisions/conventions.rerun-policy.yaml
+    subsystem: revisions
+    file_role: rerun_and_revision_policy_contract
+    executability: validator
+    provides:
+      concepts:
+      - revision
+      outputs: []
+      validators: []
+  - file_id: revisions.conventions.revision-taxonomy
+    file_path: revisions/conventions.revision-taxonomy.yaml
+    subsystem: revisions
+    file_role: revision_vocabulary_contract
+    executability: vocabulary
+    provides:
+      concepts:
+      - revision
+      outputs: []
+      validators: []
+  - file_id: revisions.conventions.revisions
+    file_path: revisions/conventions.revisions.yaml
+    subsystem: revisions
+    file_role: revisions_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - revision
+      outputs: []
+      validators: []
+  - file_id: risk.conventions.risk-resolution
+    file_path: risk/conventions.risk-resolution.yaml
+    subsystem: risk
+    file_role: risk_resolution_engine
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: risk.conventions.risk-taxonomy
+    file_path: risk/conventions.risk-taxonomy.yaml
+    subsystem: risk
+    file_role: risk_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: risk.conventions.risk
+    file_path: risk/conventions.risk.yaml
+    subsystem: risk
+    file_role: risk_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: roles.conventions.role-collisions
+    file_path: roles/conventions.role-collisions.yaml
+    subsystem: roles
+    file_role: role_collision_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: roles.conventions.role-placement
+    file_path: roles/conventions.role-placement.yaml
+    subsystem: roles
+    file_role: role_placement_affinity_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: roles.conventions.role-resolution
+    file_path: roles/conventions.role-resolution.yaml
+    subsystem: roles
+    file_role: role_resolution_engine
+    executability: decision_engine
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: roles.conventions.role-taxonomy
+    file_path: roles/conventions.role-taxonomy.yaml
+    subsystem: roles
+    file_role: role_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: roles.conventions.roles
+    file_path: roles/conventions.roles.yaml
+    subsystem: roles
+    file_role: role_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: testing.conventions.testing-matrix
+    file_path: testing/conventions.testing-matrix.yaml
+    subsystem: testing
+    file_role: testing_matrix_contract
+    executability: validator
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: testing.conventions.testing-taxonomy
+    file_path: testing/conventions.testing-taxonomy.yaml
+    subsystem: testing
+    file_role: testing_taxonomy_contract
+    executability: vocabulary
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: testing.conventions.testing
+    file_path: testing/conventions.testing.yaml
+    subsystem: testing
+    file_role: testing_system_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts: []
+      outputs: []
+      validators: []
+  - file_id: triggers.conventions.trigger-resolution
+    file_path: triggers/conventions.trigger-resolution.yaml
+    subsystem: triggers
+    file_role: trigger_resolution_decision_engine
+    executability: decision_engine
+    provides:
+      concepts:
+      - trigger
+      outputs: []
+      validators: []
+  - file_id: triggers.conventions.trigger-taxonomy
+    file_path: triggers/conventions.trigger-taxonomy.yaml
+    subsystem: triggers
+    file_role: trigger_vocabulary_contract
+    executability: vocabulary
+    provides:
+      concepts:
+      - trigger
+      outputs: []
+      validators: []
+  - file_id: triggers.conventions.triggers
+    file_path: triggers/conventions.triggers.yaml
+    subsystem: triggers
+    file_role: triggers_subsystem_entrypoint
+    executability: advisory_entrypoint
+    provides:
+      concepts:
+      - trigger
+      outputs: []
+      validators: []
+  lookup_rules:
+    match_decision_rules:
+    - id: LOOKUP-BY-CONCEPT
+      match:
+        request_type: concept_lookup
+      decision:
+        return_entries_where: provides.concepts contains requested concept
+        fail_when:
+        - no_index_entry_provides_concept
+    - id: LOOKUP-BY-SUBSYSTEM
+      match:
+        request_type: subsystem_lookup
+      decision:
+        return_entries_where: subsystem equals requested subsystem
+        fail_when:
+        - no_index_entry_for_subsystem
+validation:
+  required_checks: []
+  fail_conditions: []

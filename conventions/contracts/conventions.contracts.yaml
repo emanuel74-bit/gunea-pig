@@ -1,0 +1,41 @@
+version: '1.0'
+file:
+  name: conventions.contracts.yaml
+  path: contracts/conventions.contracts.yaml
+  role: contract_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for contract taxonomy and compatibility analysis.
+ownership:
+  owns:
+  - contract_system_metadata
+  - contract_file_index
+  - contract_system_execution_order
+  does_not_own:
+  - contract_definitions
+  - compatibility_strategy_details
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - contracts_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  contract_file_index:
+    taxonomy: contracts/conventions.contract-taxonomy.yaml
+    compatibility: contracts/conventions.compatibility.yaml
+  contract_system_execution_order:
+  - load_contract_taxonomy
+  - classify_contracts
+  - detect_contract_changes
+  - evaluate_compatibility
+  - produce_contract_system_result
+validation:
+  required_checks: []
+  fail_conditions: []

@@ -1,0 +1,491 @@
+version: '1.0'
+file:
+  name: conventions.pipeline-contract.yaml
+  path: core/conventions.pipeline-contract.yaml
+  role: canonical_pipeline_semantics_contract
+  executability: orchestrator
+purpose: Define global pipeline laws, phase dependency constraints, cross-phase invariants, and pipeline validation algorithm.
+ownership:
+  owns:
+  - global_pipeline_laws
+  - phase_dependency_constraints
+  - pipeline_validation_algorithm
+  does_not_own:
+  - runtime_phase_scheduling
+  - agent_permissions
+  - implementation_content
+activation:
+  mode: always
+  activates_when:
+  - code_design_or_execution_request_received
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - pipeline_contract_constraints
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.output-schema.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  optional_files: []
+sections:
+  global_pipeline_laws:
+    absolute_rules:
+    - id: PIPELINE-ABS-001
+      rule: Behavior must be understood before design or implementation decisions.
+      fail_condition: design_started_without_behavior_contract
+    - id: PIPELINE-ABS-002
+      rule: Implementation cannot start before pre_implementation_gate passes.
+      fail_condition: implementation_started_before_pre_implementation_gate
+    - id: PIPELINE-ABS-003
+      rule: Mission profiles may configure phases but must not define new phases.
+      fail_condition: mission_profile_defines_unknown_phase
+  phase_dependency_constraints:
+    dependency_edges:
+    - edge_id: EDGE-MISSION-PROFILE-SELECTION-BEFORE-MISSION-INITIALIZATION
+      source_phase: mission_profile_selection
+      target_phase: mission_initialization
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: mission_profile_selection_output
+      target_required_input: mission_profile_selection_output
+      fail_condition: mission_initialization_started_without_mission_profile_selection
+      severity: error
+    - edge_id: EDGE-MISSION-INITIALIZATION-BEFORE-ACTIVE-CONTEXT-MANIFEST
+      source_phase: mission_initialization
+      target_phase: active_context_manifest
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: mission_initialization_output
+      target_required_input: mission_initialization_output
+      fail_condition: active_context_manifest_started_without_mission_initialization
+      severity: error
+    - edge_id: EDGE-ACTIVE-CONTEXT-MANIFEST-BEFORE-BEHAVIOR-CONTRACT
+      source_phase: active_context_manifest
+      target_phase: behavior_contract
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: active_context_manifest_output
+      target_required_input: active_context_manifest_output
+      fail_condition: behavior_contract_started_without_active_context_manifest
+      severity: error
+    - edge_id: EDGE-BEHAVIOR-CONTRACT-BEFORE-CODEBASE-RECONNAISSANCE
+      source_phase: behavior_contract
+      target_phase: codebase_reconnaissance
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: behavior_contract_output
+      target_required_input: behavior_contract_output
+      fail_condition: codebase_reconnaissance_started_without_behavior_contract
+      severity: error
+    - edge_id: EDGE-CODEBASE-RECONNAISSANCE-BEFORE-LOCAL-ALIGNMENT
+      source_phase: codebase_reconnaissance
+      target_phase: local_alignment
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: codebase_reconnaissance_output
+      target_required_input: codebase_reconnaissance_output
+      fail_condition: local_alignment_started_without_codebase_reconnaissance
+      severity: error
+    - edge_id: EDGE-BEHAVIOR-CONTRACT-BEFORE-RISK-CLASSIFICATION
+      source_phase: behavior_contract
+      target_phase: risk_classification
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: behavior_contract_output
+      target_required_input: behavior_contract_output
+      fail_condition: risk_classification_started_without_behavior_contract
+      severity: error
+    - edge_id: EDGE-CODEBASE-RECONNAISSANCE-BEFORE-BOUNDARY-CONTRACT-CLASSIFICATION
+      source_phase: codebase_reconnaissance
+      target_phase: boundary_contract_classification
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: codebase_reconnaissance_output
+      target_required_input: codebase_reconnaissance_output
+      fail_condition: boundary_contract_classification_started_without_codebase_reconnaissance
+      severity: error
+    - edge_id: EDGE-CODEBASE-RECONNAISSANCE-BEFORE-DEPENDENCY-CLASSIFICATION
+      source_phase: codebase_reconnaissance
+      target_phase: dependency_classification
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: codebase_reconnaissance_output
+      target_required_input: codebase_reconnaissance_output
+      fail_condition: dependency_classification_started_without_codebase_reconnaissance
+      severity: error
+    - edge_id: EDGE-BEHAVIOR-CONTRACT-BEFORE-ARCHITECTURE-DECOMPOSITION
+      source_phase: behavior_contract
+      target_phase: architecture_decomposition
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: behavior_contract_output
+      target_required_input: behavior_contract_output
+      fail_condition: architecture_decomposition_started_without_behavior_contract
+      severity: error
+    - edge_id: EDGE-ARCHITECTURE-DECOMPOSITION-BEFORE-DRAFT-ROLE-PASS
+      source_phase: architecture_decomposition
+      target_phase: draft_role_pass
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: architecture_decomposition_output
+      target_required_input: architecture_decomposition_output
+      fail_condition: draft_role_pass_started_without_architecture_decomposition
+      severity: error
+    - edge_id: EDGE-DRAFT-ROLE-PASS-BEFORE-PATTERN-PRESSURE-DETECTION
+      source_phase: draft_role_pass
+      target_phase: pattern_pressure_detection
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: draft_role_pass_output
+      target_required_input: draft_role_pass_output
+      fail_condition: pattern_pressure_detection_started_without_draft_role_pass
+      severity: error
+    - edge_id: EDGE-DRAFT-ROLE-PASS-BEFORE-ARTIFACT-REUSE-ANALYSIS
+      source_phase: draft_role_pass
+      target_phase: artifact_reuse_analysis
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: draft_role_pass_output
+      target_required_input: draft_role_pass_output
+      fail_condition: artifact_reuse_analysis_started_without_draft_role_pass
+      severity: error
+    - edge_id: EDGE-CODEBASE-RECONNAISSANCE-BEFORE-ARTIFACT-REUSE-ANALYSIS
+      source_phase: codebase_reconnaissance
+      target_phase: artifact_reuse_analysis
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: codebase_reconnaissance_output
+      target_required_input: codebase_reconnaissance_output
+      fail_condition: artifact_reuse_analysis_started_without_codebase_reconnaissance
+      severity: error
+    - edge_id: EDGE-ARTIFACT-REUSE-ANALYSIS-BEFORE-ARTIFACT-ACTION-RESOLUTION
+      source_phase: artifact_reuse_analysis
+      target_phase: artifact_action_resolution
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: artifact_reuse_analysis_output
+      target_required_input: artifact_reuse_analysis_output
+      fail_condition: artifact_action_resolution_started_without_artifact_reuse_analysis
+      severity: error
+    - edge_id: EDGE-PATTERN-PRESSURE-DETECTION-BEFORE-ARTIFACT-ACTION-RESOLUTION
+      source_phase: pattern_pressure_detection
+      target_phase: artifact_action_resolution
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: pattern_pressure_detection_output
+      target_required_input: pattern_pressure_detection_output
+      fail_condition: artifact_action_resolution_started_without_pattern_pressure_detection
+      severity: error
+    - edge_id: EDGE-ARTIFACT-ACTION-RESOLUTION-BEFORE-REFACTOR-STRATEGY-SELECTION
+      source_phase: artifact_action_resolution
+      target_phase: refactor_strategy_selection
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: artifact_action_resolution_output
+      target_required_input: artifact_action_resolution_output
+      fail_condition: refactor_strategy_selection_started_without_artifact_action_resolution
+      severity: error
+    - edge_id: EDGE-ARTIFACT-ACTION-RESOLUTION-BEFORE-CALL-SITE-IMPACT-ANALYSIS
+      source_phase: artifact_action_resolution
+      target_phase: call_site_impact_analysis
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: artifact_action_resolution_output
+      target_required_input: artifact_action_resolution_output
+      fail_condition: call_site_impact_analysis_started_without_artifact_action_resolution
+      severity: error
+    - edge_id: EDGE-CALL-SITE-IMPACT-ANALYSIS-BEFORE-CHANGE-IMPACT-ANALYSIS
+      source_phase: call_site_impact_analysis
+      target_phase: change_impact_analysis
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: call_site_impact_analysis_output
+      target_required_input: call_site_impact_analysis_output
+      fail_condition: change_impact_analysis_started_without_call_site_impact_analysis
+      severity: error
+    - edge_id: EDGE-REFACTOR-STRATEGY-SELECTION-BEFORE-CHANGE-IMPACT-ANALYSIS
+      source_phase: refactor_strategy_selection
+      target_phase: change_impact_analysis
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: refactor_strategy_selection_output
+      target_required_input: refactor_strategy_selection_output
+      fail_condition: change_impact_analysis_started_without_refactor_strategy_selection
+      severity: error
+    - edge_id: EDGE-ARTIFACT-ACTION-RESOLUTION-BEFORE-FINAL-ROLE-ASSIGNMENT
+      source_phase: artifact_action_resolution
+      target_phase: final_role_assignment
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: artifact_action_resolution_output
+      target_required_input: artifact_action_resolution_output
+      fail_condition: final_role_assignment_started_without_artifact_action_resolution
+      severity: error
+    - edge_id: EDGE-FINAL-ROLE-ASSIGNMENT-BEFORE-PATTERN-SELECTION
+      source_phase: final_role_assignment
+      target_phase: pattern_selection
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: final_role_assignment_output
+      target_required_input: final_role_assignment_output
+      fail_condition: pattern_selection_started_without_final_role_assignment
+      severity: error
+    - edge_id: EDGE-PATTERN-PRESSURE-DETECTION-BEFORE-PATTERN-SELECTION
+      source_phase: pattern_pressure_detection
+      target_phase: pattern_selection
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: pattern_pressure_detection_output
+      target_required_input: pattern_pressure_detection_output
+      fail_condition: pattern_selection_started_without_pattern_pressure_detection
+      severity: error
+    - edge_id: EDGE-FINAL-ROLE-ASSIGNMENT-BEFORE-STRUCTURE-RENDERING
+      source_phase: final_role_assignment
+      target_phase: structure_rendering
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: final_role_assignment_output
+      target_required_input: final_role_assignment_output
+      fail_condition: structure_rendering_started_without_final_role_assignment
+      severity: error
+    - edge_id: EDGE-PATTERN-SELECTION-BEFORE-STRUCTURE-RENDERING
+      source_phase: pattern_selection
+      target_phase: structure_rendering
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: pattern_selection_output
+      target_required_input: pattern_selection_output
+      fail_condition: structure_rendering_started_without_pattern_selection
+      severity: error
+    - edge_id: EDGE-BEHAVIOR-CONTRACT-BEFORE-TEST-DERIVATION
+      source_phase: behavior_contract
+      target_phase: test_derivation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: behavior_contract_output
+      target_required_input: behavior_contract_output
+      fail_condition: test_derivation_started_without_behavior_contract
+      severity: error
+    - edge_id: EDGE-CHANGE-IMPACT-ANALYSIS-BEFORE-TEST-DERIVATION
+      source_phase: change_impact_analysis
+      target_phase: test_derivation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: change_impact_analysis_output
+      target_required_input: change_impact_analysis_output
+      fail_condition: test_derivation_started_without_change_impact_analysis
+      severity: error
+    - edge_id: EDGE-STRUCTURE-RENDERING-BEFORE-IMPLEMENTATION-SEQUENCE
+      source_phase: structure_rendering
+      target_phase: implementation_sequence
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: structure_rendering_output
+      target_required_input: structure_rendering_output
+      fail_condition: implementation_sequence_started_without_structure_rendering
+      severity: error
+    - edge_id: EDGE-TEST-DERIVATION-BEFORE-IMPLEMENTATION-SEQUENCE
+      source_phase: test_derivation
+      target_phase: implementation_sequence
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: test_derivation_output
+      target_required_input: test_derivation_output
+      fail_condition: implementation_sequence_started_without_test_derivation
+      severity: error
+    - edge_id: EDGE-IMPLEMENTATION-SEQUENCE-BEFORE-CHECKPOINT-VALIDATION-PLAN
+      source_phase: implementation_sequence
+      target_phase: checkpoint_validation_plan
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: implementation_sequence_output
+      target_required_input: implementation_sequence_output
+      fail_condition: checkpoint_validation_plan_started_without_implementation_sequence
+      severity: error
+    - edge_id: EDGE-CHECKPOINT-VALIDATION-PLAN-BEFORE-PRE-IMPLEMENTATION-GATE
+      source_phase: checkpoint_validation_plan
+      target_phase: pre_implementation_gate
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: checkpoint_validation_plan_output
+      target_required_input: checkpoint_validation_plan_output
+      fail_condition: pre_implementation_gate_started_without_checkpoint_validation_plan
+      severity: error
+    - edge_id: EDGE-IMPLEMENTATION-SEQUENCE-BEFORE-PRE-IMPLEMENTATION-GATE
+      source_phase: implementation_sequence
+      target_phase: pre_implementation_gate
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: implementation_sequence_output
+      target_required_input: implementation_sequence_output
+      fail_condition: pre_implementation_gate_started_without_implementation_sequence
+      severity: error
+    - edge_id: EDGE-PRE-IMPLEMENTATION-GATE-BEFORE-IMPLEMENTATION
+      source_phase: pre_implementation_gate
+      target_phase: implementation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: pre_implementation_gate_output
+      target_required_input: pre_implementation_gate_output
+      fail_condition: implementation_started_without_pre_implementation_gate
+      severity: error
+    - edge_id: EDGE-IMPLEMENTATION-BEFORE-POST-IMPLEMENTATION-VALIDATION
+      source_phase: implementation
+      target_phase: post_implementation_validation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: implementation_output
+      target_required_input: implementation_output
+      fail_condition: post_implementation_validation_started_without_implementation
+      severity: error
+    - edge_id: EDGE-POST-IMPLEMENTATION-VALIDATION-BEFORE-FAILURE-CLASSIFICATION
+      source_phase: post_implementation_validation
+      target_phase: failure_classification
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: post_implementation_validation_output
+      target_required_input: post_implementation_validation_output
+      fail_condition: failure_classification_started_without_post_implementation_validation
+      severity: error
+    - edge_id: EDGE-FAILURE-CLASSIFICATION-BEFORE-FEEDBACK-REPAIR
+      source_phase: failure_classification
+      target_phase: feedback_repair
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: failure_classification_output
+      target_required_input: failure_classification_output
+      fail_condition: feedback_repair_started_without_failure_classification
+      severity: error
+    - edge_id: EDGE-TRIGGER-REVIEW-BEFORE-FINAL-VALIDATION
+      source_phase: trigger_review
+      target_phase: final_validation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: trigger_review_output
+      target_required_input: trigger_review_output
+      fail_condition: final_validation_started_without_trigger_review
+      severity: error
+    - edge_id: EDGE-REPORT-ARTIFACT-VALIDATION-BEFORE-FINAL-VALIDATION
+      source_phase: report_artifact_validation
+      target_phase: final_validation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: report_artifact_validation_output
+      target_required_input: report_artifact_validation_output
+      fail_condition: final_validation_started_without_report_artifact_validation
+      severity: error
+    - edge_id: EDGE-POST-IMPLEMENTATION-VALIDATION-BEFORE-FINAL-VALIDATION
+      source_phase: post_implementation_validation
+      target_phase: final_validation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: post_implementation_validation_output
+      target_required_input: post_implementation_validation_output
+      fail_condition: final_validation_started_without_post_implementation_validation
+      severity: error
+    - edge_id: EDGE-PHASE-ACCOUNTING-BEFORE-FINAL-VALIDATION
+      source_phase: phase_accounting
+      target_phase: final_validation
+      constraint_type: requires_before
+      applies_when:
+        source_phase_active: true
+        target_phase_active: true
+      required_output_from_source: phase_accounting_output
+      target_required_input: phase_accounting_output
+      fail_condition: final_validation_started_without_phase_accounting
+      severity: error
+  pipeline_validation_algorithm:
+    steps:
+    - load_active_phase_plan
+    - load_dependency_edges
+    - validate_phase_ids
+    - validate_active_phase_order
+    - validate_required_output_handoff
+    - emit_failures
+validation:
+  required_checks: []
+  fail_conditions:
+  - id: PIPELINE-001
+    condition: active_phase_plan_violates_dependency_edge
+    message: Active phase plan violates a dependency edge.
+    severity: error

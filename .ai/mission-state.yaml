@@ -1,0 +1,20 @@
+mission_id: ""
+selected_profile: ""
+current_phase: "mission_profile_selection"
+implementation_allowed: false
+active_phase_plan:
+  ordered_phases: []
+  required_phases: []
+  conditional_phases: []
+  forbidden_phases: []
+  skipped_phases: []
+  blocked_phases: []
+phase_statuses: []
+report_registry_ref: ".ai/reports/report-registry.yaml"
+active_triggers: []
+blocked_items: []
+completed_reports: []
+invalidated_outputs: []
+revision_history: []
+rerun_requests: []
+user_approvals: []

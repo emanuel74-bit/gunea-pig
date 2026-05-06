@@ -1,0 +1,102 @@
+version: '1.0'
+file:
+  name: conventions.agent-taxonomy.yaml
+  path: agents/conventions.agent-taxonomy.yaml
+  role: fixed_agent_vocabulary_contract
+  executability: vocabulary
+purpose: Define the fixed 18-agent roster.
+ownership:
+  owns:
+  - agent_enum
+  - agent_category_enum
+  - agent_definitions
+  does_not_own:
+  - agent_permissions
+  - phase_contracts
+activation:
+  mode: reference_only
+  activates_when:
+  - agent_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - agent_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  agent_category_enum:
+    allowed:
+    - classification
+    - controller
+    - design
+    - execution
+    - execution_planning
+    - repair_validation
+    - understanding
+    - verification_planning
+  agent_enum:
+    allowed:
+    - alpha_controller
+    - behavior_agent
+    - reconnaissance_agent
+    - classification_agent
+    - architecture_agent
+    - role_agent
+    - pattern_agent
+    - artifact_action_agent
+    - refactor_strategy_agent
+    - impact_agent
+    - structure_agent
+    - testing_agent
+    - execution_planning_agent
+    - pre_implementation_gate_agent
+    - implementation_agent
+    - validation_agent
+    - failure_analysis_agent
+    - repair_agent
+  agent_category_mapping:
+    alpha_controller: controller
+    behavior_agent: understanding
+    reconnaissance_agent: understanding
+    classification_agent: classification
+    architecture_agent: design
+    role_agent: design
+    pattern_agent: design
+    artifact_action_agent: design
+    refactor_strategy_agent: design
+    impact_agent: design
+    structure_agent: design
+    testing_agent: verification_planning
+    execution_planning_agent: execution_planning
+    pre_implementation_gate_agent: execution_planning
+    implementation_agent: execution
+    validation_agent: repair_validation
+    failure_analysis_agent: repair_validation
+    repair_agent: repair_validation
+  agent_definitions:
+    alpha_controller: Alpha Controller runtime role.
+    behavior_agent: Behavior Agent runtime role.
+    reconnaissance_agent: Reconnaissance Agent runtime role.
+    classification_agent: Classification Agent runtime role.
+    architecture_agent: Architecture Agent runtime role.
+    role_agent: Role Agent runtime role.
+    pattern_agent: Pattern Agent runtime role.
+    artifact_action_agent: Artifact Action Agent runtime role.
+    refactor_strategy_agent: Refactor Strategy Agent runtime role.
+    impact_agent: Impact Agent runtime role.
+    structure_agent: Structure Agent runtime role.
+    testing_agent: Testing Agent runtime role.
+    execution_planning_agent: Execution Planning Agent runtime role.
+    pre_implementation_gate_agent: Pre Implementation Gate Agent runtime role.
+    implementation_agent: Implementation Agent runtime role.
+    validation_agent: Validation Agent runtime role.
+    failure_analysis_agent: Failure Analysis Agent runtime role.
+    repair_agent: Repair Agent runtime role.
+validation:
+  required_checks: []
+  fail_conditions: []

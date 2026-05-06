@@ -1,0 +1,1244 @@
+version: '1.0'
+file:
+  name: conventions.phase-contracts.yaml
+  path: phases/conventions.phase-contracts.yaml
+  role: phase_contract_definition_and_validation_contract
+  executability: validator
+purpose: Define strict contract records for every global phase.
+ownership:
+  owns:
+  - phase_contract_schema
+  - phase_contract_registry
+  - phase_contract_validation
+  does_not_own:
+  - phase_vocabulary
+  - agent_vocabulary
+  - gate_logic
+activation:
+  mode: conditional
+  activates_when:
+  - phase_contracts_are_evaluated
+  skips_when: []
+inputs:
+  required:
+  - phase_taxonomy
+  - agent_taxonomy
+  optional: []
+outputs:
+  produces:
+  - phase_contract_registry
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  optional_files: []
+sections:
+  phase_contract_registry_schema:
+    required_fields:
+    - phase_id
+    - category
+    - owner_agent
+    - required_inputs
+    - required_outputs
+    - allowed_conventions
+    - must_do
+    - must_not_do
+    - gate_refs
+    - handoff
+    - allowed_write_scope
+    - forbidden_write_scope
+  phase_contract_registry:
+  - phase_id: mission_profile_selection
+    category: mission_control
+    owner_agent: alpha_controller
+    required_inputs:
+    - mission_request
+    optional_inputs: []
+    required_outputs: &id001
+    - .ai/reports/00-mission-profile.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_mission_profile_selection_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.mission_profile_selection.entry
+      output_gate: gate.mission_profile_selection.output
+      handoff_gate: gate.mission_profile_selection.handoff
+    handoff:
+      consumed_by_phases:
+      - mission_initialization
+      may_emit_triggers: []
+    allowed_write_scope: *id001
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: mission_initialization
+    category: mission_control
+    owner_agent: alpha_controller
+    required_inputs:
+    - .ai/reports/00-mission-profile.yaml
+    optional_inputs: []
+    required_outputs: &id002
+    - .ai/reports/report-registry.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_mission_initialization_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.mission_initialization.entry
+      output_gate: gate.mission_initialization.output
+      handoff_gate: gate.mission_initialization.handoff
+    handoff:
+      consumed_by_phases:
+      - active_context_manifest
+      may_emit_triggers: []
+    allowed_write_scope: *id002
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: active_context_manifest
+    category: mission_control
+    owner_agent: alpha_controller
+    required_inputs:
+    - .ai/reports/report-registry.yaml
+    optional_inputs: []
+    required_outputs: &id003
+    - .ai/reports/01-active-context-manifest.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_active_context_manifest_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.active_context_manifest.entry
+      output_gate: gate.active_context_manifest.output
+      handoff_gate: gate.active_context_manifest.handoff
+    handoff:
+      consumed_by_phases:
+      - behavior_contract
+      may_emit_triggers: []
+    allowed_write_scope: *id003
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: phase_accounting
+    category: mission_control
+    owner_agent: alpha_controller
+    required_inputs: []
+    optional_inputs: []
+    required_outputs: &id004
+    - .ai/reports/phase-accounting.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_phase_accounting_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.phase_accounting.entry
+      output_gate: gate.phase_accounting.output
+      handoff_gate: gate.phase_accounting.handoff
+    handoff:
+      consumed_by_phases:
+      - final_validation
+      may_emit_triggers: []
+    allowed_write_scope: *id004
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: behavior_contract
+    category: understanding
+    owner_agent: behavior_agent
+    required_inputs:
+    - .ai/reports/01-active-context-manifest.yaml
+    optional_inputs: []
+    required_outputs: &id005
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_behavior_contract_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.behavior_contract.entry
+      output_gate: gate.behavior_contract.output
+      handoff_gate: gate.behavior_contract.handoff
+    handoff:
+      consumed_by_phases:
+      - codebase_reconnaissance
+      - risk_classification
+      - architecture_decomposition
+      - test_derivation
+      may_emit_triggers: []
+    allowed_write_scope: *id005
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: codebase_reconnaissance
+    category: understanding
+    owner_agent: reconnaissance_agent
+    required_inputs:
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
+    optional_inputs: []
+    required_outputs: &id006
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_codebase_reconnaissance_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.codebase_reconnaissance.entry
+      output_gate: gate.codebase_reconnaissance.output
+      handoff_gate: gate.codebase_reconnaissance.handoff
+    handoff:
+      consumed_by_phases:
+      - local_alignment
+      - boundary_contract_classification
+      - dependency_classification
+      - artifact_reuse_analysis
+      may_emit_triggers: []
+    allowed_write_scope: *id006
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: local_alignment
+    category: understanding
+    owner_agent: reconnaissance_agent
+    required_inputs:
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id007
+    - .ai/reports/local-alignment.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_local_alignment_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.local_alignment.entry
+      output_gate: gate.local_alignment.output
+      handoff_gate: gate.local_alignment.handoff
+    handoff:
+      consumed_by_phases: []
+      may_emit_triggers: []
+    allowed_write_scope: *id007
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: risk_classification
+    category: classification
+    owner_agent: classification_agent
+    required_inputs:
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
+    optional_inputs: []
+    required_outputs: &id008
+    - .ai/reports/risk-classification.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_risk_classification_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.risk_classification.entry
+      output_gate: gate.risk_classification.output
+      handoff_gate: gate.risk_classification.handoff
+    handoff:
+      consumed_by_phases: []
+      may_emit_triggers: []
+    allowed_write_scope: *id008
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: boundary_contract_classification
+    category: classification
+    owner_agent: classification_agent
+    required_inputs:
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id009
+    - .ai/reports/boundary-contract-classification.yaml
+    - .ai/reports/compatibility-decision.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_boundary_contract_classification_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.boundary_contract_classification.entry
+      output_gate: gate.boundary_contract_classification.output
+      handoff_gate: gate.boundary_contract_classification.handoff
+    handoff:
+      consumed_by_phases: []
+      may_emit_triggers: []
+    allowed_write_scope: *id009
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: dependency_classification
+    category: classification
+    owner_agent: classification_agent
+    required_inputs:
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id010
+    - .ai/reports/dependency-classification.yaml
+    - .ai/reports/dependency-validation.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_dependency_classification_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.dependency_classification.entry
+      output_gate: gate.dependency_classification.output
+      handoff_gate: gate.dependency_classification.handoff
+    handoff:
+      consumed_by_phases: []
+      may_emit_triggers: []
+    allowed_write_scope: *id010
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: architecture_decomposition
+    category: design
+    owner_agent: architecture_agent
+    required_inputs:
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
+    optional_inputs: []
+    required_outputs: &id011
+    - .ai/reports/architecture-blueprint.yaml
+    - .ai/reports/artifact-candidates.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_architecture_decomposition_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.architecture_decomposition.entry
+      output_gate: gate.architecture_decomposition.output
+      handoff_gate: gate.architecture_decomposition.handoff
+    handoff:
+      consumed_by_phases:
+      - draft_role_pass
+      may_emit_triggers: []
+    allowed_write_scope: *id011
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: draft_role_pass
+    category: design
+    owner_agent: role_agent
+    required_inputs:
+    - .ai/reports/architecture-blueprint.yaml
+    - .ai/reports/artifact-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id012
+    - .ai/reports/04-draft-role-signals.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_draft_role_pass_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.draft_role_pass.entry
+      output_gate: gate.draft_role_pass.output
+      handoff_gate: gate.draft_role_pass.handoff
+    handoff:
+      consumed_by_phases:
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      may_emit_triggers: []
+    allowed_write_scope: *id012
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: pattern_pressure_detection
+    category: design
+    owner_agent: pattern_agent
+    required_inputs:
+    - .ai/reports/04-draft-role-signals.yaml
+    optional_inputs: []
+    required_outputs: &id013
+    - .ai/reports/pattern-pressure.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_pattern_pressure_detection_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.pattern_pressure_detection.entry
+      output_gate: gate.pattern_pressure_detection.output
+      handoff_gate: gate.pattern_pressure_detection.handoff
+    handoff:
+      consumed_by_phases:
+      - artifact_action_resolution
+      - pattern_selection
+      may_emit_triggers: []
+    allowed_write_scope: *id013
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: artifact_reuse_analysis
+    category: design
+    owner_agent: artifact_action_agent
+    required_inputs:
+    - .ai/reports/04-draft-role-signals.yaml
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id014
+    - .ai/reports/artifact-reuse-analysis.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_artifact_reuse_analysis_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.artifact_reuse_analysis.entry
+      output_gate: gate.artifact_reuse_analysis.output
+      handoff_gate: gate.artifact_reuse_analysis.handoff
+    handoff:
+      consumed_by_phases:
+      - artifact_action_resolution
+      may_emit_triggers: []
+    allowed_write_scope: *id014
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: artifact_action_resolution
+    category: design
+    owner_agent: artifact_action_agent
+    required_inputs:
+    - .ai/reports/artifact-reuse-analysis.yaml
+    - .ai/reports/pattern-pressure.yaml
+    optional_inputs: []
+    required_outputs: &id015
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/post-action-artifact-candidates.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_artifact_action_resolution_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.artifact_action_resolution.entry
+      output_gate: gate.artifact_action_resolution.output
+      handoff_gate: gate.artifact_action_resolution.handoff
+    handoff:
+      consumed_by_phases:
+      - refactor_strategy_selection
+      - call_site_impact_analysis
+      - final_role_assignment
+      may_emit_triggers: []
+    allowed_write_scope: *id015
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: refactor_strategy_selection
+    category: design
+    owner_agent: refactor_strategy_agent
+    required_inputs:
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/post-action-artifact-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id016
+    - .ai/reports/06-refactor-strategy.yaml
+    - .ai/reports/behavior-preservation-requirements.yaml
+    - .ai/reports/refactor-required-followups.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_refactor_strategy_selection_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.refactor_strategy_selection.entry
+      output_gate: gate.refactor_strategy_selection.output
+      handoff_gate: gate.refactor_strategy_selection.handoff
+    handoff:
+      consumed_by_phases:
+      - change_impact_analysis
+      may_emit_triggers: []
+    allowed_write_scope: *id016
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: call_site_impact_analysis
+    category: design
+    owner_agent: impact_agent
+    required_inputs:
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/post-action-artifact-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id017
+    - .ai/reports/call-site-impact.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_call_site_impact_analysis_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.call_site_impact_analysis.entry
+      output_gate: gate.call_site_impact_analysis.output
+      handoff_gate: gate.call_site_impact_analysis.handoff
+    handoff:
+      consumed_by_phases:
+      - change_impact_analysis
+      may_emit_triggers: []
+    allowed_write_scope: *id017
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: change_impact_analysis
+    category: design
+    owner_agent: impact_agent
+    required_inputs:
+    - .ai/reports/call-site-impact.yaml
+    - .ai/reports/06-refactor-strategy.yaml
+    - .ai/reports/behavior-preservation-requirements.yaml
+    - .ai/reports/refactor-required-followups.yaml
+    optional_inputs: []
+    required_outputs: &id018
+    - .ai/reports/07-change-impact.yaml
+    - .ai/reports/consumer-impact.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_change_impact_analysis_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.change_impact_analysis.entry
+      output_gate: gate.change_impact_analysis.output
+      handoff_gate: gate.change_impact_analysis.handoff
+    handoff:
+      consumed_by_phases:
+      - test_derivation
+      may_emit_triggers: []
+    allowed_write_scope: *id018
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: final_role_assignment
+    category: design
+    owner_agent: role_agent
+    required_inputs:
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/post-action-artifact-candidates.yaml
+    optional_inputs: []
+    required_outputs: &id019
+    - .ai/reports/08-final-role-assignment.yaml
+    - .ai/reports/role-collision-resolution.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_final_role_assignment_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.final_role_assignment.entry
+      output_gate: gate.final_role_assignment.output
+      handoff_gate: gate.final_role_assignment.handoff
+    handoff:
+      consumed_by_phases:
+      - pattern_selection
+      - structure_rendering
+      may_emit_triggers: []
+    allowed_write_scope: *id019
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: pattern_selection
+    category: design
+    owner_agent: pattern_agent
+    required_inputs:
+    - .ai/reports/08-final-role-assignment.yaml
+    - .ai/reports/role-collision-resolution.yaml
+    - .ai/reports/pattern-pressure.yaml
+    optional_inputs: []
+    required_outputs: &id020
+    - .ai/reports/pattern-decision-log.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_pattern_selection_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.pattern_selection.entry
+      output_gate: gate.pattern_selection.output
+      handoff_gate: gate.pattern_selection.handoff
+    handoff:
+      consumed_by_phases:
+      - structure_rendering
+      may_emit_triggers: []
+    allowed_write_scope: *id020
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: structure_rendering
+    category: design
+    owner_agent: structure_agent
+    required_inputs:
+    - .ai/reports/08-final-role-assignment.yaml
+    - .ai/reports/role-collision-resolution.yaml
+    - .ai/reports/pattern-decision-log.yaml
+    optional_inputs: []
+    required_outputs: &id021
+    - .ai/reports/structure-plan.yaml
+    - .ai/reports/final-file-tree.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_structure_rendering_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.structure_rendering.entry
+      output_gate: gate.structure_rendering.output
+      handoff_gate: gate.structure_rendering.handoff
+    handoff:
+      consumed_by_phases:
+      - implementation_sequence
+      may_emit_triggers: []
+    allowed_write_scope: *id021
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: test_derivation
+    category: verification_planning
+    owner_agent: testing_agent
+    required_inputs:
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
+    - .ai/reports/07-change-impact.yaml
+    - .ai/reports/consumer-impact.yaml
+    optional_inputs: []
+    required_outputs: &id022
+    - .ai/reports/09-test-plan.yaml
+    - .ai/reports/regression-test-plan.yaml
+    - .ai/reports/characterization-test-plan.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_test_derivation_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.test_derivation.entry
+      output_gate: gate.test_derivation.output
+      handoff_gate: gate.test_derivation.handoff
+    handoff:
+      consumed_by_phases:
+      - implementation_sequence
+      may_emit_triggers: []
+    allowed_write_scope: *id022
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: implementation_sequence
+    category: execution_planning
+    owner_agent: execution_planning_agent
+    required_inputs:
+    - .ai/reports/structure-plan.yaml
+    - .ai/reports/final-file-tree.yaml
+    - .ai/reports/09-test-plan.yaml
+    - .ai/reports/regression-test-plan.yaml
+    - .ai/reports/characterization-test-plan.yaml
+    optional_inputs: []
+    required_outputs: &id023
+    - .ai/reports/10-implementation-sequence.yaml
+    - .ai/reports/checkpoint-groups.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_implementation_sequence_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.implementation_sequence.entry
+      output_gate: gate.implementation_sequence.output
+      handoff_gate: gate.implementation_sequence.handoff
+    handoff:
+      consumed_by_phases:
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      may_emit_triggers: []
+    allowed_write_scope: *id023
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: checkpoint_validation_plan
+    category: execution_planning
+    owner_agent: execution_planning_agent
+    required_inputs:
+    - .ai/reports/10-implementation-sequence.yaml
+    - .ai/reports/checkpoint-groups.yaml
+    optional_inputs: []
+    required_outputs: &id024
+    - .ai/reports/checkpoint-validation-plan.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_checkpoint_validation_plan_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.checkpoint_validation_plan.entry
+      output_gate: gate.checkpoint_validation_plan.output
+      handoff_gate: gate.checkpoint_validation_plan.handoff
+    handoff:
+      consumed_by_phases:
+      - pre_implementation_gate
+      may_emit_triggers: []
+    allowed_write_scope: *id024
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: pre_implementation_gate
+    category: validation
+    owner_agent: pre_implementation_gate_agent
+    required_inputs:
+    - .ai/reports/checkpoint-validation-plan.yaml
+    - .ai/reports/10-implementation-sequence.yaml
+    - .ai/reports/checkpoint-groups.yaml
+    optional_inputs: []
+    required_outputs: &id025
+    - .ai/reports/pre-implementation-gate.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_pre_implementation_gate_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.pre_implementation_gate.entry
+      output_gate: gate.pre_implementation_gate.output
+      handoff_gate: gate.pre_implementation_gate.handoff
+    handoff:
+      consumed_by_phases:
+      - implementation
+      may_emit_triggers: []
+    allowed_write_scope: *id025
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: implementation
+    category: execution
+    owner_agent: implementation_agent
+    required_inputs:
+    - .ai/reports/pre-implementation-gate.yaml
+    optional_inputs: []
+    required_outputs: &id026
+    - .ai/reports/changed-file-manifest.yaml
+    - .ai/reports/implementation-result.yaml
+    - .ai/reports/checkpoint-results.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_implementation_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.implementation.entry
+      output_gate: gate.implementation.output
+      handoff_gate: gate.implementation.handoff
+    handoff:
+      consumed_by_phases:
+      - post_implementation_validation
+      may_emit_triggers: []
+    allowed_write_scope: *id026
+    forbidden_write_scope:
+    - .ai/reports/00-*
+    - .ai/reports/01-*
+  - phase_id: failure_classification
+    category: repair
+    owner_agent: failure_analysis_agent
+    required_inputs:
+    - .ai/reports/post-implementation-validation.yaml
+    - .ai/reports/failure-report.yaml
+    optional_inputs: []
+    required_outputs: &id027
+    - .ai/reports/failure-classification.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_failure_classification_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.failure_classification.entry
+      output_gate: gate.failure_classification.output
+      handoff_gate: gate.failure_classification.handoff
+    handoff:
+      consumed_by_phases:
+      - feedback_repair
+      may_emit_triggers: []
+    allowed_write_scope: *id027
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: feedback_repair
+    category: repair
+    owner_agent: repair_agent
+    required_inputs:
+    - .ai/reports/failure-classification.yaml
+    optional_inputs: []
+    required_outputs: &id028
+    - .ai/reports/repair-plan.yaml
+    - .ai/reports/feedback-repair-result.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_feedback_repair_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.feedback_repair.entry
+      output_gate: gate.feedback_repair.output
+      handoff_gate: gate.feedback_repair.handoff
+    handoff:
+      consumed_by_phases: []
+      may_emit_triggers: []
+    allowed_write_scope: *id028
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: post_implementation_validation
+    category: validation
+    owner_agent: validation_agent
+    required_inputs:
+    - .ai/reports/changed-file-manifest.yaml
+    - .ai/reports/implementation-result.yaml
+    - .ai/reports/checkpoint-results.yaml
+    optional_inputs: []
+    required_outputs: &id029
+    - .ai/reports/post-implementation-validation.yaml
+    - .ai/reports/failure-report.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_post_implementation_validation_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.post_implementation_validation.entry
+      output_gate: gate.post_implementation_validation.output
+      handoff_gate: gate.post_implementation_validation.handoff
+    handoff:
+      consumed_by_phases:
+      - failure_classification
+      - final_validation
+      may_emit_triggers: []
+    allowed_write_scope: *id029
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: trigger_review
+    category: validation
+    owner_agent: alpha_controller
+    required_inputs: []
+    optional_inputs: []
+    required_outputs: &id030
+    - .ai/reports/trigger-review.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_trigger_review_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.trigger_review.entry
+      output_gate: gate.trigger_review.output
+      handoff_gate: gate.trigger_review.handoff
+    handoff:
+      consumed_by_phases:
+      - final_validation
+      may_emit_triggers: []
+    allowed_write_scope: *id030
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: report_artifact_validation
+    category: reporting
+    owner_agent: alpha_controller
+    required_inputs: []
+    optional_inputs: []
+    required_outputs: &id031
+    - .ai/reports/report-artifact-validation.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_report_artifact_validation_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.report_artifact_validation.entry
+      output_gate: gate.report_artifact_validation.output
+      handoff_gate: gate.report_artifact_validation.handoff
+    handoff:
+      consumed_by_phases:
+      - final_validation
+      may_emit_triggers: []
+    allowed_write_scope: *id031
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  - phase_id: final_validation
+    category: validation
+    owner_agent: validation_agent
+    required_inputs:
+    - .ai/reports/trigger-review.yaml
+    - .ai/reports/report-artifact-validation.yaml
+    - .ai/reports/post-implementation-validation.yaml
+    - .ai/reports/failure-report.yaml
+    - .ai/reports/phase-accounting.yaml
+    optional_inputs: []
+    required_outputs: &id032
+    - .ai/reports/99-validation-summary.yaml
+    - .ai/reports/final-unresolved-items.yaml
+    optional_outputs: []
+    allowed_conventions:
+      required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+      optional_files:
+      - core/conventions.index.yaml
+    must_do:
+    - execute_final_validation_scope
+    - write_required_outputs
+    - record_decisions_and_evidence
+    must_not_do:
+    - perform_out_of_phase_work
+    - bypass_gates
+    - write_forbidden_files
+    gate_refs:
+      entry_gate: gate.final_validation.entry
+      output_gate: gate.final_validation.output
+      handoff_gate: gate.final_validation.handoff
+    handoff:
+      consumed_by_phases: []
+      may_emit_triggers: []
+    allowed_write_scope: *id032
+    forbidden_write_scope:
+    - src/**
+    - test/**
+  phase_contract_validation_algorithm:
+    steps:
+    - load_phase_taxonomy
+    - load_phase_contracts
+    - assert_one_contract_per_phase
+    - assert_owner_agent_exists
+    - assert_inputs_have_producers
+    - assert_outputs_have_consumers
+    - assert_scope_boundaries
+validation:
+  required_checks: []
+  fail_conditions: []

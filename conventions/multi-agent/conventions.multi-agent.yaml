@@ -1,0 +1,41 @@
+version: '1.0'
+file:
+  name: conventions.multi-agent.yaml
+  path: multi-agent/conventions.multi-agent.yaml
+  role: multi_agent_runtime_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for Alpha-controlled fixed-agent phase-gated execution.
+ownership:
+  owns:
+  - multi_agent_file_index
+  - multi_agent_subsystem_contract
+  does_not_own:
+  - pipeline_laws
+  - phase_vocabulary
+  - agent_vocabulary
+activation:
+  mode: entrypoint
+  activates_when:
+  - multi_agent_execution_enabled
+  skips_when: []
+inputs:
+  required:
+  - mission_request
+  optional: []
+outputs:
+  produces:
+  - multi_agent_system_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.pipeline-contract.yaml
+  - multi-agent/conventions.alpha-controller.yaml
+  - multi-agent/conventions.phase-execution.yaml
+  optional_files: []
+sections:
+  multi_agent_file_index:
+    alpha_controller: multi-agent/conventions.alpha-controller.yaml
+    phase_execution: multi-agent/conventions.phase-execution.yaml
+validation:
+  required_checks: []
+  fail_conditions: []

@@ -1,0 +1,41 @@
+version: '1.0'
+file:
+  name: conventions.dependencies.yaml
+  path: dependencies/conventions.dependencies.yaml
+  role: dependency_system_entrypoint
+  executability: advisory_entrypoint
+purpose: Entrypoint for dependency taxonomy and import rule validation.
+ownership:
+  owns:
+  - dependency_system_metadata
+  - dependency_file_index
+  - dependency_system_execution_order
+  does_not_own:
+  - dependency_type_definitions
+  - detailed_import_rules
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - dependencies_result
+dependencies:
+  required_files: []
+  optional_files: []
+sections:
+  dependency_file_index:
+    taxonomy: dependencies/conventions.dependency-taxonomy.yaml
+    import_rules: dependencies/conventions.import-rules.yaml
+  dependency_system_execution_order:
+  - load_dependency_taxonomy
+  - classify_dependencies
+  - validate_dependency_directions
+  - route_required_dependency_followups
+  - produce_dependency_system_result
+validation:
+  required_checks: []
+  fail_conditions: []

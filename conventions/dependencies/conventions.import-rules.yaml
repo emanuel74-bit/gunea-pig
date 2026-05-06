@@ -1,0 +1,92 @@
+version: '1.0'
+file:
+  name: conventions.import-rules.yaml
+  path: dependencies/conventions.import-rules.yaml
+  role: dependency_import_and_direction_rules_contract
+  executability: validator
+purpose: Define allowed, conditional, and forbidden dependency directions and violation detection.
+ownership:
+  owns:
+  - allowed_dependency_directions
+  - conditional_dependency_directions
+  - forbidden_dependency_directions
+  - module_import_rules
+  - runtime_dependency_rules
+  - test_dependency_rules
+  - dependency_violation_detection
+  does_not_own:
+  - dependency_type_definitions
+  - role_definitions
+  - boundary_definitions
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - import_rules_validation_report
+dependencies:
+  required_files:
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  optional_files: []
+sections:
+  allowed_dependency_directions:
+    layer:
+    - transport_to_application
+    - application_to_domain
+    - application_to_port
+    - domain_to_domain
+    - infrastructure_to_port
+    - infrastructure_to_external_system
+    - test_to_artifact_under_test
+  forbidden_dependency_directions:
+    layer:
+    - domain_to_infrastructure
+    - domain_to_transport
+    - domain_to_persistence_model
+    - application_to_transport
+    - transport_to_persistence_directly
+    - production_to_test_support
+    module:
+    - shared_to_feature_specific
+    - module_to_private_internal
+  conditional_dependency_directions:
+    application_to_infrastructure: allowed only when target is abstract port/interface
+    cross_module_dependency: allowed only through public module API
+    dynamic_import: allowed only when runtime loading is documented
+  module_import_rules:
+  - Cross-module imports must use exported public module API
+  - Circular module dependencies are forbidden
+  runtime_dependency_rules:
+  - Provider binding must map abstraction/token/port to compatible implementation
+  - Runtime entrypoints must be registered
+  test_dependency_rules:
+  - Production code must never depend on test support
+  - Fakes must satisfy same port/contract
+validation:
+  fail_conditions:
+  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-001
+    condition: forbidden_dependency_direction
+    message: Forbidden dependency direction.
+    severity: error
+    owner: dependencies/conventions.import-rules.yaml
+  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-002
+    condition: conditional_dependency_without_required_followup
+    message: Conditional dependency without required followup.
+    severity: error
+    owner: dependencies/conventions.import-rules.yaml
+  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-003
+    condition: dependency_cycle_detected
+    message: Dependency cycle detected.
+    severity: error
+    owner: dependencies/conventions.import-rules.yaml
+  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-004
+    condition: test_only_dependency_leaks_to_production
+    message: Test only dependency leaks to production.
+    severity: error
+    owner: dependencies/conventions.import-rules.yaml
+  required_checks: []

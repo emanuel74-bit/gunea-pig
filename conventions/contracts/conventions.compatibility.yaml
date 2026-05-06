@@ -1,0 +1,160 @@
+version: '1.0'
+file:
+  name: conventions.compatibility.yaml
+  path: contracts/conventions.compatibility.yaml
+  role: contract_compatibility_contract
+  executability: decision_engine
+purpose: Detect breaking/non-breaking contract changes and select compatibility strategy using match/decision rules.
+ownership:
+  owns:
+  - compatibility_strategy_enum
+  - compatibility_strategy_rules
+  - compatibility_decision_rules
+  - breaking_change_detection
+  - compatibility_decision_schema
+  does_not_own:
+  - contract_type_definitions
+  - boundary_classification
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - compatibility_result
+dependencies:
+  required_files:
+  - contracts/conventions.contract-taxonomy.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  optional_files: []
+sections:
+  compatibility_strategy_enum:
+    allowed:
+    - internal_only_change
+    - backward_compatible_addition
+    - versioned_contract
+    - adapter_translation
+    - deprecation_period
+    - synchronized_breaking_change
+    - reject_breaking_change
+  compatibility_strategy_rules:
+    internal_only_change:
+      choose_when:
+      - internal_only_change conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+    backward_compatible_addition:
+      choose_when:
+      - backward_compatible_addition conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+    versioned_contract:
+      choose_when:
+      - versioned_contract conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+    adapter_translation:
+      choose_when:
+      - adapter_translation conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+    deprecation_period:
+      choose_when:
+      - deprecation_period conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+    synchronized_breaking_change:
+      choose_when:
+      - synchronized_breaking_change conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+    reject_breaking_change:
+      choose_when:
+      - reject_breaking_change conditions match
+      reject_when:
+      - preconditions do not match
+      must:
+      - record compatibility decision
+  compatibility_decision_rules:
+    rule_schema:
+      required_fields:
+      - match
+      - decision
+      optional_fields:
+      - priority
+      - reason
+      - examples
+    decision_inputs:
+      contract_type: contracts/conventions.contract-taxonomy.yaml
+      stability_level: contracts/conventions.contract-taxonomy.yaml
+      change_type: contracts/conventions.contract-taxonomy.yaml
+      consumer_knowledge: contracts/conventions.contract-taxonomy.yaml
+      boundary_type: boundaries/conventions.boundary-taxonomy.yaml
+      risk_level: risk/conventions.risk-taxonomy.yaml
+    rule_groups:
+      public_or_durable_contract:
+        applies_when:
+          stability_level:
+          - external_public
+          - durable_versioned
+        rules:
+        - match:
+            change_type: breaking
+            consumer_knowledge: unknown
+          decision:
+            allowed_strategies:
+            - versioned_contract
+            - adapter_translation
+            - deprecation_period
+            - reject_breaking_change
+            forbidden_strategies:
+            - synchronized_breaking_change
+            - internal_only_change
+            required_followups:
+            - consumer_discovery_or_safe_compatibility_strategy
+  breaking_change_detection:
+    always_breaking:
+    - remove_required_field
+    - rename_field
+    - change_field_type
+    - remove_endpoint
+    - change_method_signature
+    - remove_module_export
+    non_breaking_when_verified:
+    - add_optional_field
+    - add_new_endpoint
+    - add_nullable_persistence_column
+validation:
+  fail_conditions:
+  - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-001
+    condition: breaking_change_without_compatibility_strategy
+    message: Breaking change without compatibility strategy.
+    severity: error
+    owner: contracts/conventions.compatibility.yaml
+  - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-002
+    condition: compatibility_rule_not_match_decision_shape
+    message: Compatibility rule not match decision shape.
+    severity: error
+    owner: contracts/conventions.compatibility.yaml
+  - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-003
+    condition: unknown_or_partially_known_consumers_for_unsafe_breaking_change
+    message: Unknown or partially known consumers for unsafe breaking change.
+    severity: error
+    owner: contracts/conventions.compatibility.yaml
+  required_checks: []

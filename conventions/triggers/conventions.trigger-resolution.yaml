@@ -1,0 +1,87 @@
+version: '1.0'
+file:
+  name: conventions.trigger-resolution.yaml
+  path: triggers/conventions.trigger-resolution.yaml
+  role: trigger_resolution_decision_engine
+  executability: decision_engine
+purpose: Define trigger resolution policy, trigger-to-action mapping, and trigger handling algorithm.
+ownership:
+  owns:
+  - trigger_resolution_policy
+  - trigger_resolution_matrix
+  - trigger_handling_algorithm
+  does_not_own:
+  - trigger_type_enum
+  - mission_state_storage
+activation:
+  mode: conditional
+  activates_when:
+  - triggers_are_emitted
+  skips_when: []
+inputs:
+  required:
+  - trigger_taxonomy
+  - emitted_triggers
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - trigger_resolution_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files: []
+sections:
+  trigger_resolution_policy:
+    absolute_rules:
+    - id: TRIGGER-RESOLUTION-ABS-001
+      rule: Every emitted trigger must be registered in mission_state.active_triggers.
+      fail_condition: emitted_trigger_unregistered
+  trigger_resolution_matrix:
+  - trigger_type: pattern_selection_required
+    default_action: schedule_phase
+    target_phase: pattern_selection
+    blocking_before:
+    - structure_rendering
+  - trigger_type: refactor_like_action_selected
+    default_action: schedule_phase
+    target_phase: refactor_strategy_selection
+    blocking_before:
+    - change_impact_analysis
+    - implementation_sequence
+  - trigger_type: compatibility_decision_required
+    default_action: require_report
+    target_report: compatibility-decision
+    blocking_before:
+    - pre_implementation_gate
+    - final_validation
+  - trigger_type: dependency_validation_required
+    default_action: require_report
+    target_report: dependency-validation
+    blocking_before:
+    - pre_implementation_gate
+    - final_validation
+  - trigger_type: implementation_failure_detected
+    default_action: schedule_phase
+    target_phase: failure_classification
+    blocking_before:
+    - final_validation
+  - trigger_type: repair_required
+    default_action: schedule_phase
+    target_phase: feedback_repair
+    blocking_before:
+    - final_validation
+  trigger_handling_algorithm:
+    steps:
+    - load_emitted_triggers
+    - validate_trigger_types
+    - register_triggers
+    - resolve_trigger_action
+    - apply_trigger_action
+    - update_trigger_status
+    - block_if_unresolved
+validation:
+  required_checks: []
+  fail_conditions: []

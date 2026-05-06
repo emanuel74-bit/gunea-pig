@@ -1,0 +1,569 @@
+version: '1.0'
+file:
+  name: conventions.agent-permissions.yaml
+  path: agents/conventions.agent-permissions.yaml
+  role: agent_tool_and_file_permission_contract
+  executability: validator
+purpose: Define tool, read, write, and code-edit permissions for every fixed agent.
+ownership:
+  owns:
+  - agent_permission_schema
+  - agent_tool_enum
+  - agent_permission_profiles
+  does_not_own:
+  - agent_contracts
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - agent_permissions_are_evaluated
+  skips_when: []
+inputs:
+  required:
+  - agent_taxonomy
+  - agent_contract_registry
+  optional: []
+outputs:
+  produces:
+  - agent_permission_profiles
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-contracts.yaml
+  optional_files: []
+sections:
+  agent_permission_schema:
+    required_fields:
+    - agent_id
+    - may_read
+    - may_write
+    - may_edit_code
+    - allowed_tools
+    - forbidden_tools
+    - forbidden_actions
+  agent_tool_enum:
+    allowed:
+    - read_mission_request
+    - read_report
+    - write_report
+    - read_source
+    - edit_source
+    - run_tests
+    - run_lint
+    - run_build
+    - inspect_git_diff
+    - update_mission_state
+    - validate_schema
+    - validate_gate
+    - invoke_phase_agent
+  agent_permission_profiles:
+    alpha_controller:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/trigger-review.yaml
+      may_edit_code: false
+      allowed_tools:
+      - invoke_phase_agent
+      - read_mission_request
+      - read_report
+      - update_mission_state
+      - validate_gate
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    behavior_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/assumptions.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    reconnaissance_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - read_source
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    classification_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/risk-classification.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - read_source
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    architecture_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - read_source
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    role_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    pattern_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    artifact_action_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    refactor_strategy_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    impact_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/consumer-impact.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - read_source
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    structure_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/structure-plan.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    testing_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/regression-test-plan.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    execution_planning_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    pre_implementation_gate_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/pre-implementation-gate.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    implementation_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/implementation-result.yaml
+      may_edit_code: true
+      allowed_tools:
+      - edit_source
+      - inspect_git_diff
+      - read_report
+      - read_source
+      - run_build
+      - run_lint
+      - run_tests
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    validation_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - read_source
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    failure_analysis_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/failure-classification.yaml
+      may_edit_code: false
+      allowed_tools:
+      - read_report
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - read_source
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+    repair_agent:
+      may_read:
+      - .ai/reports/**
+      - core/**
+      may_write:
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/repair-plan.yaml
+      may_edit_code: conditional_repair_only
+      allowed_tools:
+      - read_report
+      - read_source
+      - validate_schema
+      - write_report
+      forbidden_tools:
+      - read_mission_request
+      - edit_source
+      - run_tests
+      - run_lint
+      - run_build
+      - inspect_git_diff
+      - update_mission_state
+      - validate_gate
+      - invoke_phase_agent
+      forbidden_actions:
+      - violate_phase_contract
+      - write_outside_scope
+      - bypass_gate
+  agent_permission_validation_rules:
+    absolute_rules:
+    - id: AGENT-PERMISSION-001
+      rule: Agent writes must be allowed by profile and active phase contract.
+      fail_condition: agent_write_not_allowed_by_profile_or_phase
+validation:
+  required_checks: []
+  fail_conditions: []

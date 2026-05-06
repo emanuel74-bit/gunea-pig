@@ -1,0 +1,73 @@
+version: '1.0'
+file:
+  name: conventions.architecture.yaml
+  path: architecture/conventions.architecture.yaml
+  role: architecture_decomposition_contract
+  executability: decision_engine
+purpose: Transform behavior contract into architecture blueprint, capabilities, flows, and artifact candidates.
+ownership:
+  owns:
+  - architecture_blueprint_schema
+  - capability_detection
+  - execution_flow_detection
+  - artifact_candidate_generation
+  - dependency_direction
+  does_not_own:
+  - folder_rendering
+  - role_assignment
+  - pattern_selection
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - architecture_result
+dependencies:
+  required_files:
+  - planning/conventions.behavior-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  optional_files: []
+sections:
+  principles:
+  - Architecture is source of truth
+  - Decomposition precedes structure
+  - Intent defines artifact
+  - No ambiguity allowed
+  - Design must be derivable
+  layers:
+  - transport
+  - application
+  - domain
+  - infrastructure
+  - persistence
+  pipeline:
+  - consume_behavior_contract
+  - detect_capabilities
+  - detect_execution_flows
+  - define_boundaries
+  - generate_artifact_candidates
+  - define_dependency_constraints
+validation:
+  fail_conditions:
+  - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-001
+    condition: architecture_started_without_behavior_contract
+    message: Architecture started without behavior contract.
+    severity: error
+    owner: architecture/conventions.architecture.yaml
+  - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-002
+    condition: capability_missing_owner
+    message: Capability missing owner.
+    severity: error
+    owner: architecture/conventions.architecture.yaml
+  - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-003
+    condition: dependency_direction_undefined
+    message: Dependency direction undefined.
+    severity: error
+    owner: architecture/conventions.architecture.yaml
+  required_checks: []
