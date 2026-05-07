@@ -97,759 +97,4336 @@ sections:
     - constants
     - enum
     - util
+    - structural_framework
+    - transport_entry
+    - application_execution
+    - domain_model
+    - domain_constraint
+    - decision
+    - transformation
+    - transport_contract
+    - architectural_boundary
+    - integration_boundary
+    - integration_async
+    - persistence_data
+    - construction_resolution
+    - error_result
+    - type_static
+    - testing_verification
+    - fallback
   role_definitions:
     module:
       suffix: .module.ts
-      match: &id055
+      match:
         scope: structural
-      rules: &id056
+      rules:
       - wires dependencies
-      forbidden: &id057
+      forbidden:
       - contains_business_rules
       output: module
       canonical_source: conventions.roles.yaml#roles
       definition: module role. wires dependencies
+      family: supporting_component
+      purpose: module role. wires dependencies
+      detection_signals:
+      - scope: structural
+      choose_when:
+      - the artifact has exactly one primary module responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - wires dependencies
+      owns:
+      - module responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .module.ts must satisfy module role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the module case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     controller:
       suffix: .controller.ts
-      match: &id001
+      match:
         interacts_with:
         - http
-      rules: &id002
+      rules:
       - handles incoming requests
       - delegates logic outward
-      forbidden: &id003
+      forbidden:
       - contains_business_rules
       - has_side_effects
       output: controller
       canonical_source: conventions.roles.yaml#roles
       definition: controller role. handles incoming requests delegates logic outward
+      family: transport_entry
+      purpose: controller role. handles incoming requests delegates logic outward
+      detection_signals:
+      - interacts_with:
+        - http
+      choose_when:
+      - the artifact has exactly one primary controller responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - handles incoming requests
+      - delegates logic outward
+      owns:
+      - controller responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .controller.ts must satisfy controller role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the controller case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     gateway:
       suffix: .gateway.ts
-      match: &id004
+      match:
         interacts_with:
         - websocket
-      rules: &id005
+      rules:
       - manages connections
       - handles real-time messaging
-      forbidden: &id006
+      forbidden:
       - contains_business_rules
       output: gateway
       canonical_source: conventions.roles.yaml#roles
       definition: gateway role. manages connections handles real-time messaging
+      family: transport_entry
+      purpose: gateway role. manages connections handles real-time messaging
+      detection_signals:
+      - interacts_with:
+        - websocket
+      choose_when:
+      - the artifact has exactly one primary gateway responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - manages connections
+      - handles real-time messaging
+      owns:
+      - gateway responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .gateway.ts must satisfy gateway role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the gateway case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     webhook:
-      definition: webhook artifact role.
+      definition: Inbound external callback entry role that validates webhook payloads, authenticates/normalizes them, and
+        delegates processing outward.
       choose_when:
       - artifact responsibility matches webhook
       reject_when:
       - multiple primary responsibilities detected
       suffix: .webhook.ts
+      family: transport_entry
+      purpose: Inbound external callback entry role that validates webhook payloads, authenticates/normalizes them, and delegates
+        processing outward.
+      detection_signals:
+      - artifact responsibility matches webhook
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - webhook responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .webhook.ts must satisfy webhook role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the webhook case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     consumer:
-      definition: consumer artifact role.
+      definition: Queue, stream, or message entry role that receives messages and delegates processing to application logic.
       choose_when:
       - artifact responsibility matches consumer
       reject_when:
       - multiple primary responsibilities detected
       suffix: .consumer.ts
+      family: transport_entry
+      purpose: Queue, stream, or message entry role that receives messages and delegates processing to application logic.
+      detection_signals:
+      - artifact responsibility matches consumer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - consumer responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .consumer.ts must satisfy consumer role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the consumer case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     producer:
-      definition: producer artifact role.
+      definition: Outbound queue, stream, or event publishing role that formats and emits messages without owning business
+        decisions.
       choose_when:
       - artifact responsibility matches producer
       reject_when:
       - multiple primary responsibilities detected
       suffix: .producer.ts
+      family: transport_entry
+      purpose: Outbound queue, stream, or event publishing role that formats and emits messages without owning business decisions.
+      detection_signals:
+      - artifact responsibility matches producer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - producer responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .producer.ts must satisfy producer role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the producer case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     service:
       suffix: .service.ts
-      match: &id009
+      match:
         has_side_effects: true
         scope: multi_step
-      rules: &id010
+      rules:
       - coordinates dependencies
       - owns side effects
       output: service
       canonical_source: conventions.roles.yaml#roles
       definition: service role. coordinates dependencies owns side effects
+      family: application_execution
+      purpose: service role. coordinates dependencies owns side effects
+      detection_signals:
+      - has_side_effects: true
+        scope: multi_step
+      choose_when:
+      - the artifact has exactly one primary service responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - coordinates dependencies
+      - owns side effects
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - service responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .service.ts must satisfy service role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the service case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     use_case:
       suffix: .use-case.ts
-      match: &id007
+      match:
         scope: single_action
         contains_business_rules: true
-      rules: &id008
+      rules:
       - one input → one outcome
       - encapsulates full action
       output: use_case
       canonical_source: conventions.roles.yaml#roles
       definition: use_case role. one input → one outcome encapsulates full action
+      family: application_execution
+      purpose: use_case role. one input → one outcome encapsulates full action
+      detection_signals:
+      - scope: single_action
+        contains_business_rules: true
+      choose_when:
+      - the artifact has exactly one primary use case responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - one input → one outcome
+      - encapsulates full action
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - use case responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .use-case.ts must satisfy use_case role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the use case case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     handler:
-      definition: handler artifact role.
+      definition: Focused event/command handling role that reacts to one input type and delegates complex work outward.
       choose_when:
       - artifact responsibility matches handler
       reject_when:
       - multiple primary responsibilities detected
       suffix: .handler.ts
+      family: application_execution
+      purpose: Focused event/command handling role that reacts to one input type and delegates complex work outward.
+      detection_signals:
+      - artifact responsibility matches handler
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - handler responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .handler.ts must satisfy handler role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the handler case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     command:
-      definition: command artifact role.
+      definition: command role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches command
       reject_when:
       - multiple primary responsibilities detected
       suffix: .command.ts
+      family: application_execution
+      purpose: command role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches command
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - command responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .command.ts must satisfy command role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the command case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     query:
-      definition: query artifact role.
+      definition: query role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches query
       reject_when:
       - multiple primary responsibilities detected
       suffix: .query.ts
+      family: application_execution
+      purpose: query role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches query
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - query responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .query.ts must satisfy query role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the query case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     orchestrator:
       suffix: .orchestrator.ts
-      match: &id011
+      match:
         scope: multi_step
         contains_business_rules: false
-      rules: &id012
+      rules:
       - controls execution flow
-      forbidden: &id013
+      forbidden:
       - contains_business_rules
       output: orchestrator
       canonical_source: conventions.roles.yaml#roles
       definition: orchestrator role. controls execution flow
+      family: application_execution
+      purpose: orchestrator role. controls execution flow
+      detection_signals:
+      - scope: multi_step
+        contains_business_rules: false
+      choose_when:
+      - the artifact has exactly one primary orchestrator responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - controls execution flow
+      owns:
+      - orchestrator responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .orchestrator.ts must satisfy orchestrator role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the orchestrator case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     workflow:
-      definition: workflow artifact role.
+      definition: workflow role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches workflow
       reject_when:
       - multiple primary responsibilities detected
       suffix: .workflow.ts
+      family: application_execution
+      purpose: workflow role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches workflow
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - workflow responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .workflow.ts must satisfy workflow role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the workflow case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     policy:
       suffix: .policy.ts
-      match: &id014
+      match:
         contains_business_rules: true
         mutates_state: false
         has_side_effects: false
-      rules: &id015
+      rules:
       - returns decision
       output: policy
       canonical_source: conventions.roles.yaml#roles
       definition: policy role. returns decision
+      family: domain_logic
+      purpose: policy role. returns decision
+      detection_signals:
+      - contains_business_rules: true
+        mutates_state: false
+        has_side_effects: false
+      choose_when:
+      - the artifact has exactly one primary policy responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - returns decision
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - policy responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .policy.ts must satisfy policy role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the policy case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     rule:
-      definition: rule artifact role.
+      definition: rule role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches rule
       reject_when:
       - multiple primary responsibilities detected
       suffix: .rule.ts
+      family: domain_logic
+      purpose: rule role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches rule
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - rule responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .rule.ts must satisfy rule role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the rule case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     specification:
       suffix: .specification.ts
-      match: &id016
+      match:
         contains_business_rules: true
         is_composable: true
-      rules: &id017
+      rules:
       - composable logic
       output: specification
       canonical_source: conventions.roles.yaml#roles
       definition: specification role. composable logic
+      family: domain_logic
+      purpose: specification role. composable logic
+      detection_signals:
+      - contains_business_rules: true
+        is_composable: true
+      choose_when:
+      - the artifact has exactly one primary specification responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - composable logic
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - specification responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .specification.ts must satisfy specification role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the specification case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     invariant:
-      definition: invariant artifact role.
+      definition: invariant role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches invariant
       reject_when:
       - multiple primary responsibilities detected
       suffix: .invariant.ts
+      family: supporting_component
+      purpose: invariant role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches invariant
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - invariant responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .invariant.ts must satisfy invariant role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the invariant case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     entity:
-      definition: entity artifact role.
+      definition: Domain identity object role that owns lifecycle and invariant behavior for a business concept.
       choose_when:
       - artifact responsibility matches entity
       reject_when:
       - multiple primary responsibilities detected
       suffix: .entity.ts
+      family: domain_logic
+      purpose: Domain identity object role that owns lifecycle and invariant behavior for a business concept.
+      detection_signals:
+      - artifact responsibility matches entity
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - entity responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .entity.ts must satisfy entity role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the entity case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     aggregate:
-      definition: aggregate artifact role.
+      definition: aggregate role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches aggregate
       reject_when:
       - multiple primary responsibilities detected
       suffix: .aggregate.ts
+      family: domain_logic
+      purpose: aggregate role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches aggregate
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - aggregate responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .aggregate.ts must satisfy aggregate role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the aggregate case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     value_object:
-      definition: value_object artifact role.
+      definition: Immutable domain value role identified by value equality and used to protect domain meaning.
       choose_when:
       - artifact responsibility matches value_object
       reject_when:
       - multiple primary responsibilities detected
       suffix: .value-object.ts
+      family: domain_logic
+      purpose: Immutable domain value role identified by value equality and used to protect domain meaning.
+      detection_signals:
+      - artifact responsibility matches value_object
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - value object responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .value-object.ts must satisfy value_object role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the value object case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     domain_service:
-      definition: domain_service artifact role.
+      definition: domain service role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches domain_service
       reject_when:
       - multiple primary responsibilities detected
       suffix: .domain-service.ts
+      family: domain_logic
+      purpose: domain service role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches domain_service
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - domain service responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .domain-service.ts must satisfy domain_service role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the domain service case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     domain_event:
-      definition: domain_event artifact role.
+      definition: domain event role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches domain_event
       reject_when:
       - multiple primary responsibilities detected
       suffix: .domain-event.ts
+      family: supporting_component
+      purpose: domain event role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches domain_event
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - domain event responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .domain-event.ts must satisfy domain_event role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the domain event case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     repository:
       suffix: .repository.ts
-      match: &id036
+      match:
         interacts_with:
         - database
-      rules: &id037
+      rules:
       - data access abstraction
-      forbidden: &id038
+      forbidden:
       - contains_business_rules
       output: repository
       canonical_source: conventions.roles.yaml#roles
       definition: repository role. data access abstraction
+      family: persistence
+      purpose: repository role. data access abstraction
+      detection_signals:
+      - interacts_with:
+        - database
+      choose_when:
+      - the artifact has exactly one primary repository responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - data access abstraction
+      owns:
+      - repository responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .repository.ts must satisfy repository role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the repository case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     port:
-      definition: port artifact role.
+      definition: port role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches port
       reject_when:
       - multiple primary responsibilities detected
       suffix: .port.ts
+      family: supporting_component
+      purpose: port role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches port
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - port responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .port.ts must satisfy port role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the port case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     adapter:
       suffix: .adapter.ts
-      match: &id043
+      match:
         transforms_interfaces: true
-      rules: &id044
+      rules:
       - bridges systems
       output: adapter
       canonical_source: conventions.roles.yaml#roles
       definition: adapter role. bridges systems
+      family: external_integration
+      purpose: adapter role. bridges systems
+      detection_signals:
+      - transforms_interfaces: true
+      choose_when:
+      - the artifact has exactly one primary adapter responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - bridges systems
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - adapter responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .adapter.ts must satisfy adapter role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the adapter case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     client:
       suffix: .client.ts
-      match: &id041
+      match:
         interacts_with:
         - external_api
-      rules: &id042
+      rules:
       - external communication
       output: client
       canonical_source: conventions.roles.yaml#roles
       definition: client role. external communication
+      family: external_integration
+      purpose: client role. external communication
+      detection_signals:
+      - interacts_with:
+        - external_api
+      choose_when:
+      - the artifact has exactly one primary client responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - external communication
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - client responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .client.ts must satisfy client role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the client case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     mapper:
       suffix: .mapper.ts
-      match: &id022
+      match:
         input_output_shape: transforms
         is_pure_functional: true
-      rules: &id023
+      rules:
       - shape transformation
       output: mapper
       canonical_source: conventions.roles.yaml#roles
       definition: mapper role. shape transformation
+      family: transformation
+      purpose: mapper role. shape transformation
+      detection_signals:
+      - input_output_shape: transforms
+        is_pure_functional: true
+      choose_when:
+      - the artifact has exactly one primary mapper responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - shape transformation
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - mapper responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .mapper.ts must satisfy mapper role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the mapper case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     normalizer:
       suffix: .normalizer.ts
-      match: &id024
+      match:
         scope: utility
-      rules: &id025
+      rules:
       - standardizes values
       output: normalizer
       canonical_source: conventions.roles.yaml#roles
       definition: normalizer role. standardizes values
+      family: transformation
+      purpose: normalizer role. standardizes values
+      detection_signals:
+      - scope: utility
+      choose_when:
+      - the artifact has exactly one primary normalizer responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - standardizes values
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - normalizer responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .normalizer.ts must satisfy normalizer role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the normalizer case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     formatter:
       suffix: .formatter.ts
-      match: &id026
+      match:
         scope: utility
         output_formatting: true
-      rules: &id027
+      rules:
       - presentation transformation
       output: formatter
       canonical_source: conventions.roles.yaml#roles
       definition: formatter role. presentation transformation
+      family: transformation
+      purpose: formatter role. presentation transformation
+      detection_signals:
+      - scope: utility
+        output_formatting: true
+      choose_when:
+      - the artifact has exactly one primary formatter responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - presentation transformation
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - formatter responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .formatter.ts must satisfy formatter role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the formatter case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     parser:
-      definition: parser artifact role.
+      definition: parser role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches parser
       reject_when:
       - multiple primary responsibilities detected
       suffix: .parser.ts
+      family: supporting_component
+      purpose: parser role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches parser
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - parser responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .parser.ts must satisfy parser role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the parser case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     serializer:
-      definition: serializer artifact role.
+      definition: serializer role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches serializer
       reject_when:
       - multiple primary responsibilities detected
       suffix: .serializer.ts
+      family: transformation
+      purpose: serializer role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches serializer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - serializer responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .serializer.ts must satisfy serializer role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the serializer case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     factory:
       suffix: .factory.ts
-      match: &id045
+      match:
         input_output_shape: constructs
-      rules: &id046
+      rules:
       - creates objects
       output: factory
       canonical_source: conventions.roles.yaml#roles
       definition: factory role. creates objects
+      family: creation_or_selection
+      purpose: factory role. creates objects
+      detection_signals:
+      - input_output_shape: constructs
+      choose_when:
+      - the artifact has exactly one primary factory responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - creates objects
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - factory responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .factory.ts must satisfy factory role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the factory case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     builder:
       suffix: .builder.ts
-      match: &id047
+      match:
         step_by_step_construction: true
-      rules: &id048
+      rules:
       - incremental build
       output: builder
       canonical_source: conventions.roles.yaml#roles
       definition: builder role. incremental build
+      family: creation_or_selection
+      purpose: builder role. incremental build
+      detection_signals:
+      - step_by_step_construction: true
+      choose_when:
+      - the artifact has exactly one primary builder responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - incremental build
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - builder responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .builder.ts must satisfy builder role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the builder case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     strategy:
       suffix: .strategy.ts
-      match: &id053
+      match:
         interchangeable_algorithms: true
-      rules: &id054
+      rules:
       - multiple implementations
       output: strategy
       canonical_source: conventions.roles.yaml#roles
       definition: strategy role. multiple implementations
+      family: creation_or_selection
+      purpose: strategy role. multiple implementations
+      detection_signals:
+      - interchangeable_algorithms: true
+      choose_when:
+      - the artifact has exactly one primary strategy responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - multiple implementations
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - strategy responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .strategy.ts must satisfy strategy role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the strategy case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     validator:
       suffix: .validator.ts
-      match: &id049
+      match:
         input_output_shape: validates
-      rules: &id050
+      rules:
       - validation only
       output: validator
       canonical_source: conventions.roles.yaml#roles
       definition: validator role. validation only
+      family: supporting_component
+      purpose: validator role. validation only
+      detection_signals:
+      - input_output_shape: validates
+      choose_when:
+      - the artifact has exactly one primary validator responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - validation only
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - validator responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .validator.ts must satisfy validator role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the validator case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     guard:
       suffix: .guard.ts
-      match: &id020
+      match:
         scope: decision
         context_based: true
-      rules: &id021
+      rules:
       - authorization logic
       output: guard
       canonical_source: conventions.roles.yaml#roles
       definition: guard role. authorization logic
+      family: domain_logic
+      purpose: guard role. authorization logic
+      detection_signals:
+      - scope: decision
+        context_based: true
+      choose_when:
+      - the artifact has exactly one primary guard responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - authorization logic
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - guard responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .guard.ts must satisfy guard role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the guard case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     interceptor:
-      definition: interceptor artifact role.
+      definition: interceptor role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches interceptor
       reject_when:
       - multiple primary responsibilities detected
       suffix: .interceptor.ts
+      family: supporting_component
+      purpose: interceptor role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches interceptor
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - interceptor responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .interceptor.ts must satisfy interceptor role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the interceptor case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     middleware:
-      definition: middleware artifact role.
+      definition: middleware role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches middleware
       reject_when:
       - multiple primary responsibilities detected
       suffix: .middleware.ts
+      family: supporting_component
+      purpose: middleware role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches middleware
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - middleware responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .middleware.ts must satisfy middleware role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the middleware case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     schema:
       suffix: .schema.ts
-      match: &id039
+      match:
         scope: data
-      rules: &id040
+      rules:
       - defines structure only
       output: schema
       canonical_source: conventions.roles.yaml#roles
       definition: schema role. defines structure only
+      family: persistence
+      purpose: schema role. defines structure only
+      detection_signals:
+      - scope: data
+      choose_when:
+      - the artifact has exactly one primary schema responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - defines structure only
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - schema responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .schema.ts must satisfy schema role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the schema case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     model:
-      definition: model artifact role.
+      definition: model role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches model
       reject_when:
       - multiple primary responsibilities detected
       suffix: .model.ts
+      family: persistence
+      purpose: model role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches model
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - model responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .model.ts must satisfy model role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the model case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     record:
-      definition: record artifact role.
+      definition: record role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches record
       reject_when:
       - multiple primary responsibilities detected
       suffix: .record.ts
+      family: supporting_component
+      purpose: record role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches record
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - record responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .record.ts must satisfy record role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the record case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     migration:
-      definition: migration artifact role.
+      definition: migration role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches migration
       reject_when:
       - multiple primary responsibilities detected
       suffix: .migration.ts
+      family: persistence
+      purpose: migration role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches migration
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - migration responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .migration.ts must satisfy migration role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the migration case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     projection:
-      definition: projection artifact role.
+      definition: projection role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches projection
       reject_when:
       - multiple primary responsibilities detected
       suffix: .projection.ts
+      family: persistence
+      purpose: projection role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches projection
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - projection responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .projection.ts must satisfy projection role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the projection case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     read_model:
-      definition: read_model artifact role.
+      definition: read model role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches read_model
       reject_when:
       - multiple primary responsibilities detected
       suffix: .read-model.ts
+      family: supporting_component
+      purpose: read model role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches read_model
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - read model responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .read-model.ts must satisfy read_model role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the read model case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     resolver:
       suffix: .resolver.ts
-      match: &id051
+      match:
         dynamic_resolution: true
-      rules: &id052
+      rules:
       - resolves implementation
       output: resolver
       canonical_source: conventions.roles.yaml#roles
       definition: resolver role. resolves implementation
+      family: transport_entry
+      purpose: resolver role. resolves implementation
+      detection_signals:
+      - dynamic_resolution: true
+      choose_when:
+      - the artifact has exactly one primary resolver responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - resolves implementation
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - resolver responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .resolver.ts must satisfy resolver role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the resolver case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     presenter:
-      definition: presenter artifact role.
+      definition: presenter role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches presenter
       reject_when:
       - multiple primary responsibilities detected
       suffix: .presenter.ts
+      family: transformation
+      purpose: presenter role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches presenter
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - presenter responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .presenter.ts must satisfy presenter role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the presenter case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     config:
       suffix: .config.ts
-      match: &id060
+      match:
         scope: configuration
-      rules: &id061
+      rules:
       - static values
       output: config
       canonical_source: conventions.roles.yaml#roles
-      definition: config role. static values
+      definition: config role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      family: data_contract
+      purpose: config role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - scope: configuration
+      choose_when:
+      - the artifact has exactly one primary config responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - static values
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - config responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .config.ts must satisfy config role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the config case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     provider:
-      definition: provider artifact role.
+      definition: provider role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches provider
       reject_when:
       - multiple primary responsibilities detected
       suffix: .provider.ts
+      family: external_integration
+      purpose: provider role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches provider
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - provider responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .provider.ts must satisfy provider role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the provider case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     scheduler:
-      definition: scheduler artifact role.
+      definition: scheduler role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches scheduler
       reject_when:
       - multiple primary responsibilities detected
       suffix: .scheduler.ts
+      family: application_execution
+      purpose: scheduler role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches scheduler
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - scheduler responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .scheduler.ts must satisfy scheduler role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the scheduler case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     job:
-      definition: job artifact role.
+      definition: job role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches job
       reject_when:
       - multiple primary responsibilities detected
       suffix: .job.ts
+      family: application_execution
+      purpose: job role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches job
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - job responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .job.ts must satisfy job role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the job case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     fixture:
-      definition: fixture artifact role.
+      definition: fixture role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches fixture
       reject_when:
       - multiple primary responsibilities detected
       suffix: .fixture.ts
+      family: testing_support
+      purpose: fixture role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches fixture
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - fixture responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .fixture.ts must satisfy fixture role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the fixture case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     fake:
-      definition: fake artifact role.
+      definition: fake role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches fake
       reject_when:
       - multiple primary responsibilities detected
       suffix: .fake.ts
+      family: supporting_component
+      purpose: fake role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches fake
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - fake responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .fake.ts must satisfy fake role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the fake case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     mock:
-      definition: mock artifact role.
+      definition: mock role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches mock
       reject_when:
       - multiple primary responsibilities detected
       suffix: .mock.ts
+      family: testing_support
+      purpose: mock role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches mock
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - mock responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .mock.ts must satisfy mock role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the mock case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     stub:
-      definition: stub artifact role.
+      definition: stub role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches stub
       reject_when:
       - multiple primary responsibilities detected
       suffix: .stub.ts
+      family: testing_support
+      purpose: stub role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches stub
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - stub responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .stub.ts must satisfy stub role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the stub case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     spy:
-      definition: spy artifact role.
+      definition: spy role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches spy
       reject_when:
       - multiple primary responsibilities detected
       suffix: .spy.ts
+      family: supporting_component
+      purpose: spy role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches spy
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - spy responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .spy.ts must satisfy spy role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the spy case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     test_factory:
-      definition: test_factory artifact role.
+      definition: test factory role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
       choose_when:
       - artifact responsibility matches test_factory
       reject_when:
       - multiple primary responsibilities detected
       suffix: .test-factory.ts
+      family: supporting_component
+      purpose: test factory role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact responsibility matches test_factory
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - test factory responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .test-factory.ts must satisfy test_factory role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the test factory case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     selector:
       suffix: .selector.ts
-      match: &id018
+      match:
         scope: decision
-      rules: &id019
+      rules:
       - chooses one option
       output: selector
       canonical_source: conventions.roles.yaml#roles
       definition: selector role. chooses one option
+      family: creation_or_selection
+      purpose: selector role. chooses one option
+      detection_signals:
+      - scope: decision
+      choose_when:
+      - the artifact has exactly one primary selector responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - chooses one option
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - selector responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .selector.ts must satisfy selector role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the selector case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     domain:
       suffix: .domain.ts
-      match: &id028
+      match:
         contains_business_rules: true
         mutates_state: true
         depends_on_external_systems: false
-      rules: &id029
+      rules:
       - encapsulates core business logic
       output: domain
       canonical_source: conventions.roles.yaml#roles
       definition: domain role. encapsulates core business logic
+      family: supporting_component
+      purpose: domain role. encapsulates core business logic
+      detection_signals:
+      - contains_business_rules: true
+        mutates_state: true
+        depends_on_external_systems: false
+      choose_when:
+      - the artifact has exactly one primary domain responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - encapsulates core business logic
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - domain responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .domain.ts must satisfy domain role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the domain case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     event:
       suffix: .event.ts
-      match: &id030
+      match:
         is_immutable: true
-      rules: &id031
+      rules:
       - represents something that happened
       output: event
       canonical_source: conventions.roles.yaml#roles
       definition: event role. represents something that happened
+      family: data_contract
+      purpose: event role. represents something that happened
+      detection_signals:
+      - is_immutable: true
+      choose_when:
+      - the artifact has exactly one primary event responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - represents something that happened
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - event responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .event.ts must satisfy event role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the event case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     listener:
       suffix: .listener.ts
-      match: &id032
+      match:
         interacts_with:
         - event_system
-      rules: &id033
+      rules:
       - reacts to events
       output: listener
       canonical_source: conventions.roles.yaml#roles
       definition: listener role. reacts to events
+      family: supporting_component
+      purpose: listener role. reacts to events
+      detection_signals:
+      - interacts_with:
+        - event_system
+      choose_when:
+      - the artifact has exactly one primary listener responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - reacts to events
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - listener responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .listener.ts must satisfy listener role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the listener case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     publisher:
       suffix: .publisher.ts
-      match: &id034
+      match:
         interacts_with:
         - event_system
         has_side_effects: true
-      rules: &id035
+      rules:
       - emits events
       output: publisher
       canonical_source: conventions.roles.yaml#roles
       definition: publisher role. emits events
+      family: supporting_component
+      purpose: publisher role. emits events
+      detection_signals:
+      - interacts_with:
+        - event_system
+        has_side_effects: true
+      choose_when:
+      - the artifact has exactly one primary publisher responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - emits events
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - publisher responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .publisher.ts must satisfy publisher role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the publisher case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     dto:
       suffix: .dto.ts
-      match: &id058
+      match:
         scope: data
         transport_related: true
-      rules: &id059
+      rules:
       - transport shape
       output: dto
       canonical_source: conventions.roles.yaml#roles
-      definition: dto role. transport shape
+      definition: Boundary data-transfer role used to carry request/response data without behavior.
+      family: data_contract
+      purpose: Boundary data-transfer role used to carry request/response data without behavior.
+      detection_signals:
+      - scope: data
+        transport_related: true
+      choose_when:
+      - the artifact has exactly one primary dto responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - transport shape
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - dto responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .dto.ts must satisfy dto role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the dto case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     error:
       suffix: .error.ts
-      match: &id062
+      match:
         represents_error: true
-      rules: &id063
+      rules:
       - error definition
       output: error
       canonical_source: conventions.roles.yaml#roles
       definition: error role. error definition
+      family: supporting_component
+      purpose: error role. error definition
+      detection_signals:
+      - represents_error: true
+      choose_when:
+      - the artifact has exactly one primary error responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - error definition
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - error responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .error.ts must satisfy error role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the error case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     types:
       suffix: .types.ts
-      match: &id064
+      match:
         type_only: true
-      rules: &id065
+      rules:
       - no runtime code
       output: types
       canonical_source: conventions.roles.yaml#roles
-      definition: types role. no runtime code
+      definition: types role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      family: data_contract
+      purpose: types role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - type_only: true
+      choose_when:
+      - the artifact has exactly one primary types responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - no runtime code
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - types responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .types.ts must satisfy types role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the types case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     constants:
       suffix: .const.ts
-      match: &id066
+      match:
         scope: constants
-      rules: &id067
+      rules:
       - static values
       output: constants
       canonical_source: conventions.roles.yaml#roles
       definition: constants role. static values
+      family: data_contract
+      purpose: constants role. static values
+      detection_signals:
+      - scope: constants
+      choose_when:
+      - the artifact has exactly one primary constants responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - static values
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - constants responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .const.ts must satisfy constants role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the constants case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     enum:
       suffix: .enum.ts
-      match: &id068
+      match:
         finite_set: true
-      rules: &id069
+      rules:
       - controlled values
       output: enum
       canonical_source: conventions.roles.yaml#roles
       definition: enum role. controlled values
+      family: data_contract
+      purpose: enum role. controlled values
+      detection_signals:
+      - finite_set: true
+      choose_when:
+      - the artifact has exactly one primary enum responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - controlled values
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - enum responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .enum.ts must satisfy enum role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the enum case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     util:
       suffix: .util.ts
-      match: &id070
+      match:
         scope: utility
-      rules: &id071
+      rules:
       - stateless helper
       warning: last resort role
       output: util
       canonical_source: conventions.roles.yaml#roles
-      definition: util role. stateless helper
+      definition: util role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      family: supporting_component
+      purpose: util role responsible for one explicit system responsibility; it must be selected only when its detection signals
+        match and no more specific role applies.
+      detection_signals:
+      - scope: utility
+      choose_when:
+      - the artifact has exactly one primary util responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - stateless helper
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - util responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .util.ts must satisfy util role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the util case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    structural_framework:
+      suffix: .structural-framework.ts
+      family: supporting_component
+      definition: structural framework role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: structural framework role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is structural framework
+      - file suffix or behavior indicates structural framework responsibility
+      choose_when:
+      - the artifact has exactly one primary structural framework responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - structural framework responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .structural-framework.ts must satisfy structural_framework role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the structural framework case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    transport_entry:
+      suffix: .transport-entry.ts
+      family: supporting_component
+      definition: transport entry role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      purpose: transport entry role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is transport entry
+      - file suffix or behavior indicates transport entry responsibility
+      choose_when:
+      - the artifact has exactly one primary transport entry responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - transport entry responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .transport-entry.ts must satisfy transport_entry role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the transport entry case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    application_execution:
+      suffix: .application-execution.ts
+      family: supporting_component
+      definition: application execution role responsible for one explicit system responsibility; it must be selected only
+        when its detection signals match and no more specific role applies.
+      purpose: application execution role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is application execution
+      - file suffix or behavior indicates application execution responsibility
+      choose_when:
+      - the artifact has exactly one primary application execution responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - application execution responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .application-execution.ts must satisfy application_execution role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the application execution case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    domain_model:
+      suffix: .domain-model.ts
+      family: supporting_component
+      definition: domain model role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      purpose: domain model role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is domain model
+      - file suffix or behavior indicates domain model responsibility
+      choose_when:
+      - the artifact has exactly one primary domain model responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - domain model responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .domain-model.ts must satisfy domain_model role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the domain model case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    domain_constraint:
+      suffix: .domain-constraint.ts
+      family: supporting_component
+      definition: domain constraint role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: domain constraint role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is domain constraint
+      - file suffix or behavior indicates domain constraint responsibility
+      choose_when:
+      - the artifact has exactly one primary domain constraint responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - domain constraint responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .domain-constraint.ts must satisfy domain_constraint role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the domain constraint case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    decision:
+      suffix: .decision.ts
+      family: supporting_component
+      definition: decision role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      purpose: decision role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is decision
+      - file suffix or behavior indicates decision responsibility
+      choose_when:
+      - the artifact has exactly one primary decision responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - decision responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .decision.ts must satisfy decision role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the decision case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    transformation:
+      suffix: .transformation.ts
+      family: supporting_component
+      definition: transformation role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      purpose: transformation role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is transformation
+      - file suffix or behavior indicates transformation responsibility
+      choose_when:
+      - the artifact has exactly one primary transformation responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - transformation responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .transformation.ts must satisfy transformation role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the transformation case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    transport_contract:
+      suffix: .transport-contract.ts
+      family: supporting_component
+      definition: transport contract role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: transport contract role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is transport contract
+      - file suffix or behavior indicates transport contract responsibility
+      choose_when:
+      - the artifact has exactly one primary transport contract responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - transport contract responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .transport-contract.ts must satisfy transport_contract role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the transport contract case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    architectural_boundary:
+      suffix: .architectural-boundary.ts
+      family: supporting_component
+      definition: architectural boundary role responsible for one explicit system responsibility; it must be selected only
+        when its detection signals match and no more specific role applies.
+      purpose: architectural boundary role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is architectural boundary
+      - file suffix or behavior indicates architectural boundary responsibility
+      choose_when:
+      - the artifact has exactly one primary architectural boundary responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - architectural boundary responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .architectural-boundary.ts must satisfy architectural_boundary role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the architectural boundary case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    integration_boundary:
+      suffix: .integration-boundary.ts
+      family: supporting_component
+      definition: integration boundary role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: integration boundary role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is integration boundary
+      - file suffix or behavior indicates integration boundary responsibility
+      choose_when:
+      - the artifact has exactly one primary integration boundary responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - integration boundary responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .integration-boundary.ts must satisfy integration_boundary role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the integration boundary case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    integration_async:
+      suffix: .integration-async.ts
+      family: supporting_component
+      definition: integration async role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: integration async role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is integration async
+      - file suffix or behavior indicates integration async responsibility
+      choose_when:
+      - the artifact has exactly one primary integration async responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - integration async responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .integration-async.ts must satisfy integration_async role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the integration async case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    persistence_data:
+      suffix: .persistence-data.ts
+      family: supporting_component
+      definition: persistence data role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: persistence data role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is persistence data
+      - file suffix or behavior indicates persistence data responsibility
+      choose_when:
+      - the artifact has exactly one primary persistence data responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - persistence data responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .persistence-data.ts must satisfy persistence_data role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the persistence data case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    construction_resolution:
+      suffix: .construction-resolution.ts
+      family: supporting_component
+      definition: construction resolution role responsible for one explicit system responsibility; it must be selected only
+        when its detection signals match and no more specific role applies.
+      purpose: construction resolution role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is construction resolution
+      - file suffix or behavior indicates construction resolution responsibility
+      choose_when:
+      - the artifact has exactly one primary construction resolution responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - construction resolution responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .construction-resolution.ts must satisfy construction_resolution role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the construction resolution case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    error_result:
+      suffix: .error-result.ts
+      family: supporting_component
+      definition: error result role responsible for one explicit system responsibility; it must be selected only when its
+        detection signals match and no more specific role applies.
+      purpose: error result role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is error result
+      - file suffix or behavior indicates error result responsibility
+      choose_when:
+      - the artifact has exactly one primary error result responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - error result responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .error-result.ts must satisfy error_result role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the error result case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    type_static:
+      suffix: .type-static.ts
+      family: supporting_component
+      definition: type static role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      purpose: type static role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is type static
+      - file suffix or behavior indicates type static responsibility
+      choose_when:
+      - the artifact has exactly one primary type static responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - type static responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .type-static.ts must satisfy type_static role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the type static case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    testing_verification:
+      suffix: .testing-verification.ts
+      family: supporting_component
+      definition: testing verification role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      purpose: testing verification role responsible for one explicit system responsibility; it must be selected only when
+        its detection signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is testing verification
+      - file suffix or behavior indicates testing verification responsibility
+      choose_when:
+      - the artifact has exactly one primary testing verification responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - testing verification responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .testing-verification.ts must satisfy testing_verification role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the testing verification case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+    fallback:
+      suffix: .fallback.ts
+      family: supporting_component
+      definition: fallback role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      purpose: fallback role responsible for one explicit system responsibility; it must be selected only when its detection
+        signals match and no more specific role applies.
+      detection_signals:
+      - artifact primary responsibility is fallback
+      - file suffix or behavior indicates fallback responsibility
+      choose_when:
+      - the artifact has exactly one primary fallback responsibility
+      - the responsibility matches this role better than any more specific role
+      reject_when:
+      - artifact has multiple unrelated responsibilities
+      - a more specific role applies
+      - the artifact would own behavior from another layer
+      must:
+      - own exactly one responsibility
+      - keep dependencies consistent with its layer
+      - expose a clear public surface appropriate to the role
+      forbidden:
+      - mixed responsibilities
+      - hidden cross-layer behavior
+      - owning side effects outside the role boundary
+      owns:
+      - fallback responsibility
+      - role-local invariants and outputs
+      does_not_own:
+      - unrelated business rules
+      - unrelated persistence or transport concerns
+      - pipeline orchestration unless this role explicitly is an orchestrator/controller
+      validation_rules:
+      - file using .fallback.ts must satisfy fallback role boundaries
+      - must not match forbidden responsibilities
+      - must be split when mixed responsibilities are detected
+      status: active
+      meaning: Represents the fallback case within the role taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
   suffix_policy:
     required: role suffix must reflect resolved role unless framework convention requires otherwise
-  canonical_role_definitions: &id072
+  canonical_role_definitions:
     controller:
       suffix: .controller.ts
-      match: *id001
-      rules: *id002
-      forbidden: *id003
+      match:
+        interacts_with:
+        - http
+      rules:
+      - handles incoming requests
+      - delegates logic outward
+      forbidden:
+      - contains_business_rules
+      - has_side_effects
       output: controller
     gateway:
       suffix: .gateway.ts
-      match: *id004
-      rules: *id005
-      forbidden: *id006
+      match:
+        interacts_with:
+        - websocket
+      rules:
+      - manages connections
+      - handles real-time messaging
+      forbidden:
+      - contains_business_rules
       output: gateway
     use_case:
       suffix: .use-case.ts
-      match: *id007
-      rules: *id008
+      match:
+        scope: single_action
+        contains_business_rules: true
+      rules:
+      - one input → one outcome
+      - encapsulates full action
       output: use_case
     service:
       suffix: .service.ts
-      match: *id009
-      rules: *id010
+      match:
+        has_side_effects: true
+        scope: multi_step
+      rules:
+      - coordinates dependencies
+      - owns side effects
       output: service
     orchestrator:
       suffix: .orchestrator.ts
-      match: *id011
-      rules: *id012
-      forbidden: *id013
+      match:
+        scope: multi_step
+        contains_business_rules: false
+      rules:
+      - controls execution flow
+      forbidden:
+      - contains_business_rules
       output: orchestrator
     policy:
       suffix: .policy.ts
-      match: *id014
-      rules: *id015
+      match:
+        contains_business_rules: true
+        mutates_state: false
+        has_side_effects: false
+      rules:
+      - returns decision
       output: policy
     specification:
       suffix: .specification.ts
-      match: *id016
-      rules: *id017
+      match:
+        contains_business_rules: true
+        is_composable: true
+      rules:
+      - composable logic
       output: specification
     selector:
       suffix: .selector.ts
-      match: *id018
-      rules: *id019
+      match:
+        scope: decision
+      rules:
+      - chooses one option
       output: selector
     guard:
       suffix: .guard.ts
-      match: *id020
-      rules: *id021
+      match:
+        scope: decision
+        context_based: true
+      rules:
+      - authorization logic
       output: guard
     mapper:
       suffix: .mapper.ts
-      match: *id022
-      rules: *id023
+      match:
+        input_output_shape: transforms
+        is_pure_functional: true
+      rules:
+      - shape transformation
       output: mapper
     normalizer:
       suffix: .normalizer.ts
-      match: *id024
-      rules: *id025
+      match:
+        scope: utility
+      rules:
+      - standardizes values
       output: normalizer
     formatter:
       suffix: .formatter.ts
-      match: *id026
-      rules: *id027
+      match:
+        scope: utility
+        output_formatting: true
+      rules:
+      - presentation transformation
       output: formatter
     domain:
       suffix: .domain.ts
-      match: *id028
-      rules: *id029
+      match:
+        contains_business_rules: true
+        mutates_state: true
+        depends_on_external_systems: false
+      rules:
+      - encapsulates core business logic
       output: domain
     event:
       suffix: .event.ts
-      match: *id030
-      rules: *id031
+      match:
+        is_immutable: true
+      rules:
+      - represents something that happened
       output: event
     listener:
       suffix: .listener.ts
-      match: *id032
-      rules: *id033
+      match:
+        interacts_with:
+        - event_system
+      rules:
+      - reacts to events
       output: listener
     publisher:
       suffix: .publisher.ts
-      match: *id034
-      rules: *id035
+      match:
+        interacts_with:
+        - event_system
+        has_side_effects: true
+      rules:
+      - emits events
       output: publisher
     repository:
       suffix: .repository.ts
-      match: *id036
-      rules: *id037
-      forbidden: *id038
+      match:
+        interacts_with:
+        - database
+      rules:
+      - data access abstraction
+      forbidden:
+      - contains_business_rules
       output: repository
     schema:
       suffix: .schema.ts
-      match: *id039
-      rules: *id040
+      match:
+        scope: data
+      rules:
+      - defines structure only
       output: schema
     client:
       suffix: .client.ts
-      match: *id041
-      rules: *id042
+      match:
+        interacts_with:
+        - external_api
+      rules:
+      - external communication
       output: client
     adapter:
       suffix: .adapter.ts
-      match: *id043
-      rules: *id044
+      match:
+        transforms_interfaces: true
+      rules:
+      - bridges systems
       output: adapter
     factory:
       suffix: .factory.ts
-      match: *id045
-      rules: *id046
+      match:
+        input_output_shape: constructs
+      rules:
+      - creates objects
       output: factory
     builder:
       suffix: .builder.ts
-      match: *id047
-      rules: *id048
+      match:
+        step_by_step_construction: true
+      rules:
+      - incremental build
       output: builder
     validator:
       suffix: .validator.ts
-      match: *id049
-      rules: *id050
+      match:
+        input_output_shape: validates
+      rules:
+      - validation only
       output: validator
     resolver:
       suffix: .resolver.ts
-      match: *id051
-      rules: *id052
+      match:
+        dynamic_resolution: true
+      rules:
+      - resolves implementation
       output: resolver
     strategy:
       suffix: .strategy.ts
-      match: *id053
-      rules: *id054
+      match:
+        interchangeable_algorithms: true
+      rules:
+      - multiple implementations
       output: strategy
     module:
       suffix: .module.ts
-      match: *id055
-      rules: *id056
-      forbidden: *id057
+      match:
+        scope: structural
+      rules:
+      - wires dependencies
+      forbidden:
+      - contains_business_rules
       output: module
     dto:
       suffix: .dto.ts
-      match: *id058
-      rules: *id059
+      match:
+        scope: data
+        transport_related: true
+      rules:
+      - transport shape
       output: dto
     config:
       suffix: .config.ts
-      match: *id060
-      rules: *id061
+      match:
+        scope: configuration
+      rules:
+      - static values
       output: config
     error:
       suffix: .error.ts
-      match: *id062
-      rules: *id063
+      match:
+        represents_error: true
+      rules:
+      - error definition
       output: error
     types:
       suffix: .types.ts
-      match: *id064
-      rules: *id065
+      match:
+        type_only: true
+      rules:
+      - no runtime code
       output: types
     constants:
       suffix: .const.ts
-      match: *id066
-      rules: *id067
+      match:
+        scope: constants
+      rules:
+      - static values
       output: constants
     enum:
       suffix: .enum.ts
-      match: *id068
-      rules: *id069
+      match:
+        finite_set: true
+      rules:
+      - controlled values
       output: enum
     util:
       suffix: .util.ts
-      match: *id070
-      rules: *id071
+      match:
+        scope: utility
+      rules:
+      - stateless helper
       warning: last resort role
       output: util
   semantic_depth_restoration:
-    restored_from: conventions.roles.yaml
-    restoration_scope:
-    - roles
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
+    status: active_restored
+    rules:
+    - every role enum has executable definition
+    - thin role placeholders replaced with active semantic objects
+    - canonical source preserved inline
   canonical_restored_source:
-    roles: *id072
+    conventions.roles.yaml:
+      version: '1.0'
+      system:
+        name: class-role-classifier
+        purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
+          and constraints.
+
+          '
+        philosophy:
+        - Every class has exactly one role
+        - Roles are defined by responsibility, not naming
+        - If multiple roles apply → decomposition required
+        - If unclear → fail_closed
+        - Behavior defines placement, not intention
+        enforcement:
+          mode: strict
+          ambiguity_policy: fail_closed
+          multi_role_policy: reject_and_decompose
+      input:
+        class_description:
+          responsibilities: []
+          has_side_effects: boolean
+          mutates_state: boolean
+          depends_on_external_systems: boolean
+          contains_business_rules: boolean
+          is_pure_functional: boolean
+          scope: single_action | multi_step | utility | structural | data | decision
+          input_output_shape: none | transforms | validates | constructs
+          interacts_with:
+          - http
+          - websocket
+          - database
+          - external_api
+          - event_system
+          - none
+      evaluation_order:
+      - detect_transport_layer
+      - detect_execution_layer
+      - detect_decision_layer
+      - detect_transformation_layer
+      - detect_domain_layer
+      - detect_data_layer
+      - detect_integration_layer
+      - detect_construction_layer
+      - detect_validation_layer
+      - detect_resolution_layer
+      - detect_structure_layer
+      - detect_config_layer
+      - detect_error_layer
+      - detect_type_layer
+      - detect_constants_layer
+      - fallback
+      roles:
+        controller:
+          suffix: .controller.ts
+          match:
+            interacts_with:
+            - http
+          rules:
+          - handles incoming requests
+          - delegates logic outward
+          forbidden:
+          - contains_business_rules
+          - has_side_effects
+          output: controller
+        gateway:
+          suffix: .gateway.ts
+          match:
+            interacts_with:
+            - websocket
+          rules:
+          - manages connections
+          - handles real-time messaging
+          forbidden:
+          - contains_business_rules
+          output: gateway
+        use_case:
+          suffix: .use-case.ts
+          match:
+            scope: single_action
+            contains_business_rules: true
+          rules:
+          - one input → one outcome
+          - encapsulates full action
+          output: use_case
+        service:
+          suffix: .service.ts
+          match:
+            has_side_effects: true
+            scope: multi_step
+          rules:
+          - coordinates dependencies
+          - owns side effects
+          output: service
+        orchestrator:
+          suffix: .orchestrator.ts
+          match:
+            scope: multi_step
+            contains_business_rules: false
+          rules:
+          - controls execution flow
+          forbidden:
+          - contains_business_rules
+          output: orchestrator
+        policy:
+          suffix: .policy.ts
+          match:
+            contains_business_rules: true
+            mutates_state: false
+            has_side_effects: false
+          rules:
+          - returns decision
+          output: policy
+        specification:
+          suffix: .specification.ts
+          match:
+            contains_business_rules: true
+            is_composable: true
+          rules:
+          - composable logic
+          output: specification
+        selector:
+          suffix: .selector.ts
+          match:
+            scope: decision
+          rules:
+          - chooses one option
+          output: selector
+        guard:
+          suffix: .guard.ts
+          match:
+            scope: decision
+            context_based: true
+          rules:
+          - authorization logic
+          output: guard
+        mapper:
+          suffix: .mapper.ts
+          match:
+            input_output_shape: transforms
+            is_pure_functional: true
+          rules:
+          - shape transformation
+          output: mapper
+        normalizer:
+          suffix: .normalizer.ts
+          match:
+            scope: utility
+          rules:
+          - standardizes values
+          output: normalizer
+        formatter:
+          suffix: .formatter.ts
+          match:
+            scope: utility
+            output_formatting: true
+          rules:
+          - presentation transformation
+          output: formatter
+        domain:
+          suffix: .domain.ts
+          match:
+            contains_business_rules: true
+            mutates_state: true
+            depends_on_external_systems: false
+          rules:
+          - encapsulates core business logic
+          output: domain
+        event:
+          suffix: .event.ts
+          match:
+            is_immutable: true
+          rules:
+          - represents something that happened
+          output: event
+        listener:
+          suffix: .listener.ts
+          match:
+            interacts_with:
+            - event_system
+          rules:
+          - reacts to events
+          output: listener
+        publisher:
+          suffix: .publisher.ts
+          match:
+            interacts_with:
+            - event_system
+            has_side_effects: true
+          rules:
+          - emits events
+          output: publisher
+        repository:
+          suffix: .repository.ts
+          match:
+            interacts_with:
+            - database
+          rules:
+          - data access abstraction
+          forbidden:
+          - contains_business_rules
+          output: repository
+        schema:
+          suffix: .schema.ts
+          match:
+            scope: data
+          rules:
+          - defines structure only
+          output: schema
+        client:
+          suffix: .client.ts
+          match:
+            interacts_with:
+            - external_api
+          rules:
+          - external communication
+          output: client
+        adapter:
+          suffix: .adapter.ts
+          match:
+            transforms_interfaces: true
+          rules:
+          - bridges systems
+          output: adapter
+        factory:
+          suffix: .factory.ts
+          match:
+            input_output_shape: constructs
+          rules:
+          - creates objects
+          output: factory
+        builder:
+          suffix: .builder.ts
+          match:
+            step_by_step_construction: true
+          rules:
+          - incremental build
+          output: builder
+        validator:
+          suffix: .validator.ts
+          match:
+            input_output_shape: validates
+          rules:
+          - validation only
+          output: validator
+        resolver:
+          suffix: .resolver.ts
+          match:
+            dynamic_resolution: true
+          rules:
+          - resolves implementation
+          output: resolver
+        strategy:
+          suffix: .strategy.ts
+          match:
+            interchangeable_algorithms: true
+          rules:
+          - multiple implementations
+          output: strategy
+        module:
+          suffix: .module.ts
+          match:
+            scope: structural
+          rules:
+          - wires dependencies
+          forbidden:
+          - contains_business_rules
+          output: module
+        dto:
+          suffix: .dto.ts
+          match:
+            scope: data
+            transport_related: true
+          rules:
+          - transport shape
+          output: dto
+        config:
+          suffix: .config.ts
+          match:
+            scope: configuration
+          rules:
+          - static values
+          output: config
+        error:
+          suffix: .error.ts
+          match:
+            represents_error: true
+          rules:
+          - error definition
+          output: error
+        types:
+          suffix: .types.ts
+          match:
+            type_only: true
+          rules:
+          - no runtime code
+          output: types
+        constants:
+          suffix: .const.ts
+          match:
+            scope: constants
+          rules:
+          - static values
+          output: constants
+        enum:
+          suffix: .enum.ts
+          match:
+            finite_set: true
+          rules:
+          - controlled values
+          output: enum
+        util:
+          suffix: .util.ts
+          match:
+            scope: utility
+          rules:
+          - stateless helper
+          warning: last resort role
+          output: util
+  master_role_taxonomy:
+    structural_framework:
+    - module
+    transport_entry:
+    - controller
+    - gateway
+    - webhook
+    application_execution:
+    - use_case
+    - command
+    - query
+    - handler
+    - service
+    - orchestrator
+    - workflow
+    - job
+    - task
+    - processor
+    domain_model:
+    - entity
+    - value_object
+    - aggregate
+    - domain_service
+    - domain_event
+    domain_constraint:
+    - rule
+    - invariant
+    decision:
+    - policy
+    - specification
+    - guard
+    - selector
+    - strategy
+    transformation:
+    - mapper
+    - normalizer
+    - formatter
+    - serializer
+    - parser
+    transport_contract:
+    - dto
+    - request
+    - response
+    architectural_boundary:
+    - interface
+    - port
+    - contract
+    integration_boundary:
+    - client
+    - adapter
+    integration_async:
+    - integration_event
+    - listener
+    - subscriber
+    - consumer
+    - producer
+    - publisher
+    - scheduler
+    persistence_data:
+    - repository
+    - query_builder
+    - schema
+    - model
+    - record
+    - migration
+    - seed
+    - read_model
+    - projection
+    - transaction
+    - unit_of_work
+    construction_resolution:
+    - factory
+    - builder
+    - provider
+    - registry
+    - resolver
+    error_result:
+    - error
+    - exception
+    - error_code
+    - result
+    type_static:
+    - types
+    - enum
+    - constants
+    - config
+    testing_verification:
+    - unit_test
+    - integration_test
+    - e2e_test
+    - contract_test
+    - api_contract_test
+    - event_contract_test
+    - architecture_test
+    - boundary_test
+    - mock
+    - stub
+    - fake
+    - spy
+    - fixture
+    - test_factory
+    - test_builder
+    - assertion
+    - matcher
+    fallback:
+    - util
+  canonical_source_full:
+    version: '1.0'
+    system:
+      name: class-role-classifier
+      purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
+        and constraints.
+
+        '
+      philosophy:
+      - Every class has exactly one role
+      - Roles are defined by responsibility, not naming
+      - If multiple roles apply → decomposition required
+      - If unclear → fail_closed
+      - Behavior defines placement, not intention
+      enforcement:
+        mode: strict
+        ambiguity_policy: fail_closed
+        multi_role_policy: reject_and_decompose
+    input:
+      class_description:
+        responsibilities: []
+        has_side_effects: boolean
+        mutates_state: boolean
+        depends_on_external_systems: boolean
+        contains_business_rules: boolean
+        is_pure_functional: boolean
+        scope: single_action | multi_step | utility | structural | data | decision
+        input_output_shape: none | transforms | validates | constructs
+        interacts_with:
+        - http
+        - websocket
+        - database
+        - external_api
+        - event_system
+        - none
+    evaluation_order:
+    - detect_transport_layer
+    - detect_execution_layer
+    - detect_decision_layer
+    - detect_transformation_layer
+    - detect_domain_layer
+    - detect_data_layer
+    - detect_integration_layer
+    - detect_construction_layer
+    - detect_validation_layer
+    - detect_resolution_layer
+    - detect_structure_layer
+    - detect_config_layer
+    - detect_error_layer
+    - detect_type_layer
+    - detect_constants_layer
+    - fallback
+    roles:
+      controller:
+        suffix: .controller.ts
+        match:
+          interacts_with:
+          - http
+        rules:
+        - handles incoming requests
+        - delegates logic outward
+        forbidden:
+        - contains_business_rules
+        - has_side_effects
+        output: controller
+      gateway:
+        suffix: .gateway.ts
+        match:
+          interacts_with:
+          - websocket
+        rules:
+        - manages connections
+        - handles real-time messaging
+        forbidden:
+        - contains_business_rules
+        output: gateway
+      use_case:
+        suffix: .use-case.ts
+        match:
+          scope: single_action
+          contains_business_rules: true
+        rules:
+        - one input → one outcome
+        - encapsulates full action
+        output: use_case
+      service:
+        suffix: .service.ts
+        match:
+          has_side_effects: true
+          scope: multi_step
+        rules:
+        - coordinates dependencies
+        - owns side effects
+        output: service
+      orchestrator:
+        suffix: .orchestrator.ts
+        match:
+          scope: multi_step
+          contains_business_rules: false
+        rules:
+        - controls execution flow
+        forbidden:
+        - contains_business_rules
+        output: orchestrator
+      policy:
+        suffix: .policy.ts
+        match:
+          contains_business_rules: true
+          mutates_state: false
+          has_side_effects: false
+        rules:
+        - returns decision
+        output: policy
+      specification:
+        suffix: .specification.ts
+        match:
+          contains_business_rules: true
+          is_composable: true
+        rules:
+        - composable logic
+        output: specification
+      selector:
+        suffix: .selector.ts
+        match:
+          scope: decision
+        rules:
+        - chooses one option
+        output: selector
+      guard:
+        suffix: .guard.ts
+        match:
+          scope: decision
+          context_based: true
+        rules:
+        - authorization logic
+        output: guard
+      mapper:
+        suffix: .mapper.ts
+        match:
+          input_output_shape: transforms
+          is_pure_functional: true
+        rules:
+        - shape transformation
+        output: mapper
+      normalizer:
+        suffix: .normalizer.ts
+        match:
+          scope: utility
+        rules:
+        - standardizes values
+        output: normalizer
+      formatter:
+        suffix: .formatter.ts
+        match:
+          scope: utility
+          output_formatting: true
+        rules:
+        - presentation transformation
+        output: formatter
+      domain:
+        suffix: .domain.ts
+        match:
+          contains_business_rules: true
+          mutates_state: true
+          depends_on_external_systems: false
+        rules:
+        - encapsulates core business logic
+        output: domain
+      event:
+        suffix: .event.ts
+        match:
+          is_immutable: true
+        rules:
+        - represents something that happened
+        output: event
+      listener:
+        suffix: .listener.ts
+        match:
+          interacts_with:
+          - event_system
+        rules:
+        - reacts to events
+        output: listener
+      publisher:
+        suffix: .publisher.ts
+        match:
+          interacts_with:
+          - event_system
+          has_side_effects: true
+        rules:
+        - emits events
+        output: publisher
+      repository:
+        suffix: .repository.ts
+        match:
+          interacts_with:
+          - database
+        rules:
+        - data access abstraction
+        forbidden:
+        - contains_business_rules
+        output: repository
+      schema:
+        suffix: .schema.ts
+        match:
+          scope: data
+        rules:
+        - defines structure only
+        output: schema
+      client:
+        suffix: .client.ts
+        match:
+          interacts_with:
+          - external_api
+        rules:
+        - external communication
+        output: client
+      adapter:
+        suffix: .adapter.ts
+        match:
+          transforms_interfaces: true
+        rules:
+        - bridges systems
+        output: adapter
+      factory:
+        suffix: .factory.ts
+        match:
+          input_output_shape: constructs
+        rules:
+        - creates objects
+        output: factory
+      builder:
+        suffix: .builder.ts
+        match:
+          step_by_step_construction: true
+        rules:
+        - incremental build
+        output: builder
+      validator:
+        suffix: .validator.ts
+        match:
+          input_output_shape: validates
+        rules:
+        - validation only
+        output: validator
+      resolver:
+        suffix: .resolver.ts
+        match:
+          dynamic_resolution: true
+        rules:
+        - resolves implementation
+        output: resolver
+      strategy:
+        suffix: .strategy.ts
+        match:
+          interchangeable_algorithms: true
+        rules:
+        - multiple implementations
+        output: strategy
+      module:
+        suffix: .module.ts
+        match:
+          scope: structural
+        rules:
+        - wires dependencies
+        forbidden:
+        - contains_business_rules
+        output: module
+      dto:
+        suffix: .dto.ts
+        match:
+          scope: data
+          transport_related: true
+        rules:
+        - transport shape
+        output: dto
+      config:
+        suffix: .config.ts
+        match:
+          scope: configuration
+        rules:
+        - static values
+        output: config
+      error:
+        suffix: .error.ts
+        match:
+          represents_error: true
+        rules:
+        - error definition
+        output: error
+      types:
+        suffix: .types.ts
+        match:
+          type_only: true
+        rules:
+        - no runtime code
+        output: types
+      constants:
+        suffix: .const.ts
+        match:
+          scope: constants
+        rules:
+        - static values
+        output: constants
+      enum:
+        suffix: .enum.ts
+        match:
+          finite_set: true
+        rules:
+        - controlled values
+        output: enum
+      util:
+        suffix: .util.ts
+        match:
+          scope: utility
+        rules:
+        - stateless helper
+        warning: last resort role
+        output: util
 validation:
   fail_conditions:
   - id: ROLES-CONVENTIONS-ROLE-TAXONOMY-YAML-FC-001

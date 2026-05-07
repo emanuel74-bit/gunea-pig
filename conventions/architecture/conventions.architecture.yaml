@@ -53,7 +53,7 @@ sections:
   - define_boundaries
   - generate_artifact_candidates
   - define_dependency_constraints
-  canonical_architecture_rules_v3_1: &id001
+  canonical_architecture_rules_v3_1:
     version: '3.1'
     mode: agent_driven_design_system
     role: senior_software_architect
@@ -277,7 +277,441 @@ sections:
     restoration_policy: canonical_source_preserved_under_standard_file_contract
     do_not_replace_with_summary: true
   canonical_restored_source:
-    architecture_rules: *id001
+    architecture_rules:
+      version: '3.1'
+      mode: agent_driven_design_system
+      role: senior_software_architect
+      purpose: 'Deterministically transform a feature prompt into a clean, scalable, production-grade architecture using strict
+        layering, intent decomposition, and enforceable design constraints.
+
+        '
+      philosophy:
+      - Decomposition precedes structure
+      - Intent defines artifact
+      - No ambiguity allowed
+      - Consistency over convenience
+      - Design must be derivable, not guessed
+      execution_policy:
+        ambiguity: fail_closed
+        missing_information: ask_or_abort
+        default_behavior: forbidden
+      contract:
+        input:
+          type: feature_prompt
+        output:
+          type: architecture_blueprint
+          must_include:
+          - capabilities
+          - atomic_units
+          - intents
+          - artifacts
+          - layers
+          - dependencies
+          - file_structure
+          - validation_report
+      pipeline:
+        steps:
+        - extract_capabilities
+        - decompose_to_atomic_units
+        - classify_intents
+        - map_to_artifacts
+        - assign_layers
+        - infer_dependencies
+        - generate_file_structure
+        - validate_system
+      structure:
+        module_definition:
+          rule: Each module represents a distinct business capability
+          constraints:
+          - Modules MUST be independently understandable
+          - Modules MUST be independently testable
+          - No implicit cross-module coupling
+        organization:
+          strategy: feature_first
+          fallback: layer_within_feature
+        layer_boundaries:
+          enforced: true
+          rule: Strict separation between layers
+      data_flow:
+        direction:
+          canonical:
+          - ENTRY
+          - APPLICATION
+          - DECISION
+          - DOMAIN
+          - INFRASTRUCTURE
+        rules:
+        - Flow MUST be unidirectional
+        - No reverse dependencies
+        - No circular dependencies
+        - APPLICATION orchestrates but does not persist
+        - INFRASTRUCTURE handles all IO
+        - Raw persistence models MUST NOT cross boundaries
+        - Mapping layer MUST isolate transformations
+      logic_decomposition:
+        core_rules:
+        - Each unit MUST have exactly one intent
+        - If multiple reasons to change → MUST split
+        - No god classes
+        - No fat services
+        cohesion:
+          rule: Single responsibility is mandatory
+          enforcement:
+          - multi_intent_unit → invalid
+          - multi_reason_to_change → split_required
+      coupling:
+        principles:
+        - Depend on abstractions only
+        - All external dependencies via DI
+        - No global state
+        forbidden:
+        - domain_importing_infrastructure
+        - service_importing_db_models
+        - cross_module_internal_access
+        required:
+        - interfaces_at_boundaries
+        - inversion_of_control
+      service_model:
+        constraints:
+        - Services MUST be stateless
+        - Services MUST be small and composable
+        - Services MUST implement ONE intent only
+        forbidden:
+        - transport_logic_in_service
+        - direct_repository_models
+        - infrastructure_logic
+        split_conditions:
+        - multiple responsibilities
+        - growing orchestration complexity
+      service_usage:
+        rules:
+        - Same service MUST have ONE canonical interface
+        - All usages MUST match same input/output structure
+        - No alternative invocation patterns
+        forbidden:
+        - duplicate_service_logic
+        - bypassing_service_layer
+        - multiple_entrypoints_same_action
+        resolution:
+        - standardize_interface
+        - refactor_all_call_sites
+        - introduce_adapter_only_if_external
+      patterns:
+        allowed:
+          repository:
+            purpose: persistence abstraction
+          factory:
+            purpose: controlled object creation
+          strategy:
+            purpose: replace conditional logic
+          adapter:
+            purpose: external isolation
+        usage_rules:
+        - Pattern MUST reduce complexity
+        - Pattern MUST improve clarity
+        - No speculative patterns
+        forbidden:
+        - pattern_without_reason
+        - over_engineering
+      domain:
+        rules:
+        - Must contain core business rules
+        - Must be pure
+        - Must not depend on frameworks
+      consistency:
+        rules:
+        - Similar problems MUST use same patterns
+        - Naming MUST follow conventions
+        - No parallel implementations of same logic
+      scalability:
+        rules:
+        - Design for change
+        - Prefer extensibility over shortcuts
+        - Avoid tight coupling
+      file_structure:
+        strategy:
+        - feature_first
+        - layer_within_feature
+        template:
+          feature:
+            entry:
+            - '*.controller.ts'
+            application:
+            - '*use-case.ts'
+            - '*service.ts'
+            decision:
+            - '*policy.ts'
+            domain:
+            - '*.entity.ts'
+            infrastructure:
+            - '*.repository.ts'
+            support:
+            - '*.mapper.ts'
+            - '*.validator.ts'
+      validation:
+        fail_conditions:
+        - multi_intent_unit
+        - layer_violation
+        - circular_dependency
+        - service_interface_inconsistency
+        - business_logic_in_wrong_layer
+        - duplicate_logic_paths
+        must_verify:
+        - all_services_consistent
+        - all_dependencies_valid
+        - all_layers_respected
+        - all_units_single_responsibility
+      forbidden:
+        ABSOLUTE:
+        - circular_dependencies
+        - layer_skipping
+        - global_state
+        - business_logic_in_infrastructure
+        - infrastructure_in_domain
+        - direct_db_access_from_services
+        - mixed_responsibilities
+        - god_classes
+        - conditional_heavy_logic_without_strategy
+        - duplicated_service_logic
+        - inconsistent_service_usage
+      agent_execution:
+        behavior:
+        - MUST follow pipeline strictly
+        - MUST NOT skip steps
+        - MUST NOT guess missing structure
+        - MUST derive everything from intent
+        output_format:
+          sections:
+          - capabilities
+          - atomic_units
+          - intents
+          - artifacts
+          - layers
+          - dependencies
+          - file_structure
+          - validation
+        output_constraints:
+        - production_grade_only
+        - no_pseudo_code
+        - no_explanations
+  canonical_source_full:
+    architecture_rules:
+      version: '3.1'
+      mode: agent_driven_design_system
+      role: senior_software_architect
+      purpose: 'Deterministically transform a feature prompt into a clean, scalable, production-grade architecture using strict
+        layering, intent decomposition, and enforceable design constraints.
+
+        '
+      philosophy:
+      - Decomposition precedes structure
+      - Intent defines artifact
+      - No ambiguity allowed
+      - Consistency over convenience
+      - Design must be derivable, not guessed
+      execution_policy:
+        ambiguity: fail_closed
+        missing_information: ask_or_abort
+        default_behavior: forbidden
+      contract:
+        input:
+          type: feature_prompt
+        output:
+          type: architecture_blueprint
+          must_include:
+          - capabilities
+          - atomic_units
+          - intents
+          - artifacts
+          - layers
+          - dependencies
+          - file_structure
+          - validation_report
+      pipeline:
+        steps:
+        - extract_capabilities
+        - decompose_to_atomic_units
+        - classify_intents
+        - map_to_artifacts
+        - assign_layers
+        - infer_dependencies
+        - generate_file_structure
+        - validate_system
+      structure:
+        module_definition:
+          rule: Each module represents a distinct business capability
+          constraints:
+          - Modules MUST be independently understandable
+          - Modules MUST be independently testable
+          - No implicit cross-module coupling
+        organization:
+          strategy: feature_first
+          fallback: layer_within_feature
+        layer_boundaries:
+          enforced: true
+          rule: Strict separation between layers
+      data_flow:
+        direction:
+          canonical:
+          - ENTRY
+          - APPLICATION
+          - DECISION
+          - DOMAIN
+          - INFRASTRUCTURE
+        rules:
+        - Flow MUST be unidirectional
+        - No reverse dependencies
+        - No circular dependencies
+        - APPLICATION orchestrates but does not persist
+        - INFRASTRUCTURE handles all IO
+        - Raw persistence models MUST NOT cross boundaries
+        - Mapping layer MUST isolate transformations
+      logic_decomposition:
+        core_rules:
+        - Each unit MUST have exactly one intent
+        - If multiple reasons to change → MUST split
+        - No god classes
+        - No fat services
+        cohesion:
+          rule: Single responsibility is mandatory
+          enforcement:
+          - multi_intent_unit → invalid
+          - multi_reason_to_change → split_required
+      coupling:
+        principles:
+        - Depend on abstractions only
+        - All external dependencies via DI
+        - No global state
+        forbidden:
+        - domain_importing_infrastructure
+        - service_importing_db_models
+        - cross_module_internal_access
+        required:
+        - interfaces_at_boundaries
+        - inversion_of_control
+      service_model:
+        constraints:
+        - Services MUST be stateless
+        - Services MUST be small and composable
+        - Services MUST implement ONE intent only
+        forbidden:
+        - transport_logic_in_service
+        - direct_repository_models
+        - infrastructure_logic
+        split_conditions:
+        - multiple responsibilities
+        - growing orchestration complexity
+      service_usage:
+        rules:
+        - Same service MUST have ONE canonical interface
+        - All usages MUST match same input/output structure
+        - No alternative invocation patterns
+        forbidden:
+        - duplicate_service_logic
+        - bypassing_service_layer
+        - multiple_entrypoints_same_action
+        resolution:
+        - standardize_interface
+        - refactor_all_call_sites
+        - introduce_adapter_only_if_external
+      patterns:
+        allowed:
+          repository:
+            purpose: persistence abstraction
+          factory:
+            purpose: controlled object creation
+          strategy:
+            purpose: replace conditional logic
+          adapter:
+            purpose: external isolation
+        usage_rules:
+        - Pattern MUST reduce complexity
+        - Pattern MUST improve clarity
+        - No speculative patterns
+        forbidden:
+        - pattern_without_reason
+        - over_engineering
+      domain:
+        rules:
+        - Must contain core business rules
+        - Must be pure
+        - Must not depend on frameworks
+      consistency:
+        rules:
+        - Similar problems MUST use same patterns
+        - Naming MUST follow conventions
+        - No parallel implementations of same logic
+      scalability:
+        rules:
+        - Design for change
+        - Prefer extensibility over shortcuts
+        - Avoid tight coupling
+      file_structure:
+        strategy:
+        - feature_first
+        - layer_within_feature
+        template:
+          feature:
+            entry:
+            - '*.controller.ts'
+            application:
+            - '*use-case.ts'
+            - '*service.ts'
+            decision:
+            - '*policy.ts'
+            domain:
+            - '*.entity.ts'
+            infrastructure:
+            - '*.repository.ts'
+            support:
+            - '*.mapper.ts'
+            - '*.validator.ts'
+      validation:
+        fail_conditions:
+        - multi_intent_unit
+        - layer_violation
+        - circular_dependency
+        - service_interface_inconsistency
+        - business_logic_in_wrong_layer
+        - duplicate_logic_paths
+        must_verify:
+        - all_services_consistent
+        - all_dependencies_valid
+        - all_layers_respected
+        - all_units_single_responsibility
+      forbidden:
+        ABSOLUTE:
+        - circular_dependencies
+        - layer_skipping
+        - global_state
+        - business_logic_in_infrastructure
+        - infrastructure_in_domain
+        - direct_db_access_from_services
+        - mixed_responsibilities
+        - god_classes
+        - conditional_heavy_logic_without_strategy
+        - duplicated_service_logic
+        - inconsistent_service_usage
+      agent_execution:
+        behavior:
+        - MUST follow pipeline strictly
+        - MUST NOT skip steps
+        - MUST NOT guess missing structure
+        - MUST derive everything from intent
+        output_format:
+          sections:
+          - capabilities
+          - atomic_units
+          - intents
+          - artifacts
+          - layers
+          - dependencies
+          - file_structure
+          - validation
+        output_constraints:
+        - production_grade_only
+        - no_pseudo_code
+        - no_explanations
 validation:
   fail_conditions:
   - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-001

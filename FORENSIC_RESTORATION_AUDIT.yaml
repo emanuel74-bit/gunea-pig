@@ -1,0 +1,74 @@
+restoration_audit:
+  summary:
+    files_replaced_with_rich_prior: 6
+    canonical_sources_attached: architecture, structure, roles, patterns
+    method: targeted forensic replacement plus canonical source attachment; superseded orchestrator/routing excluded
+  files:
+  - file: patterns/conventions.pattern-restrictions.yaml
+    action: replaced_with_richer_previous_iteration
+    source: final_granular_conventions_system/patterns/conventions.pattern-restrictions.yaml
+    bytes_before: 1321
+    bytes_after: 2074
+  - file: patterns/conventions.role-pattern-compatibility.yaml
+    action: replaced_with_richer_previous_iteration
+    source: final_granular_conventions_system/patterns/conventions.role-pattern-compatibility.yaml
+    bytes_before: 1558
+    bytes_after: 10861
+  - file: roles/conventions.role-collisions.yaml
+    action: replaced_with_richer_previous_iteration
+    source: final_granular_conventions_system/roles/conventions.role-collisions.yaml
+    bytes_before: 1459
+    bytes_after: 26601
+  - file: roles/conventions.role-placement.yaml
+    action: replaced_with_richer_previous_iteration
+    source: final_granular_conventions_system/roles/conventions.role-placement.yaml
+    bytes_before: 1870
+    bytes_after: 5480
+  - file: testing/conventions.testing-matrix.yaml
+    action: replaced_with_richer_previous_iteration
+    source: final_granular_conventions_system/testing/conventions.testing-matrix.yaml
+    bytes_before: 1889
+    bytes_after: 6679
+  - file: testing/conventions.testing.yaml
+    action: replaced_with_richer_previous_iteration
+    source: final_granular_conventions_system/testing/conventions.testing.yaml
+    bytes_before: 917
+    bytes_after: 1465
+  - file: patterns/conventions.pattern-catalog.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.pattern.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.pattern.yaml
+  - file: patterns/conventions.pattern-restrictions.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.pattern.yaml
+  - file: patterns/conventions.role-pattern-compatibility.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.pattern.yaml
+  - file: roles/conventions.role-taxonomy.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.roles.yaml
+  - file: roles/conventions.role-resolution.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.roles.yaml
+  - file: roles/conventions.role-collisions.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.roles.yaml
+  - file: roles/conventions.role-placement.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.roles.yaml
+  - file: architecture/conventions.architecture.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.architecture.yaml
+  - file: architecture/conventions.structure-strategy.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.architecture.yaml
+  - file: architecture/conventions.structure.yaml
+    action: attached_original_canonical_source_full
+    source: /mnt/data/conventions.structure.yaml
+  intentionally_excluded:
+  - file: core/conventions.pipeline-contract.yaml
+    reason: replaced by accepted Alpha controller and core pipeline contract
+  - file: core/conventions.index.yaml
+    reason: replaced by core index and lookup-only concept routing

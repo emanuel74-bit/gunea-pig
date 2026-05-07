@@ -88,6 +88,698 @@ sections:
     - required_phase_or_action
     - reason
     - evidence_refs
+  trigger_status_definitions:
+    active:
+      definition: active trigger_status vocabulary value.
+      meaning: Represents the active case within the trigger_status taxonomy.
+      detection_signals:
+      - active signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches active
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_status decisions using active must include reason and evidence
+    scheduled:
+      definition: scheduled trigger_status vocabulary value.
+      meaning: Represents the scheduled case within the trigger_status taxonomy.
+      detection_signals:
+      - scheduled signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches scheduled
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_status decisions using scheduled must include reason and evidence
+    resolved:
+      definition: resolved trigger_status vocabulary value.
+      meaning: Represents the resolved case within the trigger_status taxonomy.
+      detection_signals:
+      - resolved signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches resolved
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_status decisions using resolved must include reason and evidence
+    blocked:
+      definition: blocked trigger_status vocabulary value.
+      meaning: Represents the blocked case within the trigger_status taxonomy.
+      detection_signals:
+      - blocked signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches blocked
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_status decisions using blocked must include reason and evidence
+    invalidated:
+      definition: invalidated trigger_status vocabulary value.
+      meaning: Represents the invalidated case within the trigger_status taxonomy.
+      detection_signals:
+      - invalidated signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches invalidated
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_status decisions using invalidated must include reason and evidence
+  trigger_type_definitions:
+    behavior_change_requested:
+      definition: behavior change requested trigger_type vocabulary value.
+      meaning: Represents the behavior change requested case within the trigger_type taxonomy.
+      detection_signals:
+      - behavior change requested signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches behavior change requested
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using behavior_change_requested must include reason and evidence
+    public_contract_change_possible:
+      definition: public contract change possible trigger_type vocabulary value.
+      meaning: Represents the public contract change possible case within the trigger_type taxonomy.
+      detection_signals:
+      - public contract change possible signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches public contract change possible
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using public_contract_change_possible must include reason and evidence
+    public_contract_change_confirmed:
+      definition: public contract change confirmed trigger_type vocabulary value.
+      meaning: Represents the public contract change confirmed case within the trigger_type taxonomy.
+      detection_signals:
+      - public contract change confirmed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches public contract change confirmed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using public_contract_change_confirmed must include reason and evidence
+    security_sensitive_behavior_possible:
+      definition: security sensitive behavior possible trigger_type vocabulary value.
+      meaning: Represents the security sensitive behavior possible case within the trigger_type taxonomy.
+      detection_signals:
+      - security sensitive behavior possible signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches security sensitive behavior possible
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using security_sensitive_behavior_possible must include reason and evidence
+    existing_artifact_found:
+      definition: existing artifact found trigger_type vocabulary value.
+      meaning: Represents the existing artifact found case within the trigger_type taxonomy.
+      detection_signals:
+      - existing artifact found signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches existing artifact found
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using existing_artifact_found must include reason and evidence
+    dependency_wiring_changed:
+      definition: dependency wiring changed trigger_type vocabulary value.
+      meaning: Represents the dependency wiring changed case within the trigger_type taxonomy.
+      detection_signals:
+      - dependency wiring changed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches dependency wiring changed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using dependency_wiring_changed must include reason and evidence
+    mixed_responsibility_possible:
+      definition: mixed responsibility possible trigger_type vocabulary value.
+      meaning: Represents the mixed responsibility possible case within the trigger_type taxonomy.
+      detection_signals:
+      - mixed responsibility possible signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mixed responsibility possible
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using mixed_responsibility_possible must include reason and evidence
+    mixed_responsibility_detected:
+      definition: mixed responsibility detected trigger_type vocabulary value.
+      meaning: Represents the mixed responsibility detected case within the trigger_type taxonomy.
+      detection_signals:
+      - mixed responsibility detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mixed responsibility detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using mixed_responsibility_detected must include reason and evidence
+    likely_extract_target_detected:
+      definition: likely extract target detected trigger_type vocabulary value.
+      meaning: Represents the likely extract target detected case within the trigger_type taxonomy.
+      detection_signals:
+      - likely extract target detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches likely extract target detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using likely_extract_target_detected must include reason and evidence
+    likely_split_target_detected:
+      definition: likely split target detected trigger_type vocabulary value.
+      meaning: Represents the likely split target detected case within the trigger_type taxonomy.
+      detection_signals:
+      - likely split target detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches likely split target detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using likely_split_target_detected must include reason and evidence
+    role_collision_possible:
+      definition: role collision possible trigger_type vocabulary value.
+      meaning: Represents the role collision possible case within the trigger_type taxonomy.
+      detection_signals:
+      - role collision possible signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches role collision possible
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using role_collision_possible must include reason and evidence
+    pattern_pressure_possible:
+      definition: pattern pressure possible trigger_type vocabulary value.
+      meaning: Represents the pattern pressure possible case within the trigger_type taxonomy.
+      detection_signals:
+      - pattern pressure possible signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pattern pressure possible
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using pattern_pressure_possible must include reason and evidence
+    pattern_pressure_detected:
+      definition: pattern pressure detected trigger_type vocabulary value.
+      meaning: Represents the pattern pressure detected case within the trigger_type taxonomy.
+      detection_signals:
+      - pattern pressure detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pattern pressure detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using pattern_pressure_detected must include reason and evidence
+    pattern_selection_required:
+      definition: pattern selection required trigger_type vocabulary value.
+      meaning: Represents the pattern selection required case within the trigger_type taxonomy.
+      detection_signals:
+      - pattern selection required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pattern selection required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using pattern_selection_required must include reason and evidence
+    refactor_like_action_selected:
+      definition: refactor like action selected trigger_type vocabulary value.
+      meaning: Represents the refactor like action selected case within the trigger_type taxonomy.
+      detection_signals:
+      - refactor like action selected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches refactor like action selected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using refactor_like_action_selected must include reason and evidence
+    behavior_lock_required:
+      definition: behavior lock required trigger_type vocabulary value.
+      meaning: Represents the behavior lock required case within the trigger_type taxonomy.
+      detection_signals:
+      - behavior lock required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches behavior lock required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using behavior_lock_required must include reason and evidence
+    checkpointed_sequence_required:
+      definition: checkpointed sequence required trigger_type vocabulary value.
+      meaning: Represents the checkpointed sequence required case within the trigger_type taxonomy.
+      detection_signals:
+      - checkpointed sequence required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches checkpointed sequence required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using checkpointed_sequence_required must include reason and evidence
+    compatibility_decision_required:
+      definition: compatibility decision required trigger_type vocabulary value.
+      meaning: Represents the compatibility decision required case within the trigger_type taxonomy.
+      detection_signals:
+      - compatibility decision required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches compatibility decision required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using compatibility_decision_required must include reason and evidence
+    boundary_validation_required:
+      definition: boundary validation required trigger_type vocabulary value.
+      meaning: Represents the boundary validation required case within the trigger_type taxonomy.
+      detection_signals:
+      - boundary validation required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches boundary validation required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using boundary_validation_required must include reason and evidence
+    dependency_validation_required:
+      definition: dependency validation required trigger_type vocabulary value.
+      meaning: Represents the dependency validation required case within the trigger_type taxonomy.
+      detection_signals:
+      - dependency validation required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches dependency validation required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using dependency_validation_required must include reason and evidence
+    high_risk_detected:
+      definition: high risk detected trigger_type vocabulary value.
+      meaning: Represents the high risk detected case within the trigger_type taxonomy.
+      detection_signals:
+      - high risk detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches high risk detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using high_risk_detected must include reason and evidence
+    dynamic_reference_risk_detected:
+      definition: dynamic reference risk detected trigger_type vocabulary value.
+      meaning: Represents the dynamic reference risk detected case within the trigger_type taxonomy.
+      detection_signals:
+      - dynamic reference risk detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches dynamic reference risk detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using dynamic_reference_risk_detected must include reason and evidence
+    consumer_impact_detected:
+      definition: consumer impact detected trigger_type vocabulary value.
+      meaning: Represents the consumer impact detected case within the trigger_type taxonomy.
+      detection_signals:
+      - consumer impact detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches consumer impact detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using consumer_impact_detected must include reason and evidence
+    call_site_update_required:
+      definition: call site update required trigger_type vocabulary value.
+      meaning: Represents the call site update required case within the trigger_type taxonomy.
+      detection_signals:
+      - call site update required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches call site update required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using call_site_update_required must include reason and evidence
+    additional_contract_review_required:
+      definition: additional contract review required trigger_type vocabulary value.
+      meaning: Represents the additional contract review required case within the trigger_type taxonomy.
+      detection_signals:
+      - additional contract review required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches additional contract review required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using additional_contract_review_required must include reason and evidence
+    risk_reclassification_required:
+      definition: risk reclassification required trigger_type vocabulary value.
+      meaning: Represents the risk reclassification required case within the trigger_type taxonomy.
+      detection_signals:
+      - risk reclassification required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches risk reclassification required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using risk_reclassification_required must include reason and evidence
+    phase_revision_required:
+      definition: phase revision required trigger_type vocabulary value.
+      meaning: Represents the phase revision required case within the trigger_type taxonomy.
+      detection_signals:
+      - phase revision required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches phase revision required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using phase_revision_required must include reason and evidence
+    approval_before_implementation_required:
+      definition: approval before implementation required trigger_type vocabulary value.
+      meaning: Represents the approval before implementation required case within the trigger_type taxonomy.
+      detection_signals:
+      - approval before implementation required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches approval before implementation required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using approval_before_implementation_required must include reason and evidence
+    implementation_blocked:
+      definition: implementation blocked trigger_type vocabulary value.
+      meaning: Represents the implementation blocked case within the trigger_type taxonomy.
+      detection_signals:
+      - implementation blocked signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches implementation blocked
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using implementation_blocked must include reason and evidence
+    implementation_allowed:
+      definition: implementation allowed trigger_type vocabulary value.
+      meaning: Represents the implementation allowed case within the trigger_type taxonomy.
+      detection_signals:
+      - implementation allowed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches implementation allowed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using implementation_allowed must include reason and evidence
+    implementation_failure_detected:
+      definition: implementation failure detected trigger_type vocabulary value.
+      meaning: Represents the implementation failure detected case within the trigger_type taxonomy.
+      detection_signals:
+      - implementation failure detected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches implementation failure detected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using implementation_failure_detected must include reason and evidence
+    validation_required:
+      definition: validation required trigger_type vocabulary value.
+      meaning: Represents the validation required case within the trigger_type taxonomy.
+      detection_signals:
+      - validation required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches validation required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using validation_required must include reason and evidence
+    unexpected_file_changed:
+      definition: unexpected file changed trigger_type vocabulary value.
+      meaning: Represents the unexpected file changed case within the trigger_type taxonomy.
+      detection_signals:
+      - unexpected file changed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches unexpected file changed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using unexpected_file_changed must include reason and evidence
+    post_validation_failed:
+      definition: post validation failed trigger_type vocabulary value.
+      meaning: Represents the post validation failed case within the trigger_type taxonomy.
+      detection_signals:
+      - post validation failed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches post validation failed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using post_validation_failed must include reason and evidence
+    repair_required:
+      definition: repair required trigger_type vocabulary value.
+      meaning: Represents the repair required case within the trigger_type taxonomy.
+      detection_signals:
+      - repair required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches repair required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using repair_required must include reason and evidence
+    final_validation_ready:
+      definition: final validation ready trigger_type vocabulary value.
+      meaning: Represents the final validation ready case within the trigger_type taxonomy.
+      detection_signals:
+      - final validation ready signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches final validation ready
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using final_validation_ready must include reason and evidence
+    required_report_missing:
+      definition: required report missing trigger_type vocabulary value.
+      meaning: Represents the required report missing case within the trigger_type taxonomy.
+      detection_signals:
+      - required report missing signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches required report missing
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using required_report_missing must include reason and evidence
+    report_schema_invalid:
+      definition: report schema invalid trigger_type vocabulary value.
+      meaning: Represents the report schema invalid case within the trigger_type taxonomy.
+      detection_signals:
+      - report schema invalid signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches report schema invalid
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using report_schema_invalid must include reason and evidence
+    mission_complete:
+      definition: mission complete trigger_type vocabulary value.
+      meaning: Represents the mission complete case within the trigger_type taxonomy.
+      detection_signals:
+      - mission complete signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mission complete
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using mission_complete must include reason and evidence
+    mission_blocked:
+      definition: mission blocked trigger_type vocabulary value.
+      meaning: Represents the mission blocked case within the trigger_type taxonomy.
+      detection_signals:
+      - mission blocked signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mission blocked
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using mission_blocked must include reason and evidence
+    rerun_required:
+      definition: rerun required trigger_type vocabulary value.
+      meaning: Represents the rerun required case within the trigger_type taxonomy.
+      detection_signals:
+      - rerun required signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches rerun required
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - trigger_type decisions using rerun_required must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

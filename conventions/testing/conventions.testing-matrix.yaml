@@ -2,73 +2,220 @@ version: '1.0'
 file:
   name: conventions.testing-matrix.yaml
   path: testing/conventions.testing-matrix.yaml
-  role: testing_matrix_contract
-  executability: validator
-purpose: Derive required tests from roles, actions, risk, boundaries, contracts, and dependencies.
+  role: testing_requirement_matrix_contract
+purpose: Derive required and conditional test types from production artifact roles.
 ownership:
   owns:
-  - role_to_test_requirements
-  - risk_to_test_depth
-  - boundary_contract_test_rules
-  - action_test_rules
+  - test_requirements_by_role
+  - testing_collision_rules
+  - testing_boundary_flows
+  - testing_anti_patterns
   does_not_own:
-  - test_type_definitions
+  - testing_role_definitions
+  - production_role_definitions
+  - architecture_decomposition
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - production_code_created_or_changed
+  - refactor_requested
+  - bugfix_requested
   skips_when: []
 inputs:
-  required: []
+  required:
+  - role_assignment_table
+  - testing_role_taxonomy
   optional: []
 outputs:
   produces:
-  - testing_matrix_result
+  - test_plan
 dependencies:
   required_files:
   - testing/conventions.testing-taxonomy.yaml
   - roles/conventions.role-taxonomy.yaml
-  - actions/conventions.action-taxonomy.yaml
-  - risk/conventions.risk-taxonomy.yaml
-  - contracts/conventions.contract-taxonomy.yaml
   optional_files: []
 sections:
-  action_test_rules:
-    extract_from_existing:
-    - characterization
-    - unit
-    - regression
-    split_existing:
-    - characterization
-    - regression
-    - integration
-    replace_existing:
-    - regression
-    - contract
-    no_code_change:
-    - validation_only
-  risk_to_test_depth:
-    low:
-    - targeted
-    medium:
-    - unit_or_integration
-    high:
-    - regression
-    - contract_or_integration
-    critical:
-    - regression
-    - contract
-    - integration
-    - rollback_review
+  testing_matrix_policy:
+    rule: Tests derive from roles and risk.
+  test_requirements_by_role:
+    entity:
+    - unit_test
+    value_object:
+    - unit_test
+    aggregate:
+    - unit_test
+    rule:
+    - unit_test
+    invariant:
+    - unit_test
+    policy:
+    - unit_test
+    specification:
+    - unit_test
+    selector:
+    - unit_test
+    strategy:
+    - unit_test
+    mapper:
+    - unit_test
+    repository:
+    - integration_test
+    adapter:
+    - unit_test
+    - integration_test
+    client:
+    - integration_test
+    controller:
+    - api_contract_test
+    webhook:
+    - api_contract_test
+    - unit_test
+    consumer:
+    - integration_test
+    - unit_test
+    producer:
+    - integration_test
+    domain_event:
+    - unit_test
+    integration_event:
+    - event_contract_test
+    command:
+    - unit_test
+    query:
+    - unit_test
+    handler:
+    - unit_test
+    use_case:
+    - unit_test
+    service:
+    - unit_test
+    workflow:
+    - unit_test
+    - integration_test
+    job:
+    - unit_test
+    processor:
+    - unit_test
+    migration:
+    - integration_test
+    projection:
+    - unit_test
+    - integration_test
+    port:
+    - contract_test
+    contract:
+    - contract_test
+  testing_collision_rules:
+    unit_test_vs_integration_test:
+      choose_unit_test_when:
+      - unit_test responsibility is primary
+      choose_integration_test_when:
+      - integration_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    integration_test_vs_e2e_test:
+      choose_integration_test_when:
+      - integration_test responsibility is primary
+      choose_e2e_test_when:
+      - e2e_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    contract_test_vs_integration_test:
+      choose_contract_test_when:
+      - contract_test responsibility is primary
+      choose_integration_test_when:
+      - integration_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    api_contract_test_vs_e2e_test:
+      choose_api_contract_test_when:
+      - api_contract_test responsibility is primary
+      choose_e2e_test_when:
+      - e2e_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    event_contract_test_vs_listener_unit_test:
+      choose_event_contract_test_when:
+      - event_contract_test responsibility is primary
+      choose_listener_unit_test_when:
+      - listener_unit_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    architecture_test_vs_boundary_test:
+      choose_architecture_test_when:
+      - architecture_test responsibility is primary
+      choose_boundary_test_when:
+      - boundary_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    mock_vs_stub:
+      choose_mock_when:
+      - mock responsibility is primary
+      choose_stub_when:
+      - stub responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    stub_vs_fake:
+      choose_stub_when:
+      - stub responsibility is primary
+      choose_fake_when:
+      - fake responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    fake_vs_integration_test:
+      choose_fake_when:
+      - fake responsibility is primary
+      choose_integration_test_when:
+      - integration_test responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    fixture_vs_test_factory:
+      choose_fixture_when:
+      - fixture responsibility is primary
+      choose_test_factory_when:
+      - test_factory responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    test_factory_vs_test_builder:
+      choose_test_factory_when:
+      - test_factory responsibility is primary
+      choose_test_builder_when:
+      - test_builder responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+    assertion_vs_matcher:
+      choose_assertion_when:
+      - assertion responsibility is primary
+      choose_matcher_when:
+      - matcher responsibility is primary
+      fail_when:
+      - both responsibilities are primary and cannot be separated
+  testing_boundary_flows:
+    unit_test_flow:
+    - unit_under_test
+    - test_double_optional
+    - behavior_assertions
+    integration_test_flow:
+    - real_component_group
+    - controlled_infrastructure_or_boundary
+    - observable_result
+    - cleanup
+    e2e_test_flow:
+    - public_entrypoint
+    - real_runtime_wiring
+    - externally_observable_result
+    contract_test_flow:
+    - provider_or_consumer
+    - stable_contract
+    - compatibility_assertions
+  testing_anti_patterns:
+  - test_without_clear_role
+  - unit_test_using_real_database_without_reason
+  - integration_test_mocking_the_boundary_it_claims_to_test
+  - e2e_test_asserting_internal_implementation
+  - production_code_imports_test_support
 validation:
   fail_conditions:
-  - id: TESTING-CONVENTIONS-TESTING-MATRIX-YAML-FC-001
-    condition: acceptance_criterion_without_test_mapping
-    message: Acceptance criterion without test mapping.
-    severity: error
-    owner: testing/conventions.testing-matrix.yaml
-  - id: TESTING-CONVENTIONS-TESTING-MATRIX-YAML-FC-002
-    condition: high_risk_without_regression_review
-    message: High risk without regression review.
-    severity: error
-    owner: testing/conventions.testing-matrix.yaml
-  required_checks: []
+  - required_test_missing_for_role
+  - integration_boundary_without_integration_or_contract_test
+  - test_plan_missing_failure_paths

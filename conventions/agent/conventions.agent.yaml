@@ -38,8 +38,8 @@ dependencies:
   - agent/conventions.agent-protocol.yaml
   - agent/conventions.agent-output.yaml
   optional_files:
-  - core/conventions.routing.yaml
-  - core/conventions.orchestrator.yaml
+  - core/conventions.index.yaml
+  - core/conventions.pipeline-contract.yaml
 sections:
   agent_file_index:
     context_policy: agent/conventions.context-policy.yaml

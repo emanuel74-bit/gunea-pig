@@ -62,6 +62,264 @@ sections:
     - pass_when
     - fail_when
     - severity
+  gate_type_definitions:
+    entry_gate:
+      definition: entry gate gate_type vocabulary value.
+      meaning: Represents the entry gate case within the gate_type taxonomy.
+      detection_signals:
+      - entry gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches entry gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using entry_gate must include reason and evidence
+    output_gate:
+      definition: output gate gate_type vocabulary value.
+      meaning: Represents the output gate case within the gate_type taxonomy.
+      detection_signals:
+      - output gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches output gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using output_gate must include reason and evidence
+    handoff_gate:
+      definition: handoff gate gate_type vocabulary value.
+      meaning: Represents the handoff gate case within the gate_type taxonomy.
+      detection_signals:
+      - handoff gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches handoff gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using handoff_gate must include reason and evidence
+    skip_gate:
+      definition: skip gate gate_type vocabulary value.
+      meaning: Represents the skip gate case within the gate_type taxonomy.
+      detection_signals:
+      - skip gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches skip gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using skip_gate must include reason and evidence
+    trigger_gate:
+      definition: trigger gate gate_type vocabulary value.
+      meaning: Represents the trigger gate case within the gate_type taxonomy.
+      detection_signals:
+      - trigger gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches trigger gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using trigger_gate must include reason and evidence
+    pre_implementation_gate:
+      definition: pre implementation gate gate_type vocabulary value.
+      meaning: Represents the pre implementation gate case within the gate_type taxonomy.
+      detection_signals:
+      - pre implementation gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pre implementation gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using pre_implementation_gate must include reason and evidence
+    post_implementation_gate:
+      definition: post implementation gate gate_type vocabulary value.
+      meaning: Represents the post implementation gate case within the gate_type taxonomy.
+      detection_signals:
+      - post implementation gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches post implementation gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using post_implementation_gate must include reason and evidence
+    final_gate:
+      definition: final gate gate_type vocabulary value.
+      meaning: Represents the final gate case within the gate_type taxonomy.
+      detection_signals:
+      - final gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches final gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_type decisions using final_gate must include reason and evidence
+  gate_status_definitions:
+    pending:
+      definition: pending gate_status vocabulary value.
+      meaning: Represents the pending case within the gate_status taxonomy.
+      detection_signals:
+      - pending signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pending
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_status decisions using pending must include reason and evidence
+    passed:
+      definition: passed gate_status vocabulary value.
+      meaning: Represents the passed case within the gate_status taxonomy.
+      detection_signals:
+      - passed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches passed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_status decisions using passed must include reason and evidence
+    failed:
+      definition: failed gate_status vocabulary value.
+      meaning: Represents the failed case within the gate_status taxonomy.
+      detection_signals:
+      - failed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches failed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_status decisions using failed must include reason and evidence
+    blocked:
+      definition: blocked gate_status vocabulary value.
+      meaning: Represents the blocked case within the gate_status taxonomy.
+      detection_signals:
+      - blocked signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches blocked
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_status decisions using blocked must include reason and evidence
+    skipped:
+      definition: skipped gate_status vocabulary value.
+      meaning: Represents the skipped case within the gate_status taxonomy.
+      detection_signals:
+      - skipped signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches skipped
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_status decisions using skipped must include reason and evidence
+  gate_severity_definitions:
+    info:
+      definition: info gate_severity vocabulary value.
+      meaning: Represents the info case within the gate_severity taxonomy.
+      detection_signals:
+      - info signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches info
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_severity decisions using info must include reason and evidence
+    warning:
+      definition: warning gate_severity vocabulary value.
+      meaning: Represents the warning case within the gate_severity taxonomy.
+      detection_signals:
+      - warning signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches warning
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_severity decisions using warning must include reason and evidence
+    error:
+      definition: error gate_severity vocabulary value.
+      meaning: Represents the error case within the gate_severity taxonomy.
+      detection_signals:
+      - error signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches error
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_severity decisions using error must include reason and evidence
+    blocking:
+      definition: blocking gate_severity vocabulary value.
+      meaning: Represents the blocking case within the gate_severity taxonomy.
+      detection_signals:
+      - blocking signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches blocking
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_severity decisions using blocking must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

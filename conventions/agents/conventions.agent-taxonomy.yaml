@@ -79,24 +79,397 @@ sections:
     failure_analysis_agent: repair_validation
     repair_agent: repair_validation
   agent_definitions:
-    alpha_controller: Alpha Controller runtime role.
-    behavior_agent: Behavior Agent runtime role.
-    reconnaissance_agent: Reconnaissance Agent runtime role.
-    classification_agent: Classification Agent runtime role.
-    architecture_agent: Architecture Agent runtime role.
-    role_agent: Role Agent runtime role.
-    pattern_agent: Pattern Agent runtime role.
-    artifact_action_agent: Artifact Action Agent runtime role.
-    refactor_strategy_agent: Refactor Strategy Agent runtime role.
-    impact_agent: Impact Agent runtime role.
-    structure_agent: Structure Agent runtime role.
-    testing_agent: Testing Agent runtime role.
-    execution_planning_agent: Execution Planning Agent runtime role.
-    pre_implementation_gate_agent: Pre Implementation Gate Agent runtime role.
-    implementation_agent: Implementation Agent runtime role.
-    validation_agent: Validation Agent runtime role.
-    failure_analysis_agent: Failure Analysis Agent runtime role.
-    repair_agent: Repair Agent runtime role.
+    alpha_controller:
+      definition: alpha controller agent vocabulary value.
+      meaning: Represents the alpha controller case within the agent taxonomy.
+      detection_signals:
+      - alpha controller signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches alpha controller
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using alpha_controller must include reason and evidence
+    behavior_agent:
+      definition: behavior agent agent vocabulary value.
+      meaning: Represents the behavior agent case within the agent taxonomy.
+      detection_signals:
+      - behavior agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches behavior agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using behavior_agent must include reason and evidence
+    reconnaissance_agent:
+      definition: reconnaissance agent agent vocabulary value.
+      meaning: Represents the reconnaissance agent case within the agent taxonomy.
+      detection_signals:
+      - reconnaissance agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches reconnaissance agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using reconnaissance_agent must include reason and evidence
+    classification_agent:
+      definition: classification agent agent vocabulary value.
+      meaning: Represents the classification agent case within the agent taxonomy.
+      detection_signals:
+      - classification agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches classification agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using classification_agent must include reason and evidence
+    architecture_agent:
+      definition: architecture agent agent vocabulary value.
+      meaning: Represents the architecture agent case within the agent taxonomy.
+      detection_signals:
+      - architecture agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches architecture agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using architecture_agent must include reason and evidence
+    role_agent:
+      definition: role agent agent vocabulary value.
+      meaning: Represents the role agent case within the agent taxonomy.
+      detection_signals:
+      - role agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches role agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using role_agent must include reason and evidence
+    pattern_agent:
+      definition: pattern agent agent vocabulary value.
+      meaning: Represents the pattern agent case within the agent taxonomy.
+      detection_signals:
+      - pattern agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pattern agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using pattern_agent must include reason and evidence
+    artifact_action_agent:
+      definition: artifact action agent agent vocabulary value.
+      meaning: Represents the artifact action agent case within the agent taxonomy.
+      detection_signals:
+      - artifact action agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches artifact action agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using artifact_action_agent must include reason and evidence
+    refactor_strategy_agent:
+      definition: refactor strategy agent agent vocabulary value.
+      meaning: Represents the refactor strategy agent case within the agent taxonomy.
+      detection_signals:
+      - refactor strategy agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches refactor strategy agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using refactor_strategy_agent must include reason and evidence
+    impact_agent:
+      definition: impact agent agent vocabulary value.
+      meaning: Represents the impact agent case within the agent taxonomy.
+      detection_signals:
+      - impact agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches impact agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using impact_agent must include reason and evidence
+    structure_agent:
+      definition: structure agent agent vocabulary value.
+      meaning: Represents the structure agent case within the agent taxonomy.
+      detection_signals:
+      - structure agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches structure agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using structure_agent must include reason and evidence
+    testing_agent:
+      definition: testing agent agent vocabulary value.
+      meaning: Represents the testing agent case within the agent taxonomy.
+      detection_signals:
+      - testing agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches testing agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using testing_agent must include reason and evidence
+    execution_planning_agent:
+      definition: execution planning agent agent vocabulary value.
+      meaning: Represents the execution planning agent case within the agent taxonomy.
+      detection_signals:
+      - execution planning agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches execution planning agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using execution_planning_agent must include reason and evidence
+    pre_implementation_gate_agent:
+      definition: pre implementation gate agent agent vocabulary value.
+      meaning: Represents the pre implementation gate agent case within the agent taxonomy.
+      detection_signals:
+      - pre implementation gate agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pre implementation gate agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using pre_implementation_gate_agent must include reason and evidence
+    implementation_agent:
+      definition: implementation agent agent vocabulary value.
+      meaning: Represents the implementation agent case within the agent taxonomy.
+      detection_signals:
+      - implementation agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches implementation agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using implementation_agent must include reason and evidence
+    validation_agent:
+      definition: validation agent agent vocabulary value.
+      meaning: Represents the validation agent case within the agent taxonomy.
+      detection_signals:
+      - validation agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches validation agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using validation_agent must include reason and evidence
+    failure_analysis_agent:
+      definition: failure analysis agent agent vocabulary value.
+      meaning: Represents the failure analysis agent case within the agent taxonomy.
+      detection_signals:
+      - failure analysis agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches failure analysis agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using failure_analysis_agent must include reason and evidence
+    repair_agent:
+      definition: repair agent agent vocabulary value.
+      meaning: Represents the repair agent case within the agent taxonomy.
+      detection_signals:
+      - repair agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches repair agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent decisions using repair_agent must include reason and evidence
+  agent_category_definitions:
+    classification:
+      definition: classification agent_category vocabulary value.
+      meaning: Represents the classification case within the agent_category taxonomy.
+      detection_signals:
+      - classification signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches classification
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using classification must include reason and evidence
+    controller:
+      definition: controller agent_category vocabulary value.
+      meaning: Represents the controller case within the agent_category taxonomy.
+      detection_signals:
+      - controller signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches controller
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using controller must include reason and evidence
+    design:
+      definition: design agent_category vocabulary value.
+      meaning: Represents the design case within the agent_category taxonomy.
+      detection_signals:
+      - design signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches design
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using design must include reason and evidence
+    execution:
+      definition: execution agent_category vocabulary value.
+      meaning: Represents the execution case within the agent_category taxonomy.
+      detection_signals:
+      - execution signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches execution
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using execution must include reason and evidence
+    execution_planning:
+      definition: execution planning agent_category vocabulary value.
+      meaning: Represents the execution planning case within the agent_category taxonomy.
+      detection_signals:
+      - execution planning signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches execution planning
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using execution_planning must include reason and evidence
+    repair_validation:
+      definition: repair validation agent_category vocabulary value.
+      meaning: Represents the repair validation case within the agent_category taxonomy.
+      detection_signals:
+      - repair validation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches repair validation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using repair_validation must include reason and evidence
+    understanding:
+      definition: understanding agent_category vocabulary value.
+      meaning: Represents the understanding case within the agent_category taxonomy.
+      detection_signals:
+      - understanding signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches understanding
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using understanding must include reason and evidence
+    verification_planning:
+      definition: verification planning agent_category vocabulary value.
+      meaning: Represents the verification planning case within the agent_category taxonomy.
+      detection_signals:
+      - verification planning signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches verification planning
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_category decisions using verification_planning must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

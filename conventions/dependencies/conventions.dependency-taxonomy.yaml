@@ -57,6 +57,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as static import
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the static import case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     dynamic_import:
       definition: Runtime-loaded import/reference where dependency may be conditional, lazy, or harder to discover statically.
       validation_focus:
@@ -71,6 +82,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as dynamic import
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the dynamic import case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     constructor_injection:
       definition: Dependency supplied through constructor parameters, usually DI-managed and explicit at object creation.
       validation_focus:
@@ -85,6 +107,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as constructor injection
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the constructor injection case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     provider_binding:
       definition: DI/container binding that maps abstractions/tokens to implementations.
       validation_focus:
@@ -99,6 +132,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as provider binding
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the provider binding case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     runtime_registration:
       definition: Runtime module/plugin/provider registration that changes behavior without direct import at call site.
       validation_focus:
@@ -113,6 +157,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as runtime registration
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the runtime registration case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     event_publication:
       definition: Dependency from publisher to event contract and downstream event consumers.
       validation_focus:
@@ -127,6 +182,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as event publication
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the event publication case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     message_subscription:
       definition: Dependency from consumer to queue/topic/event contract and delivery semantics.
       validation_focus:
@@ -141,6 +207,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as message subscription
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the message subscription case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     callback_registration:
       definition: Dependency created when code registers callbacks/hooks/listeners into another component or framework.
       validation_focus:
@@ -155,6 +232,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as callback registration
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the callback registration case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     configuration_reference:
       definition: Dependency on config/env/feature flags/runtime settings.
       validation_focus:
@@ -169,6 +257,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as configuration reference
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the configuration reference case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
     test_only_dependency:
       definition: Dependency valid only in test scope and forbidden from production paths.
       validation_focus:
@@ -183,6 +282,17 @@ sections:
       - Does this dependency obey layer direction?
       - Does it cross a boundary?
       - Is an abstraction/adapter required?
+      choose_when:
+      - the dependency relationship is best represented as test only dependency
+      reject_when:
+      - no actual dependency exists
+      - relationship belongs to another dependency type
+      validation_rules:
+      - must obey dependency direction rules
+      - must not introduce forbidden coupling
+      meaning: Represents the test only dependency case within the dependency type taxonomy.
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
   dependency_scope_enum:
     allowed:
     - same_artifact
@@ -281,6 +391,135 @@ sections:
       emits_concerns: []
   semantic_depth_restoration:
     enriched_generic_dependency_definitions: true
+  dependency_scope_definitions:
+    same_artifact:
+      definition: Dependency stays inside a single file/artifact boundary.
+      meaning: Represents the same artifact case within the dependency scope taxonomy.
+      detection_signals:
+      - same artifact signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches same artifact
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    same_flow:
+      definition: Dependency crosses artifacts within one use-case or execution flow.
+      meaning: Represents the same flow case within the dependency scope taxonomy.
+      detection_signals:
+      - same flow signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches same flow
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    same_module:
+      definition: Dependency stays inside one feature/module boundary.
+      meaning: Represents the same module case within the dependency scope taxonomy.
+      detection_signals:
+      - same module signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches same module
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    cross_module:
+      definition: Dependency crosses module boundaries and must obey public API/import rules.
+      meaning: Represents the cross module case within the dependency scope taxonomy.
+      detection_signals:
+      - cross module signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches cross module
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    shared_kernel:
+      definition: Dependency touches shared kernel/common code and affects multiple consumers.
+      meaning: Represents the shared kernel case within the dependency scope taxonomy.
+      detection_signals:
+      - shared kernel signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches shared kernel
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    external_package:
+      definition: Dependency on third-party package, SDK, or library.
+      meaning: Represents the external package case within the dependency scope taxonomy.
+      detection_signals:
+      - external package signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches external package
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    external_system:
+      definition: Dependency on external service, queue, API, database, or infrastructure system.
+      meaning: Represents the external system case within the dependency scope taxonomy.
+      detection_signals:
+      - external system signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches external system
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
+    test_scope:
+      definition: Dependency exists only in tests, fixtures, or validation support.
+      meaning: Represents the test scope case within the dependency scope taxonomy.
+      detection_signals:
+      - test scope signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches test scope
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - scope must be supported by import/dependency evidence
+      - scope determines allowed direction and gate strictness
 validation:
   fail_conditions:
   - id: DEPENDENCIES-CONVENTIONS-DEPENDENCY-TAXONOMY-YAML-FC-001

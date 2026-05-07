@@ -564,6 +564,202 @@ sections:
     - id: AGENT-PERMISSION-001
       rule: Agent writes must be allowed by profile and active phase contract.
       fail_condition: agent_write_not_allowed_by_profile_or_phase
+  agent_tool_definitions:
+    read_mission_request:
+      definition: read mission request agent_tool vocabulary value.
+      meaning: Represents the read mission request case within the agent_tool taxonomy.
+      detection_signals:
+      - read mission request signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches read mission request
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using read_mission_request must include reason and evidence
+    read_report:
+      definition: read report agent_tool vocabulary value.
+      meaning: Represents the read report case within the agent_tool taxonomy.
+      detection_signals:
+      - read report signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches read report
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using read_report must include reason and evidence
+    write_report:
+      definition: write report agent_tool vocabulary value.
+      meaning: Represents the write report case within the agent_tool taxonomy.
+      detection_signals:
+      - write report signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches write report
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using write_report must include reason and evidence
+    read_source:
+      definition: read source agent_tool vocabulary value.
+      meaning: Represents the read source case within the agent_tool taxonomy.
+      detection_signals:
+      - read source signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches read source
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using read_source must include reason and evidence
+    edit_source:
+      definition: edit source agent_tool vocabulary value.
+      meaning: Represents the edit source case within the agent_tool taxonomy.
+      detection_signals:
+      - edit source signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches edit source
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using edit_source must include reason and evidence
+    run_tests:
+      definition: run tests agent_tool vocabulary value.
+      meaning: Represents the run tests case within the agent_tool taxonomy.
+      detection_signals:
+      - run tests signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches run tests
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using run_tests must include reason and evidence
+    run_lint:
+      definition: run lint agent_tool vocabulary value.
+      meaning: Represents the run lint case within the agent_tool taxonomy.
+      detection_signals:
+      - run lint signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches run lint
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using run_lint must include reason and evidence
+    run_build:
+      definition: run build agent_tool vocabulary value.
+      meaning: Represents the run build case within the agent_tool taxonomy.
+      detection_signals:
+      - run build signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches run build
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using run_build must include reason and evidence
+    inspect_git_diff:
+      definition: inspect git diff agent_tool vocabulary value.
+      meaning: Represents the inspect git diff case within the agent_tool taxonomy.
+      detection_signals:
+      - inspect git diff signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches inspect git diff
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using inspect_git_diff must include reason and evidence
+    update_mission_state:
+      definition: update mission state agent_tool vocabulary value.
+      meaning: Represents the update mission state case within the agent_tool taxonomy.
+      detection_signals:
+      - update mission state signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches update mission state
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using update_mission_state must include reason and evidence
+    validate_schema:
+      definition: validate schema agent_tool vocabulary value.
+      meaning: Represents the validate schema case within the agent_tool taxonomy.
+      detection_signals:
+      - validate schema signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches validate schema
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using validate_schema must include reason and evidence
+    validate_gate:
+      definition: validate gate agent_tool vocabulary value.
+      meaning: Represents the validate gate case within the agent_tool taxonomy.
+      detection_signals:
+      - validate gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches validate gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using validate_gate must include reason and evidence
+    invoke_phase_agent:
+      definition: invoke phase agent agent_tool vocabulary value.
+      meaning: Represents the invoke phase agent case within the agent_tool taxonomy.
+      detection_signals:
+      - invoke phase agent signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches invoke phase agent
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - agent_tool decisions using invoke_phase_agent must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

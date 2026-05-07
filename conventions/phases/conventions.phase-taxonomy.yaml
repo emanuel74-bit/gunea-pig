@@ -119,43 +119,733 @@ sections:
     report_artifact_validation: reporting
     final_validation: validation
   phase_definitions:
-    mission_profile_selection: Mission Profile Selection phase.
-    mission_initialization: Mission Initialization phase.
-    active_context_manifest: Active Context Manifest phase.
-    phase_accounting: Phase Accounting phase.
-    behavior_contract: Behavior Contract phase.
-    codebase_reconnaissance: Codebase Reconnaissance phase.
-    local_alignment: Local Alignment phase.
-    risk_classification: Risk Classification phase.
-    boundary_contract_classification: Boundary Contract Classification phase.
-    dependency_classification: Dependency Classification phase.
-    architecture_decomposition: Architecture Decomposition phase.
-    draft_role_pass: Draft Role Pass phase.
-    pattern_pressure_detection: Pattern Pressure Detection phase.
-    artifact_reuse_analysis: Artifact Reuse Analysis phase.
-    artifact_action_resolution: Artifact Action Resolution phase.
-    refactor_strategy_selection: Refactor Strategy Selection phase.
-    call_site_impact_analysis: Call Site Impact Analysis phase.
-    change_impact_analysis: Change Impact Analysis phase.
-    final_role_assignment: Final Role Assignment phase.
-    pattern_selection: Pattern Selection phase.
-    structure_rendering: Structure Rendering phase.
-    test_derivation: Test Derivation phase.
-    implementation_sequence: Implementation Sequence phase.
-    checkpoint_validation_plan: Checkpoint Validation Plan phase.
-    pre_implementation_gate: Pre Implementation Gate phase.
-    implementation: Implementation phase.
-    failure_classification: Failure Classification phase.
-    feedback_repair: Feedback Repair phase.
-    post_implementation_validation: Post Implementation Validation phase.
-    trigger_review: Trigger Review phase.
-    report_artifact_validation: Report Artifact Validation phase.
-    final_validation: Final Validation phase.
+    mission_profile_selection:
+      definition: mission profile selection phase vocabulary value.
+      meaning: Represents the mission profile selection case within the phase taxonomy.
+      detection_signals:
+      - mission profile selection signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mission profile selection
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using mission_profile_selection must include reason and evidence
+    mission_initialization:
+      definition: mission initialization phase vocabulary value.
+      meaning: Represents the mission initialization case within the phase taxonomy.
+      detection_signals:
+      - mission initialization signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mission initialization
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using mission_initialization must include reason and evidence
+    active_context_manifest:
+      definition: active context manifest phase vocabulary value.
+      meaning: Represents the active context manifest case within the phase taxonomy.
+      detection_signals:
+      - active context manifest signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches active context manifest
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using active_context_manifest must include reason and evidence
+    phase_accounting:
+      definition: phase accounting phase vocabulary value.
+      meaning: Represents the phase accounting case within the phase taxonomy.
+      detection_signals:
+      - phase accounting signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches phase accounting
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using phase_accounting must include reason and evidence
+    behavior_contract:
+      definition: behavior contract phase vocabulary value.
+      meaning: Represents the behavior contract case within the phase taxonomy.
+      detection_signals:
+      - behavior contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches behavior contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using behavior_contract must include reason and evidence
+    codebase_reconnaissance:
+      definition: codebase reconnaissance phase vocabulary value.
+      meaning: Represents the codebase reconnaissance case within the phase taxonomy.
+      detection_signals:
+      - codebase reconnaissance signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches codebase reconnaissance
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using codebase_reconnaissance must include reason and evidence
+    local_alignment:
+      definition: local alignment phase vocabulary value.
+      meaning: Represents the local alignment case within the phase taxonomy.
+      detection_signals:
+      - local alignment signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches local alignment
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using local_alignment must include reason and evidence
+    risk_classification:
+      definition: risk classification phase vocabulary value.
+      meaning: Represents the risk classification case within the phase taxonomy.
+      detection_signals:
+      - risk classification signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches risk classification
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using risk_classification must include reason and evidence
+    boundary_contract_classification:
+      definition: boundary contract classification phase vocabulary value.
+      meaning: Represents the boundary contract classification case within the phase taxonomy.
+      detection_signals:
+      - boundary contract classification signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches boundary contract classification
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using boundary_contract_classification must include reason and evidence
+    dependency_classification:
+      definition: dependency classification phase vocabulary value.
+      meaning: Represents the dependency classification case within the phase taxonomy.
+      detection_signals:
+      - dependency classification signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches dependency classification
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using dependency_classification must include reason and evidence
+    architecture_decomposition:
+      definition: architecture decomposition phase vocabulary value.
+      meaning: Represents the architecture decomposition case within the phase taxonomy.
+      detection_signals:
+      - architecture decomposition signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches architecture decomposition
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using architecture_decomposition must include reason and evidence
+    draft_role_pass:
+      definition: draft role pass phase vocabulary value.
+      meaning: Represents the draft role pass case within the phase taxonomy.
+      detection_signals:
+      - draft role pass signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches draft role pass
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using draft_role_pass must include reason and evidence
+    pattern_pressure_detection:
+      definition: pattern pressure detection phase vocabulary value.
+      meaning: Represents the pattern pressure detection case within the phase taxonomy.
+      detection_signals:
+      - pattern pressure detection signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pattern pressure detection
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using pattern_pressure_detection must include reason and evidence
+    artifact_reuse_analysis:
+      definition: artifact reuse analysis phase vocabulary value.
+      meaning: Represents the artifact reuse analysis case within the phase taxonomy.
+      detection_signals:
+      - artifact reuse analysis signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches artifact reuse analysis
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using artifact_reuse_analysis must include reason and evidence
+    artifact_action_resolution:
+      definition: artifact action resolution phase vocabulary value.
+      meaning: Represents the artifact action resolution case within the phase taxonomy.
+      detection_signals:
+      - artifact action resolution signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches artifact action resolution
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using artifact_action_resolution must include reason and evidence
+    refactor_strategy_selection:
+      definition: refactor strategy selection phase vocabulary value.
+      meaning: Represents the refactor strategy selection case within the phase taxonomy.
+      detection_signals:
+      - refactor strategy selection signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches refactor strategy selection
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using refactor_strategy_selection must include reason and evidence
+    call_site_impact_analysis:
+      definition: call site impact analysis phase vocabulary value.
+      meaning: Represents the call site impact analysis case within the phase taxonomy.
+      detection_signals:
+      - call site impact analysis signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches call site impact analysis
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using call_site_impact_analysis must include reason and evidence
+    change_impact_analysis:
+      definition: change impact analysis phase vocabulary value.
+      meaning: Represents the change impact analysis case within the phase taxonomy.
+      detection_signals:
+      - change impact analysis signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches change impact analysis
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using change_impact_analysis must include reason and evidence
+    final_role_assignment:
+      definition: final role assignment phase vocabulary value.
+      meaning: Represents the final role assignment case within the phase taxonomy.
+      detection_signals:
+      - final role assignment signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches final role assignment
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using final_role_assignment must include reason and evidence
+    pattern_selection:
+      definition: pattern selection phase vocabulary value.
+      meaning: Represents the pattern selection case within the phase taxonomy.
+      detection_signals:
+      - pattern selection signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pattern selection
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using pattern_selection must include reason and evidence
+    structure_rendering:
+      definition: structure rendering phase vocabulary value.
+      meaning: Represents the structure rendering case within the phase taxonomy.
+      detection_signals:
+      - structure rendering signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches structure rendering
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using structure_rendering must include reason and evidence
+    test_derivation:
+      definition: test derivation phase vocabulary value.
+      meaning: Represents the test derivation case within the phase taxonomy.
+      detection_signals:
+      - test derivation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches test derivation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using test_derivation must include reason and evidence
+    implementation_sequence:
+      definition: implementation sequence phase vocabulary value.
+      meaning: Represents the implementation sequence case within the phase taxonomy.
+      detection_signals:
+      - implementation sequence signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches implementation sequence
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using implementation_sequence must include reason and evidence
+    checkpoint_validation_plan:
+      definition: checkpoint validation plan phase vocabulary value.
+      meaning: Represents the checkpoint validation plan case within the phase taxonomy.
+      detection_signals:
+      - checkpoint validation plan signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches checkpoint validation plan
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using checkpoint_validation_plan must include reason and evidence
+    pre_implementation_gate:
+      definition: pre implementation gate phase vocabulary value.
+      meaning: Represents the pre implementation gate case within the phase taxonomy.
+      detection_signals:
+      - pre implementation gate signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pre implementation gate
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using pre_implementation_gate must include reason and evidence
+    implementation:
+      definition: implementation phase vocabulary value.
+      meaning: Represents the implementation case within the phase taxonomy.
+      detection_signals:
+      - implementation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches implementation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using implementation must include reason and evidence
+    failure_classification:
+      definition: failure classification phase vocabulary value.
+      meaning: Represents the failure classification case within the phase taxonomy.
+      detection_signals:
+      - failure classification signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches failure classification
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using failure_classification must include reason and evidence
+    feedback_repair:
+      definition: feedback repair phase vocabulary value.
+      meaning: Represents the feedback repair case within the phase taxonomy.
+      detection_signals:
+      - feedback repair signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches feedback repair
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using feedback_repair must include reason and evidence
+    post_implementation_validation:
+      definition: post implementation validation phase vocabulary value.
+      meaning: Represents the post implementation validation case within the phase taxonomy.
+      detection_signals:
+      - post implementation validation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches post implementation validation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using post_implementation_validation must include reason and evidence
+    trigger_review:
+      definition: trigger review phase vocabulary value.
+      meaning: Represents the trigger review case within the phase taxonomy.
+      detection_signals:
+      - trigger review signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches trigger review
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using trigger_review must include reason and evidence
+    report_artifact_validation:
+      definition: report artifact validation phase vocabulary value.
+      meaning: Represents the report artifact validation case within the phase taxonomy.
+      detection_signals:
+      - report artifact validation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches report artifact validation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using report_artifact_validation must include reason and evidence
+    final_validation:
+      definition: final validation phase vocabulary value.
+      meaning: Represents the final validation case within the phase taxonomy.
+      detection_signals:
+      - final validation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches final validation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase decisions using final_validation must include reason and evidence
   phase_addition_policy:
     absolute_rules:
     - id: PHASE-TAXONOMY-ABS-001
       rule: Mission profiles must not define new phases.
       fail_condition: mission_profile_defines_unknown_phase
+  phase_status_definitions:
+    pending:
+      definition: pending phase_status vocabulary value.
+      meaning: Represents the pending case within the phase_status taxonomy.
+      detection_signals:
+      - pending signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches pending
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_status decisions using pending must include reason and evidence
+    executed:
+      definition: executed phase_status vocabulary value.
+      meaning: Represents the executed case within the phase_status taxonomy.
+      detection_signals:
+      - executed signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches executed
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_status decisions using executed must include reason and evidence
+    skipped:
+      definition: skipped phase_status vocabulary value.
+      meaning: Represents the skipped case within the phase_status taxonomy.
+      detection_signals:
+      - skipped signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches skipped
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_status decisions using skipped must include reason and evidence
+    blocked:
+      definition: blocked phase_status vocabulary value.
+      meaning: Represents the blocked case within the phase_status taxonomy.
+      detection_signals:
+      - blocked signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches blocked
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_status decisions using blocked must include reason and evidence
+    deferred:
+      definition: deferred phase_status vocabulary value.
+      meaning: Represents the deferred case within the phase_status taxonomy.
+      detection_signals:
+      - deferred signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches deferred
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_status decisions using deferred must include reason and evidence
+    invalidated:
+      definition: invalidated phase_status vocabulary value.
+      meaning: Represents the invalidated case within the phase_status taxonomy.
+      detection_signals:
+      - invalidated signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches invalidated
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_status decisions using invalidated must include reason and evidence
+  phase_category_definitions:
+    classification:
+      definition: classification phase_category vocabulary value.
+      meaning: Represents the classification case within the phase_category taxonomy.
+      detection_signals:
+      - classification signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches classification
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using classification must include reason and evidence
+    design:
+      definition: design phase_category vocabulary value.
+      meaning: Represents the design case within the phase_category taxonomy.
+      detection_signals:
+      - design signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches design
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using design must include reason and evidence
+    execution:
+      definition: execution phase_category vocabulary value.
+      meaning: Represents the execution case within the phase_category taxonomy.
+      detection_signals:
+      - execution signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches execution
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using execution must include reason and evidence
+    execution_planning:
+      definition: execution planning phase_category vocabulary value.
+      meaning: Represents the execution planning case within the phase_category taxonomy.
+      detection_signals:
+      - execution planning signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches execution planning
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using execution_planning must include reason and evidence
+    mission_control:
+      definition: mission control phase_category vocabulary value.
+      meaning: Represents the mission control case within the phase_category taxonomy.
+      detection_signals:
+      - mission control signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches mission control
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using mission_control must include reason and evidence
+    repair:
+      definition: repair phase_category vocabulary value.
+      meaning: Represents the repair case within the phase_category taxonomy.
+      detection_signals:
+      - repair signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches repair
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using repair must include reason and evidence
+    reporting:
+      definition: reporting phase_category vocabulary value.
+      meaning: Represents the reporting case within the phase_category taxonomy.
+      detection_signals:
+      - reporting signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches reporting
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using reporting must include reason and evidence
+    understanding:
+      definition: understanding phase_category vocabulary value.
+      meaning: Represents the understanding case within the phase_category taxonomy.
+      detection_signals:
+      - understanding signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches understanding
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using understanding must include reason and evidence
+    validation:
+      definition: validation phase_category vocabulary value.
+      meaning: Represents the validation case within the phase_category taxonomy.
+      detection_signals:
+      - validation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches validation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using validation must include reason and evidence
+    verification_planning:
+      definition: verification planning phase_category vocabulary value.
+      meaning: Represents the verification planning case within the phase_category taxonomy.
+      detection_signals:
+      - verification planning signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches verification planning
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - phase_category decisions using verification_planning must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

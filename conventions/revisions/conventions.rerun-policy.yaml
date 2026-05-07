@@ -66,6 +66,82 @@ sections:
     - find_dependent_outputs
     - update_active_phase_plan
     - write_revision_history
+  rerun_mode_definitions:
+    rerun_single_phase:
+      definition: rerun single phase rerun_mode vocabulary value.
+      meaning: Represents the rerun single phase case within the rerun_mode taxonomy.
+      detection_signals:
+      - rerun single phase signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches rerun single phase
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - rerun_mode decisions using rerun_single_phase must include reason and evidence
+    rerun_phase_and_dependents:
+      definition: rerun phase and dependents rerun_mode vocabulary value.
+      meaning: Represents the rerun phase and dependents case within the rerun_mode taxonomy.
+      detection_signals:
+      - rerun phase and dependents signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches rerun phase and dependents
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - rerun_mode decisions using rerun_phase_and_dependents must include reason and evidence
+    rerun_from_phase_forward:
+      definition: rerun from phase forward rerun_mode vocabulary value.
+      meaning: Represents the rerun from phase forward case within the rerun_mode taxonomy.
+      detection_signals:
+      - rerun from phase forward signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches rerun from phase forward
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - rerun_mode decisions using rerun_from_phase_forward must include reason and evidence
+    revalidate_dependents_only:
+      definition: revalidate dependents only rerun_mode vocabulary value.
+      meaning: Represents the revalidate dependents only case within the rerun_mode taxonomy.
+      detection_signals:
+      - revalidate dependents only signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches revalidate dependents only
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - rerun_mode decisions using revalidate_dependents_only must include reason and evidence
+    block_until_manual_resolution:
+      definition: block until manual resolution rerun_mode vocabulary value.
+      meaning: Represents the block until manual resolution case within the rerun_mode taxonomy.
+      detection_signals:
+      - block until manual resolution signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches block until manual resolution
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - rerun_mode decisions using block_until_manual_resolution must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

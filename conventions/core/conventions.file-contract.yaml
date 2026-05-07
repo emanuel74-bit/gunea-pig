@@ -471,7 +471,7 @@ sections:
           rule: Subsystem execution order is local only.
           fail_condition: subsystem_execution_order_claims_global_authority
         - id: SECTION-EXEC-ORDER-ABS-003
-          rule: Global execution order belongs only to core/conventions.orchestrator.yaml.
+          rule: Global execution order belongs only to core/conventions.pipeline-contract.yaml.
           fail_condition: global_execution_order_defined_outside_orchestrator
         - id: SECTION-EXEC-ORDER-ABS-004
           rule: Local subsystem order must not contradict global orchestrator order.
@@ -485,7 +485,7 @@ sections:
           severity: error
         - id: SECTION-EXEC-ORDER-002
           condition: global_execution_order_defined_outside_orchestrator
-          message: Only core/conventions.orchestrator.yaml may define global_execution_order.
+          message: Only core/conventions.pipeline-contract.yaml may define global_execution_order.
           severity: error
     pipeline_section_schema:
       applies_to:
@@ -508,7 +508,7 @@ sections:
           fail_condition: pipeline_step_without_io_or_validation
         - id: SECTION-PIPELINE-ABS-003
           rule: Pipeline sections must not own global orchestration unless defined
-            in core/conventions.orchestrator.yaml.
+            in core/conventions.pipeline-contract.yaml.
           fail_condition: pipeline_claims_global_orchestration_outside_core
       validation:
         fail_conditions:

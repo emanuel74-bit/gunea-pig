@@ -38,11 +38,509 @@ sections:
     - performance
     - snapshot
   test_role_definitions:
-    unit: isolated logic test
-    integration: multiple components or infrastructure boundary
-    contract: contract compatibility test
-    regression: preserve existing behavior after bugfix/refactor
-    characterization: capture existing behavior before refactor
+    unit: &id001
+      definition: Validates one isolated unit of logic with dependencies mocked or avoided; required for branching or pure
+        domain/application logic.
+      meaning: Represents the unit case within the test type taxonomy.
+      detection_signals:
+      - unit signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches unit
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using unit must include reason and evidence
+      creation_triggers:
+      - unit coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - unit obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    integration: &id002
+      definition: Validates collaboration between multiple internal components, modules, repositories, or external adapters
+        under controlled conditions.
+      meaning: Represents the integration case within the test type taxonomy.
+      detection_signals:
+      - integration signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches integration
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using integration must include reason and evidence
+      creation_triggers:
+      - integration coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - integration obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    contract: &id003
+      definition: Validates public request/response/event/API/module contract shape and compatibility obligations.
+      meaning: Represents the contract case within the test type taxonomy.
+      detection_signals:
+      - contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using contract must include reason and evidence
+      creation_triggers:
+      - contract coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - contract obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    regression: &id005
+      definition: Locks a previously failing behavior so the bug cannot reappear.
+      meaning: Represents the regression case within the test type taxonomy.
+      detection_signals:
+      - regression signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches regression
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using regression must include reason and evidence
+      creation_triggers:
+      - regression coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - regression obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    characterization: &id006
+      definition: Captures current behavior before a refactor so behavior preservation can be verified.
+      meaning: Represents the characterization case within the test type taxonomy.
+      detection_signals:
+      - characterization signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches characterization
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using characterization must include reason and evidence
+      creation_triggers:
+      - characterization coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - characterization obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    e2e: &id004
+      definition: Validates an end-to-end user/system flow across real or near-real boundaries.
+      meaning: Represents the e2e case within the test type taxonomy.
+      detection_signals:
+      - e2e signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches e2e
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using e2e must include reason and evidence
+      creation_triggers:
+      - e2e coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - e2e obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    migration: &id007
+      definition: Validates schema/data migration, rollback, backfill, or persistence compatibility behavior.
+      meaning: Represents the migration case within the test type taxonomy.
+      detection_signals:
+      - migration signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches migration
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using migration must include reason and evidence
+      creation_triggers:
+      - migration coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - migration obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    security: &id008
+      definition: Validates authentication, authorization, input safety, secret handling, or other security-sensitive behavior.
+      meaning: Represents the security case within the test type taxonomy.
+      detection_signals:
+      - security signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches security
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using security must include reason and evidence
+      creation_triggers:
+      - security coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - security obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    performance: &id009
+      definition: Validates throughput, latency, memory, batching, or resource constraints relevant to the change.
+      meaning: Represents the performance case within the test type taxonomy.
+      detection_signals:
+      - performance signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches performance
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using performance must include reason and evidence
+      creation_triggers:
+      - performance coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - performance obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+    snapshot: &id010
+      definition: Validates stable serialized/rendered output when exact output shape is important and intentionally reviewed.
+      meaning: Represents the snapshot case within the test type taxonomy.
+      detection_signals:
+      - snapshot signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches snapshot
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - test type decisions using snapshot must include reason and evidence
+      creation_triggers:
+      - snapshot coverage is required by behavior, risk, impact, contract, bugfix, or refactor evidence
+      validates:
+      - snapshot obligations
+      does_not_validate:
+      - unrelated behavior
+      - implementation details outside test intent
+  test_type_definitions:
+    unit: *id001
+    integration: *id002
+    contract: *id003
+    e2e: *id004
+    regression: *id005
+    characterization: *id006
+    migration: *id007
+    security: *id008
+    performance: *id009
+    snapshot: *id010
+  canonical_testing_taxonomy:
+    testing_taxonomy_policy:
+      rule: Testing roles remain test-scoped.
+    behavior_tests:
+    - unit_test
+    - integration_test
+    - e2e_test
+    contract_tests:
+    - contract_test
+    - api_contract_test
+    - event_contract_test
+    architecture_tests:
+    - architecture_test
+    - boundary_test
+    test_support:
+    - mock
+    - stub
+    - fake
+    - spy
+    - fixture
+    - test_factory
+    - test_builder
+    verification_support:
+    - assertion
+    - matcher
+    testing_role_definitions:
+      unit_test:
+        family: testing_verification
+        suffix:
+        - .unit-test.ts
+        - .unit.spec.ts
+        definition: unit test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      integration_test:
+        family: testing_verification
+        suffix:
+        - .integration-test.ts
+        - .integration.spec.ts
+        definition: integration test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      e2e_test:
+        family: testing_verification
+        suffix:
+        - .e2e-test.ts
+        - .e2e.spec.ts
+        definition: e2e test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      contract_test:
+        family: testing_verification
+        suffix: .contract-test.ts
+        definition: contract test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      api_contract_test:
+        family: testing_verification
+        suffix: .api-contract-test.ts
+        definition: api contract test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      event_contract_test:
+        family: testing_verification
+        suffix: .event-contract-test.ts
+        definition: event contract test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      architecture_test:
+        family: testing_verification
+        suffix: .architecture-test.ts
+        definition: architecture test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      boundary_test:
+        family: testing_verification
+        suffix: .boundary-test.ts
+        definition: boundary test role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      mock:
+        family: testing_verification
+        suffix: .mock.ts
+        definition: mock role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      stub:
+        family: testing_verification
+        suffix: .stub.ts
+        definition: stub role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      fake:
+        family: testing_verification
+        suffix: .fake.ts
+        definition: fake role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      spy:
+        family: testing_verification
+        suffix: .spy.ts
+        definition: spy role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      fixture:
+        family: testing_verification
+        suffix: .fixture.ts
+        definition: fixture role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      test_factory:
+        family: testing_verification
+        suffix: .test-factory.ts
+        definition: test factory role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      test_builder:
+        family: testing_verification
+        suffix: .test-builder.ts
+        definition: test builder role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      assertion:
+        family: testing_verification
+        suffix: .assertion.ts
+        definition: assertion role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
+      matcher:
+        family: testing_verification
+        suffix: .matcher.ts
+        definition: matcher role
+        choose_when:
+        - artifact responsibility matches role definition
+        reject_when:
+        - a more specific role applies
+        - artifact has multiple responsibilities
+        must:
+        - own exactly one responsibility
+        forbidden:
+        - mixed responsibilities
+        status: active
 validation:
   fail_conditions:
   - id: TESTING-CONVENTIONS-TESTING-TAXONOMY-YAML-FC-001

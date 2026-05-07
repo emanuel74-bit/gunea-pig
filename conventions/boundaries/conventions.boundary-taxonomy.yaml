@@ -539,6 +539,217 @@ sections:
       - change_risk
   semantic_depth_restoration:
     enriched_generic_boundary_definitions: true
+  boundary_type_definitions:
+    transport:
+      definition: transport boundary_type vocabulary value.
+      meaning: Represents the transport case within the boundary_type taxonomy.
+      detection_signals:
+      - transport signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches transport
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using transport must include reason and evidence
+    public_api:
+      definition: public api boundary_type vocabulary value.
+      meaning: Represents the public api case within the boundary_type taxonomy.
+      detection_signals:
+      - public api signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches public api
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using public_api must include reason and evidence
+    module:
+      definition: module boundary_type vocabulary value.
+      meaning: Represents the module case within the boundary_type taxonomy.
+      detection_signals:
+      - module signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches module
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using module must include reason and evidence
+    domain:
+      definition: domain boundary_type vocabulary value.
+      meaning: Represents the domain case within the boundary_type taxonomy.
+      detection_signals:
+      - domain signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches domain
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using domain must include reason and evidence
+    application:
+      definition: application boundary_type vocabulary value.
+      meaning: Represents the application case within the boundary_type taxonomy.
+      detection_signals:
+      - application signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches application
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using application must include reason and evidence
+    infrastructure:
+      definition: infrastructure boundary_type vocabulary value.
+      meaning: Represents the infrastructure case within the boundary_type taxonomy.
+      detection_signals:
+      - infrastructure signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches infrastructure
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using infrastructure must include reason and evidence
+    persistence:
+      definition: persistence boundary_type vocabulary value.
+      meaning: Represents the persistence case within the boundary_type taxonomy.
+      detection_signals:
+      - persistence signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches persistence
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using persistence must include reason and evidence
+    external_system:
+      definition: external system boundary_type vocabulary value.
+      meaning: Represents the external system case within the boundary_type taxonomy.
+      detection_signals:
+      - external system signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches external system
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using external_system must include reason and evidence
+    integration_event:
+      definition: integration event boundary_type vocabulary value.
+      meaning: Represents the integration event case within the boundary_type taxonomy.
+      detection_signals:
+      - integration event signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches integration event
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using integration_event must include reason and evidence
+    message_queue:
+      definition: message queue boundary_type vocabulary value.
+      meaning: Represents the message queue case within the boundary_type taxonomy.
+      detection_signals:
+      - message queue signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches message queue
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using message_queue must include reason and evidence
+    webhook:
+      definition: webhook boundary_type vocabulary value.
+      meaning: Represents the webhook case within the boundary_type taxonomy.
+      detection_signals:
+      - webhook signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches webhook
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using webhook must include reason and evidence
+    security:
+      definition: security boundary_type vocabulary value.
+      meaning: Represents the security case within the boundary_type taxonomy.
+      detection_signals:
+      - security signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches security
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using security must include reason and evidence
+    tenant:
+      definition: tenant boundary_type vocabulary value.
+      meaning: Represents the tenant case within the boundary_type taxonomy.
+      detection_signals:
+      - tenant signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches tenant
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using tenant must include reason and evidence
+    runtime_wiring:
+      definition: runtime wiring boundary_type vocabulary value.
+      meaning: Represents the runtime wiring case within the boundary_type taxonomy.
+      detection_signals:
+      - runtime wiring signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches runtime wiring
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - boundary_type decisions using runtime_wiring must include reason and evidence
 validation:
   fail_conditions:
   - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-FC-001

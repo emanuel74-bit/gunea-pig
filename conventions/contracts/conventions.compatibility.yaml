@@ -140,6 +140,112 @@ sections:
     - add_optional_field
     - add_new_endpoint
     - add_nullable_persistence_column
+  compatibility_strategy_definitions:
+    internal_only_change:
+      definition: internal only change compatibility_strategy vocabulary value.
+      meaning: Represents the internal only change case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - internal only change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches internal only change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using internal_only_change must include reason and evidence
+    backward_compatible_addition:
+      definition: backward compatible addition compatibility_strategy vocabulary value.
+      meaning: Represents the backward compatible addition case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - backward compatible addition signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches backward compatible addition
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using backward_compatible_addition must include reason and evidence
+    versioned_contract:
+      definition: versioned contract compatibility_strategy vocabulary value.
+      meaning: Represents the versioned contract case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - versioned contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches versioned contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using versioned_contract must include reason and evidence
+    adapter_translation:
+      definition: adapter translation compatibility_strategy vocabulary value.
+      meaning: Represents the adapter translation case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - adapter translation signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches adapter translation
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using adapter_translation must include reason and evidence
+    deprecation_period:
+      definition: deprecation period compatibility_strategy vocabulary value.
+      meaning: Represents the deprecation period case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - deprecation period signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches deprecation period
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using deprecation_period must include reason and evidence
+    synchronized_breaking_change:
+      definition: synchronized breaking change compatibility_strategy vocabulary value.
+      meaning: Represents the synchronized breaking change case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - synchronized breaking change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches synchronized breaking change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using synchronized_breaking_change must include reason and evidence
+    reject_breaking_change:
+      definition: reject breaking change compatibility_strategy vocabulary value.
+      meaning: Represents the reject breaking change case within the compatibility_strategy taxonomy.
+      detection_signals:
+      - reject breaking change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches reject breaking change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - compatibility_strategy decisions using reject_breaking_change must include reason and evidence
 validation:
   fail_conditions:
   - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-001

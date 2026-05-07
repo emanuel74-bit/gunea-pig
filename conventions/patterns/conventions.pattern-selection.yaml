@@ -34,7 +34,7 @@ sections:
   - evaluate_simpler_alternative
   - select_pattern_if_justified
   - record_rejected_patterns
-  canonical_decision_flow: &id001
+  canonical_decision_flow:
   - step: detect_primary_intent
     action: 'Match feature description against category triggers (creational / structural / behavioral)
 
@@ -61,13 +61,13 @@ sections:
       - string
       reasoning: text explanation
       confidence: low|medium|high
-  canonical_heuristics: &id002
+  canonical_heuristics:
   - rule: avoid_pattern_if_simple_solution_exists
   - rule: do_not_use_singleton_for_convenience
   - rule: prefer_strategy_over_conditionals
   - rule: prefer_composition_over_inheritance
   - rule: avoid_overengineering_for_small_features
-  canonical_input_schema: &id003
+  canonical_input_schema:
     feature_description: string
     constraints:
       scalability: low|medium|high
@@ -78,7 +78,7 @@ sections:
       complex_creation: boolean
       many_dependencies: boolean
       conditional_logic: boolean
-  canonical_output_schema: &id004
+  canonical_output_schema:
     primary_pattern: string
     category: creational|structural|behavioral
     alternatives:
@@ -100,10 +100,314 @@ sections:
     restoration_policy: canonical_source_preserved_under_standard_file_contract
     do_not_replace_with_summary: true
   canonical_restored_source:
-    decision_flow: *id001
-    heuristics: *id002
-    input_schema: *id003
-    output_schema: *id004
+    decision_flow:
+    - step: detect_primary_intent
+      action: 'Match feature description against category triggers (creational / structural / behavioral)
+
+        '
+    - step: detect_problem_signals
+      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
+        \  - structure composition issues\n"
+    - step: candidate_patterns
+      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
+    - step: eliminate_conflicts
+      action: 'Remove patterns where avoid_when conditions are triggered
+
+        '
+    - step: rank_patterns
+      criteria:
+      - simplicity
+      - minimal abstraction
+      - alignment with problem
+      - scalability
+    - step: output
+      format:
+        primary_pattern: string
+        alternatives:
+        - string
+        reasoning: text explanation
+        confidence: low|medium|high
+    heuristics:
+    - rule: avoid_pattern_if_simple_solution_exists
+    - rule: do_not_use_singleton_for_convenience
+    - rule: prefer_strategy_over_conditionals
+    - rule: prefer_composition_over_inheritance
+    - rule: avoid_overengineering_for_small_features
+    input_schema:
+      feature_description: string
+      constraints:
+        scalability: low|medium|high
+        flexibility: low|medium|high
+        performance: low|medium|high
+      signals:
+        dynamic_behavior: boolean
+        complex_creation: boolean
+        many_dependencies: boolean
+        conditional_logic: boolean
+    output_schema:
+      primary_pattern: string
+      category: creational|structural|behavioral
+      alternatives:
+      - string
+      reasoning: string
+      tradeoffs:
+        pros:
+        - string
+        cons:
+        - string
+      confidence: low|medium|high
+  canonical_source_full:
+    version: '1.0'
+    system:
+      name: design-pattern-selector
+      purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
+        rules derived from the Refactoring.Guru catalog.
+
+        '
+      philosophy:
+      - Pattern follows problem, not preference
+      - Classify intent before selecting pattern
+      - Avoid over-engineering
+      - Prefer simplest valid pattern
+    classification:
+      categories:
+        creational:
+          description: 'Focused on object creation mechanisms that increase flexibility and reuse.
+
+            '
+          triggers:
+          - object creation is complex
+          - object type decided at runtime
+          - avoid direct constructor usage
+          - control instance lifecycle
+          - reduce coupling to concrete classes
+        structural:
+          description: 'Focused on composing classes and objects into larger structures.
+
+            '
+          triggers:
+          - combine multiple components
+          - wrap or adapt existing code
+          - simplify complex subsystem
+          - optimize memory usage
+          - control access to object
+        behavioral:
+          description: 'Focused on communication and responsibility between objects.
+
+            '
+          triggers:
+          - multiple objects interact
+          - behavior changes at runtime
+          - decouple sender and receiver
+          - define workflows or chains
+          - encapsulate algorithms
+    patterns:
+      Singleton:
+        category: creational
+        use_when:
+        - exactly one instance is required
+        - global shared resource
+        avoid_when:
+        - testability is critical
+        - hidden dependencies are undesirable
+      FactoryMethod:
+        category: creational
+        use_when:
+        - subclasses decide object type
+        - object creation varies by context
+        signals:
+        - switch/if on type
+        - constructor logic branching
+      AbstractFactory:
+        category: creational
+        use_when:
+        - families of related objects
+        - must enforce compatibility between objects
+        signals:
+        - multiple related product types
+      Builder:
+        category: creational
+        use_when:
+        - complex object construction
+        - step-by-step creation
+        signals:
+        - many optional parameters
+        - telescoping constructor
+      Prototype:
+        category: creational
+        use_when:
+        - clone existing objects
+        - object creation is expensive
+        signals:
+        - copying objects frequently
+      Adapter:
+        category: structural
+        use_when:
+        - incompatible interfaces
+        - reuse legacy/external code
+        signals:
+        - interface mismatch
+      Bridge:
+        category: structural
+        use_when:
+        - separate abstraction from implementation
+        - avoid class explosion
+        signals:
+        - multiple dimensions of variation
+      Composite:
+        category: structural
+        use_when:
+        - tree structure
+        - treat individual and group uniformly
+        signals:
+        - recursive composition
+      Decorator:
+        category: structural
+        use_when:
+        - add behavior dynamically
+        - avoid subclass explosion
+        signals:
+        - stackable responsibilities
+      Facade:
+        category: structural
+        use_when:
+        - simplify complex subsystem
+        - provide unified interface
+        signals:
+        - many dependencies hidden behind one API
+      Flyweight:
+        category: structural
+        use_when:
+        - large number of similar objects
+        - memory optimization needed
+        signals:
+        - shared intrinsic state
+      Proxy:
+        category: structural
+        use_when:
+        - control access to object
+        - lazy loading / remote access
+        signals:
+        - intercept calls
+      ChainOfResponsibility:
+        category: behavioral
+        use_when:
+        - multiple handlers for request
+        - decouple sender from receiver
+        signals:
+        - pass request along chain
+      Command:
+        category: behavioral
+        use_when:
+        - encapsulate actions as objects
+        - support undo/redo
+        signals:
+        - queue, log, or execute commands
+      Iterator:
+        category: behavioral
+        use_when:
+        - traverse collection without exposing structure
+        signals:
+        - custom traversal logic
+      Mediator:
+        category: behavioral
+        use_when:
+        - reduce direct dependencies between components
+        signals:
+        - many-to-many communication chaos
+      Memento:
+        category: behavioral
+        use_when:
+        - save/restore object state
+        signals:
+        - undo history
+      Observer:
+        category: behavioral
+        use_when:
+        - event-driven updates
+        - publish/subscribe
+        signals:
+        - state change notifications
+      State:
+        category: behavioral
+        use_when:
+        - object behavior depends on state
+        signals:
+        - large conditional state machine
+      Strategy:
+        category: behavioral
+        use_when:
+        - multiple interchangeable algorithms
+        signals:
+        - if/else selecting behavior
+      TemplateMethod:
+        category: behavioral
+        use_when:
+        - algorithm skeleton with overridable steps
+        signals:
+        - shared workflow with variations
+      Visitor:
+        category: behavioral
+        use_when:
+        - add operations without modifying classes
+        signals:
+        - stable structure, changing behavior
+    decision_flow:
+    - step: detect_primary_intent
+      action: 'Match feature description against category triggers (creational / structural / behavioral)
+
+        '
+    - step: detect_problem_signals
+      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
+        \  - structure composition issues\n"
+    - step: candidate_patterns
+      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
+    - step: eliminate_conflicts
+      action: 'Remove patterns where avoid_when conditions are triggered
+
+        '
+    - step: rank_patterns
+      criteria:
+      - simplicity
+      - minimal abstraction
+      - alignment with problem
+      - scalability
+    - step: output
+      format:
+        primary_pattern: string
+        alternatives:
+        - string
+        reasoning: text explanation
+        confidence: low|medium|high
+    heuristics:
+    - rule: avoid_pattern_if_simple_solution_exists
+    - rule: do_not_use_singleton_for_convenience
+    - rule: prefer_strategy_over_conditionals
+    - rule: prefer_composition_over_inheritance
+    - rule: avoid_overengineering_for_small_features
+    input_schema:
+      feature_description: string
+      constraints:
+        scalability: low|medium|high
+        flexibility: low|medium|high
+        performance: low|medium|high
+      signals:
+        dynamic_behavior: boolean
+        complex_creation: boolean
+        many_dependencies: boolean
+        conditional_logic: boolean
+    output_schema:
+      primary_pattern: string
+      category: creational|structural|behavioral
+      alternatives:
+      - string
+      reasoning: string
+      tradeoffs:
+        pros:
+        - string
+        cons:
+        - string
+      confidence: low|medium|high
 validation:
   fail_conditions:
   - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-001

@@ -64,6 +64,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a request contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     response_contract:
       definition: Consumer-visible output shape and semantics returned by an operation, API, handler, query, or message producer.
       owner: response_contract_owner
@@ -86,6 +95,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a response contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     api_contract:
       definition: Stable agreement exposed by an HTTP/RPC/GraphQL/SDK/module API, including methods, paths, params, auth and
         error semantics.
@@ -112,6 +130,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a api contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     event_contract:
       definition: Stable agreement for emitted or consumed events/messages, including payload, version, ordering, idempotency
         and compatibility.
@@ -137,6 +164,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a event contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     port_contract:
       definition: Interface/port that defines how application/domain code depends on infrastructure or external capabilities.
       owner: port_contract_owner
@@ -159,6 +195,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a port contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     module_contract:
       definition: Public exports and allowed imports for a module; internal files are not part of the contract.
       owner: module_contract_owner
@@ -181,6 +226,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a module contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     public_type_contract:
       definition: Type/interface/class exported for consumers where field/name/semantics changes may be breaking.
       owner: public_type_contract_owner
@@ -203,6 +257,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a public type contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     persistence_contract:
       definition: Stored data shape, repository semantics, migration compatibility, and read/write invariants.
       owner: persistence_contract_owner
@@ -225,6 +288,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a persistence contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
     configuration_contract:
       definition: Environment/configuration keys, defaults, validation rules, and runtime wiring assumptions.
       owner: configuration_contract_owner
@@ -247,6 +319,15 @@ sections:
       - Is a required field removed or renamed?
       - Can old consumers keep working?
       - Is versioning or adapter/migration required?
+      choose_when:
+      - the artifact defines or changes a configuration contract
+      reject_when:
+      - pure internal implementation detail
+      - no consumer-visible obligation
+      compatibility_rules:
+      - record consumers
+      - classify change type
+      - emit compatibility_decision_required when unknown or breaking
   contract_stability_levels:
     internal_unstable:
       definition: internal_unstable
@@ -439,6 +520,284 @@ sections:
       - change_risk
   semantic_depth_restoration:
     enriched_generic_contract_definitions: true
+  consumer_knowledge_definitions:
+    none:
+      definition: No consumers are known or relevant after reconnaissance.
+      meaning: Represents the none case within the consumer knowledge taxonomy.
+      detection_signals:
+      - none signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches none
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - consumer knowledge decisions using none must include reason and evidence
+    all_known:
+      definition: All consumers are identified and can be reviewed or updated.
+      meaning: Represents the all known case within the consumer knowledge taxonomy.
+      detection_signals:
+      - all known signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches all known
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - consumer knowledge decisions using all_known must include reason and evidence
+    partially_known:
+      definition: Some consumers are identified but discovery may be incomplete.
+      meaning: Represents the partially known case within the consumer knowledge taxonomy.
+      detection_signals:
+      - partially known signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches partially known
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - consumer knowledge decisions using partially_known must include reason and evidence
+    unknown:
+      definition: Consumers cannot be confidently enumerated; treat compatibility risk as elevated.
+      meaning: Represents the unknown case within the consumer knowledge taxonomy.
+      detection_signals:
+      - unknown signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches unknown
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - consumer knowledge decisions using unknown must include reason and evidence
+  contract_change_type_definitions:
+    none:
+      definition: No contract shape, semantic, compatibility, or consumer obligation change is detected.
+      meaning: Represents the none case within the contract change type taxonomy.
+      detection_signals:
+      - none signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches none
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract change type decisions using none must include reason and evidence
+      compatibility_required: false
+    additive:
+      definition: Contract gains optional or backward-compatible fields/behavior without breaking known consumers.
+      meaning: Represents the additive case within the contract change type taxonomy.
+      detection_signals:
+      - additive signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches additive
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract change type decisions using additive must include reason and evidence
+      compatibility_required: false
+    behavioral:
+      definition: Contract shape may remain stable but behavior, semantics, timing, errors, ordering, or side effects change.
+      meaning: Represents the behavioral case within the contract change type taxonomy.
+      detection_signals:
+      - behavioral signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches behavioral
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract change type decisions using behavioral must include reason and evidence
+      compatibility_required: true
+    breaking:
+      definition: Contract change may break existing consumers, require migration, or invalidate compatibility expectations.
+      meaning: Represents the breaking case within the contract change type taxonomy.
+      detection_signals:
+      - breaking signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches breaking
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract change type decisions using breaking must include reason and evidence
+      compatibility_required: true
+    unknown:
+      definition: Insufficient evidence exists to determine contract change type; must trigger review before implementation.
+      meaning: Represents the unknown case within the contract change type taxonomy.
+      detection_signals:
+      - unknown signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches unknown
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract change type decisions using unknown must include reason and evidence
+      compatibility_required: true
+  contract_type_definitions:
+    request_contract:
+      definition: request contract contract_type vocabulary value.
+      meaning: Represents the request contract case within the contract_type taxonomy.
+      detection_signals:
+      - request contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches request contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using request_contract must include reason and evidence
+    response_contract:
+      definition: response contract contract_type vocabulary value.
+      meaning: Represents the response contract case within the contract_type taxonomy.
+      detection_signals:
+      - response contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches response contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using response_contract must include reason and evidence
+    api_contract:
+      definition: api contract contract_type vocabulary value.
+      meaning: Represents the api contract case within the contract_type taxonomy.
+      detection_signals:
+      - api contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches api contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using api_contract must include reason and evidence
+    event_contract:
+      definition: event contract contract_type vocabulary value.
+      meaning: Represents the event contract case within the contract_type taxonomy.
+      detection_signals:
+      - event contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches event contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using event_contract must include reason and evidence
+    port_contract:
+      definition: port contract contract_type vocabulary value.
+      meaning: Represents the port contract case within the contract_type taxonomy.
+      detection_signals:
+      - port contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches port contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using port_contract must include reason and evidence
+    module_contract:
+      definition: module contract contract_type vocabulary value.
+      meaning: Represents the module contract case within the contract_type taxonomy.
+      detection_signals:
+      - module contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches module contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using module_contract must include reason and evidence
+    public_type_contract:
+      definition: public type contract contract_type vocabulary value.
+      meaning: Represents the public type contract case within the contract_type taxonomy.
+      detection_signals:
+      - public type contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches public type contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using public_type_contract must include reason and evidence
+    persistence_contract:
+      definition: persistence contract contract_type vocabulary value.
+      meaning: Represents the persistence contract case within the contract_type taxonomy.
+      detection_signals:
+      - persistence contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches persistence contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using persistence_contract must include reason and evidence
+    configuration_contract:
+      definition: configuration contract contract_type vocabulary value.
+      meaning: Represents the configuration contract case within the contract_type taxonomy.
+      detection_signals:
+      - configuration contract signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches configuration contract
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - contract_type decisions using configuration_contract must include reason and evidence
 validation:
   fail_conditions:
   - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-FC-001

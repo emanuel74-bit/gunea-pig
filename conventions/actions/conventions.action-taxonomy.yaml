@@ -93,6 +93,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the no code change case within the artifact_action taxonomy.
+      detection_signals:
+      - no code change signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using no_code_change must include reason and evidence
     reuse_existing:
       family: non_change
       definition: Use an existing artifact as-is.
@@ -115,9 +122,16 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the reuse existing case within the artifact_action taxonomy.
+      detection_signals:
+      - reuse existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using reuse_existing must include reason and evidence
     create_new:
       family: additive_change
-      definition: Create a new artifact.
+      definition: create new artifact_action vocabulary value.
       choose_when:
       - create a new artifact.
       reject_when:
@@ -138,6 +152,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the create new case within the artifact_action taxonomy.
+      detection_signals:
+      - create new signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using create_new must include reason and evidence
     wrap_existing:
       family: additive_change
       definition: Wrap existing behavior behind a boundary.
@@ -160,6 +181,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the wrap existing case within the artifact_action taxonomy.
+      detection_signals:
+      - wrap existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using wrap_existing must include reason and evidence
     modify_existing:
       family: in_place_change
       definition: Modify an existing artifact while preserving responsibility.
@@ -182,6 +210,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the modify existing case within the artifact_action taxonomy.
+      detection_signals:
+      - modify existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using modify_existing must include reason and evidence
     rename_existing:
       family: in_place_change
       definition: Rename artifact or symbol without behavior change.
@@ -204,6 +239,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the rename existing case within the artifact_action taxonomy.
+      detection_signals:
+      - rename existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using rename_existing must include reason and evidence
     move_existing:
       family: in_place_change
       definition: Move artifact without behavior change.
@@ -226,6 +268,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the move existing case within the artifact_action taxonomy.
+      detection_signals:
+      - move existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using move_existing must include reason and evidence
     extract_from_existing:
       family: decomposition_change
       definition: Extract useful behavior into focused artifact.
@@ -248,6 +297,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the extract from existing case within the artifact_action taxonomy.
+      detection_signals:
+      - extract from existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using extract_from_existing must include reason and evidence
     split_existing:
       family: decomposition_change
       definition: Split mixed artifact into focused artifacts.
@@ -272,6 +328,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the split existing case within the artifact_action taxonomy.
+      detection_signals:
+      - split existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using split_existing must include reason and evidence
     inline_existing:
       family: decomposition_change
       definition: Inline unjustified artifact into valid caller.
@@ -294,6 +357,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the inline existing case within the artifact_action taxonomy.
+      detection_signals:
+      - inline existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using inline_existing must include reason and evidence
     merge_existing:
       family: consolidation_change
       definition: Merge duplicated same responsibility artifacts.
@@ -316,6 +386,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the merge existing case within the artifact_action taxonomy.
+      detection_signals:
+      - merge existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using merge_existing must include reason and evidence
     replace_existing:
       family: consolidation_change
       definition: Replace invalid artifact with valid one and migrate consumers.
@@ -340,6 +417,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the replace existing case within the artifact_action taxonomy.
+      detection_signals:
+      - replace existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using replace_existing must include reason and evidence
     deprecate_existing:
       family: lifecycle_change
       definition: Mark artifact as no longer preferred while preserving compatibility.
@@ -362,6 +446,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the deprecate existing case within the artifact_action taxonomy.
+      detection_signals:
+      - deprecate existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using deprecate_existing must include reason and evidence
     delete_existing:
       family: lifecycle_change
       definition: Delete unused obsolete artifact safely.
@@ -384,6 +475,13 @@ sections:
       impact_surfaces:
       - internal_private
       risk_profile: medium
+      meaning: Represents the delete existing case within the artifact_action taxonomy.
+      detection_signals:
+      - delete existing signals are present in the request, codebase evidence, or prior phase reports
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - artifact_action decisions using delete_existing must include reason and evidence
   artifact_action_priority:
     principle: least_necessary_change_before_more_disruptive_change
     priority_order:

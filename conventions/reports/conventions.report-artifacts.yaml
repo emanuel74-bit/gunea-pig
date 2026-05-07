@@ -1334,6 +1334,158 @@ sections:
     - assert_required_report_files_exist
     - assert_required_fields_present
     - assert_no_console_only_output
+  report_format_definitions:
+    yaml:
+      definition: yaml report_format vocabulary value.
+      meaning: Represents the yaml case within the report_format taxonomy.
+      detection_signals:
+      - yaml signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches yaml
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_format decisions using yaml must include reason and evidence
+    markdown:
+      definition: markdown report_format vocabulary value.
+      meaning: Represents the markdown case within the report_format taxonomy.
+      detection_signals:
+      - markdown signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches markdown
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_format decisions using markdown must include reason and evidence
+    json:
+      definition: json report_format vocabulary value.
+      meaning: Represents the json case within the report_format taxonomy.
+      detection_signals:
+      - json signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches json
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_format decisions using json must include reason and evidence
+  report_lifecycle_state_definitions:
+    expected:
+      definition: expected report_lifecycle_state vocabulary value.
+      meaning: Represents the expected case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - expected signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches expected
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using expected must include reason and evidence
+    produced:
+      definition: produced report_lifecycle_state vocabulary value.
+      meaning: Represents the produced case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - produced signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches produced
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using produced must include reason and evidence
+    validated:
+      definition: validated report_lifecycle_state vocabulary value.
+      meaning: Represents the validated case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - validated signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches validated
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using validated must include reason and evidence
+    missing:
+      definition: missing report_lifecycle_state vocabulary value.
+      meaning: Represents the missing case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - missing signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches missing
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using missing must include reason and evidence
+    invalid:
+      definition: invalid report_lifecycle_state vocabulary value.
+      meaning: Represents the invalid case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - invalid signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches invalid
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using invalid must include reason and evidence
+    invalidated:
+      definition: invalidated report_lifecycle_state vocabulary value.
+      meaning: Represents the invalidated case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - invalidated signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches invalidated
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using invalidated must include reason and evidence
+    replaced:
+      definition: replaced report_lifecycle_state vocabulary value.
+      meaning: Represents the replaced case within the report_lifecycle_state taxonomy.
+      detection_signals:
+      - replaced signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches replaced
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - report_lifecycle_state decisions using replaced must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

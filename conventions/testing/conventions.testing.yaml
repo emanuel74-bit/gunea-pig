@@ -3,37 +3,52 @@ file:
   name: conventions.testing.yaml
   path: testing/conventions.testing.yaml
   role: testing_system_entrypoint
-  executability: advisory_entrypoint
-purpose: Entrypoint for testing taxonomy and matrix.
+purpose: Entrypoint and execution order for deriving tests from architecture, roles, and risk.
 ownership:
   owns:
   - testing_system_metadata
   - testing_file_index
-  - testing_system_execution_order
+  - testing_activation_rules
+  - testing_execution_order
   does_not_own:
-  - test_type_definitions
+  - testing_role_details
   - test_matrix_details
+  - production_role_definitions
 activation:
-  mode: always
-  activates_when: []
+  mode: entrypoint
+  activates_when:
+  - production_code_created_or_changed
+  - refactor_requested
+  - bugfix_requested
   skips_when: []
 inputs:
-  required: []
+  required:
+  - role_assignment_table
   optional: []
 outputs:
   produces:
-  - testing_result
+  - testing_system_result
+  - test_plan
 dependencies:
-  required_files: []
+  required_files:
+  - testing/conventions.testing-taxonomy.yaml
+  - testing/conventions.testing-matrix.yaml
   optional_files: []
 sections:
+  testing_system_metadata:
+    mode: role_derived
   testing_file_index:
-    taxonomy: testing/conventions.testing-taxonomy.yaml
-    matrix: testing/conventions.testing-matrix.yaml
-  testing_system_execution_order:
+  - testing/conventions.testing-taxonomy.yaml
+  - testing/conventions.testing-matrix.yaml
+  testing_activation_rules:
+  - production_code_created_or_changed
+  - refactor_requested
+  - bugfix_requested
+  testing_execution_order:
   - load_testing_taxonomy
-  - derive_tests_from_behavior_roles_actions_risk
-  - produce_test_plan
+  - derive_test_requirements
+  - validate_test_plan
 validation:
-  required_checks: []
-  fail_conditions: []
+  fail_conditions:
+  - testing_subfile_missing
+  - test_plan_missing_for_production_change

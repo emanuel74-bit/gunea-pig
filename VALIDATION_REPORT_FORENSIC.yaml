@@ -1,0 +1,6 @@
+validation_report:
+  yaml_files_checked: 88
+  yaml_parse_errors: []
+  semantic_errors: []
+  semantic_warnings: []
+  status: passed

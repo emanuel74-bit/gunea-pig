@@ -37,7 +37,7 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
-  - core/conventions.routing.yaml
+  - core/conventions.index.yaml
   optional_files:
   - core/conventions.output-schema.yaml
 sections:

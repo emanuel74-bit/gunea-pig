@@ -64,174 +64,873 @@ sections:
     - Iterator
     - Memento
     - Visitor
+    - DependencyInjection
+    - PortsAndAdapters
+    - DataMapper
+    - Projection
+    - ReadModel
+    - EventSourcing
+    - Inbox
+    - IdempotencyKey
+    - RetryWithBackoff
+    - CircuitBreaker
   pattern_definitions:
     NoPattern:
-      definition: Default when no pattern pressure exists.
+      definition: Explicit no-pattern decision used when pattern pressure is absent or a direct role-based design is simpler
+        and sufficient.
       activation_signals:
       - NoPattern pressure detected
       reject_when:
       - no pattern pressure
       - simpler direct design is sufficient
+      category: none
+      use_when:
+      - no pattern pressure exists
+      - direct composition with roles is simpler
+      - pattern would add accidental complexity
+      signals:
+      - single stable behavior path
+      - no interchangeable algorithms
+      - no incompatible external interface
+      - no object family creation pressure
+      avoid_when:
+      - pattern pressure is confirmed
+      - multiple variation axes exist
+      - boundary adaptation is required
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the NoPattern case within the pattern taxonomy.
+      detection_signals:
+      - NoPattern evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches NoPattern
+      - no more specific value applies
     Strategy:
+      category: behavioral
+      status: active
+      problem_it_solves: Strategy pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - strategy
+      - selector
+      - interface
+      - registry
+      compatible_roles:
+      - strategy
+      - selector
+      - interface
+      - registry
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - multiple interchangeable algorithms
+      signals:
+      - if/else selecting behavior
       definition: 'Strategy pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
         and simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id039
-      - multiple interchangeable algorithms
-      signals: &id040
-      - if/else selecting behavior
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Strategy case within the pattern taxonomy.
+      detection_signals:
+      - Strategy evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Strategy
+      - no more specific value applies
     FactoryMethod:
-      definition: 'FactoryMethod pattern. Category: creational. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: creational
-      use_when: &id003
+      status: active
+      problem_it_solves: FactoryMethod pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - interface
+      compatible_roles:
+      - factory
+      - interface
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - subclasses decide object type
       - object creation varies by context
-      signals: &id004
+      signals:
       - switch/if on type
       - constructor logic branching
+      definition: 'FactoryMethod pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the FactoryMethod case within the pattern taxonomy.
+      detection_signals:
+      - FactoryMethod evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches FactoryMethod
+      - no more specific value applies
     AbstractFactory:
-      definition: 'AbstractFactory pattern. Category: creational. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: creational
-      use_when: &id005
+      status: active
+      problem_it_solves: AbstractFactory pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - interface
+      - provider
+      compatible_roles:
+      - factory
+      - interface
+      - provider
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - families of related objects
       - must enforce compatibility between objects
-      signals: &id006
+      signals:
       - multiple related product types
+      definition: 'AbstractFactory pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the AbstractFactory case within the pattern taxonomy.
+      detection_signals:
+      - AbstractFactory evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches AbstractFactory
+      - no more specific value applies
     Builder:
-      definition: 'Builder pattern. Category: creational. Use only when its canonical use_when/signals match the problem and
-        simpler no-pattern design is insufficient.'
       category: creational
-      use_when: &id007
+      status: active
+      problem_it_solves: Builder pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - builder
+      compatible_roles:
+      - builder
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - complex object construction
       - step-by-step creation
-      signals: &id008
+      signals:
       - many optional parameters
       - telescoping constructor
+      definition: 'Builder pattern. Category: creational. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Builder case within the pattern taxonomy.
+      detection_signals:
+      - Builder evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Builder
+      - no more specific value applies
     Adapter:
-      definition: 'Adapter pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
-        simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id011
+      status: active
+      problem_it_solves: Adapter pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - port
+      - client
+      - mapper
+      compatible_roles:
+      - adapter
+      - port
+      - client
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - incompatible interfaces
       - reuse legacy/external code
-      signals: &id012
+      signals:
       - interface mismatch
+      definition: 'Adapter pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Adapter case within the pattern taxonomy.
+      detection_signals:
+      - Adapter evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Adapter
+      - no more specific value applies
     Facade:
-      definition: 'Facade pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
-        simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id019
+      status: active
+      problem_it_solves: Facade pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - service
+      - adapter
+      - orchestrator
+      compatible_roles:
+      - service
+      - adapter
+      - orchestrator
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - simplify complex subsystem
       - provide unified interface
-      signals: &id020
+      signals:
       - many dependencies hidden behind one API
+      definition: 'Facade pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Facade case within the pattern taxonomy.
+      detection_signals:
+      - Facade evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Facade
+      - no more specific value applies
     Proxy:
-      definition: 'Proxy pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
-        simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id023
+      status: active
+      problem_it_solves: Proxy pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - guard
+      - service
+      - provider
+      compatible_roles:
+      - adapter
+      - guard
+      - service
+      - provider
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - control access to object
       - lazy loading / remote access
-      signals: &id024
+      signals:
       - intercept calls
+      definition: 'Proxy pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Proxy case within the pattern taxonomy.
+      detection_signals:
+      - Proxy evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Proxy
+      - no more specific value applies
     Decorator:
-      definition: 'Decorator pattern. Category: structural. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id017
+      status: active
+      problem_it_solves: Decorator pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      - adapter
+      - service
+      compatible_roles:
+      - interface
+      - adapter
+      - service
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - add behavior dynamically
       - avoid subclass explosion
-      signals: &id018
+      signals:
       - stackable responsibilities
+      definition: 'Decorator pattern. Category: structural. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Decorator case within the pattern taxonomy.
+      detection_signals:
+      - Decorator evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Decorator
+      - no more specific value applies
     Command:
-      definition: 'Command pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
-        simpler no-pattern design is insufficient.'
       category: behavioral
-      use_when: &id027
+      status: active
+      problem_it_solves: Command pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - command
+      - handler
+      - result
+      compatible_roles:
+      - command
+      - handler
+      - result
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - encapsulate actions as objects
       - support undo/redo
-      signals: &id028
+      signals:
       - queue, log, or execute commands
+      definition: 'Command pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Command case within the pattern taxonomy.
+      detection_signals:
+      - Command evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Command
+      - no more specific value applies
     ChainOfResponsibility:
-      definition: 'ChainOfResponsibility pattern. Category: behavioral. Use only when its canonical use_when/signals match
-        the problem and simpler no-pattern design is insufficient.'
       category: behavioral
-      use_when: &id025
+      status: active
+      problem_it_solves: ChainOfResponsibility pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - handler
+      - registry
+      - processor
+      compatible_roles:
+      - handler
+      - registry
+      - processor
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - multiple handlers for request
       - decouple sender from receiver
-      signals: &id026
+      signals:
       - pass request along chain
+      definition: 'ChainOfResponsibility pattern. Category: behavioral. Use only when its canonical use_when/signals match
+        the problem and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the ChainOfResponsibility case within the pattern taxonomy.
+      detection_signals:
+      - ChainOfResponsibility evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches ChainOfResponsibility
+      - no more specific value applies
     Observer:
-      definition: 'Observer pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: behavioral
-      use_when: &id035
+      status: active
+      problem_it_solves: Observer pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - domain_event
+      - integration_event
+      - publisher
+      - listener
+      - subscriber
+      compatible_roles:
+      - domain_event
+      - integration_event
+      - publisher
+      - listener
+      - subscriber
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - event-driven updates
       - publish/subscribe
-      signals: &id036
+      signals:
       - state change notifications
+      definition: 'Observer pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Observer case within the pattern taxonomy.
+      detection_signals:
+      - Observer evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Observer
+      - no more specific value applies
     Mediator:
+      category: behavioral
+      status: active
+      problem_it_solves: Mediator pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - orchestrator
+      - handler
+      - publisher
+      - listener
+      compatible_roles:
+      - orchestrator
+      - handler
+      - publisher
+      - listener
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - reduce direct dependencies between components
+      signals:
+      - many-to-many communication chaos
       definition: 'Mediator pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
         and simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id031
-      - reduce direct dependencies between components
-      signals: &id032
-      - many-to-many communication chaos
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Mediator case within the pattern taxonomy.
+      detection_signals:
+      - Mediator evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Mediator
+      - no more specific value applies
     TemplateMethod:
+      category: behavioral
+      status: restricted
+      problem_it_solves: TemplateMethod pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - service
+      - strategy
+      compatible_roles:
+      - service
+      - strategy
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - algorithm skeleton with overridable steps
+      signals:
+      - shared workflow with variations
       definition: 'TemplateMethod pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
         and simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id041
-      - algorithm skeleton with overridable steps
-      signals: &id042
-      - shared workflow with variations
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the TemplateMethod case within the pattern taxonomy.
+      detection_signals:
+      - TemplateMethod evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches TemplateMethod
+      - no more specific value applies
     State:
+      category: behavioral
+      status: active
+      problem_it_solves: State pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - state
+      - strategy
+      - entity
+      - invariant
+      compatible_roles:
+      - state
+      - strategy
+      - entity
+      - invariant
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - object behavior depends on state
+      signals:
+      - large conditional state machine
       definition: 'State pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
         simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id037
-      - object behavior depends on state
-      signals: &id038
-      - large conditional state machine
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the State case within the pattern taxonomy.
+      detection_signals:
+      - State evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches State
+      - no more specific value applies
     Specification:
+      category: enterprise.domain
+      status: active
+      problem_it_solves: Specification pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - specification
+      compatible_roles:
+      - specification
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Encapsulates a business predicate or rule so it can be combined, reused, and tested without embedding rule
         logic in orchestration code.
       activation_signals:
       - Specification pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - Specification_pressure_detected
       signals:
@@ -239,6 +938,28 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Specification case within the pattern taxonomy.
+      detection_signals:
+      - Specification evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Specification
+      - no more specific value applies
     Policy:
       definition: Encapsulates a configurable decision rule or policy choice where behavior varies by business rule but does
         not require a full Strategy hierarchy.
@@ -254,14 +975,55 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      category: unknown
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Policy case within the pattern taxonomy.
+      detection_signals:
+      - Policy evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Policy
+      - no more specific value applies
     Repository:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: Repository pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - repository
+      - mapper
+      compatible_roles:
+      - repository
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Encapsulates persistence access behind a domain/application-facing collection-like abstraction and prevents
         raw storage models from leaking outward.
       activation_signals:
       - Repository pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - Repository_pressure_detected
       signals:
@@ -269,14 +1031,56 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Repository case within the pattern taxonomy.
+      detection_signals:
+      - Repository evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Repository
+      - no more specific value applies
     UnitOfWork:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: UnitOfWork pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - unit_of_work
+      - repository
+      - transaction
+      compatible_roles:
+      - unit_of_work
+      - repository
+      - transaction
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Coordinates multiple persistence operations into one transactional boundary when consistency across repositories
         is required.
       activation_signals:
       - UnitOfWork pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - UnitOfWork_pressure_detected
       signals:
@@ -284,14 +1088,60 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the UnitOfWork case within the pattern taxonomy.
+      detection_signals:
+      - UnitOfWork evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches UnitOfWork
+      - no more specific value applies
     CQRS:
+      category: enterprise.architectural
+      status: conditional
+      problem_it_solves: CQRS pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - command
+      - query
+      - handler
+      - read_model
+      - projection
+      compatible_roles:
+      - command
+      - query
+      - handler
+      - read_model
+      - projection
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Separates command/write models from query/read models when read/write concerns, scaling, or model shapes
         diverge significantly.
       activation_signals:
       - CQRS pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - CQRS_pressure_detected
       signals:
@@ -299,14 +1149,64 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the CQRS case within the pattern taxonomy.
+      detection_signals:
+      - CQRS evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches CQRS
+      - no more specific value applies
     Outbox:
+      category: enterprise.integration
+      status: conditional
+      problem_it_solves: Outbox pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - integration_event
+      - repository
+      - transaction
+      - producer
+      - processor
+      - job
+      - record
+      compatible_roles:
+      - integration_event
+      - repository
+      - transaction
+      - producer
+      - processor
+      - job
+      - record
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Persists outbound messages/events with state changes so asynchronous publication can be retried without
         losing consistency.
       activation_signals:
       - Outbox pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - Outbox_pressure_detected
       signals:
@@ -314,14 +1214,66 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Outbox case within the pattern taxonomy.
+      detection_signals:
+      - Outbox evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Outbox
+      - no more specific value applies
     Saga:
+      category: enterprise.integration
+      status: restricted
+      problem_it_solves: Saga pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - workflow
+      - command
+      - handler
+      - domain_event
+      - integration_event
+      - policy
+      - repository
+      - state
+      compatible_roles:
+      - workflow
+      - command
+      - handler
+      - domain_event
+      - integration_event
+      - policy
+      - repository
+      - state
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Coordinates a long-running distributed workflow through steps, compensations, and durable state when a single
         transaction is impossible.
       activation_signals:
       - Saga pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - Saga_pressure_detected
       signals:
@@ -329,14 +1281,64 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Saga case within the pattern taxonomy.
+      detection_signals:
+      - Saga evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Saga
+      - no more specific value applies
     Pipeline:
+      category: enterprise.behavioral
+      status: active
+      problem_it_solves: Pipeline pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - processor
+      - handler
+      - task
+      - validator
+      - mapper
+      - parser
+      - normalizer
+      compatible_roles:
+      - processor
+      - handler
+      - task
+      - validator
+      - mapper
+      - parser
+      - normalizer
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Composes ordered processing stages where each stage transforms or validates data and sequencing is a first-class
         concern.
       activation_signals:
       - Pipeline pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - Pipeline_pressure_detected
       signals:
@@ -344,14 +1346,56 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Pipeline case within the pattern taxonomy.
+      detection_signals:
+      - Pipeline evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Pipeline
+      - no more specific value applies
     DomainEvent:
+      category: enterprise.domain
+      status: active
+      problem_it_solves: DomainEvent pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - domain_event
+      - publisher
+      - listener
+      compatible_roles:
+      - domain_event
+      - publisher
+      - listener
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Represents a meaningful domain occurrence used to decouple producers from downstream reactions within or
         across boundaries.
       activation_signals:
       - DomainEvent pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - DomainEvent_pressure_detected
       signals:
@@ -359,14 +1403,60 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the DomainEvent case within the pattern taxonomy.
+      detection_signals:
+      - DomainEvent evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches DomainEvent
+      - no more specific value applies
     AntiCorruptionLayer:
+      category: enterprise.integration
+      status: conditional
+      problem_it_solves: AntiCorruptionLayer pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no pattern pressure
+      - simpler direct design is sufficient
+      introduced_roles:
+      - adapter
+      - mapper
+      - port
+      - client
+      - policy
+      compatible_roles:
+      - adapter
+      - mapper
+      - port
+      - client
+      - policy
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
       definition: Protects the domain from an external system model by translating concepts, contracts, and errors at the
         integration boundary.
       activation_signals:
       - AntiCorruptionLayer pressure detected
-      reject_when:
-      - no pattern pressure
-      - simpler direct design is sufficient
       use_when:
       - AntiCorruptionLayer_pressure_detected
       signals:
@@ -374,6 +1464,28 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the AntiCorruptionLayer case within the pattern taxonomy.
+      detection_signals:
+      - AntiCorruptionLayer evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches AntiCorruptionLayer
+      - no more specific value applies
     Result:
       definition: Represents success/failure explicitly without exceptions for expected domain/application outcomes.
       activation_signals:
@@ -388,6 +1500,29 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      category: unknown
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Result case within the pattern taxonomy.
+      detection_signals:
+      - Result evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Result
+      - no more specific value applies
     ContractVersioning:
       definition: Maintains compatibility across contract evolution through versions, adapters, migrations, or explicit deprecation
         paths.
@@ -403,6 +1538,29 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      category: unknown
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the ContractVersioning case within the pattern taxonomy.
+      detection_signals:
+      - ContractVersioning evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches ContractVersioning
+      - no more specific value applies
     ServiceLocator:
       definition: Centralized runtime dependency lookup; generally disallowed because it hides dependencies and weakens testability
         except in constrained framework integration cases.
@@ -419,184 +1577,2144 @@ sections:
       avoid_when:
       - simpler_no_pattern_design_is_sufficient
       canonical_source: semantic_depth_restoration
+      category: unknown
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the ServiceLocator case within the pattern taxonomy.
+      detection_signals:
+      - ServiceLocator evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches ServiceLocator
+      - no more specific value applies
     Singleton:
-      definition: 'Singleton pattern. Category: creational. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: creational
-      use_when: &id001
+      status: restricted
+      problem_it_solves: Singleton pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - provider
+      - config
+      compatible_roles:
+      - provider
+      - config
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - exactly one instance is required
       - global shared resource
-      signals: []
-      avoid_when: &id002
+      avoid_when:
       - testability is critical
       - hidden dependencies are undesirable
-      canonical_source: conventions.pattern.yaml#patterns
-    Prototype:
-      definition: 'Prototype pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+      definition: 'Singleton pattern. Category: creational. Use only when its canonical use_when/signals match the problem
         and simpler no-pattern design is insufficient.'
+      signals: []
+      canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Singleton case within the pattern taxonomy.
+      detection_signals:
+      - Singleton evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Singleton
+      - no more specific value applies
+    Prototype:
       category: creational
-      use_when: &id009
+      status: active
+      problem_it_solves: Prototype pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - builder
+      compatible_roles:
+      - factory
+      - builder
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - clone existing objects
       - object creation is expensive
-      signals: &id010
+      signals:
       - copying objects frequently
+      definition: 'Prototype pattern. Category: creational. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Prototype case within the pattern taxonomy.
+      detection_signals:
+      - Prototype evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Prototype
+      - no more specific value applies
     Bridge:
-      definition: 'Bridge pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
-        simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id013
+      status: restricted
+      problem_it_solves: Bridge pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      - adapter
+      - strategy
+      compatible_roles:
+      - interface
+      - adapter
+      - strategy
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - separate abstraction from implementation
       - avoid class explosion
-      signals: &id014
+      signals:
       - multiple dimensions of variation
+      definition: 'Bridge pattern. Category: structural. Use only when its canonical use_when/signals match the problem and
+        simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Bridge case within the pattern taxonomy.
+      detection_signals:
+      - Bridge evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Bridge
+      - no more specific value applies
     Composite:
-      definition: 'Composite pattern. Category: structural. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id015
+      status: active
+      problem_it_solves: Composite pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      - entity
+      - value_object
+      compatible_roles:
+      - interface
+      - entity
+      - value_object
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - tree structure
       - treat individual and group uniformly
-      signals: &id016
+      signals:
       - recursive composition
+      definition: 'Composite pattern. Category: structural. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Composite case within the pattern taxonomy.
+      detection_signals:
+      - Composite evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Composite
+      - no more specific value applies
     Flyweight:
-      definition: 'Flyweight pattern. Category: structural. Use only when its canonical use_when/signals match the problem
-        and simpler no-pattern design is insufficient.'
       category: structural
-      use_when: &id021
+      status: restricted
+      problem_it_solves: Flyweight pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - registry
+      - value_object
+      compatible_roles:
+      - factory
+      - registry
+      - value_object
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
       - large number of similar objects
       - memory optimization needed
-      signals: &id022
+      signals:
       - shared intrinsic state
+      definition: 'Flyweight pattern. Category: structural. Use only when its canonical use_when/signals match the problem
+        and simpler no-pattern design is insufficient.'
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Flyweight case within the pattern taxonomy.
+      detection_signals:
+      - Flyweight evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Flyweight
+      - no more specific value applies
     Iterator:
+      category: behavioral
+      status: active
+      problem_it_solves: Iterator pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - processor
+      - interface
+      compatible_roles:
+      - processor
+      - interface
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - traverse collection without exposing structure
+      signals:
+      - custom traversal logic
       definition: 'Iterator pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem
         and simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id029
-      - traverse collection without exposing structure
-      signals: &id030
-      - custom traversal logic
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Iterator case within the pattern taxonomy.
+      detection_signals:
+      - Iterator evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Iterator
+      - no more specific value applies
     Memento:
+      category: behavioral
+      status: active
+      problem_it_solves: Memento pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - value_object
+      - record
+      - repository
+      compatible_roles:
+      - value_object
+      - record
+      - repository
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - save/restore object state
+      signals:
+      - undo history
       definition: 'Memento pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
         simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id033
-      - save/restore object state
-      signals: &id034
-      - undo history
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Memento case within the pattern taxonomy.
+      detection_signals:
+      - Memento evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Memento
+      - no more specific value applies
     Visitor:
+      category: behavioral
+      status: restricted
+      problem_it_solves: Visitor pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      compatible_roles:
+      - interface
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      use_when:
+      - add operations without modifying classes
+      signals:
+      - stable structure, changing behavior
       definition: 'Visitor pattern. Category: behavioral. Use only when its canonical use_when/signals match the problem and
         simpler no-pattern design is insufficient.'
-      category: behavioral
-      use_when: &id043
-      - add operations without modifying classes
-      signals: &id044
-      - stable structure, changing behavior
       avoid_when: []
       canonical_source: conventions.pattern.yaml#patterns
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Visitor case within the pattern taxonomy.
+      detection_signals:
+      - Visitor evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Visitor
+      - no more specific value applies
+    DependencyInjection:
+      category: enterprise.architectural
+      status: active
+      problem_it_solves: DependencyInjection pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - provider
+      - interface
+      - port
+      compatible_roles:
+      - provider
+      - interface
+      - port
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: DependencyInjection design pattern vocabulary object. Use it only when its use_when and signals match the
+        feature and simpler role-based design is insufficient.
+      use_when:
+      - DependencyInjection pattern pressure is present
+      signals:
+      - design shows DependencyInjection pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the DependencyInjection case within the pattern taxonomy.
+      detection_signals:
+      - DependencyInjection evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches DependencyInjection
+      - no more specific value applies
+    PortsAndAdapters:
+      category: enterprise.architectural
+      status: active
+      problem_it_solves: PortsAndAdapters pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - port
+      - adapter
+      - client
+      - mapper
+      compatible_roles:
+      - port
+      - adapter
+      - client
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: PortsAndAdapters design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - PortsAndAdapters pattern pressure is present
+      signals:
+      - design shows PortsAndAdapters pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the PortsAndAdapters case within the pattern taxonomy.
+      detection_signals:
+      - PortsAndAdapters evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches PortsAndAdapters
+      - no more specific value applies
+    DataMapper:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: DataMapper pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - mapper
+      - record
+      - model
+      - entity
+      - value_object
+      compatible_roles:
+      - mapper
+      - record
+      - model
+      - entity
+      - value_object
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: DataMapper design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - DataMapper pattern pressure is present
+      signals:
+      - design shows DataMapper pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the DataMapper case within the pattern taxonomy.
+      detection_signals:
+      - DataMapper evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches DataMapper
+      - no more specific value applies
+    Projection:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: Projection pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - projection
+      - read_model
+      - domain_event
+      - integration_event
+      compatible_roles:
+      - projection
+      - read_model
+      - domain_event
+      - integration_event
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: Projection design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - Projection pattern pressure is present
+      signals:
+      - design shows Projection pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Projection case within the pattern taxonomy.
+      detection_signals:
+      - Projection evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Projection
+      - no more specific value applies
+    ReadModel:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: ReadModel pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - read_model
+      - mapper
+      compatible_roles:
+      - read_model
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: ReadModel design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - ReadModel pattern pressure is present
+      signals:
+      - design shows ReadModel pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the ReadModel case within the pattern taxonomy.
+      detection_signals:
+      - ReadModel evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches ReadModel
+      - no more specific value applies
+    EventSourcing:
+      category: enterprise.persistence
+      status: restricted
+      problem_it_solves: EventSourcing pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - domain_event
+      - repository
+      - projection
+      - read_model
+      - processor
+      - integration_event
+      compatible_roles:
+      - domain_event
+      - repository
+      - projection
+      - read_model
+      - processor
+      - integration_event
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: EventSourcing design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - EventSourcing pattern pressure is present
+      signals:
+      - design shows EventSourcing pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the EventSourcing case within the pattern taxonomy.
+      detection_signals:
+      - EventSourcing evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches EventSourcing
+      - no more specific value applies
+    Inbox:
+      category: enterprise.integration
+      status: conditional
+      problem_it_solves: Inbox pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - consumer
+      - repository
+      - record
+      - handler
+      - guard
+      compatible_roles:
+      - consumer
+      - repository
+      - record
+      - handler
+      - guard
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: Inbox design pattern vocabulary object. Use it only when its use_when and signals match the feature and
+        simpler role-based design is insufficient.
+      use_when:
+      - Inbox pattern pressure is present
+      signals:
+      - design shows Inbox pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the Inbox case within the pattern taxonomy.
+      detection_signals:
+      - Inbox evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches Inbox
+      - no more specific value applies
+    IdempotencyKey:
+      category: enterprise.resilience
+      status: active
+      problem_it_solves: IdempotencyKey pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - guard
+      - repository
+      - record
+      - policy
+      - error
+      compatible_roles:
+      - guard
+      - repository
+      - record
+      - policy
+      - error
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: IdempotencyKey design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - IdempotencyKey pattern pressure is present
+      signals:
+      - design shows IdempotencyKey pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the IdempotencyKey case within the pattern taxonomy.
+      detection_signals:
+      - IdempotencyKey evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches IdempotencyKey
+      - no more specific value applies
+    RetryWithBackoff:
+      category: enterprise.resilience
+      status: restricted
+      problem_it_solves: RetryWithBackoff pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - policy
+      - config
+      - job
+      - processor
+      - adapter
+      compatible_roles:
+      - policy
+      - config
+      - job
+      - processor
+      - adapter
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: RetryWithBackoff design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - RetryWithBackoff pattern pressure is present
+      signals:
+      - design shows RetryWithBackoff pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the RetryWithBackoff case within the pattern taxonomy.
+      detection_signals:
+      - RetryWithBackoff evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches RetryWithBackoff
+      - no more specific value applies
+    CircuitBreaker:
+      category: enterprise.resilience
+      status: restricted
+      problem_it_solves: CircuitBreaker pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - client
+      - policy
+      - config
+      - state
+      compatible_roles:
+      - adapter
+      - client
+      - policy
+      - config
+      - state
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+      definition: CircuitBreaker design pattern vocabulary object. Use it only when its use_when and signals match the feature
+        and simpler role-based design is insufficient.
+      use_when:
+      - CircuitBreaker pattern pressure is present
+      signals:
+      - design shows CircuitBreaker pressure
+      avoid_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      must:
+      - preserve role boundaries
+      - reduce complexity compared to no-pattern design
+      - be justified by evidence
+      forbidden:
+      - using pattern by default
+      - using pattern to compensate for unclear roles
+      - creating extra abstraction without pressure
+      required_evidence:
+      - pattern pressure report
+      - rejected simpler alternative
+      - role-pattern compatibility check
+      validation_rules:
+      - must be selected through pattern_selection phase
+      - must have no_pattern alternative considered
+      - must not conflict with final role assignment
+      meaning: Represents the CircuitBreaker case within the pattern taxonomy.
+      detection_signals:
+      - CircuitBreaker evidence is present in request, code, reports, or previous phase output
+      choose_when:
+      - evidence best matches CircuitBreaker
+      - no more specific value applies
   disallowed_patterns:
   - ServiceLocator
-  canonical_pattern_catalog: &id046
-    Singleton:
-      category: creational
-      use_when: *id001
-      avoid_when: *id002
+  canonical_pattern_catalog:
     FactoryMethod:
-      category: creational
-      use_when: *id003
-      signals: *id004
+      category: classic_gof.creational
+      status: active
+      problem_it_solves: FactoryMethod pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - interface
+      compatible_roles:
+      - factory
+      - interface
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     AbstractFactory:
-      category: creational
-      use_when: *id005
-      signals: *id006
+      category: classic_gof.creational
+      status: active
+      problem_it_solves: AbstractFactory pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - interface
+      - provider
+      compatible_roles:
+      - factory
+      - interface
+      - provider
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Builder:
-      category: creational
-      use_when: *id007
-      signals: *id008
+      category: classic_gof.creational
+      status: active
+      problem_it_solves: Builder pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - builder
+      compatible_roles:
+      - builder
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Prototype:
-      category: creational
-      use_when: *id009
-      signals: *id010
+      category: classic_gof.creational
+      status: active
+      problem_it_solves: Prototype pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - builder
+      compatible_roles:
+      - factory
+      - builder
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Singleton:
+      category: classic_gof.creational
+      status: restricted
+      problem_it_solves: Singleton pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - provider
+      - config
+      compatible_roles:
+      - provider
+      - config
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Adapter:
-      category: structural
-      use_when: *id011
-      signals: *id012
+      category: classic_gof.structural
+      status: active
+      problem_it_solves: Adapter pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - port
+      - client
+      - mapper
+      compatible_roles:
+      - adapter
+      - port
+      - client
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Bridge:
-      category: structural
-      use_when: *id013
-      signals: *id014
+      category: classic_gof.structural
+      status: restricted
+      problem_it_solves: Bridge pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      - adapter
+      - strategy
+      compatible_roles:
+      - interface
+      - adapter
+      - strategy
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Composite:
-      category: structural
-      use_when: *id015
-      signals: *id016
+      category: classic_gof.structural
+      status: active
+      problem_it_solves: Composite pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      - entity
+      - value_object
+      compatible_roles:
+      - interface
+      - entity
+      - value_object
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Decorator:
-      category: structural
-      use_when: *id017
-      signals: *id018
+      category: classic_gof.structural
+      status: active
+      problem_it_solves: Decorator pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      - adapter
+      - service
+      compatible_roles:
+      - interface
+      - adapter
+      - service
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Facade:
-      category: structural
-      use_when: *id019
-      signals: *id020
+      category: classic_gof.structural
+      status: active
+      problem_it_solves: Facade pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - service
+      - adapter
+      - orchestrator
+      compatible_roles:
+      - service
+      - adapter
+      - orchestrator
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Flyweight:
-      category: structural
-      use_when: *id021
-      signals: *id022
+      category: classic_gof.structural
+      status: restricted
+      problem_it_solves: Flyweight pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - factory
+      - registry
+      - value_object
+      compatible_roles:
+      - factory
+      - registry
+      - value_object
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Proxy:
-      category: structural
-      use_when: *id023
-      signals: *id024
+      category: classic_gof.structural
+      status: active
+      problem_it_solves: Proxy pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - guard
+      - service
+      - provider
+      compatible_roles:
+      - adapter
+      - guard
+      - service
+      - provider
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     ChainOfResponsibility:
-      category: behavioral
-      use_when: *id025
-      signals: *id026
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: ChainOfResponsibility pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - handler
+      - registry
+      - processor
+      compatible_roles:
+      - handler
+      - registry
+      - processor
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Command:
-      category: behavioral
-      use_when: *id027
-      signals: *id028
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: Command pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - command
+      - handler
+      - result
+      compatible_roles:
+      - command
+      - handler
+      - result
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Iterator:
-      category: behavioral
-      use_when: *id029
-      signals: *id030
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: Iterator pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - processor
+      - interface
+      compatible_roles:
+      - processor
+      - interface
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Mediator:
-      category: behavioral
-      use_when: *id031
-      signals: *id032
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: Mediator pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - orchestrator
+      - handler
+      - publisher
+      - listener
+      compatible_roles:
+      - orchestrator
+      - handler
+      - publisher
+      - listener
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Memento:
-      category: behavioral
-      use_when: *id033
-      signals: *id034
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: Memento pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - value_object
+      - record
+      - repository
+      compatible_roles:
+      - value_object
+      - record
+      - repository
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Observer:
-      category: behavioral
-      use_when: *id035
-      signals: *id036
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: Observer pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - domain_event
+      - integration_event
+      - publisher
+      - listener
+      - subscriber
+      compatible_roles:
+      - domain_event
+      - integration_event
+      - publisher
+      - listener
+      - subscriber
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     State:
-      category: behavioral
-      use_when: *id037
-      signals: *id038
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: State pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - state
+      - strategy
+      - entity
+      - invariant
+      compatible_roles:
+      - state
+      - strategy
+      - entity
+      - invariant
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Strategy:
-      category: behavioral
-      use_when: *id039
-      signals: *id040
+      category: classic_gof.behavioral
+      status: active
+      problem_it_solves: Strategy pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - strategy
+      - selector
+      - interface
+      - registry
+      compatible_roles:
+      - strategy
+      - selector
+      - interface
+      - registry
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     TemplateMethod:
-      category: behavioral
-      use_when: *id041
-      signals: *id042
+      category: classic_gof.behavioral
+      status: restricted
+      problem_it_solves: TemplateMethod pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - service
+      - strategy
+      compatible_roles:
+      - service
+      - strategy
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
     Visitor:
-      category: behavioral
-      use_when: *id043
-      signals: *id044
-  canonical_pattern_categories: &id045
+      category: classic_gof.behavioral
+      status: restricted
+      problem_it_solves: Visitor pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - interface
+      compatible_roles:
+      - interface
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    DependencyInjection:
+      category: enterprise.architectural
+      status: active
+      problem_it_solves: DependencyInjection pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - provider
+      - interface
+      - port
+      compatible_roles:
+      - provider
+      - interface
+      - port
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    PortsAndAdapters:
+      category: enterprise.architectural
+      status: active
+      problem_it_solves: PortsAndAdapters pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - port
+      - adapter
+      - client
+      - mapper
+      compatible_roles:
+      - port
+      - adapter
+      - client
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    CQRS:
+      category: enterprise.architectural
+      status: conditional
+      problem_it_solves: CQRS pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - command
+      - query
+      - handler
+      - read_model
+      - projection
+      compatible_roles:
+      - command
+      - query
+      - handler
+      - read_model
+      - projection
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Specification:
+      category: enterprise.domain
+      status: active
+      problem_it_solves: Specification pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - specification
+      compatible_roles:
+      - specification
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    DomainEvent:
+      category: enterprise.domain
+      status: active
+      problem_it_solves: DomainEvent pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - domain_event
+      - publisher
+      - listener
+      compatible_roles:
+      - domain_event
+      - publisher
+      - listener
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Repository:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: Repository pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - repository
+      - mapper
+      compatible_roles:
+      - repository
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    DataMapper:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: DataMapper pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - mapper
+      - record
+      - model
+      - entity
+      - value_object
+      compatible_roles:
+      - mapper
+      - record
+      - model
+      - entity
+      - value_object
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    UnitOfWork:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: UnitOfWork pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - unit_of_work
+      - repository
+      - transaction
+      compatible_roles:
+      - unit_of_work
+      - repository
+      - transaction
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Projection:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: Projection pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - projection
+      - read_model
+      - domain_event
+      - integration_event
+      compatible_roles:
+      - projection
+      - read_model
+      - domain_event
+      - integration_event
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    ReadModel:
+      category: enterprise.persistence
+      status: active
+      problem_it_solves: ReadModel pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - read_model
+      - mapper
+      compatible_roles:
+      - read_model
+      - mapper
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    EventSourcing:
+      category: enterprise.persistence
+      status: restricted
+      problem_it_solves: EventSourcing pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - domain_event
+      - repository
+      - projection
+      - read_model
+      - processor
+      - integration_event
+      compatible_roles:
+      - domain_event
+      - repository
+      - projection
+      - read_model
+      - processor
+      - integration_event
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Outbox:
+      category: enterprise.integration
+      status: conditional
+      problem_it_solves: Outbox pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - integration_event
+      - repository
+      - transaction
+      - producer
+      - processor
+      - job
+      - record
+      compatible_roles:
+      - integration_event
+      - repository
+      - transaction
+      - producer
+      - processor
+      - job
+      - record
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Inbox:
+      category: enterprise.integration
+      status: conditional
+      problem_it_solves: Inbox pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - consumer
+      - repository
+      - record
+      - handler
+      - guard
+      compatible_roles:
+      - consumer
+      - repository
+      - record
+      - handler
+      - guard
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    AntiCorruptionLayer:
+      category: enterprise.integration
+      status: conditional
+      problem_it_solves: AntiCorruptionLayer pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - mapper
+      - port
+      - client
+      - policy
+      compatible_roles:
+      - adapter
+      - mapper
+      - port
+      - client
+      - policy
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Saga:
+      category: enterprise.integration
+      status: restricted
+      problem_it_solves: Saga pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - workflow
+      - command
+      - handler
+      - domain_event
+      - integration_event
+      - policy
+      - repository
+      - state
+      compatible_roles:
+      - workflow
+      - command
+      - handler
+      - domain_event
+      - integration_event
+      - policy
+      - repository
+      - state
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    IdempotencyKey:
+      category: enterprise.resilience
+      status: active
+      problem_it_solves: IdempotencyKey pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - guard
+      - repository
+      - record
+      - policy
+      - error
+      compatible_roles:
+      - guard
+      - repository
+      - record
+      - policy
+      - error
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    RetryWithBackoff:
+      category: enterprise.resilience
+      status: restricted
+      problem_it_solves: RetryWithBackoff pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - policy
+      - config
+      - job
+      - processor
+      - adapter
+      compatible_roles:
+      - policy
+      - config
+      - job
+      - processor
+      - adapter
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    CircuitBreaker:
+      category: enterprise.resilience
+      status: restricted
+      problem_it_solves: CircuitBreaker pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - adapter
+      - client
+      - policy
+      - config
+      - state
+      compatible_roles:
+      - adapter
+      - client
+      - policy
+      - config
+      - state
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+    Pipeline:
+      category: enterprise.behavioral
+      status: active
+      problem_it_solves: Pipeline pattern pressure
+      activate_when:
+      - detected pressure matching pattern problem
+      reject_when:
+      - no activation signal
+      - simpler alternative is enough
+      - adds more complexity than it removes
+      introduced_roles:
+      - processor
+      - handler
+      - task
+      - validator
+      - mapper
+      - parser
+      - normalizer
+      compatible_roles:
+      - processor
+      - handler
+      - task
+      - validator
+      - mapper
+      - parser
+      - normalizer
+      simpler_alternatives:
+      - no_pattern
+      - role_decomposition
+      validation_checks:
+      - activation signal present
+      - introduced roles compatible
+      - layer/dependency rules preserved
+  canonical_pattern_categories:
     categories:
       creational:
         description: 'Focused on object creation mechanisms that increase flexibility and reuse.
@@ -629,15 +3747,515 @@ sections:
         - define workflows or chains
         - encapsulate algorithms
   semantic_depth_restoration:
-    restored_from: conventions.pattern.yaml
-    restoration_scope:
-    - classification
-    - patterns
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
+    status: active_restored
+    rules:
+    - every pattern enum has definition/use_when/signals/avoid_when
+    - NoPattern is explicit first-class decision
   canonical_restored_source:
-    classification: *id045
-    patterns: *id046
+    conventions.pattern.yaml:
+      version: '1.0'
+      system:
+        name: design-pattern-selector
+        purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
+          rules derived from the Refactoring.Guru catalog.
+
+          '
+        philosophy:
+        - Pattern follows problem, not preference
+        - Classify intent before selecting pattern
+        - Avoid over-engineering
+        - Prefer simplest valid pattern
+      classification:
+        categories:
+          creational:
+            description: 'Focused on object creation mechanisms that increase flexibility and reuse.
+
+              '
+            triggers:
+            - object creation is complex
+            - object type decided at runtime
+            - avoid direct constructor usage
+            - control instance lifecycle
+            - reduce coupling to concrete classes
+          structural:
+            description: 'Focused on composing classes and objects into larger structures.
+
+              '
+            triggers:
+            - combine multiple components
+            - wrap or adapt existing code
+            - simplify complex subsystem
+            - optimize memory usage
+            - control access to object
+          behavioral:
+            description: 'Focused on communication and responsibility between objects.
+
+              '
+            triggers:
+            - multiple objects interact
+            - behavior changes at runtime
+            - decouple sender and receiver
+            - define workflows or chains
+            - encapsulate algorithms
+      patterns:
+        Singleton:
+          category: creational
+          use_when:
+          - exactly one instance is required
+          - global shared resource
+          avoid_when:
+          - testability is critical
+          - hidden dependencies are undesirable
+        FactoryMethod:
+          category: creational
+          use_when:
+          - subclasses decide object type
+          - object creation varies by context
+          signals:
+          - switch/if on type
+          - constructor logic branching
+        AbstractFactory:
+          category: creational
+          use_when:
+          - families of related objects
+          - must enforce compatibility between objects
+          signals:
+          - multiple related product types
+        Builder:
+          category: creational
+          use_when:
+          - complex object construction
+          - step-by-step creation
+          signals:
+          - many optional parameters
+          - telescoping constructor
+        Prototype:
+          category: creational
+          use_when:
+          - clone existing objects
+          - object creation is expensive
+          signals:
+          - copying objects frequently
+        Adapter:
+          category: structural
+          use_when:
+          - incompatible interfaces
+          - reuse legacy/external code
+          signals:
+          - interface mismatch
+        Bridge:
+          category: structural
+          use_when:
+          - separate abstraction from implementation
+          - avoid class explosion
+          signals:
+          - multiple dimensions of variation
+        Composite:
+          category: structural
+          use_when:
+          - tree structure
+          - treat individual and group uniformly
+          signals:
+          - recursive composition
+        Decorator:
+          category: structural
+          use_when:
+          - add behavior dynamically
+          - avoid subclass explosion
+          signals:
+          - stackable responsibilities
+        Facade:
+          category: structural
+          use_when:
+          - simplify complex subsystem
+          - provide unified interface
+          signals:
+          - many dependencies hidden behind one API
+        Flyweight:
+          category: structural
+          use_when:
+          - large number of similar objects
+          - memory optimization needed
+          signals:
+          - shared intrinsic state
+        Proxy:
+          category: structural
+          use_when:
+          - control access to object
+          - lazy loading / remote access
+          signals:
+          - intercept calls
+        ChainOfResponsibility:
+          category: behavioral
+          use_when:
+          - multiple handlers for request
+          - decouple sender from receiver
+          signals:
+          - pass request along chain
+        Command:
+          category: behavioral
+          use_when:
+          - encapsulate actions as objects
+          - support undo/redo
+          signals:
+          - queue, log, or execute commands
+        Iterator:
+          category: behavioral
+          use_when:
+          - traverse collection without exposing structure
+          signals:
+          - custom traversal logic
+        Mediator:
+          category: behavioral
+          use_when:
+          - reduce direct dependencies between components
+          signals:
+          - many-to-many communication chaos
+        Memento:
+          category: behavioral
+          use_when:
+          - save/restore object state
+          signals:
+          - undo history
+        Observer:
+          category: behavioral
+          use_when:
+          - event-driven updates
+          - publish/subscribe
+          signals:
+          - state change notifications
+        State:
+          category: behavioral
+          use_when:
+          - object behavior depends on state
+          signals:
+          - large conditional state machine
+        Strategy:
+          category: behavioral
+          use_when:
+          - multiple interchangeable algorithms
+          signals:
+          - if/else selecting behavior
+        TemplateMethod:
+          category: behavioral
+          use_when:
+          - algorithm skeleton with overridable steps
+          signals:
+          - shared workflow with variations
+        Visitor:
+          category: behavioral
+          use_when:
+          - add operations without modifying classes
+          signals:
+          - stable structure, changing behavior
+      decision_flow:
+      - step: detect_primary_intent
+        action: 'Match feature description against category triggers (creational / structural / behavioral)
+
+          '
+      - step: detect_problem_signals
+        action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
+          \  - structure composition issues\n"
+      - step: candidate_patterns
+        action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
+      - step: eliminate_conflicts
+        action: 'Remove patterns where avoid_when conditions are triggered
+
+          '
+      - step: rank_patterns
+        criteria:
+        - simplicity
+        - minimal abstraction
+        - alignment with problem
+        - scalability
+      - step: output
+        format:
+          primary_pattern: string
+          alternatives:
+          - string
+          reasoning: text explanation
+          confidence: low|medium|high
+      heuristics:
+      - rule: avoid_pattern_if_simple_solution_exists
+      - rule: do_not_use_singleton_for_convenience
+      - rule: prefer_strategy_over_conditionals
+      - rule: prefer_composition_over_inheritance
+      - rule: avoid_overengineering_for_small_features
+      input_schema:
+        feature_description: string
+        constraints:
+          scalability: low|medium|high
+          flexibility: low|medium|high
+          performance: low|medium|high
+        signals:
+          dynamic_behavior: boolean
+          complex_creation: boolean
+          many_dependencies: boolean
+          conditional_logic: boolean
+      output_schema:
+        primary_pattern: string
+        category: creational|structural|behavioral
+        alternatives:
+        - string
+        reasoning: string
+        tradeoffs:
+          pros:
+          - string
+          cons:
+          - string
+        confidence: low|medium|high
+  canonical_source_full:
+    version: '1.0'
+    system:
+      name: design-pattern-selector
+      purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
+        rules derived from the Refactoring.Guru catalog.
+
+        '
+      philosophy:
+      - Pattern follows problem, not preference
+      - Classify intent before selecting pattern
+      - Avoid over-engineering
+      - Prefer simplest valid pattern
+    classification:
+      categories:
+        creational:
+          description: 'Focused on object creation mechanisms that increase flexibility and reuse.
+
+            '
+          triggers:
+          - object creation is complex
+          - object type decided at runtime
+          - avoid direct constructor usage
+          - control instance lifecycle
+          - reduce coupling to concrete classes
+        structural:
+          description: 'Focused on composing classes and objects into larger structures.
+
+            '
+          triggers:
+          - combine multiple components
+          - wrap or adapt existing code
+          - simplify complex subsystem
+          - optimize memory usage
+          - control access to object
+        behavioral:
+          description: 'Focused on communication and responsibility between objects.
+
+            '
+          triggers:
+          - multiple objects interact
+          - behavior changes at runtime
+          - decouple sender and receiver
+          - define workflows or chains
+          - encapsulate algorithms
+    patterns:
+      Singleton:
+        category: creational
+        use_when:
+        - exactly one instance is required
+        - global shared resource
+        avoid_when:
+        - testability is critical
+        - hidden dependencies are undesirable
+      FactoryMethod:
+        category: creational
+        use_when:
+        - subclasses decide object type
+        - object creation varies by context
+        signals:
+        - switch/if on type
+        - constructor logic branching
+      AbstractFactory:
+        category: creational
+        use_when:
+        - families of related objects
+        - must enforce compatibility between objects
+        signals:
+        - multiple related product types
+      Builder:
+        category: creational
+        use_when:
+        - complex object construction
+        - step-by-step creation
+        signals:
+        - many optional parameters
+        - telescoping constructor
+      Prototype:
+        category: creational
+        use_when:
+        - clone existing objects
+        - object creation is expensive
+        signals:
+        - copying objects frequently
+      Adapter:
+        category: structural
+        use_when:
+        - incompatible interfaces
+        - reuse legacy/external code
+        signals:
+        - interface mismatch
+      Bridge:
+        category: structural
+        use_when:
+        - separate abstraction from implementation
+        - avoid class explosion
+        signals:
+        - multiple dimensions of variation
+      Composite:
+        category: structural
+        use_when:
+        - tree structure
+        - treat individual and group uniformly
+        signals:
+        - recursive composition
+      Decorator:
+        category: structural
+        use_when:
+        - add behavior dynamically
+        - avoid subclass explosion
+        signals:
+        - stackable responsibilities
+      Facade:
+        category: structural
+        use_when:
+        - simplify complex subsystem
+        - provide unified interface
+        signals:
+        - many dependencies hidden behind one API
+      Flyweight:
+        category: structural
+        use_when:
+        - large number of similar objects
+        - memory optimization needed
+        signals:
+        - shared intrinsic state
+      Proxy:
+        category: structural
+        use_when:
+        - control access to object
+        - lazy loading / remote access
+        signals:
+        - intercept calls
+      ChainOfResponsibility:
+        category: behavioral
+        use_when:
+        - multiple handlers for request
+        - decouple sender from receiver
+        signals:
+        - pass request along chain
+      Command:
+        category: behavioral
+        use_when:
+        - encapsulate actions as objects
+        - support undo/redo
+        signals:
+        - queue, log, or execute commands
+      Iterator:
+        category: behavioral
+        use_when:
+        - traverse collection without exposing structure
+        signals:
+        - custom traversal logic
+      Mediator:
+        category: behavioral
+        use_when:
+        - reduce direct dependencies between components
+        signals:
+        - many-to-many communication chaos
+      Memento:
+        category: behavioral
+        use_when:
+        - save/restore object state
+        signals:
+        - undo history
+      Observer:
+        category: behavioral
+        use_when:
+        - event-driven updates
+        - publish/subscribe
+        signals:
+        - state change notifications
+      State:
+        category: behavioral
+        use_when:
+        - object behavior depends on state
+        signals:
+        - large conditional state machine
+      Strategy:
+        category: behavioral
+        use_when:
+        - multiple interchangeable algorithms
+        signals:
+        - if/else selecting behavior
+      TemplateMethod:
+        category: behavioral
+        use_when:
+        - algorithm skeleton with overridable steps
+        signals:
+        - shared workflow with variations
+      Visitor:
+        category: behavioral
+        use_when:
+        - add operations without modifying classes
+        signals:
+        - stable structure, changing behavior
+    decision_flow:
+    - step: detect_primary_intent
+      action: 'Match feature description against category triggers (creational / structural / behavioral)
+
+        '
+    - step: detect_problem_signals
+      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
+        \  - structure composition issues\n"
+    - step: candidate_patterns
+      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
+    - step: eliminate_conflicts
+      action: 'Remove patterns where avoid_when conditions are triggered
+
+        '
+    - step: rank_patterns
+      criteria:
+      - simplicity
+      - minimal abstraction
+      - alignment with problem
+      - scalability
+    - step: output
+      format:
+        primary_pattern: string
+        alternatives:
+        - string
+        reasoning: text explanation
+        confidence: low|medium|high
+    heuristics:
+    - rule: avoid_pattern_if_simple_solution_exists
+    - rule: do_not_use_singleton_for_convenience
+    - rule: prefer_strategy_over_conditionals
+    - rule: prefer_composition_over_inheritance
+    - rule: avoid_overengineering_for_small_features
+    input_schema:
+      feature_description: string
+      constraints:
+        scalability: low|medium|high
+        flexibility: low|medium|high
+        performance: low|medium|high
+      signals:
+        dynamic_behavior: boolean
+        complex_creation: boolean
+        many_dependencies: boolean
+        conditional_logic: boolean
+    output_schema:
+      primary_pattern: string
+      category: creational|structural|behavioral
+      alternatives:
+      - string
+      reasoning: string
+      tradeoffs:
+        pros:
+        - string
+        cons:
+        - string
+      confidence: low|medium|high
 validation:
   fail_conditions:
   - id: PATTERNS-CONVENTIONS-PATTERN-CATALOG-YAML-FC-001

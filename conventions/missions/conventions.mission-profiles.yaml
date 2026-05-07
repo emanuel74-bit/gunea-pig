@@ -162,6 +162,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: small feature mission_profile vocabulary value.
+      meaning: Represents the small feature case within the mission_profile taxonomy.
+      detection_signals:
+      - small feature signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches small feature
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using small_feature must include reason and evidence
     medium_feature:
       mission_profile_id: medium_feature
       purpose: Medium Feature mission profile.
@@ -261,6 +275,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: medium feature mission_profile vocabulary value.
+      meaning: Represents the medium feature case within the mission_profile taxonomy.
+      detection_signals:
+      - medium feature signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches medium feature
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using medium_feature must include reason and evidence
     bugfix:
       mission_profile_id: bugfix
       purpose: Bugfix mission profile.
@@ -347,6 +375,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: bugfix mission_profile vocabulary value.
+      meaning: Represents the bugfix case within the mission_profile taxonomy.
+      detection_signals:
+      - bugfix signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches bugfix
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using bugfix must include reason and evidence
     large_refactor:
       mission_profile_id: large_refactor
       purpose: Large Refactor mission profile.
@@ -452,6 +494,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: large refactor mission_profile vocabulary value.
+      meaning: Represents the large refactor case within the mission_profile taxonomy.
+      detection_signals:
+      - large refactor signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches large refactor
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using large_refactor must include reason and evidence
     cleanup_only:
       mission_profile_id: cleanup_only
       purpose: Cleanup Only mission profile.
@@ -534,6 +590,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: cleanup only mission_profile vocabulary value.
+      meaning: Represents the cleanup only case within the mission_profile taxonomy.
+      detection_signals:
+      - cleanup only signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches cleanup only
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using cleanup_only must include reason and evidence
     api_contract_change:
       mission_profile_id: api_contract_change
       purpose: Api Contract Change mission profile.
@@ -606,6 +676,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: api contract change mission_profile vocabulary value.
+      meaning: Represents the api contract change case within the mission_profile taxonomy.
+      detection_signals:
+      - api contract change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches api contract change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using api_contract_change must include reason and evidence
     integration_change:
       mission_profile_id: integration_change
       purpose: Integration Change mission profile.
@@ -681,6 +765,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: integration change mission_profile vocabulary value.
+      meaning: Represents the integration change case within the mission_profile taxonomy.
+      detection_signals:
+      - integration change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches integration change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using integration_change must include reason and evidence
     persistence_change:
       mission_profile_id: persistence_change
       purpose: Persistence Change mission profile.
@@ -757,6 +855,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: persistence change mission_profile vocabulary value.
+      meaning: Represents the persistence change case within the mission_profile taxonomy.
+      detection_signals:
+      - persistence change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches persistence change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using persistence_change must include reason and evidence
     test_only:
       mission_profile_id: test_only
       purpose: Test Only mission profile.
@@ -828,6 +940,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: test only mission_profile vocabulary value.
+      meaning: Represents the test only case within the mission_profile taxonomy.
+      detection_signals:
+      - test only signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches test only
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using test_only must include reason and evidence
     convention_system_edit:
       mission_profile_id: convention_system_edit
       purpose: Convention System Edit mission profile.
@@ -923,6 +1049,20 @@ sections:
       - phase_revision_required
       - implementation_failure_detected
       phase_overrides: {}
+      definition: convention system edit mission_profile vocabulary value.
+      meaning: Represents the convention system edit case within the mission_profile taxonomy.
+      detection_signals:
+      - convention system edit signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches convention system edit
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - mission_profile decisions using convention_system_edit must include reason and evidence
   mission_profile_validation_algorithm:
     steps:
     - load_phase_taxonomy
@@ -930,6 +1070,142 @@ sections:
     - assert_profile_phases_exist
     - assert_no_phase_state_conflict
     - assert_required_reports_exist
+  gate_strictness_definitions:
+    light:
+      definition: light gate_strictness vocabulary value.
+      meaning: Represents the light case within the gate_strictness taxonomy.
+      detection_signals:
+      - light signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches light
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using light must include reason and evidence
+    standard:
+      definition: standard gate_strictness vocabulary value.
+      meaning: Represents the standard case within the gate_strictness taxonomy.
+      detection_signals:
+      - standard signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches standard
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using standard must include reason and evidence
+    strict:
+      definition: strict gate_strictness vocabulary value.
+      meaning: Represents the strict case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict must include reason and evidence
+    strict_on_regression:
+      definition: strict on regression gate_strictness vocabulary value.
+      meaning: Represents the strict on regression case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict on regression signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict on regression
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict_on_regression must include reason and evidence
+    strict_on_no_behavior_change:
+      definition: strict on no behavior change gate_strictness vocabulary value.
+      meaning: Represents the strict on no behavior change case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict on no behavior change signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict on no behavior change
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict_on_no_behavior_change must include reason and evidence
+    strict_on_compatibility:
+      definition: strict on compatibility gate_strictness vocabulary value.
+      meaning: Represents the strict on compatibility case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict on compatibility signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict on compatibility
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict_on_compatibility must include reason and evidence
+    strict_on_boundary_and_failure_modes:
+      definition: strict on boundary and failure modes gate_strictness vocabulary value.
+      meaning: Represents the strict on boundary and failure modes case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict on boundary and failure modes signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict on boundary and failure modes
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict_on_boundary_and_failure_modes must include reason and evidence
+    strict_on_data_safety:
+      definition: strict on data safety gate_strictness vocabulary value.
+      meaning: Represents the strict on data safety case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict on data safety signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict on data safety
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict_on_data_safety must include reason and evidence
+    strict_on_convention_integrity:
+      definition: strict on convention integrity gate_strictness vocabulary value.
+      meaning: Represents the strict on convention integrity case within the gate_strictness taxonomy.
+      detection_signals:
+      - strict on convention integrity signals are present in the request, codebase evidence, or prior phase reports
+      choose_when:
+      - the active evidence best matches strict on convention integrity
+      - no more specific vocabulary value applies
+      reject_when:
+      - evidence is absent or contradictory
+      - a more specific or more severe value applies
+      required_evidence:
+      - source report reference or explicit no_evidence_available marker
+      validation_rules:
+      - gate_strictness decisions using strict_on_convention_integrity must include reason and evidence
 validation:
   required_checks: []
   fail_conditions: []

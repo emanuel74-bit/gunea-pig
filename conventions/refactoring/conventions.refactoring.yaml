@@ -62,7 +62,7 @@ sections:
     - evaluate_behavior_preservation_requirements
     - select_refactor_strategy
     - validate_refactor_strategy_decision
-    global_order_owner: core/conventions.orchestrator.yaml
+    global_order_owner: core/conventions.pipeline-contract.yaml
   refactoring_system_contract:
     absolute_rules:
     - id: REFACTOR-SYSTEM-ABS-001
