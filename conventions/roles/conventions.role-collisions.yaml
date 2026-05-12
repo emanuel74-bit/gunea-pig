@@ -3,7 +3,8 @@ file:
   name: conventions.role-collisions.yaml
   path: roles/conventions.role-collisions.yaml
   role: role_ambiguity_resolution_contract
-purpose: Resolve ambiguity when multiple roles appear valid.
+  executability: decision_engine
+purpose: Resolve role ambiguity and collisions when multiple roles appear valid for one artifact.
 ownership:
   owns:
   - role_collision_rules
@@ -38,6 +39,14 @@ dependencies:
 sections:
   collision_policy:
     mode: fail_closed
+    default_resolution: prefer_more_specific_role_when_one_primary_responsibility_is_clear
+    decomposition_required_when: multiple primary responsibilities remain after applying collision rules
+    must_record:
+    - matched_roles
+    - selected_role
+    - rejected_roles
+    - reason
+    - evidence_refs
   collision_rule_index:
     application_execution:
     - use_case_vs_command_query_handler
@@ -700,327 +709,30 @@ sections:
   - multiple reasons to change
   - multiple primary responsibilities
   - collision cannot be resolved
-  canonical_source_full:
-    version: '1.0'
-    system:
-      name: class-role-classifier
-      purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
-        and constraints.
-
-        '
-      philosophy:
-      - Every class has exactly one role
-      - Roles are defined by responsibility, not naming
-      - If multiple roles apply → decomposition required
-      - If unclear → fail_closed
-      - Behavior defines placement, not intention
-      enforcement:
-        mode: strict
-        ambiguity_policy: fail_closed
-        multi_role_policy: reject_and_decompose
-    input:
-      class_description:
-        responsibilities: []
-        has_side_effects: boolean
-        mutates_state: boolean
-        depends_on_external_systems: boolean
-        contains_business_rules: boolean
-        is_pure_functional: boolean
-        scope: single_action | multi_step | utility | structural | data | decision
-        input_output_shape: none | transforms | validates | constructs
-        interacts_with:
-        - http
-        - websocket
-        - database
-        - external_api
-        - event_system
-        - none
-    evaluation_order:
-    - detect_transport_layer
-    - detect_execution_layer
-    - detect_decision_layer
-    - detect_transformation_layer
-    - detect_domain_layer
-    - detect_data_layer
-    - detect_integration_layer
-    - detect_construction_layer
-    - detect_validation_layer
-    - detect_resolution_layer
-    - detect_structure_layer
-    - detect_config_layer
-    - detect_error_layer
-    - detect_type_layer
-    - detect_constants_layer
-    - fallback
-    roles:
-      controller:
-        suffix: .controller.ts
-        match:
-          interacts_with:
-          - http
-        rules:
-        - handles incoming requests
-        - delegates logic outward
-        forbidden:
-        - contains_business_rules
-        - has_side_effects
-        output: controller
-      gateway:
-        suffix: .gateway.ts
-        match:
-          interacts_with:
-          - websocket
-        rules:
-        - manages connections
-        - handles real-time messaging
-        forbidden:
-        - contains_business_rules
-        output: gateway
-      use_case:
-        suffix: .use-case.ts
-        match:
-          scope: single_action
-          contains_business_rules: true
-        rules:
-        - one input → one outcome
-        - encapsulates full action
-        output: use_case
-      service:
-        suffix: .service.ts
-        match:
-          has_side_effects: true
-          scope: multi_step
-        rules:
-        - coordinates dependencies
-        - owns side effects
-        output: service
-      orchestrator:
-        suffix: .orchestrator.ts
-        match:
-          scope: multi_step
-          contains_business_rules: false
-        rules:
-        - controls execution flow
-        forbidden:
-        - contains_business_rules
-        output: orchestrator
-      policy:
-        suffix: .policy.ts
-        match:
-          contains_business_rules: true
-          mutates_state: false
-          has_side_effects: false
-        rules:
-        - returns decision
-        output: policy
-      specification:
-        suffix: .specification.ts
-        match:
-          contains_business_rules: true
-          is_composable: true
-        rules:
-        - composable logic
-        output: specification
-      selector:
-        suffix: .selector.ts
-        match:
-          scope: decision
-        rules:
-        - chooses one option
-        output: selector
-      guard:
-        suffix: .guard.ts
-        match:
-          scope: decision
-          context_based: true
-        rules:
-        - authorization logic
-        output: guard
-      mapper:
-        suffix: .mapper.ts
-        match:
-          input_output_shape: transforms
-          is_pure_functional: true
-        rules:
-        - shape transformation
-        output: mapper
-      normalizer:
-        suffix: .normalizer.ts
-        match:
-          scope: utility
-        rules:
-        - standardizes values
-        output: normalizer
-      formatter:
-        suffix: .formatter.ts
-        match:
-          scope: utility
-          output_formatting: true
-        rules:
-        - presentation transformation
-        output: formatter
-      domain:
-        suffix: .domain.ts
-        match:
-          contains_business_rules: true
-          mutates_state: true
-          depends_on_external_systems: false
-        rules:
-        - encapsulates core business logic
-        output: domain
-      event:
-        suffix: .event.ts
-        match:
-          is_immutable: true
-        rules:
-        - represents something that happened
-        output: event
-      listener:
-        suffix: .listener.ts
-        match:
-          interacts_with:
-          - event_system
-        rules:
-        - reacts to events
-        output: listener
-      publisher:
-        suffix: .publisher.ts
-        match:
-          interacts_with:
-          - event_system
-          has_side_effects: true
-        rules:
-        - emits events
-        output: publisher
-      repository:
-        suffix: .repository.ts
-        match:
-          interacts_with:
-          - database
-        rules:
-        - data access abstraction
-        forbidden:
-        - contains_business_rules
-        output: repository
-      schema:
-        suffix: .schema.ts
-        match:
-          scope: data
-        rules:
-        - defines structure only
-        output: schema
-      client:
-        suffix: .client.ts
-        match:
-          interacts_with:
-          - external_api
-        rules:
-        - external communication
-        output: client
-      adapter:
-        suffix: .adapter.ts
-        match:
-          transforms_interfaces: true
-        rules:
-        - bridges systems
-        output: adapter
-      factory:
-        suffix: .factory.ts
-        match:
-          input_output_shape: constructs
-        rules:
-        - creates objects
-        output: factory
-      builder:
-        suffix: .builder.ts
-        match:
-          step_by_step_construction: true
-        rules:
-        - incremental build
-        output: builder
-      validator:
-        suffix: .validator.ts
-        match:
-          input_output_shape: validates
-        rules:
-        - validation only
-        output: validator
-      resolver:
-        suffix: .resolver.ts
-        match:
-          dynamic_resolution: true
-        rules:
-        - resolves implementation
-        output: resolver
-      strategy:
-        suffix: .strategy.ts
-        match:
-          interchangeable_algorithms: true
-        rules:
-        - multiple implementations
-        output: strategy
-      module:
-        suffix: .module.ts
-        match:
-          scope: structural
-        rules:
-        - wires dependencies
-        forbidden:
-        - contains_business_rules
-        output: module
-      dto:
-        suffix: .dto.ts
-        match:
-          scope: data
-          transport_related: true
-        rules:
-        - transport shape
-        output: dto
-      config:
-        suffix: .config.ts
-        match:
-          scope: configuration
-        rules:
-        - static values
-        output: config
-      error:
-        suffix: .error.ts
-        match:
-          represents_error: true
-        rules:
-        - error definition
-        output: error
-      types:
-        suffix: .types.ts
-        match:
-          type_only: true
-        rules:
-        - no runtime code
-        output: types
-      constants:
-        suffix: .const.ts
-        match:
-          scope: constants
-        rules:
-        - static values
-        output: constants
-      enum:
-        suffix: .enum.ts
-        match:
-          finite_set: true
-        rules:
-        - controlled values
-        output: enum
-      util:
-        suffix: .util.ts
-        match:
-          scope: utility
-        rules:
-        - stateless helper
-        warning: last resort role
-        output: util
+  general_collision_rules:
+    specific_beats_generic:
+    - use_case beats service
+    - command/query/handler beats service
+    - domain_event or integration_event beats event
+    - entity/value_object/aggregate/domain_service beats domain
+    - request/response/dto beats generic types when transport shape is known
+    split_required_when:
+    - artifact owns transport entry and business rules
+    - artifact owns persistence and domain behavior
+    - artifact owns mapping plus external communication
+    - artifact owns validation plus authorization plus policy decision as separate concerns
+    reject_when:
+    - selected role would require forbidden dependency direction
+    - selected role hides another primary responsibility
+    - selected role conflicts with assigned boundary
 validation:
+  required_checks:
+  - collision_rule_exists_for_matched_pair_or_general_rule_applies
+  - selected_role_exists
+  - rejected_roles_recorded
+  - split_required_when_unresolved
   fail_conditions:
-  - collision_rule_missing_for_matched_roles
-  - ambiguous_role_resolved_silently
-  - multi_responsibility_artifact_not_split
+  - unresolved_collision_without_split
+  - collision_selected_unknown_role
+  - collision_resolution_missing_reason
+  - generic_role_selected_over_specific_role

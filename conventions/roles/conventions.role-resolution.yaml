@@ -4,7 +4,8 @@ file:
   path: roles/conventions.role-resolution.yaml
   role: role_resolution_engine
   executability: decision_engine
-purpose: Resolve draft role signals before action/refactor decisions and final authoritative roles for post-action artifacts.
+purpose: Resolve draft role signals and final authoritative roles using strict priority, specific-before-generic rules, and
+  fail-closed ambiguity handling.
 ownership:
   owns:
   - role_decision_process
@@ -16,31 +17,69 @@ ownership:
   does_not_own:
   - role_definitions
   - action_resolution
+  - pattern_selection
+  - physical_structure
 activation:
   mode: always
-  activates_when: []
+  activates_when:
+  - artifact candidates exist
+  - post-action artifacts exist
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - artifact_candidates
+  - role_taxonomy
+  optional:
+  - draft_role_signals
+  - post_action_artifact_candidates
+  - collision_resolution_reason
 outputs:
   produces:
   - draft_role_signals
   - role_assignment_table
-  - role_resolution_decision_report
+  - unresolved_role_matches
+  - role_resolution_confidence
 dependencies:
   required_files:
   - roles/conventions.role-taxonomy.yaml
+  optional_files:
+  - roles/conventions.role-collisions.yaml
   - actions/conventions.action-taxonomy.yaml
-  optional_files: []
 sections:
-  role_resolution_pipeline:
-  - load_role_taxonomy
-  - read_post_action_artifact_candidates
-  - detect_responsibility_signals
-  - choose_specific_role_before_generic
-  - reject_multi_role_artifacts
-  - produce_role_assignment_table
+  resolution_policy:
+    mode: strict
+    default_behavior: fail_closed
+  role_priority_model:
+    principle: specific_role_before_generic_role
+    priority_order:
+    - structural_framework
+    - transport_entry
+    - application_execution
+    - domain_model
+    - domain_constraint
+    - decision
+    - transformation
+    - transport_contract
+    - architectural_boundary
+    - integration_boundary
+    - integration_async
+    - persistence_data
+    - construction_resolution
+    - error_result
+    - type_static
+    - testing_verification
+    - fallback
+  role_resolution_algorithm:
+  - detect_test_artifact
+  - detect_transport_entry
+  - detect_application_execution
+  - detect_domain_or_decision
+  - detect_transformation_or_boundary
+  - detect_integration_async
+  - detect_persistence
+  - detect_construction_resolution
+  - detect_error_result_static
+  - fallback
   role_assignment_passes:
     draft_role_pass:
       authority: advisory
@@ -91,45 +130,85 @@ sections:
         suggest_likely_extraction_target: true
         required_followups:
         - artifact_action_resolution
-  rule_sets:
+  specific_before_generic_rules:
     absolute_rules:
-    - id: ROLE-RESOLUTION-ABS-001
-      rule: Service is not the default role.
-      fail_condition: service_selected_as_default_without_specific_rejection
-    - id: ROLE-RESOLUTION-ABS-002
-      rule: Specific roles must be considered before generic roles.
-      fail_condition: generic_role_selected_before_specific_role_review
-    priority_rules:
-    - id: ROLE-RESOLUTION-PRIORITY-001
-      priority_order:
-      - specific_role
-      - service
-      applies_when:
-        role_candidates_include_specific_role: true
-      tie_breakers:
-      - choose the most specific valid role with matching responsibility evidence
-    - id: ROLE-RESOLUTION-PRIORITY-002
-      priority_order:
-      - policy
-      - rule
-      - specification
-      - invariant
-      - service
-      applies_when:
-        artifact_contains_business_rule: true
-      tie_breakers:
-      - choose service only when orchestration or side-effect coordination is the primary responsibility
-    - id: ROLE-RESOLUTION-PRIORITY-003
-      priority_order:
-      - adapter
-      - client
-      - repository
-      - port
-      - service
-      applies_when:
-        artifact_crosses_io_boundary: true
-      tie_breakers:
-      - choose service only when no boundary-specific role applies
+    - Never choose service when use_case, command, query, handler, workflow, job, task, or processor applies.
+    - Never choose util when any specific role applies.
+    - Never choose domain or event as final file roles.
+    - Never choose adapter when client or mapper is the more precise responsibility.
+    - Never choose repository for domain behavior or application orchestration.
+    - Never choose dto for request/response when transport direction is known.
+  resolution_decision_rules:
+    match_decision_rules:
+    - id: ROLE-RESOLVE-TEST-FIRST
+      priority: 1
+      match:
+        artifact_path_or_name_indicates_test: true
+      decision: select_testing_verification_role_from_test_signals
+    - id: ROLE-RESOLVE-TRANSPORT-ENTRY
+      priority: 2
+      match:
+        interacts_with_any:
+        - http
+        - websocket
+        - webhook
+        - framework_middleware
+      decision: select_transport_entry_role
+    - id: ROLE-RESOLVE-APPLICATION-EXECUTION
+      priority: 3
+      match:
+        executes_application_action_or_workflow: true
+      decision: select_specific_application_execution_role
+    - id: ROLE-RESOLVE-DOMAIN
+      priority: 4
+      match:
+        contains_domain_rules_or_model: true
+      decision: select_domain_model_or_constraint_role
+    - id: ROLE-RESOLVE-TRANSFORMATION
+      priority: 5
+      match:
+        transforms_representation_without_side_effects: true
+      decision: select_transformation_role
+    - id: ROLE-RESOLVE-BOUNDARY
+      priority: 6
+      match:
+        crosses_architectural_or_integration_boundary: true
+      decision: select_port_adapter_client_or_contract_role
+    - id: ROLE-RESOLVE-PERSISTENCE
+      priority: 7
+      match:
+        owns_persistence_or_query_shape: true
+      decision: select_persistence_data_role
+    - id: ROLE-RESOLVE-CONSTRUCTION
+      priority: 8
+      match:
+        constructs_or_resolves_objects: true
+      decision: select_construction_resolution_role
+    - id: ROLE-RESOLVE-STATIC
+      priority: 9
+      match:
+        type_or_static_value_only: true
+      decision: select_type_static_or_error_result_role
+    - id: ROLE-RESOLVE-FALLBACK
+      priority: 99
+      match:
+        no_specific_role_matches: true
+      decision: fail_closed_or_select_util_with_explicit_justification
+  role_assignment_table_schema:
+    required_fields:
+    - artifact_id
+    - artifact_path
+    - assigned_role
+    - role_family
+    - confidence
+    - decision_rule_id
+    - evidence_refs
+    - rejected_roles
+    optional_fields:
+    - suffix
+    - split_required
+    - collision_ref
+    - notes
   canonical_role_evaluation_order:
   - detect_transport_layer
   - detect_execution_layer
@@ -164,425 +243,23 @@ sections:
       - external_api
       - event_system
       - none
-  canonical_role_classifier_system:
-    name: class-role-classifier
-    purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
-      and constraints.
-
-      '
-    philosophy:
-    - Every class has exactly one role
-    - Roles are defined by responsibility, not naming
-    - If multiple roles apply → decomposition required
-    - If unclear → fail_closed
-    - Behavior defines placement, not intention
-    enforcement:
-      mode: strict
-      ambiguity_policy: fail_closed
-      multi_role_policy: reject_and_decompose
-  semantic_depth_restoration:
-    restored_from: conventions.roles.yaml
-    restoration_scope:
-    - system
-    - input
-    - evaluation_order
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
-  canonical_restored_source:
-    system:
-      name: class-role-classifier
-      purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
-        and constraints.
-
-        '
-      philosophy:
-      - Every class has exactly one role
-      - Roles are defined by responsibility, not naming
-      - If multiple roles apply → decomposition required
-      - If unclear → fail_closed
-      - Behavior defines placement, not intention
-      enforcement:
-        mode: strict
-        ambiguity_policy: fail_closed
-        multi_role_policy: reject_and_decompose
-    input:
-      class_description:
-        responsibilities: []
-        has_side_effects: boolean
-        mutates_state: boolean
-        depends_on_external_systems: boolean
-        contains_business_rules: boolean
-        is_pure_functional: boolean
-        scope: single_action | multi_step | utility | structural | data | decision
-        input_output_shape: none | transforms | validates | constructs
-        interacts_with:
-        - http
-        - websocket
-        - database
-        - external_api
-        - event_system
-        - none
-    evaluation_order:
-    - detect_transport_layer
-    - detect_execution_layer
-    - detect_decision_layer
-    - detect_transformation_layer
-    - detect_domain_layer
-    - detect_data_layer
-    - detect_integration_layer
-    - detect_construction_layer
-    - detect_validation_layer
-    - detect_resolution_layer
-    - detect_structure_layer
-    - detect_config_layer
-    - detect_error_layer
-    - detect_type_layer
-    - detect_constants_layer
-    - fallback
-  canonical_source_full:
-    version: '1.0'
-    system:
-      name: class-role-classifier
-      purpose: 'Determine the correct architectural role (file suffix) for a class based on its responsibilities, behavior,
-        and constraints.
-
-        '
-      philosophy:
-      - Every class has exactly one role
-      - Roles are defined by responsibility, not naming
-      - If multiple roles apply → decomposition required
-      - If unclear → fail_closed
-      - Behavior defines placement, not intention
-      enforcement:
-        mode: strict
-        ambiguity_policy: fail_closed
-        multi_role_policy: reject_and_decompose
-    input:
-      class_description:
-        responsibilities: []
-        has_side_effects: boolean
-        mutates_state: boolean
-        depends_on_external_systems: boolean
-        contains_business_rules: boolean
-        is_pure_functional: boolean
-        scope: single_action | multi_step | utility | structural | data | decision
-        input_output_shape: none | transforms | validates | constructs
-        interacts_with:
-        - http
-        - websocket
-        - database
-        - external_api
-        - event_system
-        - none
-    evaluation_order:
-    - detect_transport_layer
-    - detect_execution_layer
-    - detect_decision_layer
-    - detect_transformation_layer
-    - detect_domain_layer
-    - detect_data_layer
-    - detect_integration_layer
-    - detect_construction_layer
-    - detect_validation_layer
-    - detect_resolution_layer
-    - detect_structure_layer
-    - detect_config_layer
-    - detect_error_layer
-    - detect_type_layer
-    - detect_constants_layer
-    - fallback
-    roles:
-      controller:
-        suffix: .controller.ts
-        match:
-          interacts_with:
-          - http
-        rules:
-        - handles incoming requests
-        - delegates logic outward
-        forbidden:
-        - contains_business_rules
-        - has_side_effects
-        output: controller
-      gateway:
-        suffix: .gateway.ts
-        match:
-          interacts_with:
-          - websocket
-        rules:
-        - manages connections
-        - handles real-time messaging
-        forbidden:
-        - contains_business_rules
-        output: gateway
-      use_case:
-        suffix: .use-case.ts
-        match:
-          scope: single_action
-          contains_business_rules: true
-        rules:
-        - one input → one outcome
-        - encapsulates full action
-        output: use_case
-      service:
-        suffix: .service.ts
-        match:
-          has_side_effects: true
-          scope: multi_step
-        rules:
-        - coordinates dependencies
-        - owns side effects
-        output: service
-      orchestrator:
-        suffix: .orchestrator.ts
-        match:
-          scope: multi_step
-          contains_business_rules: false
-        rules:
-        - controls execution flow
-        forbidden:
-        - contains_business_rules
-        output: orchestrator
-      policy:
-        suffix: .policy.ts
-        match:
-          contains_business_rules: true
-          mutates_state: false
-          has_side_effects: false
-        rules:
-        - returns decision
-        output: policy
-      specification:
-        suffix: .specification.ts
-        match:
-          contains_business_rules: true
-          is_composable: true
-        rules:
-        - composable logic
-        output: specification
-      selector:
-        suffix: .selector.ts
-        match:
-          scope: decision
-        rules:
-        - chooses one option
-        output: selector
-      guard:
-        suffix: .guard.ts
-        match:
-          scope: decision
-          context_based: true
-        rules:
-        - authorization logic
-        output: guard
-      mapper:
-        suffix: .mapper.ts
-        match:
-          input_output_shape: transforms
-          is_pure_functional: true
-        rules:
-        - shape transformation
-        output: mapper
-      normalizer:
-        suffix: .normalizer.ts
-        match:
-          scope: utility
-        rules:
-        - standardizes values
-        output: normalizer
-      formatter:
-        suffix: .formatter.ts
-        match:
-          scope: utility
-          output_formatting: true
-        rules:
-        - presentation transformation
-        output: formatter
-      domain:
-        suffix: .domain.ts
-        match:
-          contains_business_rules: true
-          mutates_state: true
-          depends_on_external_systems: false
-        rules:
-        - encapsulates core business logic
-        output: domain
-      event:
-        suffix: .event.ts
-        match:
-          is_immutable: true
-        rules:
-        - represents something that happened
-        output: event
-      listener:
-        suffix: .listener.ts
-        match:
-          interacts_with:
-          - event_system
-        rules:
-        - reacts to events
-        output: listener
-      publisher:
-        suffix: .publisher.ts
-        match:
-          interacts_with:
-          - event_system
-          has_side_effects: true
-        rules:
-        - emits events
-        output: publisher
-      repository:
-        suffix: .repository.ts
-        match:
-          interacts_with:
-          - database
-        rules:
-        - data access abstraction
-        forbidden:
-        - contains_business_rules
-        output: repository
-      schema:
-        suffix: .schema.ts
-        match:
-          scope: data
-        rules:
-        - defines structure only
-        output: schema
-      client:
-        suffix: .client.ts
-        match:
-          interacts_with:
-          - external_api
-        rules:
-        - external communication
-        output: client
-      adapter:
-        suffix: .adapter.ts
-        match:
-          transforms_interfaces: true
-        rules:
-        - bridges systems
-        output: adapter
-      factory:
-        suffix: .factory.ts
-        match:
-          input_output_shape: constructs
-        rules:
-        - creates objects
-        output: factory
-      builder:
-        suffix: .builder.ts
-        match:
-          step_by_step_construction: true
-        rules:
-        - incremental build
-        output: builder
-      validator:
-        suffix: .validator.ts
-        match:
-          input_output_shape: validates
-        rules:
-        - validation only
-        output: validator
-      resolver:
-        suffix: .resolver.ts
-        match:
-          dynamic_resolution: true
-        rules:
-        - resolves implementation
-        output: resolver
-      strategy:
-        suffix: .strategy.ts
-        match:
-          interchangeable_algorithms: true
-        rules:
-        - multiple implementations
-        output: strategy
-      module:
-        suffix: .module.ts
-        match:
-          scope: structural
-        rules:
-        - wires dependencies
-        forbidden:
-        - contains_business_rules
-        output: module
-      dto:
-        suffix: .dto.ts
-        match:
-          scope: data
-          transport_related: true
-        rules:
-        - transport shape
-        output: dto
-      config:
-        suffix: .config.ts
-        match:
-          scope: configuration
-        rules:
-        - static values
-        output: config
-      error:
-        suffix: .error.ts
-        match:
-          represents_error: true
-        rules:
-        - error definition
-        output: error
-      types:
-        suffix: .types.ts
-        match:
-          type_only: true
-        rules:
-        - no runtime code
-        output: types
-      constants:
-        suffix: .const.ts
-        match:
-          scope: constants
-        rules:
-        - static values
-        output: constants
-      enum:
-        suffix: .enum.ts
-        match:
-          finite_set: true
-        rules:
-        - controlled values
-        output: enum
-      util:
-        suffix: .util.ts
-        match:
-          scope: utility
-        rules:
-        - stateless helper
-        warning: last resort role
-        output: util
+  failure_policy:
+    fail_when:
+    - no_role_matches
+    - multiple_primary_roles_remain
+    - deprecated_alias_selected_as_final_role
+    - generic_role_selected_without_justification
+    - assigned_role_missing_required_evidence
+    on_failure: emit_unresolved_role_matches_and_request_decomposition_or_revision
 validation:
+  required_checks:
+  - assigned_role_exists
+  - specific_role_preferred_before_generic
+  - deprecated_alias_not_final
+  - role_assignment_has_evidence
   fail_conditions:
-  - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-001
-    condition: role_assignment_missing
-    message: Role assignment missing.
-    severity: error
-    owner: roles/conventions.role-resolution.yaml
-  - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-002
-    condition: generic_role_selected_without_justification
-    message: Generic role selected without justification.
-    severity: error
-    owner: roles/conventions.role-resolution.yaml
-  - id: ROLES-CONVENTIONS-ROLE-RESOLUTION-YAML-FC-003
-    condition: role_assignment_used_initial_candidates_instead_of_post_action_artifacts
-    message: Role assignment used initial candidates instead of post action artifacts.
-    severity: error
-    owner: roles/conventions.role-resolution.yaml
-  - id: ROLE-DRAFT-001
-    condition: draft_role_pass_treated_as_authoritative
-    message: Draft role pass is advisory and must not finalize roles, names, or placement.
-    severity: error
-    owner: roles/conventions.role-resolution.yaml
-  - id: ROLE-FINAL-001
-    condition: final_role_assignment_missing_after_action_resolution
-    message: Final role assignment must run after action/refactor decisions.
-    severity: error
-    owner: roles/conventions.role-resolution.yaml
-  required_checks: []
+  - unknown_role_selected
+  - service_selected_when_specific_execution_role_applies
+  - util_selected_without_justification
+  - multi_role_artifact_not_decomposed
+  - role_assignment_missing_evidence
