@@ -4,443 +4,357 @@ file:
   path: architecture/conventions.structure-strategy.yaml
   role: structure_strategy_contract
   executability: decision_engine
-purpose: 'Define minimum-sufficient folder strategy: feature/module first, execution-flow second, flatten when small.'
+purpose: Define minimum-sufficient feature/module-first structure strategy, density modes, folder creation policy, layer assignment
+  strategy, and anti-bloat rules.
 ownership:
   owns:
-  - structure_density_modes
+  - structure_strategy_principles
+  - density_modes
   - folder_creation_policy
-  - execution_flow_first_strategy
+  - feature_structure_rules
+  - module_structure_rules
+  - layer_assignment_strategy
+  - structure_strategy_algorithm
+  - anti_bloat_rules
+  - density_mode_selection_rules
   does_not_own:
+  - architecture_decomposition
   - final_file_tree_rendering
+  - role_taxonomy
+  - pattern_selection
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - architecture_decomposition_required
+  - structure_rendering_required
+  - architecture_validation_required
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - .ai/reports/architecture-blueprint.yaml
+  - .ai/reports/05-artifact-actions.yaml
+  - .ai/reports/08-final-role-assignment.yaml
+  optional:
+  - .ai/reports/local-alignment.yaml
+  - .ai/reports/pattern-decision-log.yaml
 outputs:
   produces:
   - structure_strategy_result
 dependencies:
-  required_files: []
-  optional_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - architecture/conventions.architecture.yaml
+  - roles/conventions.role-placement.yaml
+  - actions/conventions.action-taxonomy.yaml
+  optional_files:
+  - patterns/conventions.pattern-selection.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
 sections:
-  strategy:
-    default: minimum_sufficient
-    priority:
+  structure_strategy_principles:
+    absolute_rules:
+    - id: STRUCT-STRAT-ABS-001
+      rule: Structure strategy must be feature/module first unless the project has explicit valid local convention otherwise.
+      fail_condition: structure_strategy_not_feature_first_without_reason
+    - id: STRUCT-STRAT-ABS-002
+      rule: Folder depth must be justified by behavior, flow, role density, or discoverability; depth may not be added for
+        aesthetics.
+      fail_condition: unjustified_folder_depth
+    - id: STRUCT-STRAT-ABS-003
+      rule: Minimum sufficient structure is preferred over theoretical completeness.
+      fail_condition: folder_bloat_detected
+    ordering:
     - feature_or_module_first
     - execution_flow_second
-    - flat_when_small
     - role_family_grouping_when_large
-    avoid:
-    - folder_bloat
-    - theoretical_nesting
-  folder_creation_thresholds:
-    create_flow_folder_when:
-    - multiple artifacts in same flow
-    - flow has distinct behavior
-    keep_flat_when:
-    - few artifacts
-    - readability improves
-  canonical_structure_strategy_source:
-  - classify_feature_modules
-  - validate_feature_based_structure
-  - classify_folder_by_depth
-  - validate_layer_assignment
-  - validate_internal_module_structure
-  - validate_dependency_graph
-  - validate_data_flow
-  - validate_execution_constraints
-  - validate_cross_module_rules
-  - validate_file_rules
-  - validate_naming
-  - validate_shared_code
-  - validate_scalability
-  - detect_anti_patterns
-  - validate_heuristics
-  canonical_structure_hierarchy_and_layers:
-    feature_structure:
-      rule: Each module represents a distinct business capability
-      constraints:
-      - Modules MUST be independently understandable
-      - Modules MUST be independently testable
-      - No implicit cross-module coupling
-      detection:
-        positive:
-        - top-level folders represent domains
-        negative:
-        - top-level folders named by technical type
-      violation:
-      - structure organized by technical type
-    module_structure:
-      required_folders:
-      - controllers
-      - services
-      - domain
-      - repositories
-      optional_folders:
-      - dto
-      - mappers
-      - types
-      - policies
-      - validators
-      - events
-      - interfaces
-      constraints:
-      - each folder MUST have a single responsibility
-      - no cross-folder leakage
-      - files MUST belong to exactly one layer
-    architecture_layers:
-      layers:
-      - transport
-      - application
-      - domain
-      - infrastructure
-      mapping:
-        controllers: transport
-        services: application
-        domain: domain
-        repositories: infrastructure
-      dependency_direction:
-        rule: dependencies MUST be unidirectional and inward
-        constraints:
-        - no reverse dependencies
-        - no circular dependencies
-        allowed:
-          transport:
-          - application
-          application:
-          - domain
-          - interfaces
-          domain: []
-          infrastructure:
-          - domain
-          - interfaces
-    file_rules:
-      single_responsibility:
-        rule: each file MUST represent exactly one intent
-      single_export:
-        rule: one primary export per file
-      naming:
-        must:
-        - reflect exact behavior
-        forbidden:
-        - utils
-        - helpers
-        - common
-      size:
-        max_lines: 200
-  semantic_depth_restoration:
-    restored_from: conventions.structure.yaml
-    restoration_scope:
-    - evaluation_order
-    - feature_structure
-    - module_structure
-    - architecture_layers
-    - file_rules
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
-  canonical_restored_source:
-    feature_structure:
-      rule: Each module represents a distinct business capability
-      constraints:
-      - Modules MUST be independently understandable
-      - Modules MUST be independently testable
-      - No implicit cross-module coupling
-      detection:
-        positive:
-        - top-level folders represent domains
-        negative:
-        - top-level folders named by technical type
-      violation:
-      - structure organized by technical type
-    module_structure:
-      required_folders:
-      - controllers
-      - services
-      - domain
-      - repositories
-      optional_folders:
-      - dto
-      - mappers
-      - types
-      - policies
-      - validators
-      - events
-      - interfaces
-      constraints:
-      - each folder MUST have a single responsibility
-      - no cross-folder leakage
-      - files MUST belong to exactly one layer
-    architecture_layers:
-      layers:
-      - transport
-      - application
-      - domain
-      - infrastructure
-      mapping:
-        controllers: transport
-        services: application
-        domain: domain
-        repositories: infrastructure
-      dependency_direction:
-        rule: dependencies MUST be unidirectional and inward
-        constraints:
-        - no reverse dependencies
-        - no circular dependencies
-        allowed:
-          transport:
-          - application
-          application:
-          - domain
-          - interfaces
-          domain: []
-          infrastructure:
-          - domain
-          - interfaces
-    file_rules:
-      single_responsibility:
-        rule: each file MUST represent exactly one intent
-      single_export:
-        rule: one primary export per file
-      naming:
-        must:
-        - reflect exact behavior
-        forbidden:
-        - utils
-        - helpers
-        - common
-      size:
-        max_lines: 200
-  canonical_source_full:
-    architecture_rules:
-      version: '3.1'
-      mode: agent_driven_design_system
-      role: senior_software_architect
-      purpose: 'Deterministically transform a feature prompt into a clean, scalable, production-grade architecture using strict
-        layering, intent decomposition, and enforceable design constraints.
-
-        '
-      philosophy:
-      - Decomposition precedes structure
-      - Intent defines artifact
-      - No ambiguity allowed
-      - Consistency over convenience
-      - Design must be derivable, not guessed
-      execution_policy:
-        ambiguity: fail_closed
-        missing_information: ask_or_abort
-        default_behavior: forbidden
-      contract:
-        input:
-          type: feature_prompt
-        output:
-          type: architecture_blueprint
-          must_include:
-          - capabilities
-          - atomic_units
-          - intents
-          - artifacts
-          - layers
-          - dependencies
-          - file_structure
-          - validation_report
-      pipeline:
-        steps:
-        - extract_capabilities
-        - decompose_to_atomic_units
-        - classify_intents
-        - map_to_artifacts
-        - assign_layers
-        - infer_dependencies
-        - generate_file_structure
-        - validate_system
-      structure:
-        module_definition:
-          rule: Each module represents a distinct business capability
-          constraints:
-          - Modules MUST be independently understandable
-          - Modules MUST be independently testable
-          - No implicit cross-module coupling
-        organization:
-          strategy: feature_first
-          fallback: layer_within_feature
-        layer_boundaries:
-          enforced: true
-          rule: Strict separation between layers
-      data_flow:
-        direction:
-          canonical:
-          - ENTRY
-          - APPLICATION
-          - DECISION
-          - DOMAIN
-          - INFRASTRUCTURE
-        rules:
-        - Flow MUST be unidirectional
-        - No reverse dependencies
-        - No circular dependencies
-        - APPLICATION orchestrates but does not persist
-        - INFRASTRUCTURE handles all IO
-        - Raw persistence models MUST NOT cross boundaries
-        - Mapping layer MUST isolate transformations
-      logic_decomposition:
-        core_rules:
-        - Each unit MUST have exactly one intent
-        - If multiple reasons to change → MUST split
-        - No god classes
-        - No fat services
-        cohesion:
-          rule: Single responsibility is mandatory
-          enforcement:
-          - multi_intent_unit → invalid
-          - multi_reason_to_change → split_required
-      coupling:
-        principles:
-        - Depend on abstractions only
-        - All external dependencies via DI
-        - No global state
-        forbidden:
-        - domain_importing_infrastructure
-        - service_importing_db_models
-        - cross_module_internal_access
-        required:
-        - interfaces_at_boundaries
-        - inversion_of_control
-      service_model:
-        constraints:
-        - Services MUST be stateless
-        - Services MUST be small and composable
-        - Services MUST implement ONE intent only
-        forbidden:
-        - transport_logic_in_service
-        - direct_repository_models
-        - infrastructure_logic
-        split_conditions:
-        - multiple responsibilities
-        - growing orchestration complexity
-      service_usage:
-        rules:
-        - Same service MUST have ONE canonical interface
-        - All usages MUST match same input/output structure
-        - No alternative invocation patterns
-        forbidden:
-        - duplicate_service_logic
-        - bypassing_service_layer
-        - multiple_entrypoints_same_action
-        resolution:
-        - standardize_interface
-        - refactor_all_call_sites
-        - introduce_adapter_only_if_external
-      patterns:
-        allowed:
-          repository:
-            purpose: persistence abstraction
-          factory:
-            purpose: controlled object creation
-          strategy:
-            purpose: replace conditional logic
-          adapter:
-            purpose: external isolation
-        usage_rules:
-        - Pattern MUST reduce complexity
-        - Pattern MUST improve clarity
-        - No speculative patterns
-        forbidden:
-        - pattern_without_reason
-        - over_engineering
-      domain:
-        rules:
-        - Must contain core business rules
-        - Must be pure
-        - Must not depend on frameworks
-      consistency:
-        rules:
-        - Similar problems MUST use same patterns
-        - Naming MUST follow conventions
-        - No parallel implementations of same logic
-      scalability:
-        rules:
-        - Design for change
-        - Prefer extensibility over shortcuts
-        - Avoid tight coupling
-      file_structure:
-        strategy:
-        - feature_first
-        - layer_within_feature
-        template:
-          feature:
-            entry:
-            - '*.controller.ts'
-            application:
-            - '*use-case.ts'
-            - '*service.ts'
-            decision:
-            - '*policy.ts'
-            domain:
-            - '*.entity.ts'
-            infrastructure:
-            - '*.repository.ts'
-            support:
-            - '*.mapper.ts'
-            - '*.validator.ts'
-      validation:
-        fail_conditions:
-        - multi_intent_unit
-        - layer_violation
-        - circular_dependency
-        - service_interface_inconsistency
-        - business_logic_in_wrong_layer
-        - duplicate_logic_paths
-        must_verify:
-        - all_services_consistent
-        - all_dependencies_valid
-        - all_layers_respected
-        - all_units_single_responsibility
-      forbidden:
-        ABSOLUTE:
-        - circular_dependencies
-        - layer_skipping
-        - global_state
-        - business_logic_in_infrastructure
-        - infrastructure_in_domain
-        - direct_db_access_from_services
-        - mixed_responsibilities
-        - god_classes
-        - conditional_heavy_logic_without_strategy
-        - duplicated_service_logic
-        - inconsistent_service_usage
-      agent_execution:
-        behavior:
-        - MUST follow pipeline strictly
-        - MUST NOT skip steps
-        - MUST NOT guess missing structure
-        - MUST derive everything from intent
-        output_format:
-          sections:
-          - capabilities
-          - atomic_units
-          - intents
-          - artifacts
-          - layers
-          - dependencies
-          - file_structure
-          - validation
-        output_constraints:
-        - production_grade_only
-        - no_pseudo_code
-        - no_explanations
+    - flat_when_small
+  density_modes:
+    flat:
+      definition: Keep artifacts in the feature/module root or minimal folders when count, flow complexity, and role variety
+        are low.
+      choose_when:
+      - artifact_count <= 7
+      - use_case_flow_count <= 1
+      - role_family_count <= 3
+      - file names remain unique and self-explanatory without nesting
+      - no boundary or lifecycle distinction requires grouping
+      reject_when:
+      - two or more use-case flows have overlapping role names
+      - artifact_count > 9
+      - multiple variants implement the same contract
+      - flat layout would hide boundary ownership
+      score:
+        base: 0
+        prefer_when_smallest_valid_structure: 5
+        penalize_when_name_collision_risk: -4
+      tie_break_priority: 1
+    flow_grouped:
+      definition: Group artifacts by use-case or execution flow under the feature when flow ownership is the clearest discovery
+        axis.
+      choose_when:
+      - use_case_flow_count >= 2
+      - each flow has at least 3 related artifacts or a distinct lifecycle
+      - flow folders reduce cross-flow scanning cost
+      - flow boundary is stable and named by business action rather than technical type
+      reject_when:
+      - flow has only one or two obvious artifacts
+      - flow grouping duplicates a single role-only distinction
+      - flow names are vague or procedural rather than domain-oriented
+      score:
+        base: 0
+        flow_count_weight: 3
+        flow_artifact_cluster_weight: 2
+        penalize_small_flow: -5
+      tie_break_priority: 2
+    role_grouped:
+      definition: Group by role family inside a feature when many artifacts of distinct roles exist and role scanning is clearer
+        than flow scanning.
+      choose_when:
+      - artifact_count >= 8
+      - role_family_count >= 4
+      - role suffixes alone do not make the feature easy to scan
+      - there is no stronger flow ownership axis
+      reject_when:
+      - role grouping hides use-case flow
+      - feature has only one flow with few artifacts
+      - folder names merely repeat file suffixes without reducing scan cost
+      score:
+        base: 0
+        role_family_weight: 2
+        artifact_count_weight: 1
+        penalize_flow_hidden: -5
+      tie_break_priority: 3
+    hybrid_flow_role:
+      definition: Use flow folders with role-family grouping inside each flow only when both flow count and per-flow artifact
+        count justify second-level grouping.
+      choose_when:
+      - use_case_flow_count >= 3
+      - at least two flows each have artifact_count >= 8
+      - role grouping inside each flow reduces scan cost
+      - without hybrid grouping either flow or role discovery becomes ambiguous
+      reject_when:
+      - small or medium feature
+      - only one flow is large
+      - second-level folders would contain one or two files
+      - hybrid grouping is chosen for symmetry rather than discoverability
+      score:
+        base: -2
+        large_flow_weight: 4
+        role_density_weight: 2
+        penalize_unnecessary_depth: -6
+      tie_break_priority: 4
+  folder_creation_policy:
+    folder_decision_schema:
+      required_fields:
+      - folder_path
+      - folder_intent
+      - create_when
+      - reject_when
+      - required_evidence
+      - fail_condition
+    create_folder_when:
+    - condition: three_or_more_related_artifacts_share_flow
+      required_evidence:
+      - same_flow_id
+      - artifact_count >= 3
+      reason: folder improves flow discoverability
+    - condition: artifact_group_has_distinct_boundary_or_lifecycle
+      required_evidence:
+      - boundary_id_or_lifecycle_id
+      reason: folder communicates ownership/lifecycle
+    - condition: multiple_variants_implement_same_contract
+      required_evidence:
+      - shared_contract_id
+      - variant_count >= 2
+      reason: folder groups alternatives under stable intent
+    - condition: test_support_artifacts_would_pollute_production_structure
+      required_evidence:
+      - test_only_artifact_count >= 3
+      reason: folder protects production structure clarity
+    do_not_create_folder_when:
+    - condition: folder_contains_single_file_without_growth_pressure
+      fail_condition: single_file_folder_without_growth_pressure
+    - condition: folder_name_is_generic
+      forbidden_names:
+      - utils
+      - helpers
+      - common
+      - misc
+      - shared
+      fail_condition: generic_folder_name_used_without_specific_intent
+    - condition: folder_duplicates_role_already_clear_from_file_suffix
+      fail_condition: redundant_role_folder
+    - condition: folder_exists_only_to_match_theoretical_layer_model
+      fail_condition: theoretical_folder_bloat
+  feature_structure_rules:
+    definition: Top-level feature/module folders represent business capabilities, not technical types.
+    positive_signals:
+    - folder name maps to domain concept
+    - feature can be understood and tested independently
+    - internal folders represent layers or flows inside feature
+    negative_signals:
+    - top-level folders named controllers/services/repositories for whole app
+    - business behavior scattered across technical folders
+    fail_condition: technical_type_first_structure_detected
+  module_structure_rules:
+    allowed_internal_folders:
+    - controllers
+    - gateways
+    - consumers
+    - services
+    - use-cases
+    - domain
+    - repositories
+    - clients
+    - adapters
+    - dto
+    - mappers
+    - types
+    - policies
+    - validators
+    - events
+    - interfaces
+    - schemas
+    - constants
+    folder_responsibility_rules:
+    - folder: controllers
+      owns: transport entry handlers
+      must_not:
+      - business rules
+      - repository access
+      - external client access
+    - folder: services
+      owns: application orchestration
+      must_not:
+      - transport decorators
+      - raw persistence model manipulation
+      - external SDK details
+    - folder: domain
+      owns: pure business rules and invariants
+      must_not:
+      - framework imports
+      - database access
+      - network IO
+    - folder: repositories
+      owns: persistence access behind abstraction
+      must_not:
+      - transport logic
+      - business policy ownership
+      - leak database models outward
+    - folder: mappers
+      owns: shape conversion across boundaries
+      must_not:
+      - own business decisions
+      - perform IO
+  layer_assignment_strategy:
+    mapping:
+      controllers: transport
+      gateways: transport
+      consumers: transport
+      services: application
+      use-cases: application
+      policies: decision
+      validators: decision
+      domain: domain
+      repositories: infrastructure
+      clients: infrastructure
+      adapters: infrastructure
+      mappers: boundary_transformation
+    validation_rules:
+    - id: LAYER-STRATEGY-001
+      rule: A file must belong to exactly one primary layer.
+      fail_condition: file_has_multiple_primary_layers
+    - id: LAYER-STRATEGY-002
+      rule: Layer assignment must be consistent with role assignment.
+      fail_condition: role_layer_conflict
+  structure_strategy_algorithm:
+  - step_id: LOAD_ARCHITECTURE_BLUEPRINT
+    action: read architecture outputs
+  - step_id: LOAD_ACTIONS_AND_ROLES
+    action: read post-action candidates and role assignments
+  - step_id: CLASSIFY_FEATURE_MODULES
+    action: identify business capability roots
+  - step_id: SELECT_DENSITY_MODE
+    action: choose flat, role_grouped, flow_grouped, or hybrid based on thresholds
+  - step_id: APPLY_LAYER_STRATEGY
+    action: map role and folder responsibilities to layer model
+  - step_id: REJECT_FOLDER_BLOAT
+    action: remove unjustified folders
+  - step_id: EMIT_STRUCTURE_STRATEGY
+    action: write structure strategy decisions
+  anti_bloat_rules:
+  - id: ANTI-BLOAT-001
+    detect_when:
+    - folder has one file
+    - folder name repeats file suffix
+    - folder has no distinct ownership
+    decision: flatten_folder
+  - id: ANTI-BLOAT-002
+    detect_when:
+    - nested folder depth exceeds behavior complexity
+    - agent cannot explain why depth exists from requirements
+    decision: flatten_or_merge
+  - id: ANTI-BLOAT-003
+    detect_when:
+    - shared/common/utils folder proposed without stable public API
+    decision: reject_generic_shared_folder
+  density_mode_selection_rules:
+    required_inputs:
+    - artifact_candidates
+    - post_action_artifacts_or_candidates
+    - flow_count
+    - artifact_count
+    - role_family_count
+    - local_alignment
+    selection_algorithm:
+    - step_id: COUNT_STRUCTURE_PRESSURE
+      action: compute flow_count, artifact_count, role_family_count, variant_count, boundary_count
+    - step_id: EVALUATE_DENSITY_MODES
+      action: evaluate choose_when and reject_when for each density mode
+    - step_id: SCORE_VALID_MODES
+      action: score modes using declared score rules
+    - step_id: APPLY_TIE_BREAKERS
+      action: apply density_tie_breakers when score difference is not decisive
+    - step_id: REJECT_BLOAT
+      action: reject any mode that creates folder depth without a discoverability or boundary reason
+    - step_id: EMIT_STRUCTURE_STRATEGY
+      action: write selected density mode, rejected modes, evidence, and folder policy decisions
+    density_tie_breakers:
+    - priority: 1
+      rule: Prefer flat when it satisfies all requirements and no name collision or boundary ambiguity exists.
+      applies_when: flat_valid_and_no_ambiguity
+    - priority: 2
+      rule: Prefer flow_grouped over role_grouped when use-case flow ownership is stable and independently understandable.
+      applies_when: flow_grouped_and_role_grouped_both_valid
+    - priority: 3
+      rule: Prefer role_grouped over flow_grouped only when flows are weak but role families are numerous and stable.
+      applies_when: role_grouped_and_flow_grouped_both_valid_but_flow_names_weak
+    - priority: 4
+      rule: Prefer hybrid only when flat, flow_grouped, and role_grouped each lose essential discoverability.
+      applies_when: hybrid_valid_and_simpler_modes_fail
+    - priority: 5
+      rule: When evidence is tied, choose the mode with fewer folders.
+      applies_when: score_tie
+    fail_conditions:
+    - density_mode_selected_without_required_counts
+    - density_mode_selected_despite_reject_when_match
+    - hybrid_selected_without_large_flow_and_role_density
+    - folder_depth_added_without_evidence
 validation:
+  required_checks:
+  - id: STRUCT-STRAT-CHECK-001
+    check: density_mode_selected
+    applies_when:
+      structure_rendering_required: true
+  - id: STRUCT-STRAT-CHECK-002
+    check: folder_creation_decisions_have_reasons
+    applies_when:
+      folders_created: true
   fail_conditions:
-  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-STRATEGY-YAML-FC-001
-    condition: folder_created_without_threshold
-    message: Folder created without threshold.
+  - id: STRUCT-STRAT-001
+    condition: folder_bloat_detected
+    message: Structure strategy introduced unjustified folders.
     severity: error
-    owner: architecture/conventions.structure-strategy.yaml
-  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-STRATEGY-YAML-FC-002
-    condition: structure_bloat_detected
-    message: Structure bloat detected.
+  - id: STRUCT-STRAT-002
+    condition: technical_type_first_structure_detected
+    message: Structure must be feature/module first unless explicitly justified.
     severity: error
-    owner: architecture/conventions.structure-strategy.yaml
-  required_checks: []

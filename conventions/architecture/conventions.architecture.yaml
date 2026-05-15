@@ -4,729 +4,591 @@ file:
   path: architecture/conventions.architecture.yaml
   role: architecture_decomposition_contract
   executability: decision_engine
-purpose: Transform behavior contract into architecture blueprint, capabilities, flows, and artifact candidates.
+purpose: Define the executable architecture decomposition rules that transform behavior into capabilities, atomic units, intents,
+  artifact candidates, layers, and dependency constraints.
 ownership:
   owns:
+  - architecture_principles
   - architecture_blueprint_schema
   - capability_detection
-  - execution_flow_detection
+  - atomic_unit_decomposition
+  - intent_classification
+  - layer_model
   - artifact_candidate_generation
-  - dependency_direction
+  - dependency_constraints
+  - architecture_decomposition_algorithm
+  - architecture_anti_patterns
+  - architecture_authority_rules
   does_not_own:
   - folder_rendering
+  - final_file_tree
   - role_assignment
   - pattern_selection
+  - artifact_action_selection
+  - implementation_sequence
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - architecture_decomposition_required
+  - structure_rendering_required
+  - architecture_validation_required
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - .ai/reports/02-behavior-contract.yaml
+  optional:
+  - .ai/reports/03-codebase-reconnaissance.yaml
+  - .ai/reports/risk-classification.yaml
+  - .ai/reports/boundary-contract-classification.yaml
 outputs:
   produces:
-  - architecture_result
+  - .ai/reports/architecture-blueprint.yaml
+  - .ai/reports/artifact-candidates.yaml
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - planning/conventions.behavior-contract.yaml
-  - risk/conventions.risk-taxonomy.yaml
   - boundaries/conventions.boundary-taxonomy.yaml
   - dependencies/conventions.dependency-taxonomy.yaml
-  optional_files: []
+  optional_files:
+  - roles/conventions.role-taxonomy.yaml
+  - patterns/conventions.pattern-catalog.yaml
 sections:
-  principles:
-  - Architecture is source of truth
-  - Decomposition precedes structure
-  - Intent defines artifact
-  - No ambiguity allowed
-  - Design must be derivable
-  layers:
-  - transport
-  - application
-  - domain
-  - infrastructure
-  - persistence
-  pipeline:
-  - consume_behavior_contract
-  - detect_capabilities
-  - detect_execution_flows
-  - define_boundaries
-  - generate_artifact_candidates
-  - define_dependency_constraints
-  canonical_architecture_rules_v3_1:
-    version: '3.1'
-    mode: agent_driven_design_system
-    role: senior_software_architect
-    purpose: 'Deterministically transform a feature prompt into a clean, scalable, production-grade architecture using strict
-      layering, intent decomposition, and enforceable design constraints.
-
-      '
-    philosophy:
-    - Decomposition precedes structure
-    - Intent defines artifact
-    - No ambiguity allowed
-    - Consistency over convenience
-    - Design must be derivable, not guessed
-    execution_policy:
-      ambiguity: fail_closed
-      missing_information: ask_or_abort
-      default_behavior: forbidden
-    contract:
-      input:
-        type: feature_prompt
-      output:
-        type: architecture_blueprint
-        must_include:
-        - capabilities
-        - atomic_units
-        - intents
-        - artifacts
-        - layers
-        - dependencies
-        - file_structure
-        - validation_report
-    pipeline:
-      steps:
-      - extract_capabilities
-      - decompose_to_atomic_units
-      - classify_intents
-      - map_to_artifacts
-      - assign_layers
-      - infer_dependencies
-      - generate_file_structure
-      - validate_system
-    structure:
-      module_definition:
-        rule: Each module represents a distinct business capability
-        constraints:
-        - Modules MUST be independently understandable
-        - Modules MUST be independently testable
-        - No implicit cross-module coupling
-      organization:
-        strategy: feature_first
-        fallback: layer_within_feature
-      layer_boundaries:
-        enforced: true
-        rule: Strict separation between layers
-    data_flow:
-      direction:
-        canonical:
-        - ENTRY
-        - APPLICATION
-        - DECISION
-        - DOMAIN
-        - INFRASTRUCTURE
-      rules:
-      - Flow MUST be unidirectional
-      - No reverse dependencies
-      - No circular dependencies
-      - APPLICATION orchestrates but does not persist
-      - INFRASTRUCTURE handles all IO
-      - Raw persistence models MUST NOT cross boundaries
-      - Mapping layer MUST isolate transformations
-    logic_decomposition:
-      core_rules:
-      - Each unit MUST have exactly one intent
-      - If multiple reasons to change → MUST split
-      - No god classes
-      - No fat services
-      cohesion:
-        rule: Single responsibility is mandatory
-        enforcement:
-        - multi_intent_unit → invalid
-        - multi_reason_to_change → split_required
-    coupling:
-      principles:
-      - Depend on abstractions only
-      - All external dependencies via DI
-      - No global state
-      forbidden:
-      - domain_importing_infrastructure
-      - service_importing_db_models
-      - cross_module_internal_access
-      required:
-      - interfaces_at_boundaries
-      - inversion_of_control
-    service_model:
-      constraints:
-      - Services MUST be stateless
-      - Services MUST be small and composable
-      - Services MUST implement ONE intent only
-      forbidden:
-      - transport_logic_in_service
-      - direct_repository_models
-      - infrastructure_logic
-      split_conditions:
-      - multiple responsibilities
-      - growing orchestration complexity
-    service_usage:
-      rules:
-      - Same service MUST have ONE canonical interface
-      - All usages MUST match same input/output structure
-      - No alternative invocation patterns
-      forbidden:
-      - duplicate_service_logic
-      - bypassing_service_layer
-      - multiple_entrypoints_same_action
-      resolution:
-      - standardize_interface
-      - refactor_all_call_sites
-      - introduce_adapter_only_if_external
-    patterns:
-      allowed:
-        repository:
-          purpose: persistence abstraction
-        factory:
-          purpose: controlled object creation
-        strategy:
-          purpose: replace conditional logic
-        adapter:
-          purpose: external isolation
-      usage_rules:
-      - Pattern MUST reduce complexity
-      - Pattern MUST improve clarity
-      - No speculative patterns
-      forbidden:
-      - pattern_without_reason
-      - over_engineering
-    domain:
-      rules:
-      - Must contain core business rules
-      - Must be pure
-      - Must not depend on frameworks
-    consistency:
-      rules:
-      - Similar problems MUST use same patterns
-      - Naming MUST follow conventions
-      - No parallel implementations of same logic
-    scalability:
-      rules:
-      - Design for change
-      - Prefer extensibility over shortcuts
-      - Avoid tight coupling
-    file_structure:
-      strategy:
-      - feature_first
-      - layer_within_feature
-      template:
-        feature:
-          entry:
-          - '*.controller.ts'
-          application:
-          - '*use-case.ts'
-          - '*service.ts'
-          decision:
-          - '*policy.ts'
-          domain:
-          - '*.entity.ts'
-          infrastructure:
-          - '*.repository.ts'
-          support:
-          - '*.mapper.ts'
-          - '*.validator.ts'
-    validation:
-      fail_conditions:
-      - multi_intent_unit
-      - layer_violation
-      - circular_dependency
-      - service_interface_inconsistency
-      - business_logic_in_wrong_layer
-      - duplicate_logic_paths
-      must_verify:
-      - all_services_consistent
-      - all_dependencies_valid
-      - all_layers_respected
-      - all_units_single_responsibility
-    forbidden:
-      ABSOLUTE:
-      - circular_dependencies
-      - layer_skipping
-      - global_state
-      - business_logic_in_infrastructure
-      - infrastructure_in_domain
-      - direct_db_access_from_services
-      - mixed_responsibilities
-      - god_classes
-      - conditional_heavy_logic_without_strategy
-      - duplicated_service_logic
-      - inconsistent_service_usage
-    agent_execution:
-      behavior:
-      - MUST follow pipeline strictly
-      - MUST NOT skip steps
-      - MUST NOT guess missing structure
-      - MUST derive everything from intent
-      output_format:
-        sections:
-        - capabilities
-        - atomic_units
-        - intents
-        - artifacts
-        - layers
-        - dependencies
-        - file_structure
-        - validation
-      output_constraints:
-      - production_grade_only
-      - no_pseudo_code
-      - no_explanations
-  semantic_depth_restoration:
-    restored_from: conventions.architecture.yaml
-    restoration_scope:
-    - architecture_rules
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
-  canonical_restored_source:
-    architecture_rules:
-      version: '3.1'
-      mode: agent_driven_design_system
-      role: senior_software_architect
-      purpose: 'Deterministically transform a feature prompt into a clean, scalable, production-grade architecture using strict
-        layering, intent decomposition, and enforceable design constraints.
-
-        '
-      philosophy:
-      - Decomposition precedes structure
-      - Intent defines artifact
-      - No ambiguity allowed
-      - Consistency over convenience
-      - Design must be derivable, not guessed
-      execution_policy:
-        ambiguity: fail_closed
-        missing_information: ask_or_abort
-        default_behavior: forbidden
-      contract:
-        input:
-          type: feature_prompt
-        output:
-          type: architecture_blueprint
-          must_include:
-          - capabilities
-          - atomic_units
-          - intents
-          - artifacts
-          - layers
-          - dependencies
-          - file_structure
-          - validation_report
-      pipeline:
-        steps:
-        - extract_capabilities
-        - decompose_to_atomic_units
-        - classify_intents
-        - map_to_artifacts
-        - assign_layers
-        - infer_dependencies
-        - generate_file_structure
-        - validate_system
-      structure:
-        module_definition:
-          rule: Each module represents a distinct business capability
-          constraints:
-          - Modules MUST be independently understandable
-          - Modules MUST be independently testable
-          - No implicit cross-module coupling
-        organization:
-          strategy: feature_first
-          fallback: layer_within_feature
-        layer_boundaries:
-          enforced: true
-          rule: Strict separation between layers
-      data_flow:
-        direction:
-          canonical:
-          - ENTRY
-          - APPLICATION
-          - DECISION
-          - DOMAIN
-          - INFRASTRUCTURE
-        rules:
-        - Flow MUST be unidirectional
-        - No reverse dependencies
-        - No circular dependencies
-        - APPLICATION orchestrates but does not persist
-        - INFRASTRUCTURE handles all IO
-        - Raw persistence models MUST NOT cross boundaries
-        - Mapping layer MUST isolate transformations
-      logic_decomposition:
-        core_rules:
-        - Each unit MUST have exactly one intent
-        - If multiple reasons to change → MUST split
-        - No god classes
-        - No fat services
-        cohesion:
-          rule: Single responsibility is mandatory
-          enforcement:
-          - multi_intent_unit → invalid
-          - multi_reason_to_change → split_required
-      coupling:
-        principles:
-        - Depend on abstractions only
-        - All external dependencies via DI
-        - No global state
-        forbidden:
-        - domain_importing_infrastructure
-        - service_importing_db_models
-        - cross_module_internal_access
-        required:
-        - interfaces_at_boundaries
-        - inversion_of_control
-      service_model:
-        constraints:
-        - Services MUST be stateless
-        - Services MUST be small and composable
-        - Services MUST implement ONE intent only
-        forbidden:
-        - transport_logic_in_service
-        - direct_repository_models
-        - infrastructure_logic
-        split_conditions:
-        - multiple responsibilities
-        - growing orchestration complexity
-      service_usage:
-        rules:
-        - Same service MUST have ONE canonical interface
-        - All usages MUST match same input/output structure
-        - No alternative invocation patterns
-        forbidden:
-        - duplicate_service_logic
-        - bypassing_service_layer
-        - multiple_entrypoints_same_action
-        resolution:
-        - standardize_interface
-        - refactor_all_call_sites
-        - introduce_adapter_only_if_external
-      patterns:
-        allowed:
-          repository:
-            purpose: persistence abstraction
-          factory:
-            purpose: controlled object creation
-          strategy:
-            purpose: replace conditional logic
-          adapter:
-            purpose: external isolation
-        usage_rules:
-        - Pattern MUST reduce complexity
-        - Pattern MUST improve clarity
-        - No speculative patterns
-        forbidden:
-        - pattern_without_reason
-        - over_engineering
+  architecture_principles:
+    absolute:
+    - id: ARCH-PRINCIPLE-001
+      rule: Decomposition precedes structure rendering.
+      fail_condition: structure_created_before_decomposition
+    - id: ARCH-PRINCIPLE-002
+      rule: Intent defines artifact boundaries.
+      fail_condition: artifact_created_without_intent
+    - id: ARCH-PRINCIPLE-003
+      rule: Every architectural decision must be derivable from behavior, evidence, or declared constraints.
+      fail_condition: architecture_decision_not_derivable
+    - id: ARCH-PRINCIPLE-004
+      rule: No ambiguity is allowed in architecture outputs; unknowns must become assumptions, blockers, or revision requests.
+      fail_condition: architecture_output_contains_unresolved_implicit_ambiguity
+    - id: ARCH-PRINCIPLE-005
+      rule: Architecture must prefer minimum sufficient design over speculative extensibility.
+      fail_condition: speculative_architecture_added_without_pressure
+    quality_goals:
+    - readability
+    - discoverability
+    - maintainability
+    - testability
+    - low_coupling
+    - high_cohesion
+    - predictable_data_flow
+  architecture_blueprint_schema:
+    required_fields:
+    - blueprint_id
+    - source_behavior_ref
+    - capabilities
+    - atomic_units
+    - intents
+    - artifact_candidates
+    - layer_assignments
+    - boundary_refs
+    - dependency_constraints
+    - assumptions
+    - rejected_alternatives
+    - evidence_refs
+    optional_fields:
+    - flow_groups
+    - extension_points
+    - risk_notes
+    - adapter_requirements
+    - data_transformation_requirements
+    record_shape:
+      blueprint_id: ''
+      source_behavior_ref: ''
+      capabilities: []
+      atomic_units: []
+      intents: []
+      artifact_candidates: []
+      layer_assignments: []
+      boundary_refs: []
+      dependency_constraints: []
+      assumptions: []
+      rejected_alternatives: []
+      evidence_refs: []
+  capability_detection:
+    capability_record_schema:
+      required_fields:
+      - capability_id
+      - name
+      - business_purpose
+      - source_requirements
+      - included_behaviors
+      - excluded_behaviors
+      - evidence_refs
+      optional_fields:
+      - related_capabilities
+      - risk_notes
+    positive_signals:
+    - user-visible outcome
+    - distinct business capability
+    - independently testable behavior group
+    - behavior has its own acceptance criteria
+    - behavior can change for a separate business reason
+    negative_signals:
+    - technical helper only
+    - file/folder name only
+    - implementation detail without business behavior
+    - duplicate expression of another capability
+    decision_rules:
+    - id: CAPABILITY-DETECT-001
+      choose_when:
+      - requirement describes a distinct business outcome
+      - outcome has independent acceptance criteria
+      reject_when:
+      - item is only a technical mechanism
+      - item cannot be tested independently
+      fail_condition: capability_created_without_business_outcome
+    - id: CAPABILITY-DETECT-002
+      choose_when:
+      - same feature has multiple business outcomes with different reasons to change
+      decision: split_into_multiple_capabilities
+      fail_condition: multi_outcome_capability_not_split
+  atomic_unit_decomposition:
+    atomic_unit_schema:
+      required_fields:
+      - unit_id
+      - intent
+      - capability_ref
+      - input_contract
+      - output_contract
+      - side_effects
+      - layer_candidate
+      - evidence_refs
+      optional_fields:
+      - depends_on_units
+      - rejected_merge_targets
+    rules:
+    - id: ATOMIC-UNIT-001
+      rule: Each atomic unit must have exactly one intent.
+      fail_condition: atomic_unit_has_multiple_intents
+    - id: ATOMIC-UNIT-002
+      rule: If an atomic unit has multiple reasons to change, it must be split.
+      fail_condition: multi_reason_to_change_unit_not_split
+    - id: ATOMIC-UNIT-003
+      rule: Atomic units may orchestrate, decide, transform, persist, or integrate, but must not mix incompatible responsibilities.
+      fail_condition: atomic_unit_mixes_incompatible_responsibilities
+    split_triggers:
+    - contains orchestration and persistence
+    - contains transport and domain decision
+    - contains validation and external IO
+    - contains multiple branches with independent policies
+    - requires different test strategies for subparts
+  intent_classification:
+    intent_types:
+      entry_intent:
+        definition: Receives a transport/event/request and delegates without business ownership.
+        positive_signals:
+        - HTTP handler
+        - queue consumer
+        - event gateway
+        - CLI command entry
+        reject_when:
+        - contains business rule
+        - performs persistence directly
+      orchestration_intent:
+        definition: Coordinates a workflow across units without owning core business rules.
+        positive_signals:
+        - multi-step flow
+        - coordinates policies/repositories/clients
+        - transaction boundary candidate
+        reject_when:
+        - contains pure domain rule that can be isolated
+      decision_intent:
+        definition: Chooses between alternatives according to policy or rule.
+        positive_signals:
+        - branch selection
+        - eligibility rule
+        - routing policy
+        - validation policy
+        reject_when:
+        - only delegates or maps fields
+      domain_intent:
+        definition: Represents pure business rule or invariant independent of frameworks and IO.
+        positive_signals:
+        - business invariant
+        - calculation
+        - state transition rule
+        - domain policy
+        reject_when:
+        - depends on HTTP/database/framework
+      persistence_intent:
+        definition: Reads or writes durable state behind an abstraction.
+        positive_signals:
+        - database access
+        - repository behavior
+        - query/write model
+        reject_when:
+        - business rule lives inside persistence artifact
+      integration_intent:
+        definition: Communicates with external system or protocol through an adapter/client boundary.
+        positive_signals:
+        - third-party API
+        - message broker
+        - external SDK
+        - webhook callout
+        reject_when:
+        - external protocol leaks into domain/application logic
+      transformation_intent:
+        definition: Maps data between boundary shapes without owning business decisions.
+        positive_signals:
+        - DTO to domain mapping
+        - entity to response mapping
+        - external payload normalization
+        reject_when:
+        - mapping contains hidden business rule
+    classification_algorithm:
+    - read behavior and evidence
+    - identify primary reason to change
+    - match positive and negative signals
+    - select exactly one primary intent
+    - record secondary pressures as split candidates
+    - emit split_required when incompatible intents coexist
+  layer_model:
+    layers:
+      transport:
+        definition: External entry layer for HTTP, events, sockets, queues, CLI, or other transports.
+        may_depend_on:
+        - application
+        must_not_depend_on:
+        - domain_directly_when_application_flow_exists
+        - infrastructure
+        - persistence_models
+        typical_roles:
+        - controller
+        - gateway
+        - consumer
+        - resolver
+      application:
+        definition: Use-case and orchestration layer coordinating workflows and side effects.
+        may_depend_on:
+        - domain
+        - ports
+        - interfaces
+        must_not_depend_on:
+        - transport_frameworks
+        - raw_database_models
+        - external_sdk_details
+        typical_roles:
+        - service
+        - use_case
+        - orchestrator
+        - workflow
+      decision:
+        definition: Policy, strategy, guard, rule, or resolver layer for explicit decisions.
+        may_depend_on:
+        - domain
+        - types
+        - interfaces
+        must_not_depend_on:
+        - transport_objects
+        - database_models
+        typical_roles:
+        - policy
+        - strategy
+        - validator
+        - resolver
       domain:
-        rules:
-        - Must contain core business rules
-        - Must be pure
-        - Must not depend on frameworks
-      consistency:
-        rules:
-        - Similar problems MUST use same patterns
-        - Naming MUST follow conventions
-        - No parallel implementations of same logic
-      scalability:
-        rules:
-        - Design for change
-        - Prefer extensibility over shortcuts
-        - Avoid tight coupling
-      file_structure:
-        strategy:
-        - feature_first
-        - layer_within_feature
-        template:
-          feature:
-            entry:
-            - '*.controller.ts'
-            application:
-            - '*use-case.ts'
-            - '*service.ts'
-            decision:
-            - '*policy.ts'
-            domain:
-            - '*.entity.ts'
-            infrastructure:
-            - '*.repository.ts'
-            support:
-            - '*.mapper.ts'
-            - '*.validator.ts'
-      validation:
-        fail_conditions:
-        - multi_intent_unit
-        - layer_violation
-        - circular_dependency
-        - service_interface_inconsistency
-        - business_logic_in_wrong_layer
-        - duplicate_logic_paths
-        must_verify:
-        - all_services_consistent
-        - all_dependencies_valid
-        - all_layers_respected
-        - all_units_single_responsibility
-      forbidden:
-        ABSOLUTE:
-        - circular_dependencies
-        - layer_skipping
-        - global_state
-        - business_logic_in_infrastructure
-        - infrastructure_in_domain
-        - direct_db_access_from_services
-        - mixed_responsibilities
-        - god_classes
-        - conditional_heavy_logic_without_strategy
-        - duplicated_service_logic
-        - inconsistent_service_usage
-      agent_execution:
-        behavior:
-        - MUST follow pipeline strictly
-        - MUST NOT skip steps
-        - MUST NOT guess missing structure
-        - MUST derive everything from intent
-        output_format:
-          sections:
-          - capabilities
-          - atomic_units
-          - intents
-          - artifacts
-          - layers
-          - dependencies
-          - file_structure
-          - validation
-        output_constraints:
-        - production_grade_only
-        - no_pseudo_code
-        - no_explanations
-  canonical_source_full:
-    architecture_rules:
-      version: '3.1'
-      mode: agent_driven_design_system
-      role: senior_software_architect
-      purpose: 'Deterministically transform a feature prompt into a clean, scalable, production-grade architecture using strict
-        layering, intent decomposition, and enforceable design constraints.
-
-        '
-      philosophy:
-      - Decomposition precedes structure
-      - Intent defines artifact
-      - No ambiguity allowed
-      - Consistency over convenience
-      - Design must be derivable, not guessed
-      execution_policy:
-        ambiguity: fail_closed
-        missing_information: ask_or_abort
-        default_behavior: forbidden
-      contract:
-        input:
-          type: feature_prompt
-        output:
-          type: architecture_blueprint
-          must_include:
-          - capabilities
-          - atomic_units
-          - intents
-          - artifacts
-          - layers
-          - dependencies
-          - file_structure
-          - validation_report
-      pipeline:
-        steps:
-        - extract_capabilities
-        - decompose_to_atomic_units
-        - classify_intents
-        - map_to_artifacts
-        - assign_layers
-        - infer_dependencies
-        - generate_file_structure
-        - validate_system
-      structure:
-        module_definition:
-          rule: Each module represents a distinct business capability
-          constraints:
-          - Modules MUST be independently understandable
-          - Modules MUST be independently testable
-          - No implicit cross-module coupling
-        organization:
-          strategy: feature_first
-          fallback: layer_within_feature
-        layer_boundaries:
-          enforced: true
-          rule: Strict separation between layers
-      data_flow:
-        direction:
-          canonical:
-          - ENTRY
-          - APPLICATION
-          - DECISION
-          - DOMAIN
-          - INFRASTRUCTURE
-        rules:
-        - Flow MUST be unidirectional
-        - No reverse dependencies
-        - No circular dependencies
-        - APPLICATION orchestrates but does not persist
-        - INFRASTRUCTURE handles all IO
-        - Raw persistence models MUST NOT cross boundaries
-        - Mapping layer MUST isolate transformations
-      logic_decomposition:
-        core_rules:
-        - Each unit MUST have exactly one intent
-        - If multiple reasons to change → MUST split
-        - No god classes
-        - No fat services
-        cohesion:
-          rule: Single responsibility is mandatory
-          enforcement:
-          - multi_intent_unit → invalid
-          - multi_reason_to_change → split_required
-      coupling:
-        principles:
-        - Depend on abstractions only
-        - All external dependencies via DI
-        - No global state
-        forbidden:
-        - domain_importing_infrastructure
-        - service_importing_db_models
-        - cross_module_internal_access
-        required:
-        - interfaces_at_boundaries
-        - inversion_of_control
-      service_model:
-        constraints:
-        - Services MUST be stateless
-        - Services MUST be small and composable
-        - Services MUST implement ONE intent only
-        forbidden:
-        - transport_logic_in_service
-        - direct_repository_models
-        - infrastructure_logic
-        split_conditions:
-        - multiple responsibilities
-        - growing orchestration complexity
-      service_usage:
-        rules:
-        - Same service MUST have ONE canonical interface
-        - All usages MUST match same input/output structure
-        - No alternative invocation patterns
-        forbidden:
-        - duplicate_service_logic
-        - bypassing_service_layer
-        - multiple_entrypoints_same_action
-        resolution:
-        - standardize_interface
-        - refactor_all_call_sites
-        - introduce_adapter_only_if_external
-      patterns:
-        allowed:
-          repository:
-            purpose: persistence abstraction
-          factory:
-            purpose: controlled object creation
-          strategy:
-            purpose: replace conditional logic
-          adapter:
-            purpose: external isolation
-        usage_rules:
-        - Pattern MUST reduce complexity
-        - Pattern MUST improve clarity
-        - No speculative patterns
-        forbidden:
-        - pattern_without_reason
-        - over_engineering
-      domain:
-        rules:
-        - Must contain core business rules
-        - Must be pure
-        - Must not depend on frameworks
-      consistency:
-        rules:
-        - Similar problems MUST use same patterns
-        - Naming MUST follow conventions
-        - No parallel implementations of same logic
-      scalability:
-        rules:
-        - Design for change
-        - Prefer extensibility over shortcuts
-        - Avoid tight coupling
-      file_structure:
-        strategy:
-        - feature_first
-        - layer_within_feature
-        template:
-          feature:
-            entry:
-            - '*.controller.ts'
-            application:
-            - '*use-case.ts'
-            - '*service.ts'
-            decision:
-            - '*policy.ts'
-            domain:
-            - '*.entity.ts'
-            infrastructure:
-            - '*.repository.ts'
-            support:
-            - '*.mapper.ts'
-            - '*.validator.ts'
-      validation:
-        fail_conditions:
-        - multi_intent_unit
-        - layer_violation
-        - circular_dependency
-        - service_interface_inconsistency
-        - business_logic_in_wrong_layer
-        - duplicate_logic_paths
-        must_verify:
-        - all_services_consistent
-        - all_dependencies_valid
-        - all_layers_respected
-        - all_units_single_responsibility
-      forbidden:
-        ABSOLUTE:
-        - circular_dependencies
-        - layer_skipping
-        - global_state
-        - business_logic_in_infrastructure
-        - infrastructure_in_domain
-        - direct_db_access_from_services
-        - mixed_responsibilities
-        - god_classes
-        - conditional_heavy_logic_without_strategy
-        - duplicated_service_logic
-        - inconsistent_service_usage
-      agent_execution:
-        behavior:
-        - MUST follow pipeline strictly
-        - MUST NOT skip steps
-        - MUST NOT guess missing structure
-        - MUST derive everything from intent
-        output_format:
-          sections:
-          - capabilities
-          - atomic_units
-          - intents
-          - artifacts
-          - layers
-          - dependencies
-          - file_structure
-          - validation
-        output_constraints:
-        - production_grade_only
-        - no_pseudo_code
-        - no_explanations
+        definition: Pure business logic and invariants independent of IO and frameworks.
+        may_depend_on:
+        - domain_types
+        - domain_interfaces
+        must_not_depend_on:
+        - transport
+        - application
+        - infrastructure
+        - database
+        - frameworks
+        typical_roles:
+        - domain_service
+        - entity
+        - value_object
+        - domain_policy
+      infrastructure:
+        definition: External IO, persistence, SDK, protocol, and adapter implementation layer.
+        may_depend_on:
+        - domain
+        - interfaces
+        must_not_depend_on:
+        - transport_controllers
+        - application_private_details
+        typical_roles:
+        - repository
+        - client
+        - adapter
+        - provider
+    assignment_rules:
+    - id: LAYER-ASSIGN-001
+      choose_layer: transport
+      when:
+      - artifact receives external request or event
+      reject_when:
+      - artifact owns business rule or persistence
+    - id: LAYER-ASSIGN-002
+      choose_layer: application
+      when:
+      - artifact coordinates use-case workflow
+      reject_when:
+      - artifact performs raw IO or is pure domain invariant
+    - id: LAYER-ASSIGN-003
+      choose_layer: domain
+      when:
+      - artifact is pure business rule and framework independent
+      reject_when:
+      - artifact imports framework, repository, client, or transport type
+    - id: LAYER-ASSIGN-004
+      choose_layer: infrastructure
+      when:
+      - artifact implements persistence or external integration
+      reject_when:
+      - artifact is consumed directly by transport or contains business policy
+  artifact_candidate_generation:
+    artifact_candidate_schema:
+      required_fields:
+      - candidate_id
+      - proposed_name
+      - intent_ref
+      - capability_ref
+      - primary_layer
+      - candidate_role_pressure
+      - reason
+      - inputs
+      - outputs
+      - side_effects
+      - evidence_refs
+      optional_fields:
+      - existing_artifact_refs
+      - split_from
+      - merge_candidates
+      - pattern_pressure_refs
+    generation_rules:
+    - id: ARTIFACT-CANDIDATE-001
+      rule: Create artifact candidates from atomic units, not from folder preferences.
+      fail_condition: artifact_candidate_created_from_structure_preference
+    - id: ARTIFACT-CANDIDATE-002
+      rule: One candidate must not mix transport, domain, and infrastructure concerns.
+      fail_condition: candidate_mixes_layer_concerns
+    - id: ARTIFACT-CANDIDATE-003
+      rule: Existing artifact reuse must be deferred to artifact action analysis, but candidates may reference existing artifacts
+        as evidence.
+      fail_condition: architecture_phase_selected_final_action
+  dependency_constraints:
+    ownership_boundary:
+      definition: Architecture defines conceptual dependency intent and forbidden architectural edges; detailed import syntax,
+        direction validation, and test exceptions belong to the dependencies subsystem.
+      architecture_owns:
+      - conceptual_layer_flow
+      - required_architectural_boundaries
+      - forbidden_architectural_edges
+      - port_or_adapter_need_detection
+      - dependency_intent_recording
+      dependencies_subsystem_owns:
+      - detailed_dependency_direction_rules
+      - static_import_rules
+      - barrel_export_rules
+      - test_dependency_exceptions
+      - dependency_validation_algorithm
+      fail_condition: architecture_file_defines_detailed_import_or_test_dependency_policy
+    canonical_layer_flow:
+      ordered_layers:
+      - transport
+      - application
+      - decision
+      - domain
+      - infrastructure
+      rule: Dependencies may flow inward toward business intent and outward only through explicit ports/adapters declared
+        as boundaries.
+      fail_condition: dependency_flow_not_representable_as_allowed_architectural_edge
+    architectural_edge_rules:
+    - edge_id: ARCH-EDGE-001
+      source_layer: transport
+      allowed_targets:
+      - application
+      forbidden_targets:
+      - domain
+      - infrastructure
+      allowed_when:
+      - transport delegates request handling to an application service/use-case
+      forbidden_when:
+      - controller directly calls repository
+      - controller directly calls external client
+      - controller executes domain decision logic
+      required_boundary: transport_to_application_dto_or_command_mapping
+      fail_condition: transport_bypasses_application_boundary
+    - edge_id: ARCH-EDGE-002
+      source_layer: application
+      allowed_targets:
+      - domain
+      - decision
+      - declared_ports
+      forbidden_targets:
+      - transport
+      - concrete_infrastructure
+      allowed_when:
+      - application orchestrates domain/policy behavior through abstractions
+      forbidden_when:
+      - application depends on HTTP framework object
+      - application depends directly on database model
+      - application instantiates external client
+      required_boundary: port_or_repository_abstraction_for_external_state
+      fail_condition: application_depends_on_transport_or_concrete_infrastructure
+    - edge_id: ARCH-EDGE-003
+      source_layer: domain
+      allowed_targets:
+      - domain
+      forbidden_targets:
+      - transport
+      - application
+      - infrastructure
+      - persistence_model
+      - external_client
+      allowed_when:
+      - domain collaborates with domain services, policies, entities, value objects, or domain types
+      forbidden_when:
+      - domain imports framework decorators
+      - domain uses repository implementation
+      - domain uses external SDK
+      required_boundary: domain_purity_boundary
+      fail_condition: domain_has_outward_dependency
+    - edge_id: ARCH-EDGE-004
+      source_layer: infrastructure
+      allowed_targets:
+      - declared_ports
+      - external_system
+      - persistence_system
+      forbidden_targets:
+      - transport_controller
+      - domain_behavior_mutation
+      allowed_when:
+      - infrastructure implements an application/domain port
+      - infrastructure hides external or persistence details behind an adapter/repository
+      forbidden_when:
+      - infrastructure calls controller
+      - infrastructure owns business decision that belongs to domain/application
+      required_boundary: adapter_or_repository_boundary
+      fail_condition: infrastructure_owns_business_flow_or_transport_entry
+    required_boundaries:
+    - boundary: external_system_port
+      required_when:
+      - application needs external API or SDK behavior
+      reject_direct_access_when:
+      - application/domain would otherwise import external SDK
+      fail_condition: external_system_access_without_port_or_adapter
+    - boundary: repository_abstraction
+      required_when:
+      - application/domain needs persisted state
+      reject_direct_access_when:
+      - service/controller/domain would otherwise use database model directly
+      fail_condition: persistence_access_without_repository_boundary
+    - boundary: mapper_or_dto_boundary
+      required_when:
+      - data crosses transport/application/domain/persistence boundary with different shape
+      reject_direct_access_when:
+      - raw request, response, ORM, or external DTO crosses into another layer
+      fail_condition: raw_boundary_shape_crosses_layer
+    handoff_to_dependencies_subsystem:
+      must_emit_when:
+      - architecture introduces new edge between layers
+      - architecture introduces cross-module dependency
+      - architecture requires port/adapter/repository boundary
+      - architecture changes public import/export surface
+      required_downstream_files:
+      - dependencies/conventions.dependency-direction-rules.yaml
+      - dependencies/conventions.import-rules.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      trigger: dependency_validation_required
+  architecture_decomposition_algorithm:
+  - step_id: LOAD_BEHAVIOR_CONTRACT
+    action: read
+    required: true
+  - step_id: EXTRACT_CAPABILITIES
+    action: derive_capabilities_from_behavior_and_acceptance_criteria
+  - step_id: DECOMPOSE_ATOMIC_UNITS
+    action: split_capabilities_by_single_intent_and_reason_to_change
+  - step_id: CLASSIFY_INTENTS
+    action: assign_primary_intent_to_each_atomic_unit
+  - step_id: ASSIGN_LAYERS
+    action: map_intents_to_layer_model
+  - step_id: PROPOSE_ARTIFACT_CANDIDATES
+    action: create_candidates_without_final_actions
+  - step_id: DEFINE_DEPENDENCY_CONSTRAINTS
+    action: record_required_and_forbidden_dependency_edges
+  - step_id: RECORD_REJECTED_ALTERNATIVES
+    action: record why simpler or different decompositions were rejected
+  - step_id: EMIT_ARCHITECTURE_BLUEPRINT
+    action: write architecture-blueprint and artifact-candidates reports
+  anti_patterns:
+    god_service:
+      signals:
+      - service owns many unrelated use cases
+      - service has many reasons to change
+      - service performs orchestration, persistence, and decision logic
+      resolution: split_by_intent_and_boundary
+    anemic_architecture:
+      signals:
+      - all behavior placed in generic helpers
+      - domain rules scattered in controllers/services
+      resolution: extract domain or policy units
+    transport_leak:
+      signals:
+      - request/response object passed into application/domain
+      - decorators outside transport layer
+      resolution: introduce DTO/mapper boundary
+    persistence_leak:
+      signals:
+      - raw database model crosses repository boundary
+      - domain depends on ORM entity
+      resolution: map persistence model to domain/output shape
+    speculative_abstraction:
+      signals:
+      - factory/strategy/adapter without variation or boundary pressure
+      - extra interface with one local implementation and no boundary reason
+      resolution: remove or defer abstraction
+  architecture_authority_rules:
+    absolute_rules:
+    - id: ARCH-AUTH-001
+      rule: Architecture may define conceptual dependency intent but must not define low-level import syntax policy.
+      fail_condition: architecture_defines_import_syntax_policy
+    - id: ARCH-AUTH-002
+      rule: Architecture may identify required boundaries but boundary crossing legality is validated by the boundaries subsystem.
+      fail_condition: architecture_overrides_boundary_validation
+    - id: ARCH-AUTH-003
+      rule: Architecture may propose artifact candidates but must not select artifact actions.
+      fail_condition: architecture_selects_artifact_action
 validation:
+  required_checks:
+  - id: ARCH-CHECK-001
+    check: architecture_blueprint_has_required_fields
+    applies_when:
+      phase: architecture_decomposition
+  - id: ARCH-CHECK-002
+    check: every_artifact_candidate_has_single_primary_intent
+    applies_when:
+      artifact_candidates_present: true
+  - id: ARCH-CHECK-003
+    check: dependency_constraints_do_not_violate_layer_model
+    applies_when:
+      dependency_constraints_present: true
   fail_conditions:
-  - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-001
-    condition: architecture_started_without_behavior_contract
-    message: Architecture started without behavior contract.
+  - id: ARCH-001
+    condition: architecture_decision_not_derivable
+    message: Architecture decisions must be derived from behavior, evidence, or constraints.
     severity: error
-    owner: architecture/conventions.architecture.yaml
-  - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-002
-    condition: capability_missing_owner
-    message: Capability missing owner.
+  - id: ARCH-002
+    condition: artifact_candidate_created_from_structure_preference
+    message: Artifact candidates must come from decomposition, not folder preference.
     severity: error
-    owner: architecture/conventions.architecture.yaml
-  - id: ARCHITECTURE-CONVENTIONS-ARCHITECTURE-YAML-FC-003
-    condition: dependency_direction_undefined
-    message: Dependency direction undefined.
+  - id: ARCH-003
+    condition: candidate_mixes_layer_concerns
+    message: Artifact candidate mixes incompatible layer responsibilities.
     severity: error
-    owner: architecture/conventions.architecture.yaml
-  required_checks: []
+  - id: ARCH-004
+    condition: domain_depends_on_infrastructure
+    message: Domain layer must not depend on infrastructure.
+    severity: error

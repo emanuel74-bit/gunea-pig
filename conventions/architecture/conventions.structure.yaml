@@ -4,794 +4,406 @@ file:
   path: architecture/conventions.structure.yaml
   role: structure_renderer_contract
   executability: decision_engine
-purpose: Render physical folder and file tree from architecture, actions, roles, and structure strategy.
+purpose: Render the final physical folder and file tree from architecture blueprint, artifact actions, role assignments, pattern
+  decisions, and structure strategy without redefining upstream decisions.
 ownership:
   owns:
-  - structure_rendering
-  - file_tree_output
-  - placement_application
+  - structure_rendering_contract
+  - file_tree_output_schema
+  - placement_rules
+  - naming_rules
+  - rendering_algorithm
+  - structure_validation_rules
+  - cross_module_structure_rules
+  - shared_code_rules
   does_not_own:
   - architecture_decomposition
-  - role_resolution
+  - artifact_action_selection
+  - role_assignment
+  - pattern_selection
+  - implementation_content
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - architecture_decomposition_required
+  - structure_rendering_required
+  - architecture_validation_required
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - .ai/reports/architecture-blueprint.yaml
+  - .ai/reports/post-action-artifact-candidates.yaml
+  - .ai/reports/08-final-role-assignment.yaml
+  optional:
+  - .ai/reports/pattern-decision-log.yaml
+  - .ai/reports/local-alignment.yaml
+  - .ai/reports/dependency-classification.yaml
 outputs:
   produces:
-  - structure_result
+  - .ai/reports/structure-plan.yaml
+  - .ai/reports/final-file-tree.yaml
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - architecture/conventions.architecture.yaml
   - architecture/conventions.structure-strategy.yaml
   - roles/conventions.role-placement.yaml
   - actions/conventions.action-taxonomy.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
   - dependencies/conventions.import-rules.yaml
-  optional_files: []
+  optional_files:
+  - patterns/conventions.pattern-selection.yaml
+  - boundaries/conventions.boundary-crossing-rules.yaml
 sections:
-  rendering_rules:
-  - Structure renders architecture
-  - Structure fills only unspecified folder hierarchy details
-  - Use post_action_artifact_candidates
-  - Do not let structure redefine architecture
-  canonical_structure_contract_v5:
-    meta:
-      role: senior_software_architect
-      objective: 'Deterministically design and enforce a production-grade codebase using strict layering, intent-driven decomposition,
-        and enforceable constraints.
-
-        '
-      philosophy:
-      - Decomposition precedes structure
-      - Intent defines artifact
-      - No ambiguity allowed
-      - Consistency over convenience
-      - Design must be derivable, not guessed
-      - structure reflects business capabilities
-      - strict separation of concerns
-      - small, focused, composable units only
-      enforcement_mode: strict
-      ambiguity_policy: fail_closed
-    global_principles:
-      must:
-      - single_responsibility_principle
-      - high_cohesion
-      - low_coupling
-      - feature_based_structure
-      - strict_module_boundaries
-      - explicit_naming
-      - independent_modules
-      guarantees:
-      - developer_can_locate_any_feature_in_seconds
-      - no_prior_knowledge_required_to_navigate
-      - linear_scalability_of_structure
-    evaluation_order:
-    - classify_feature_modules
-    - validate_feature_based_structure
-    - classify_folder_by_depth
-    - validate_layer_assignment
-    - validate_internal_module_structure
-    - validate_dependency_graph
-    - validate_data_flow
-    - validate_execution_constraints
-    - validate_cross_module_rules
-    - validate_file_rules
-    - validate_naming
-    - validate_shared_code
-    - validate_scalability
-    - detect_anti_patterns
-    - validate_heuristics
-    feature_structure:
-      rule: Each module represents a distinct business capability
-      constraints:
-      - Modules MUST be independently understandable
-      - Modules MUST be independently testable
-      - No implicit cross-module coupling
-      detection:
-        positive:
-        - top-level folders represent domains
-        negative:
-        - top-level folders named by technical type
-      violation:
-      - structure organized by technical type
-    module_structure:
-      required_folders:
-      - controllers
-      - services
-      - domain
-      - repositories
-      optional_folders:
-      - dto
-      - mappers
-      - types
-      - policies
-      - validators
-      - events
-      - interfaces
-      constraints:
-      - each folder MUST have a single responsibility
-      - no cross-folder leakage
-      - files MUST belong to exactly one layer
-    architecture_layers:
-      layers:
-      - transport
-      - application
-      - domain
-      - infrastructure
-      mapping:
-        controllers: transport
-        services: application
-        domain: domain
-        repositories: infrastructure
-      dependency_direction:
-        rule: dependencies MUST be unidirectional and inward
-        constraints:
-        - no reverse dependencies
-        - no circular dependencies
-        allowed:
-          transport:
-          - application
-          application:
-          - domain
-          - interfaces
-          domain: []
-          infrastructure:
-          - domain
-          - interfaces
-    internal_rules:
-      controllers:
-        must_not:
-        - contain business logic
-        - call repositories
-      services:
-        must:
-        - represent single intent
-        - be composable
-        - be stateless
-        must_not:
-        - contain infrastructure logic
-        - use raw persistence models
-      domain:
-        must:
-        - be pure
-        - contain core business rules
-        must_not:
-        - depend on frameworks
-        - perform IO
-      repositories:
-        must:
-        - encapsulate persistence
-        - hide database/ORM
-        must_not:
-        - leak internal models
-    file_rules:
-      single_responsibility:
-        rule: each file MUST represent exactly one intent
-      single_export:
-        rule: one primary export per file
-      naming:
-        must:
-        - reflect exact behavior
-        forbidden:
-        - utils
-        - helpers
-        - common
-      size:
-        max_lines: 200
-    service_rules:
-      constraints:
-      - services MUST be stateless
-      - services MUST be small and composable
-      - services MUST implement one intent only
-      split_conditions:
-      - multiple responsibilities
-      - growing orchestration complexity
-    domain_rules:
-      location: domain/
-      must:
-      - contain core business rules
-      - be pure
-      must_not:
-      - import frameworks
-      - import infrastructure
-      - perform IO
-    repository_rules:
-      location: repositories/
-      constraints:
-      - ALL persistence logic MUST live here
-      - no repository usage outside services
-    data_transformation:
-      dto:
-        role: external contracts
-      mappers:
-        role: boundary isolation
-      constraints:
-      - no raw persistence models outside repositories
-      - mapping layer MUST isolate transformations
-      - domain must not depend on DTOs
-    cross_module_rules:
-      communication:
-        allowed:
-        - services
-        - interfaces
-        forbidden:
-        - deep imports
-        - bypassing module boundaries
-        - cross_module_internal_access
-    shared_code:
-      allowed:
-      - cross-cutting concerns
-      - truly generic utilities
-      forbidden:
-      - mixed domain logic
-      - dumping folders
-    type_rules:
-      allowed_locations:
-      - types/
-      - dto/
-      forbidden:
-      - inline scattered types
-    scalability:
-      rules:
-      - design for change
-      - prefer extensibility over shortcuts
-      - avoid tight coupling
-      guarantees:
-      - new features added without modifying existing modules
-      - no cross-module coupling introduced
-    data_flow:
-      canonical:
-      - ENTRY -> APPLICATION -> DECISION -> DOMAIN -> INFRASTRUCTURE
-      rules:
-      - flow MUST be unidirectional
-      - APPLICATION orchestrates but does not persist
-      - INFRASTRUCTURE handles all IO
-    anti_patterns:
-      folder_by_type:
-        signal:
-        - global technical folders
-      god_module:
-        signal:
-        - multiple domains in one module
-      god_service:
-        signal:
-        - multiple intents in one service
-      scattered_logic:
-        signal:
-        - related logic across unrelated folders
-      deep_nesting:
-        signal:
-        - unclear nested structure
-    refactoring:
-      steps:
-      - identify capabilities
-      - decompose to atomic units
-      - classify intents
-      - assign layers
-      - split responsibilities
-      - rename for clarity
-      - remove duplication
-      - enforce boundaries
-    heuristics:
-      completion_condition:
-      - no rule violations
-      - all units single intent
-      - all dependencies valid
-      - structure is derivable and unambiguous
-  semantic_depth_restoration:
-    restored_from: conventions.structure.yaml
-    restoration_scope:
-    - architecture_contract_v5
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
-  canonical_restored_source:
-    architecture_contract_v5:
-      meta:
-        role: senior_software_architect
-        objective: 'Deterministically design and enforce a production-grade codebase using strict layering, intent-driven
-          decomposition, and enforceable constraints.
-
-          '
-        philosophy:
-        - Decomposition precedes structure
-        - Intent defines artifact
-        - No ambiguity allowed
-        - Consistency over convenience
-        - Design must be derivable, not guessed
-        - structure reflects business capabilities
-        - strict separation of concerns
-        - small, focused, composable units only
-        enforcement_mode: strict
-        ambiguity_policy: fail_closed
-      global_principles:
-        must:
-        - single_responsibility_principle
-        - high_cohesion
-        - low_coupling
-        - feature_based_structure
-        - strict_module_boundaries
-        - explicit_naming
-        - independent_modules
-        guarantees:
-        - developer_can_locate_any_feature_in_seconds
-        - no_prior_knowledge_required_to_navigate
-        - linear_scalability_of_structure
-      evaluation_order:
-      - classify_feature_modules
-      - validate_feature_based_structure
-      - classify_folder_by_depth
-      - validate_layer_assignment
-      - validate_internal_module_structure
-      - validate_dependency_graph
-      - validate_data_flow
-      - validate_execution_constraints
-      - validate_cross_module_rules
-      - validate_file_rules
-      - validate_naming
-      - validate_shared_code
-      - validate_scalability
-      - detect_anti_patterns
-      - validate_heuristics
-      feature_structure:
-        rule: Each module represents a distinct business capability
-        constraints:
-        - Modules MUST be independently understandable
-        - Modules MUST be independently testable
-        - No implicit cross-module coupling
-        detection:
-          positive:
-          - top-level folders represent domains
-          negative:
-          - top-level folders named by technical type
-        violation:
-        - structure organized by technical type
-      module_structure:
-        required_folders:
-        - controllers
-        - services
-        - domain
-        - repositories
-        optional_folders:
-        - dto
-        - mappers
-        - types
-        - policies
-        - validators
-        - events
-        - interfaces
-        constraints:
-        - each folder MUST have a single responsibility
-        - no cross-folder leakage
-        - files MUST belong to exactly one layer
-      architecture_layers:
-        layers:
-        - transport
-        - application
-        - domain
-        - infrastructure
-        mapping:
-          controllers: transport
-          services: application
-          domain: domain
-          repositories: infrastructure
-        dependency_direction:
-          rule: dependencies MUST be unidirectional and inward
-          constraints:
-          - no reverse dependencies
-          - no circular dependencies
-          allowed:
-            transport:
-            - application
-            application:
-            - domain
-            - interfaces
-            domain: []
-            infrastructure:
-            - domain
-            - interfaces
-      internal_rules:
-        controllers:
-          must_not:
-          - contain business logic
-          - call repositories
-        services:
-          must:
-          - represent single intent
-          - be composable
-          - be stateless
-          must_not:
-          - contain infrastructure logic
-          - use raw persistence models
-        domain:
-          must:
-          - be pure
-          - contain core business rules
-          must_not:
-          - depend on frameworks
-          - perform IO
-        repositories:
-          must:
-          - encapsulate persistence
-          - hide database/ORM
-          must_not:
-          - leak internal models
-      file_rules:
-        single_responsibility:
-          rule: each file MUST represent exactly one intent
-        single_export:
-          rule: one primary export per file
-        naming:
-          must:
-          - reflect exact behavior
-          forbidden:
-          - utils
-          - helpers
-          - common
-        size:
-          max_lines: 200
-      service_rules:
-        constraints:
-        - services MUST be stateless
-        - services MUST be small and composable
-        - services MUST implement one intent only
-        split_conditions:
-        - multiple responsibilities
-        - growing orchestration complexity
-      domain_rules:
-        location: domain/
-        must:
-        - contain core business rules
-        - be pure
-        must_not:
-        - import frameworks
-        - import infrastructure
-        - perform IO
-      repository_rules:
-        location: repositories/
-        constraints:
-        - ALL persistence logic MUST live here
-        - no repository usage outside services
-      data_transformation:
-        dto:
-          role: external contracts
-        mappers:
-          role: boundary isolation
-        constraints:
-        - no raw persistence models outside repositories
-        - mapping layer MUST isolate transformations
-        - domain must not depend on DTOs
-      cross_module_rules:
-        communication:
-          allowed:
-          - services
-          - interfaces
-          forbidden:
-          - deep imports
-          - bypassing module boundaries
-          - cross_module_internal_access
-      shared_code:
-        allowed:
-        - cross-cutting concerns
-        - truly generic utilities
-        forbidden:
-        - mixed domain logic
-        - dumping folders
-      type_rules:
-        allowed_locations:
-        - types/
-        - dto/
-        forbidden:
-        - inline scattered types
-      scalability:
-        rules:
-        - design for change
-        - prefer extensibility over shortcuts
-        - avoid tight coupling
-        guarantees:
-        - new features added without modifying existing modules
-        - no cross-module coupling introduced
-      data_flow:
-        canonical:
-        - ENTRY -> APPLICATION -> DECISION -> DOMAIN -> INFRASTRUCTURE
-        rules:
-        - flow MUST be unidirectional
-        - APPLICATION orchestrates but does not persist
-        - INFRASTRUCTURE handles all IO
-      anti_patterns:
-        folder_by_type:
-          signal:
-          - global technical folders
-        god_module:
-          signal:
-          - multiple domains in one module
-        god_service:
-          signal:
-          - multiple intents in one service
-        scattered_logic:
-          signal:
-          - related logic across unrelated folders
-        deep_nesting:
-          signal:
-          - unclear nested structure
-      refactoring:
-        steps:
-        - identify capabilities
-        - decompose to atomic units
-        - classify intents
-        - assign layers
-        - split responsibilities
-        - rename for clarity
-        - remove duplication
-        - enforce boundaries
-      heuristics:
-        completion_condition:
-        - no rule violations
-        - all units single intent
-        - all dependencies valid
-        - structure is derivable and unambiguous
-  canonical_source_full:
-    architecture_contract_v5:
-      meta:
-        role: senior_software_architect
-        objective: 'Deterministically design and enforce a production-grade codebase using strict layering, intent-driven
-          decomposition, and enforceable constraints.
-
-          '
-        philosophy:
-        - Decomposition precedes structure
-        - Intent defines artifact
-        - No ambiguity allowed
-        - Consistency over convenience
-        - Design must be derivable, not guessed
-        - structure reflects business capabilities
-        - strict separation of concerns
-        - small, focused, composable units only
-        enforcement_mode: strict
-        ambiguity_policy: fail_closed
-      global_principles:
-        must:
-        - single_responsibility_principle
-        - high_cohesion
-        - low_coupling
-        - feature_based_structure
-        - strict_module_boundaries
-        - explicit_naming
-        - independent_modules
-        guarantees:
-        - developer_can_locate_any_feature_in_seconds
-        - no_prior_knowledge_required_to_navigate
-        - linear_scalability_of_structure
-      evaluation_order:
-      - classify_feature_modules
-      - validate_feature_based_structure
-      - classify_folder_by_depth
-      - validate_layer_assignment
-      - validate_internal_module_structure
-      - validate_dependency_graph
-      - validate_data_flow
-      - validate_execution_constraints
-      - validate_cross_module_rules
-      - validate_file_rules
-      - validate_naming
-      - validate_shared_code
-      - validate_scalability
-      - detect_anti_patterns
-      - validate_heuristics
-      feature_structure:
-        rule: Each module represents a distinct business capability
-        constraints:
-        - Modules MUST be independently understandable
-        - Modules MUST be independently testable
-        - No implicit cross-module coupling
-        detection:
-          positive:
-          - top-level folders represent domains
-          negative:
-          - top-level folders named by technical type
-        violation:
-        - structure organized by technical type
-      module_structure:
-        required_folders:
-        - controllers
-        - services
-        - domain
-        - repositories
-        optional_folders:
-        - dto
-        - mappers
-        - types
-        - policies
-        - validators
-        - events
-        - interfaces
-        constraints:
-        - each folder MUST have a single responsibility
-        - no cross-folder leakage
-        - files MUST belong to exactly one layer
-      architecture_layers:
-        layers:
-        - transport
-        - application
-        - domain
-        - infrastructure
-        mapping:
-          controllers: transport
-          services: application
-          domain: domain
-          repositories: infrastructure
-        dependency_direction:
-          rule: dependencies MUST be unidirectional and inward
-          constraints:
-          - no reverse dependencies
-          - no circular dependencies
-          allowed:
-            transport:
-            - application
-            application:
-            - domain
-            - interfaces
-            domain: []
-            infrastructure:
-            - domain
-            - interfaces
-      internal_rules:
-        controllers:
-          must_not:
-          - contain business logic
-          - call repositories
-        services:
-          must:
-          - represent single intent
-          - be composable
-          - be stateless
-          must_not:
-          - contain infrastructure logic
-          - use raw persistence models
-        domain:
-          must:
-          - be pure
-          - contain core business rules
-          must_not:
-          - depend on frameworks
-          - perform IO
-        repositories:
-          must:
-          - encapsulate persistence
-          - hide database/ORM
-          must_not:
-          - leak internal models
-      file_rules:
-        single_responsibility:
-          rule: each file MUST represent exactly one intent
-        single_export:
-          rule: one primary export per file
-        naming:
-          must:
-          - reflect exact behavior
-          forbidden:
-          - utils
-          - helpers
-          - common
-        size:
-          max_lines: 200
-      service_rules:
-        constraints:
-        - services MUST be stateless
-        - services MUST be small and composable
-        - services MUST implement one intent only
-        split_conditions:
-        - multiple responsibilities
-        - growing orchestration complexity
-      domain_rules:
-        location: domain/
-        must:
-        - contain core business rules
-        - be pure
-        must_not:
-        - import frameworks
-        - import infrastructure
-        - perform IO
-      repository_rules:
-        location: repositories/
-        constraints:
-        - ALL persistence logic MUST live here
-        - no repository usage outside services
-      data_transformation:
-        dto:
-          role: external contracts
-        mappers:
-          role: boundary isolation
-        constraints:
-        - no raw persistence models outside repositories
-        - mapping layer MUST isolate transformations
-        - domain must not depend on DTOs
-      cross_module_rules:
-        communication:
-          allowed:
-          - services
-          - interfaces
-          forbidden:
-          - deep imports
-          - bypassing module boundaries
-          - cross_module_internal_access
-      shared_code:
-        allowed:
-        - cross-cutting concerns
-        - truly generic utilities
-        forbidden:
-        - mixed domain logic
-        - dumping folders
-      type_rules:
-        allowed_locations:
-        - types/
-        - dto/
-        forbidden:
-        - inline scattered types
-      scalability:
-        rules:
-        - design for change
-        - prefer extensibility over shortcuts
-        - avoid tight coupling
-        guarantees:
-        - new features added without modifying existing modules
-        - no cross-module coupling introduced
-      data_flow:
-        canonical:
-        - ENTRY -> APPLICATION -> DECISION -> DOMAIN -> INFRASTRUCTURE
-        rules:
-        - flow MUST be unidirectional
-        - APPLICATION orchestrates but does not persist
-        - INFRASTRUCTURE handles all IO
-      anti_patterns:
-        folder_by_type:
-          signal:
-          - global technical folders
-        god_module:
-          signal:
-          - multiple domains in one module
-        god_service:
-          signal:
-          - multiple intents in one service
-        scattered_logic:
-          signal:
-          - related logic across unrelated folders
-        deep_nesting:
-          signal:
-          - unclear nested structure
-      refactoring:
-        steps:
-        - identify capabilities
-        - decompose to atomic units
-        - classify intents
-        - assign layers
-        - split responsibilities
-        - rename for clarity
-        - remove duplication
-        - enforce boundaries
-      heuristics:
-        completion_condition:
-        - no rule violations
-        - all units single intent
-        - all dependencies valid
-        - structure is derivable and unambiguous
+  structure_rendering_contract:
+    required_inputs:
+    - architecture_blueprint
+    - post_action_artifact_candidates
+    - final_role_assignment
+    - structure_strategy
+    required_outputs:
+    - structure-plan
+    - final-file-tree
+    must_not:
+    - redefine_behavior
+    - select_new_artifact_actions
+    - assign_new_roles
+    - select_patterns
+    - introduce_unjustified_files
+  file_tree_output_schema:
+    required_fields:
+    - root_modules
+    - folders_to_create
+    - files_to_create
+    - files_to_modify
+    - files_to_move
+    - files_to_delete
+    - placement_decisions
+    - import_boundary_notes
+    - rejected_structure_options
+    - evidence_refs
+    file_record_shape:
+      path: ''
+      artifact_ref: ''
+      role_ref: ''
+      layer: ''
+      action: ''
+      reason: ''
+      depends_on: []
+      public_api: false
+      evidence_refs: []
+  placement_rules:
+    placement_decision_schema:
+      required_fields:
+      - placement_id
+      - artifact_role
+      - choose_when
+      - reject_when
+      - allowed_paths
+      - forbidden_paths
+      - fallback_path
+      - required_evidence
+      - fail_condition
+    rules:
+    - placement_id: PLACE-TRANSPORT-001
+      artifact_role: controller
+      choose_when:
+      - artifact is transport entry for HTTP/request-response interaction
+      reject_when:
+      - artifact contains business rules
+      - artifact accesses repository/external client directly
+      allowed_paths:
+      - <feature>/controllers/<name>.controller.ts
+      - <feature>/<flow>/controllers/<name>.controller.ts
+      forbidden_paths:
+      - <feature>/domain/**
+      - <feature>/repositories/**
+      - <feature>/clients/**
+      fallback_path: <feature>/<name>.controller.ts when density mode is flat
+      required_evidence:
+      - final_role_assignment.controller
+      - transport_boundary_classification
+      fail_condition: controller_placed_outside_transport_area
+    - placement_id: PLACE-APPLICATION-001
+      artifact_role: service_or_use_case
+      choose_when:
+      - artifact orchestrates application workflow or single business action
+      reject_when:
+      - artifact is pure domain rule
+      - artifact is repository or external client implementation
+      allowed_paths:
+      - <feature>/services/<name>.service.ts
+      - <feature>/use-cases/<name>.use-case.ts
+      - <feature>/<flow>/<name>.use-case.ts
+      forbidden_paths:
+      - <feature>/controllers/**
+      - <feature>/repositories/**
+      - <feature>/clients/**
+      fallback_path: <feature>/<name>.service.ts when local convention prefers service orchestration
+      required_evidence:
+      - final_role_assignment.service_or_use_case
+      - application_boundary_classification
+      fail_condition: application_artifact_placed_in_transport_or_infrastructure
+    - placement_id: PLACE-DOMAIN-001
+      artifact_role: domain_policy_or_domain_service
+      choose_when:
+      - artifact owns framework-independent business rule or policy
+      reject_when:
+      - artifact depends on framework, transport DTO, database model, or external SDK
+      allowed_paths:
+      - <feature>/domain/<name>.policy.ts
+      - <feature>/domain/<name>.domain-service.ts
+      - <feature>/domain/<name>.rule.ts
+      forbidden_paths:
+      - <feature>/controllers/**
+      - <feature>/repositories/**
+      - <feature>/clients/**
+      fallback_path: <feature>/<name>.policy.ts when density mode is flat and domain artifacts are few
+      required_evidence:
+      - final_role_assignment.domain_role
+      - domain_boundary_classification
+      fail_condition: domain_artifact_placed_in_infrastructure_or_transport
+    - placement_id: PLACE-INFRA-001
+      artifact_role: repository_or_client_or_adapter
+      choose_when:
+      - artifact interacts with persistence, external system, or concrete infrastructure
+      reject_when:
+      - artifact owns domain decision
+      - artifact is only a type/DTO/mapper without external dependency
+      allowed_paths:
+      - <feature>/repositories/<name>.repository.ts
+      - <feature>/clients/<name>.client.ts
+      - <feature>/adapters/<name>.adapter.ts
+      forbidden_paths:
+      - <feature>/domain/**
+      - <feature>/controllers/**
+      fallback_path: <feature>/<name>.repository.ts or <feature>/<name>.client.ts when density mode is flat
+      required_evidence:
+      - final_role_assignment.infrastructure_role
+      - dependency_classification_or_boundary_classification
+      fail_condition: infrastructure_artifact_placed_in_domain_or_transport
+    - placement_id: PLACE-MAPPER-001
+      artifact_role: mapper_or_transformer
+      choose_when:
+      - artifact converts shape across boundary or between model types
+      reject_when:
+      - artifact contains business decision or orchestration
+      allowed_paths:
+      - <feature>/mappers/<name>.mapper.ts
+      - <feature>/<flow>/mappers/<name>.mapper.ts
+      forbidden_paths:
+      - <feature>/domain/** when mapping transport or persistence shape
+      - <feature>/controllers/** when reused by application/infrastructure
+      fallback_path: <feature>/<name>.mapper.ts when density mode is flat
+      required_evidence:
+      - boundary_crossing_requires_mapper
+      - final_role_assignment.mapper
+      fail_condition: mapper_placed_where_it_creates_boundary_leak
+    - placement_id: PLACE-TYPE-001
+      artifact_role: type_or_enum_or_constant
+      choose_when:
+      - artifact is shared compile-time shape/value vocabulary for the feature
+      reject_when:
+      - artifact is framework DTO with validation behavior
+      - artifact represents persistence schema
+      allowed_paths:
+      - <feature>/types/<name>.type.ts
+      - <feature>/enums/<name>.enum.ts
+      - <feature>/constants/<name>.constant.ts
+      forbidden_paths:
+      - <feature>/domain/** when not domain-owned
+      - <feature>/controllers/** when used outside transport
+      fallback_path: <feature>/<name>.type.ts when density mode is flat and local convention permits
+      required_evidence:
+      - final_role_assignment.type_enum_or_constant
+      fail_condition: shared_type_placed_inside_specific_layer
+    conflict_resolution:
+    - condition: role_and_local_convention_disagree
+      resolution: follow role boundary unless local convention is explicit and does not violate boundaries
+      fail_condition: local_convention_overrode_role_boundary
+    - condition: artifact_fits_multiple_paths
+      resolution: choose path matching primary role and boundary crossing owner
+      fail_condition: artifact_placed_by_secondary_role
+    - condition: density_mode_flat_but_boundary_risk_high
+      resolution: create boundary-specific folder despite flat preference
+      fail_condition: flat_structure_created_boundary_leak
+  naming_rules:
+    must:
+    - name file after exact responsibility
+    - include role suffix when role taxonomy requires it
+    - avoid abbreviations unless project convention establishes them
+    - avoid duplicate names for different intents
+    forbidden:
+    - utils
+    - helpers
+    - common
+    - misc
+    - manager_without_specific_managed_concept
+    - service_without_single_intent
+    examples:
+      good:
+      - create-order.use-case.ts
+      - order-eligibility.policy.ts
+      - mongo-order.repository.ts
+      - stripe-payment.client.ts
+      bad:
+      - order.service.ts containing many unrelated actions
+      - utils.ts
+      - helpers.ts
+      - common.service.ts
+  rendering_algorithm:
+  - step_id: LOAD_REQUIRED_INPUTS
+    action: read architecture, actions, roles, structure strategy
+  - step_id: BUILD_MODULE_ROOTS
+    action: create feature/module roots from capabilities
+  - step_id: APPLY_DENSITY_MODE
+    action: choose flat/role/flow grouping from structure strategy
+  - step_id: PLACE_ARTIFACTS
+    action: apply role and layer placement rules
+  - step_id: VALIDATE_IMPORT_BOUNDARIES
+    action: check dependency direction and public API exposure
+  - step_id: REMOVE_UNJUSTIFIED_FOLDERS
+    action: apply anti-bloat rules
+  - step_id: EMIT_STRUCTURE_PLAN
+    action: write structure-plan report
+  - step_id: APPLY_PLACEMENT_DECISION_OBJECTS
+    action: choose file paths using placement_rules.rules and conflict_resolution
+  - step_id: VALIDATE_SHARED_CODE_DECISIONS
+    action: reject speculative or ownerless shared code using shared_code_rules
+  - step_id: EMIT_FINAL_FILE_TREE
+    action: write final-file-tree report
+  structure_validation_rules:
+  - id: STRUCT-VALID-001
+    rule: Every planned file must trace to an artifact candidate and selected action.
+    fail_condition: planned_file_without_artifact_action
+  - id: STRUCT-VALID-002
+    rule: Every planned file must have exactly one primary role and layer.
+    fail_condition: planned_file_missing_role_or_layer
+  - id: STRUCT-VALID-003
+    rule: No planned path may violate forbidden dependency direction.
+    fail_condition: planned_path_implies_forbidden_dependency
+  - id: STRUCT-VALID-004
+    rule: No generic folder may be introduced without explicit public API or ownership reason.
+    fail_condition: generic_folder_created
+  cross_module_structure_rules:
+    allowed:
+    - communication through public module exports
+    - communication through application services/use-cases
+    - communication through declared interfaces/events
+    forbidden:
+    - importing another module internal folder
+    - reaching into another module repositories/domain internals
+    - cross-module relative imports into private paths
+    validation: cross-module imports must be checked by dependency validation before implementation
+  shared_code_rules:
+    shared_code_decision_schema:
+      required_fields:
+      - decision_id
+      - candidate
+      - choose_when
+      - reject_when
+      - required_evidence
+      - owner
+      - public_api
+      - fail_condition
+    create_shared_only_when:
+    - condition: two_or_more_modules_need_same_stable_abstraction
+      required_evidence:
+      - consumer_count >= 2
+      - same_semantic_need_not_coincidental_duplication
+      owner_required: true
+    - condition: shared_artifact_has_clear_owner_and_public_api
+      required_evidence:
+      - owning_module_declared
+      - export_surface_declared
+      owner_required: true
+    - condition: duplication_is_semantic_not_incidental
+      required_evidence:
+      - same business meaning
+      - same change reason
+      owner_required: true
+    - condition: shared_boundary_contract_is_required
+      required_evidence:
+      - contract_classification
+      - consumer_impact
+      owner_required: true
+    must_reject_when:
+    - condition: speculative_reuse
+      signals:
+      - only one consumer
+      - future consumers guessed
+      - abstraction created before variation exists
+      fail_condition: shared_code_created_for_speculative_reuse
+    - condition: unclear_owner
+      signals:
+      - no module owns API
+      - multiple modules mutate shared behavior
+      - ownership would default to generic common folder
+      fail_condition: shared_code_without_owner
+    - condition: domain_meaning_hidden
+      signals:
+      - shared artifact name is generic
+      - domain-specific behavior moved to utils/helpers/common
+      fail_condition: shared_code_hides_domain_meaning
+    - condition: cross_module_coupling_increases
+      signals:
+      - new shared import creates dependency cycle
+      - shared artifact imports feature-specific code
+      fail_condition: shared_code_creates_cross_module_coupling
+    - condition: boundary_leak_created
+      signals:
+      - shared artifact carries transport/persistence/external DTO across modules
+      fail_condition: shared_code_creates_boundary_leak
+    allowed_shared_locations:
+    - location: shared-kernel
+      allowed_when:
+      - stable domain-neutral primitive used by multiple modules
+      forbidden_when:
+      - feature-specific behavior
+    - location: platform_or_infrastructure_shared
+      allowed_when:
+      - technical adapter/helper with no domain meaning and clear owner
+      forbidden_when:
+      - business rule hidden in infrastructure helper
+    - location: module_public_api
+      allowed_when:
+      - one module owns concept and other modules consume exported contract
+      forbidden_when:
+      - consumer imports module internals
+    validation_rules:
+    - id: SHARED-CODE-001
+      rule: Shared code must have an owner and public API.
+      fail_condition: shared_code_without_owner_or_public_api
+    - id: SHARED-CODE-002
+      rule: Shared code must not be created for speculative reuse.
+      fail_condition: shared_code_created_for_speculative_reuse
+    - id: SHARED-CODE-003
+      rule: Shared code must not create boundary leaks or dependency cycles.
+      fail_condition: shared_code_creates_boundary_or_dependency_violation
 validation:
+  required_checks:
+  - id: STRUCT-CHECK-001
+    check: planned_files_trace_to_artifact_actions
+    applies_when:
+      final_file_tree_present: true
+  - id: STRUCT-CHECK-002
+    check: no_generic_unjustified_folders
+    applies_when:
+      folders_to_create_present: true
+  - id: STRUCT-CHECK-003
+    check: planned_paths_respect_role_placement
+    applies_when:
+      role_assignment_present: true
   fail_conditions:
-  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-001
-    condition: structure_rendered_before_role_assignment
-    message: Structure rendered before role assignment.
+  - id: STRUCT-001
+    condition: planned_file_without_artifact_action
+    message: Every planned file must trace to an artifact action.
     severity: error
-    owner: architecture/conventions.structure.yaml
-  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-002
-    condition: structure_defines_new_capability
-    message: Structure defines new capability.
+  - id: STRUCT-002
+    condition: generic_folder_created
+    message: Generic folders are forbidden unless explicitly justified by stable public API ownership.
     severity: error
-    owner: architecture/conventions.structure.yaml
-  - id: ARCHITECTURE-CONVENTIONS-STRUCTURE-YAML-FC-003
-    condition: dependency_constraints_missing
-    message: Dependency constraints missing.
+  - id: STRUCT-003
+    condition: planned_path_implies_forbidden_dependency
+    message: Structure implies forbidden dependency direction.
     severity: error
-    owner: architecture/conventions.structure.yaml
-  required_checks: []
