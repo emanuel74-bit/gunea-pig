@@ -4,762 +4,463 @@ file:
   path: boundaries/conventions.boundary-taxonomy.yaml
   role: boundary_taxonomy_contract
   executability: vocabulary
-purpose: Define boundary vocabulary, ownership, crossing, translation, and sensitivity defaults.
+purpose: 'Define pure boundary vocabulary: boundary types, surfaces, visibility, ownership, relationships, and risk signal vocabulary.'
 ownership:
   owns:
   - boundary_type_enum
-  - boundary_definitions
-  - boundary_ownership_rules
-  - boundary_crossing_rules
-  - boundary_translation_rules
-  - boundary_risk_signals
+  - boundary_type_definitions
+  - boundary_surface_enum
+  - boundary_surface_definitions
+  - boundary_visibility_enum
+  - boundary_visibility_definitions
+  - boundary_ownership_enum
+  - boundary_ownership_definitions
+  - boundary_relationship_schema
+  - boundary_risk_signal_vocabulary
   does_not_own:
-  - dependency_import_rules
-  - contract_compatibility_rules
-  - risk_resolution_process
+  - boundary_classification_rules
+  - boundary_validation_algorithm
+  - contract_compatibility_strategy
+  - dependency_direction_policy
+  - boundary_crossing_rules
+  - allowed_crossing_mechanisms
+  - boundary_leak_detection_rules
 activation:
-  mode: always
-  activates_when: []
+  mode: reference_only
+  activates_when:
+  - boundary_values_are_referenced
+  - boundary_contract_classification_phase_active
   skips_when: []
 inputs:
   required: []
   optional: []
 outputs:
   produces:
-  - boundary_taxonomy_registry
+  - boundary_taxonomy
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
   optional_files: []
 sections:
   boundary_type_enum:
     allowed:
-    - transport
-    - public_api
-    - module
-    - domain
-    - application
-    - infrastructure
-    - persistence
-    - external_system
-    - integration_event
-    - message_queue
-    - webhook
-    - security
-    - tenant
-    - runtime_wiring
-  boundary_definitions:
-    transport:
-      definition: Boundary where external transport protocol/data enters or leaves the system, such as HTTP, GraphQL, WebSocket,
-        CLI, or message handlers.
-      owner: transport_owner
-      crossing_signals:
-      - transport
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - transport_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    public_api:
-      definition: Boundary exposed to external or cross-module consumers with compatibility obligations.
-      owner: public_api_owner
-      crossing_signals:
-      - public_api
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: always
-      default_risk_concerns:
-      - public_contract
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - public_api_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    module:
-      definition: Boundary between feature modules or package-level public APIs; internal implementation must not be deep-imported.
-      owner: module_owner
-      crossing_signals:
-      - module
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - module_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    domain:
-      definition: Boundary protecting pure business rules from application, transport, and infrastructure concerns.
-      owner: domain_owner
-      crossing_signals:
-      - domain
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - domain_to_infrastructure
-      - domain_to_transport
-      - domain_to_persistence_model
-      - domain_to_external_system
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - domain_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    application:
-      definition: Boundary where orchestration/use-case logic coordinates domain and infrastructure through abstractions.
-      owner: application_owner
-      crossing_signals:
-      - application
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - application_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    infrastructure:
-      definition: Boundary where IO, frameworks, persistence, network, and external systems are implemented.
-      owner: infrastructure_owner
-      crossing_signals:
-      - infrastructure
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - infrastructure_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    persistence:
-      definition: Boundary between domain/application models and stored database/ORM/document representations.
-      owner: persistence_owner
-      crossing_signals:
-      - persistence
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - persistence_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    external_system:
-      definition: Boundary between owned code and a third-party or separate service with independent behavior/availability.
-      owner: external_system_owner
-      crossing_signals:
-      - external_system
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - external_system_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    integration_event:
-      definition: Boundary represented by event/message contracts exchanged across modules/services.
-      owner: integration_event_owner
-      crossing_signals:
-      - integration_event
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - integration_event_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    message_queue:
-      definition: Boundary where asynchronous message publication/consumption changes ordering, retry, idempotency, or delivery
-        semantics.
-      owner: message_queue_owner
-      crossing_signals:
-      - message_queue
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - message_queue_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    webhook:
-      definition: Boundary where external systems call into this service through a remote event/API contract.
-      owner: webhook_owner
-      crossing_signals:
-      - webhook
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - webhook_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    security:
-      definition: Boundary where trust, identity, permissions, secret handling, or secure defaults change.
-      owner: security_owner
-      crossing_signals:
-      - security
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - security_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    tenant:
-      definition: Boundary separating data, permissions, configuration, or behavior between tenants/accounts/workspaces.
-      owner: tenant_owner
-      crossing_signals:
-      - tenant
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - tenant_boundary
-      - security
-      - data_loss
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - tenant_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-    runtime_wiring:
-      definition: Boundary created by DI/provider/module registration where compile-time structure and runtime object graph
-        differ.
-      owner: runtime_wiring_owner
-      crossing_signals:
-      - runtime_wiring
-      allowed_crossing_direction:
-      - explicit_allowed_direction_required
-      forbidden_crossing:
-      - forbidden_crossing_without_validation
-      translation_required: conditional
-      contract_required: conditional
-      default_risk_concerns:
-      - behavior
-      required_checks:
-      - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-RC-001
-        check: boundary_validation
-      detection_signals:
-      - runtime_wiring_entry_or_exit_point
-      - ownership_or_trust_changes
-      must_define:
-      - owner
-      - allowed_crossing_direction
-      - translation_required
-      - contract_required
-      must_not:
-      - cross_without_validation
-      - leak_internal_model_across_boundary
-  boundary_risk_signals:
-    transport:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    public_api:
-      minimum_risk_hint: high
-      emits_concerns:
-      - public_contract
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    module:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    domain:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    application:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    infrastructure:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    persistence:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    external_system:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    integration_event:
-      minimum_risk_hint: high
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    message_queue:
-      minimum_risk_hint: high
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    webhook:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    security:
-      minimum_risk_hint: high
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-    tenant:
-      minimum_risk_hint: critical
-      emits_concerns:
-      - tenant_boundary
-      - security
-      - data_loss
-      emits_contexts:
-      - design_risk
-      - change_risk
-    runtime_wiring:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - design_risk
-      - change_risk
-  semantic_depth_restoration:
-    enriched_generic_boundary_definitions: true
+    - transport_boundary
+    - public_api_boundary
+    - internal_api_boundary
+    - module_boundary
+    - domain_boundary
+    - application_boundary
+    - persistence_boundary
+    - external_system_boundary
+    - event_boundary
+    - message_queue_boundary
+    - realtime_boundary
+    - file_storage_boundary
+    - configuration_boundary
+    - security_boundary
+    - transaction_boundary
+    - process_boundary
+    - test_boundary
+  boundary_surface_enum:
+    allowed:
+    - inbound
+    - outbound
+    - bidirectional
+    - internal
+    - public
+    - private
+  boundary_visibility_enum:
+    allowed:
+    - private
+    - module_public
+    - workspace_public
+    - external_public
+    - unknown
+  boundary_ownership_enum:
+    allowed:
+    - single_artifact
+    - single_module
+    - shared_kernel
+    - external_consumer
+    - third_party
   boundary_type_definitions:
-    transport:
-      definition: transport boundary_type vocabulary value.
-      meaning: Represents the transport case within the boundary_type taxonomy.
-      detection_signals:
-      - transport signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches transport
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using transport must include reason and evidence
-    public_api:
-      definition: public api boundary_type vocabulary value.
-      meaning: Represents the public api case within the boundary_type taxonomy.
-      detection_signals:
-      - public api signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches public api
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using public_api must include reason and evidence
-    module:
-      definition: module boundary_type vocabulary value.
-      meaning: Represents the module case within the boundary_type taxonomy.
-      detection_signals:
-      - module signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches module
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using module must include reason and evidence
-    domain:
-      definition: domain boundary_type vocabulary value.
-      meaning: Represents the domain case within the boundary_type taxonomy.
-      detection_signals:
-      - domain signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches domain
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using domain must include reason and evidence
-    application:
-      definition: application boundary_type vocabulary value.
-      meaning: Represents the application case within the boundary_type taxonomy.
-      detection_signals:
-      - application signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches application
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using application must include reason and evidence
-    infrastructure:
-      definition: infrastructure boundary_type vocabulary value.
-      meaning: Represents the infrastructure case within the boundary_type taxonomy.
-      detection_signals:
-      - infrastructure signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches infrastructure
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using infrastructure must include reason and evidence
-    persistence:
-      definition: persistence boundary_type vocabulary value.
-      meaning: Represents the persistence case within the boundary_type taxonomy.
-      detection_signals:
-      - persistence signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches persistence
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using persistence must include reason and evidence
-    external_system:
-      definition: external system boundary_type vocabulary value.
-      meaning: Represents the external system case within the boundary_type taxonomy.
-      detection_signals:
-      - external system signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches external system
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using external_system must include reason and evidence
-    integration_event:
-      definition: integration event boundary_type vocabulary value.
-      meaning: Represents the integration event case within the boundary_type taxonomy.
-      detection_signals:
-      - integration event signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches integration event
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using integration_event must include reason and evidence
-    message_queue:
-      definition: message queue boundary_type vocabulary value.
-      meaning: Represents the message queue case within the boundary_type taxonomy.
-      detection_signals:
-      - message queue signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches message queue
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using message_queue must include reason and evidence
-    webhook:
-      definition: webhook boundary_type vocabulary value.
-      meaning: Represents the webhook case within the boundary_type taxonomy.
-      detection_signals:
-      - webhook signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches webhook
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using webhook must include reason and evidence
-    security:
-      definition: security boundary_type vocabulary value.
-      meaning: Represents the security case within the boundary_type taxonomy.
-      detection_signals:
-      - security signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches security
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using security must include reason and evidence
-    tenant:
-      definition: tenant boundary_type vocabulary value.
-      meaning: Represents the tenant case within the boundary_type taxonomy.
-      detection_signals:
-      - tenant signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches tenant
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using tenant must include reason and evidence
-    runtime_wiring:
-      definition: runtime wiring boundary_type vocabulary value.
-      meaning: Represents the runtime wiring case within the boundary_type taxonomy.
-      detection_signals:
-      - runtime wiring signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches runtime wiring
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - boundary_type decisions using runtime_wiring must include reason and evidence
+    transport_boundary:
+      definition: Boundary where external transport protocols enter or leave the system, such as HTTP, WebSocket, RPC, queue consumers, cron triggers, or CLI commands.
+      positive_signals:
+      - artifact receives external request or message
+      - artifact translates transport payload into application input
+      - artifact owns decorators/routes/message handlers/listeners
+      - artifact is called by framework/runtime rather than domain code
+      negative_signals:
+      - artifact is only called by internal services
+      - artifact only models business concepts
+      - artifact only reads/writes persistence without accepting external input
+      risk_signals:
+      - raw payload passed into domain
+      - transport response shape reused as domain model
+      - controller imports repository or ORM model
+      examples:
+      - HTTP controller
+      - WebSocket gateway
+      - queue consumer
+      - CLI command handler
+    public_api_boundary:
+      definition: Consumer-visible contract boundary for APIs, exported modules, events, DTOs, SDK surfaces, or package/public exports.
+      positive_signals:
+      - external or cross-module consumers depend on shape or name
+      - artifact is exported from public index/module
+      - request/response/event schema is part of contract
+      - change can break callers outside current unit
+      negative_signals:
+      - private helper not exported
+      - internal class only used inside one module
+      - implementation detail hidden behind stable interface
+      risk_signals:
+      - unknown consumers
+      - breaking field removal
+      - semantic behavior change under same contract name
+      examples:
+      - REST API DTO
+      - published event payload
+      - package export
+      - SDK method signature
+    internal_api_boundary:
+      definition: Stable internal module or service-facing API used inside the codebase but not exposed to external consumers.
+      positive_signals:
+      - multiple internal modules call the interface
+      - method/input/output shape is shared across features
+      - change requires coordinated call-site updates
+      negative_signals:
+      - private method used by one class
+      - pure implementation detail inside one artifact
+      risk_signals:
+      - shared service signature changes
+      - internal DTO reused as persistence model
+      - cyclic module dependency
+      examples:
+      - shared application service
+      - module exported provider
+      - internal command interface
+    module_boundary:
+      definition: Boundary around a cohesive feature/module that controls what artifacts are imported, exported, and visible to other modules.
+      positive_signals:
+      - folder/module represents business capability
+      - explicit module exports/imports exist
+      - other modules should depend only on public surface
+      - private internals should not be imported directly
+      negative_signals:
+      - flat utility folder without business ownership
+      - single file grouping with no dependency boundary
+      risk_signals:
+      - deep imports across module folders
+      - module exports too many artifacts
+      - bidirectional imports
+      examples:
+      - NestJS feature module
+      - domain capability module
+      - bounded feature folder
+    domain_boundary:
+      definition: Boundary around core business concepts, invariants, and policies that should remain independent of transport, persistence, and framework details.
+      positive_signals:
+      - business invariant or policy is expressed
+      - entity/value object/domain service is involved
+      - logic should be testable without infrastructure
+      - names come from business language
+      negative_signals:
+      - framework decorator is required
+      - logic only maps transport/persistence shapes
+      - artifact only performs IO
+      risk_signals:
+      - domain imports NestJS/Express/ORM packages
+      - domain object accepts raw DTO/entity
+      - business rule placed in controller or repository
+      examples:
+      - policy
+      - domain service
+      - entity behavior
+      - value object validation
+    application_boundary:
+      definition: Boundary where use cases/workflows orchestrate domain behavior and side effects without owning transport or persistence details.
+      positive_signals:
+      - coordinates multiple dependencies
+      - executes one business action
+      - handles workflow order
+      - calls repositories/clients through abstractions
+      negative_signals:
+      - pure domain invariant without dependencies
+      - transport-specific handler
+      - raw database operation without use-case meaning
+      risk_signals:
+      - application service becomes god service
+      - workflow mutates unrelated aggregates without policy
+      - use case depends on controller
+      examples:
+      - create order use case
+      - sync source orchestrator
+      - assignment application service
+    persistence_boundary:
+      definition: Boundary between application/domain logic and durable storage, database entities, ORM/ODM models, migrations, or persistence projections.
+      positive_signals:
+      - database model/entity/schema is used
+      - repository reads/writes durable state
+      - migration/backfill/projection is involved
+      - persistence-specific query is required
+      negative_signals:
+      - in-memory domain object without storage concern
+      - transport-only DTO
+      risk_signals:
+      - Mongoose document used as domain type
+      - repository called from controller
+      - migration changes data semantics without compatibility review
+      examples:
+      - repository
+      - Mongoose schema/model
+      - SQL entity
+      - migration
+      - projection store
+    external_system_boundary:
+      definition: Boundary between the system and a third-party service, remote API, external database, external queue, storage service, or external runtime dependency.
+      positive_signals:
+      - HTTP/gRPC/SDK call to outside system
+      - external credentials/configuration are required
+      - remote failure/latency/retry behavior matters
+      - external contract can change independently
+      negative_signals:
+      - internal module call
+      - local pure function
+      - in-process repository to owned database
+      risk_signals:
+      - no timeout/retry strategy
+      - external response returned directly
+      - credentials used outside integration layer
+      examples:
+      - payment API client
+      - S3 adapter
+      - third-party SDK client
+      - webhook sender
+    event_boundary:
+      definition: Boundary crossed through published or consumed events, domain events, integration events, pub/sub messages, or event-driven workflow notifications.
+      positive_signals:
+      - payload is published/subscribed
+      - event name/type has consumers
+      - ordering/idempotency/retry can matter
+      - event schema is a contract
+      negative_signals:
+      - simple synchronous method call
+      - private in-memory callback with no external consumers
+      risk_signals:
+      - unknown event consumers
+      - event schema change
+      - non-idempotent consumer with retrying broker
+      examples:
+      - domain event
+      - integration event
+      - pub/sub message
+      - webhook event payload
+    message_queue_boundary:
+      definition: Boundary crossed through queues, jobs, task messages, command messages, or delayed/asynchronous processing infrastructure.
+      positive_signals:
+      - queue producer/consumer is present
+      - message acknowledgment/retry/dead-letter behavior matters
+      - payload must survive serialization
+      - processing is asynchronous
+      negative_signals:
+      - synchronous in-process method call
+      - event without queue semantics
+      risk_signals:
+      - no dead-letter handling
+      - consumer has side effects without idempotency
+      - message contract changed without migration
+      examples:
+      - RabbitMQ consumer
+      - job queue worker
+      - command message producer
+    realtime_boundary:
+      definition: Boundary used for persistent or bidirectional communication such as WebSockets, sockets, streaming channels, subscriptions, or live gateway events.
+      positive_signals:
+      - connection/session state exists
+      - messages are bidirectional or streaming
+      - client presence/subscription matters
+      - backpressure or lifecycle events matter
+      negative_signals:
+      - single request/response call
+      - pure event publication without live connection
+      risk_signals:
+      - connection state mixed with domain aggregate
+      - unvalidated inbound messages
+      - unbounded broadcast payloads
+      examples:
+      - WebSocket gateway
+      - socket stream handler
+      - subscription server
+    file_storage_boundary:
+      definition: Boundary between system logic and file/blob/object storage, mounted volumes, presigned URLs, binary streams, or media storage.
+      positive_signals:
+      - binary/blob/file path/presigned URL is handled
+      - storage provider API is used
+      - streaming upload/download lifecycle matters
+      - metadata points to external object
+      negative_signals:
+      - plain in-memory data object
+      - database row without binary/file semantics
+      risk_signals:
+      - temporary URL persisted as canonical source
+      - file path trusted from user input
+      - storage errors not translated
+      examples:
+      - S3 adapter
+      - mounted file reader
+      - presigned URL downloader
+      - blob metadata repository
+    configuration_boundary:
+      definition: Boundary between runtime configuration/secrets/environment values and application behavior.
+      positive_signals:
+      - environment variables/secrets/config files are read
+      - feature flag or runtime setting changes behavior
+      - configuration is injected into providers/clients
+      negative_signals:
+      - constant business enum
+      - compile-time type only
+      risk_signals:
+      - secret appears in report/log
+      - runtime behavior depends on unvalidated string
+      - config read in multiple unrelated files
+      examples:
+      - config service
+      - environment schema
+      - feature flag provider
+    security_boundary:
+      definition: Boundary where authentication, authorization, identity, secrets, permissions, tenant isolation, or trust transitions are enforced.
+      positive_signals:
+      - user/system identity changes trust level
+      - authorization decision is made
+      - secret/token/credential is handled
+      - tenant/project/resource access is checked
+      negative_signals:
+      - pure data transformation without trust decision
+      - internal helper with no sensitive input
+      risk_signals:
+      - missing authorization before data access
+      - tenant id accepted from user without verification
+      - token stored in plain report
+      examples:
+      - auth guard
+      - authorization policy
+      - tenant boundary
+      - secret manager client
+    transaction_boundary:
+      definition: Boundary around a unit of work requiring atomicity, consistency, rollback, compensation, or coordinated durable state change.
+      positive_signals:
+      - multiple writes must commit or rollback together
+      - compensation may be required
+      - transaction/session object is used
+      - consistency boundary is explicit
+      negative_signals:
+      - single idempotent read
+      - pure calculation
+      - eventual consistency accepted without transaction need
+      risk_signals:
+      - multiple repositories mutate without unit of work
+      - remote side effect inside DB transaction
+      - transaction boundary unclear
+      examples:
+      - database transaction
+      - unit of work
+      - outbox write
+      - distributed saga step
+    process_boundary:
+      definition: Boundary between processes, services, workers, containers, threads, or independently deployed runtime units.
+      positive_signals:
+      - another process/service is called
+      - worker consumes work independently
+      - deployment/runtime ownership differs
+      - failure/retry/lifecycle differs from caller
+      negative_signals:
+      - in-process synchronous function
+      - same runtime object call
+      risk_signals:
+      - worker and API share hidden mutable files
+      - cross-process call has no timeout
+      - message order assumed but not guaranteed
+      examples:
+      - microservice call
+      - background worker
+      - separate pod/container
+      - child process
+    test_boundary:
+      definition: Boundary between production code and test-only artifacts, test doubles, fixtures, mocks, and test helpers.
+      positive_signals:
+      - test-only file/helper/mock is involved
+      - dependency exists only for verification
+      - fixture data simulates external behavior
+      negative_signals:
+      - production artifact imported by production code
+      - domain code used normally in tests
+      risk_signals:
+      - src imports test helper
+      - fixture used in production code
+      - test exception applied to production dependency
+      examples:
+      - mock repository
+      - fixture builder
+      - test utility
+      - e2e test module
+  boundary_surface_definitions:
+    inbound: A boundary surface where data/control enters the system or module from outside its owner.
+    outbound: A boundary surface where data/control leaves the system or module toward another owner or external system.
+    bidirectional: A boundary surface with both inbound and outbound interactions under one connection or contract.
+    internal: A surface used inside the codebase but crossing module/layer ownership.
+    public: A surface visible to external or unknown consumers.
+    private: A surface intended to remain inside a single artifact/module owner.
+  boundary_visibility_definitions:
+    private: Visible only inside the owning artifact or module; consumers must not depend on it.
+    module_public: Visible as the intentional public surface of one module/capability.
+    workspace_public: Visible to multiple modules inside the repository/workspace.
+    external_public: Visible to consumers outside the repository/runtime boundary.
+    unknown: Consumer visibility cannot be established from available evidence and must be treated conservatively.
+  boundary_ownership_definitions:
+    single_artifact: Boundary owned and changed by one file/class/function.
+    single_module: Boundary owned by one feature/module.
+    shared_kernel: Boundary shared by multiple internal modules and requiring compatibility discipline.
+    external_consumer: Boundary has external or unknown consumers.
+    third_party: Boundary owned by a third-party dependency or service.
+  boundary_relationship_schema:
+    required_fields:
+    - boundary_id
+    - boundary_type
+    - surface
+    - visibility
+    - owner
+    - crossing_mechanism
+    - source_artifact
+    - target_artifact
+    - evidence_refs
+    optional_fields:
+    - contract_ref
+    - dependency_ref
+    - risk_signals
+    - validation_requirements
+    - notes
+  boundary_risk_signal_vocabulary:
+    leakage: A lower-level or private representation crosses a boundary where it should be mapped or hidden.
+    bypass: A consumer crosses around the intended boundary and depends on internal implementation details.
+    unknown_consumer: The boundary may be used by consumers that are not enumerated in the current codebase.
+    direction_violation: Dependency direction crosses from a higher layer to an implementation detail or creates a cycle.
+    trust_violation: Untrusted input, credentials, or identity context crosses without validation/authorization.
+    transaction_leak: Transaction/session/unit-of-work details escape their owner boundary.
+    test_leak: Test-only artifacts become reachable from production code.
 validation:
+  required_checks:
+  - id: BOUNDARY-TAXONOMY-CHECK-001
+    check: every_boundary_type_has_definition_and_signals
+    applies_when:
+      boundary_taxonomy_loaded: true
   fail_conditions:
-  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-FC-001
+  - id: BOUNDARY-TAXONOMY-001
+    condition: boundary_type_missing_definition
+    message: Every boundary type must have an active definition.
+    severity: error
+  - id: BOUNDARY-TAXONOMY-002
     condition: unknown_boundary_type
-    message: Unknown boundary type.
+    message: Boundary type must be defined in boundary_type_enum.
     severity: error
-    owner: boundaries/conventions.boundary-taxonomy.yaml
-  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-TAXONOMY-YAML-FC-002
-    condition: boundary_crossed_without_translation_when_required
-    message: Boundary crossed without translation when required.
-    severity: error
-    owner: boundaries/conventions.boundary-taxonomy.yaml
-  required_checks: []

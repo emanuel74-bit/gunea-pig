@@ -4,163 +4,547 @@ file:
   path: boundaries/conventions.boundary-validation.yaml
   role: boundary_validation_contract
   executability: validator
-purpose: Validate boundary classifications and crossings and route required followup checks.
+purpose: Validate classified boundaries using boundary taxonomy, crossing rules, leak detection, dependency rules, and contract
+  compatibility outputs.
 ownership:
   owns:
-  - boundary_validation_rules
-  - boundary_crossing_validation
-  - boundary_leak_detection
+  - boundary_validation_inputs
   - boundary_required_check_routing
-  - boundary_validation_output
+  - boundary_validation_checks
+  - boundary_validation_algorithm
+  - boundary_followup_mapping
+  - boundary_validation_output_schema
   does_not_own:
-  - boundary_type_definitions
-  - dependency_direction_rules
+  - boundary_vocabulary_definitions
+  - boundary_crossing_policy_definitions
+  - boundary_leak_type_definitions
   - contract_compatibility_strategy
+  - dependency_direction_policy
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - boundary_validation_required
+  - boundary_contract_classification_phase_active
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - boundary_classification_result
+  optional:
+  - contract_classification_result
+  - dependency_classification_result
+  - artifact_actions
+  - structure_plan
 outputs:
   produces:
-  - boundary_validation_validation_report
+  - boundary_validation_result
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - boundaries/conventions.boundary-taxonomy.yaml
-  optional_files: []
+  - boundaries/conventions.boundary-classification.yaml
+  - boundaries/conventions.boundary-crossing-rules.yaml
+  - boundaries/conventions.boundary-leak-detection.yaml
+  optional_files:
+  - contracts/conventions.compatibility.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
 sections:
+  boundary_validation_inputs:
+    required:
+    - boundary_classification_result
+    optional:
+    - boundary_crossing_policy
+    - boundary_leak_detection_result
+    - contract_classification_result
+    - dependency_classification_result
+    - artifact_actions
+    - structure_plan
   boundary_required_check_routing:
-    transport:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: transport boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    public_api:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: public_api boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    module:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: module boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    domain:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: domain boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    application:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: application boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    infrastructure:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: infrastructure boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    persistence:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: persistence boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    external_system:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: external_system boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    integration_event:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: integration_event boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    message_queue:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: message_queue boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    webhook:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: webhook boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    security:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: security boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    tenant:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: tenant boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-    runtime_wiring:
-      activates:
-      - system: risk
-        file: risk/conventions.risk-resolution.yaml
-        reason: runtime_wiring boundary emits risk signals
-      required_outputs:
-      - boundary_validation_report
-  boundary_leak_detection:
-    transport_leak:
-    - request_response_dto_used_in_domain
-    persistence_leak:
-    - orm_model_used_as_domain_entity
-    external_system_leak:
-    - provider_payload_used_in_domain
-    security_leak:
-    - secret_logged_or_returned
-    tenant_leak:
-    - query_without_tenant_scope
+  - boundary_type: transport_boundary
+    required_checks:
+    - no_repository_access_from_transport
+    - transport_shape_mapped_before_domain
+    - transport_error_translation_defined
+  - boundary_type: public_api_boundary
+    required_checks:
+    - compatibility_decision_when_changed
+    - consumer_impact_review_when_public
+    - no_internal_entity_exposure
+  - boundary_type: internal_api_boundary
+    required_checks:
+    - internal_consumers_identified_when_changed
+    - no_private_deep_imports
+  - boundary_type: module_boundary
+    required_checks:
+    - no_deep_cross_module_imports
+    - module_exports_are_intentional
+    - no_circular_module_dependency
+  - boundary_type: domain_boundary
+    required_checks:
+    - domain_has_no_framework_dependency
+    - domain_has_no_persistence_dependency
+    - external_shapes_mapped_before_domain
+  - boundary_type: application_boundary
+    required_checks:
+    - application_does_not_own_persistence_implementation
+    - application_uses_ports_or_adapters_for_outer_boundaries
+  - boundary_type: persistence_boundary
+    required_checks:
+    - repository_or_mapper_is_boundary_crossing
+    - no_orm_entity_leak_to_transport_or_domain
+    - transaction_owner_defined_when_needed
+  - boundary_type: external_system_boundary
+    required_checks:
+    - external_client_isolated
+    - timeout_or_failure_policy_recorded
+    - external_response_mapped
+  - boundary_type: event_boundary
+    required_checks:
+    - event_contract_defined
+    - consumer_impact_review_when_public
+    - idempotency_considered_for_consumers
+  - boundary_type: message_queue_boundary
+    required_checks:
+    - message_contract_defined
+    - retry_and_dead_letter_policy_considered
+    - consumer_idempotency_considered
+  - boundary_type: security_boundary
+    required_checks:
+    - authorization_or_trust_check_before_privileged_action
+    - no_secret_leakage
+    - identity_context_validated
+  - boundary_type: transaction_boundary
+    required_checks:
+    - transaction_owner_defined
+    - partial_failure_policy_recorded
+  - boundary_type: test_boundary
+    required_checks:
+    - production_does_not_import_test
+    - test_exceptions_do_not_weaken_production_rules
+  boundary_validation_checks:
+  - check_id: no_repository_access_from_transport
+    applies_when:
+    - boundary_type == transport_boundary
+    pass_when:
+    - transport boundary depends on application service/use-case only
+    fail_when:
+    - transport boundary imports repository, ORM model, storage adapter, or persistence client directly
+    severity: blocking
+    fail_condition: transport_boundary_depends_on_persistence
+  - check_id: transport_shape_mapped_before_domain
+    applies_when:
+    - transport boundary sends data to application/domain
+    pass_when:
+    - DTO/request payload is validated and mapped before domain use
+    fail_when:
+    - raw request/body/response object enters domain or persistence
+    severity: blocking
+    fail_condition: raw_transport_shape_crosses_boundary
+  - check_id: transport_error_translation_defined
+    applies_when:
+    - transport boundary exposes errors externally
+    pass_when:
+    - application/domain errors are translated at transport boundary
+    fail_when:
+    - internal error types or infrastructure errors are exposed directly
+    severity: error
+    fail_condition: internal_error_leaks_to_transport
+  - check_id: compatibility_decision_when_changed
+    applies_when:
+    - visibility == external_public or surface == public
+    - contract_change_possible == true
+    pass_when:
+    - compatibility-decision report exists and marks compatible/migration/deprecation path
+    fail_when:
+    - public contract changes without compatibility decision
+    severity: blocking
+    fail_condition: public_boundary_changed_without_compatibility_decision
+  - check_id: consumer_impact_review_when_public
+    applies_when:
+    - public_api_boundary changed or public visibility unknown
+    pass_when:
+    - consumer impact is known, explicitly unknown with blocker, or reviewed
+    fail_when:
+    - public consumer impact is ignored
+    severity: blocking
+    fail_condition: public_consumer_impact_unreviewed
+  - check_id: no_internal_entity_exposure
+    applies_when:
+    - public boundary returns or accepts internal shapes
+    pass_when:
+    - public DTO/event/message shapes are explicit and mapped
+    fail_when:
+    - domain entity, persistence entity, external provider DTO, or internal model is public contract
+    severity: blocking
+    fail_condition: internal_entity_exposed_publicly
+  - check_id: no_deep_cross_module_imports
+    applies_when:
+    - module_boundary crossing exists
+    pass_when:
+    - cross-module imports use public module/package export
+    fail_when:
+    - consumer imports internal file path of another module
+    severity: error
+    fail_condition: deep_cross_module_import
+  - check_id: module_exports_are_intentional
+    applies_when:
+    - module has public exports
+    pass_when:
+    - exports are listed as public surface or module_public boundary
+    fail_when:
+    - implementation details are exported accidentally
+    severity: error
+    fail_condition: unintentional_module_export
+  - check_id: no_circular_module_dependency
+    applies_when:
+    - module dependencies exist
+    pass_when:
+    - dependency graph has no forbidden cycle
+    fail_when:
+    - cycle exists outside explicit allowed test/runtime exception
+    severity: blocking
+    fail_condition: circular_module_dependency
+  - check_id: domain_has_no_framework_dependency
+    applies_when:
+    - boundary_type == domain_boundary
+    pass_when:
+    - domain imports no framework/controller/decorator/request/response types
+    fail_when:
+    - framework construct appears in domain boundary
+    severity: blocking
+    fail_condition: framework_to_domain_leak
+  - check_id: domain_has_no_persistence_dependency
+    applies_when:
+    - boundary_type == domain_boundary
+    pass_when:
+    - domain imports no ORM/database/repository implementation model
+    fail_when:
+    - persistence implementation appears in domain boundary
+    severity: blocking
+    fail_condition: persistence_to_domain_leak
+  - check_id: external_shapes_mapped_before_domain
+    applies_when:
+    - external, transport, persistence, event, or message shapes enter domain/application
+    pass_when:
+    - mapper/adapter produces internal input before domain use
+    fail_when:
+    - external or infrastructure DTO enters domain directly
+    severity: blocking
+    fail_condition: external_shape_enters_domain
+  - check_id: application_does_not_own_persistence_implementation
+    applies_when:
+    - application_boundary interacts with persistence
+    pass_when:
+    - application uses repository port/unit-of-work abstraction
+    fail_when:
+    - application owns query implementation, ORM model, or database client directly
+    severity: error
+    fail_condition: application_owns_persistence_implementation
+  - check_id: application_uses_ports_or_adapters_for_outer_boundaries
+    applies_when:
+    - application_boundary interacts with external/persistence/message/file/config boundary
+    pass_when:
+    - interaction uses port/adapter/mapper/provider abstraction
+    fail_when:
+    - direct outer boundary implementation leaks into application flow
+    severity: error
+    fail_condition: application_outer_boundary_direct_dependency
+  - check_id: repository_or_mapper_is_boundary_crossing
+    applies_when:
+    - persistence_boundary crosses upward
+    pass_when:
+    - repository or mapper is explicit crossing mechanism
+    fail_when:
+    - persistence model crosses without mapper/repository abstraction
+    severity: blocking
+    fail_condition: persistence_crossing_without_mapper_or_repository
+  - check_id: no_orm_entity_leak_to_transport_or_domain
+    applies_when:
+    - persistence_boundary exists
+    pass_when:
+    - ORM/database entities remain inside persistence boundary
+    fail_when:
+    - ORM/database entity is returned to transport/domain/public contract
+    severity: blocking
+    fail_condition: orm_entity_leak
+  - check_id: transaction_owner_defined_when_needed
+    applies_when:
+    - multiple persistence operations require atomicity
+    pass_when:
+    - transaction boundary/owner is defined
+    fail_when:
+    - transaction scope is implicit or split across unrelated layers
+    severity: error
+    fail_condition: transaction_owner_missing
+  - check_id: external_client_isolated
+    applies_when:
+    - external_system_boundary exists
+    pass_when:
+    - external SDK/client is isolated in adapter/client boundary
+    fail_when:
+    - third-party SDK is used directly in domain/application/public contract
+    severity: error
+    fail_condition: external_client_not_isolated
+  - check_id: timeout_or_failure_policy_recorded
+    applies_when:
+    - external system or process boundary call exists
+    pass_when:
+    - timeout/retry/failure policy is recorded or explicitly not applicable
+    fail_when:
+    - remote/process failure behavior is ignored
+    severity: warning
+    fail_condition: failure_policy_missing
+  - check_id: external_response_mapped
+    applies_when:
+    - external response crosses inward
+    pass_when:
+    - external response/error is mapped before application/domain/public use
+    fail_when:
+    - external DTO/error leaks into internal or public contract
+    severity: error
+    fail_condition: external_response_not_mapped
+  - check_id: event_contract_defined
+    applies_when:
+    - event_boundary exists
+    pass_when:
+    - event name/version/payload or internal-only status is explicit
+    fail_when:
+    - event payload is implicit while consumers exist
+    severity: error
+    fail_condition: event_contract_missing
+  - check_id: message_contract_defined
+    applies_when:
+    - message_queue_boundary exists
+    pass_when:
+    - message schema, routing key/topic/queue, and version/compatibility policy are explicit
+    fail_when:
+    - message contract is implicit or consumer-unsafe
+    severity: error
+    fail_condition: message_contract_missing
+  - check_id: retry_and_dead_letter_policy_considered
+    applies_when:
+    - message_queue_boundary exists
+    pass_when:
+    - retry/dead-letter/poison handling is recorded or explicitly not applicable
+    fail_when:
+    - delivery failure behavior is ignored
+    severity: warning
+    fail_condition: message_failure_policy_missing
+  - check_id: consumer_idempotency_considered
+    applies_when:
+    - event/message can be redelivered or retried
+    pass_when:
+    - idempotency requirement is satisfied or explicitly delegated
+    fail_when:
+    - consumer may receive duplicates and no idempotency policy exists
+    severity: warning
+    fail_condition: idempotency_policy_missing
+  - check_id: authorization_or_trust_check_before_privileged_action
+    applies_when:
+    - security_boundary protects privileged action or sensitive data
+    pass_when:
+    - authorization/trust policy is applied before crossing
+    fail_when:
+    - privileged or sensitive crossing occurs before trust decision
+    severity: blocking
+    fail_condition: authorization_boundary_bypass
+  - check_id: no_secret_leakage
+    applies_when:
+    - configuration/security boundary contains secrets
+    pass_when:
+    - secret values do not cross public/log/domain boundaries
+    fail_when:
+    - secret value is exposed in public report/log/DTO/error or domain model
+    severity: blocking
+    fail_condition: secret_boundary_leak
+  - check_id: identity_context_validated
+    applies_when:
+    - identity/tenant/principal context crosses boundary
+    pass_when:
+    - identity context is validated and mapped to internal authorization model
+    fail_when:
+    - raw token/claims are trusted without validation
+    severity: blocking
+    fail_condition: identity_context_unvalidated
+  - check_id: production_does_not_import_test
+    applies_when:
+    - test_boundary exists
+    pass_when:
+    - production graph has no imports from test artifacts
+    fail_when:
+    - production source imports test helper/fixture/mock/stub/fake
+    severity: blocking
+    fail_condition: production_imports_test_boundary
+  - check_id: test_exceptions_do_not_weaken_production_rules
+    applies_when:
+    - test dependency exception is used
+    pass_when:
+    - exception is scoped to tests and recorded
+    fail_when:
+    - test exception is applied to production dependency or boundary crossing
+    severity: error
+    fail_condition: test_exception_weakens_production_boundary
+  boundary_validation_decision_rules:
+  - decision: pass
+    choose_when:
+    - all required checks pass
+    - no blocking leaks detected
+    - no active boundary followup blocks target phase
+    reject_when:
+    - any blocking check fails
+    - invalidated boundary report consumed
+  - decision: pass_with_warnings
+    choose_when:
+    - only warning checks fail
+    - warnings have recorded remediation or accepted non-blocking rationale
+    reject_when:
+    - any error or blocking check fails
+  - decision: fail
+    choose_when:
+    - error checks fail but remediation can be scheduled before implementation or final validation
+    reject_when:
+    - blocking failure requires immediate block
+  - decision: block
+    choose_when:
+    - blocking check fails
+    - public compatibility or security/persistence leak unresolved
+    - required report missing
+    reject_when:
+    - all blocking issues are resolved
+  boundary_followup_mapping:
+  - condition: public_boundary_changed
+    severity: blocking
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    emit_trigger: compatibility_decision_required
+    required_report: compatibility-decision
+    required_phase: boundary_contract_classification
+    resolution_required: true
+  - condition: consumer_impact_unknown_for_public_boundary
+    severity: blocking
+    blocks_before:
+    - pre_implementation_gate
+    emit_trigger: consumer_impact_detected
+    required_report: consumer-impact
+    required_phase: change_impact_analysis
+    resolution_required: true
+  - condition: boundary_crossing_violation_detected
+    severity: blocking
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+    emit_trigger: boundary_validation_required
+    required_report: boundary-validation
+    required_phase: boundary_contract_classification
+    resolution_required: true
+  - condition: dependency_direction_violation_detected
+    severity: blocking
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+    emit_trigger: dependency_validation_required
+    required_report: dependency-validation
+    required_phase: dependency_classification
+    resolution_required: true
+  - condition: persistence_or_external_shape_leak_detected
+    severity: blocking
+    blocks_before:
+    - implementation
+    - final_validation
+    emit_trigger: phase_revision_required
+    required_report: revision-request
+    required_phase: trigger_review
+    resolution_required: true
+  - condition: security_boundary_violation_detected
+    severity: blocking
+    blocks_before:
+    - implementation
+    - final_validation
+    emit_trigger: security_sensitive_behavior_possible
+    required_report: risk-classification
+    required_phase: risk_classification
+    resolution_required: true
+  - condition: message_or_event_contract_missing
+    severity: error
+    blocks_before:
+    - pre_implementation_gate
+    emit_trigger: public_contract_change_possible
+    required_report: boundary-contract-classification
+    required_phase: boundary_contract_classification
+    resolution_required: true
+  - condition: warning_only_boundary_issue
+    severity: warning
+    blocks_before: []
+    emit_trigger: validation_required
+    required_report: post-implementation-validation
+    required_phase: post_implementation_validation
+    resolution_required: false
+  boundary_validation_algorithm:
+    steps:
+    - step_id: LOAD_BOUNDARY_CLASSIFICATION
+      action: read
+      input: boundary_classification_result
+    - step_id: LOAD_CROSSING_AND_LEAK_RESULTS
+      action: read_optional
+      input:
+      - boundary_crossing_policy
+      - boundary_leak_detection_result
+    - step_id: ROUTE_REQUIRED_CHECKS
+      action: for_each_boundary
+      input: boundary_required_check_routing
+      output: checks_to_run
+    - step_id: RUN_VALIDATION_CHECKS
+      action: evaluate
+      input: boundary_validation_checks
+      output: check_results
+    - step_id: APPLY_DECISION_RULES
+      action: evaluate
+      input: boundary_validation_decision_rules
+      output: validation_decision
+    - step_id: EMIT_FOLLOWUPS
+      action: apply_mapping
+      input: boundary_followup_mapping
+      output: emitted_triggers_and_required_reports
+    - step_id: WRITE_VALIDATION_RESULT
+      action: write
+      output: boundary_validation_output_schema
+  boundary_validation_output_schema:
+    required_fields:
+    - validation_status
+    - boundary_check_results
+    - blocking_violations
+    - warning_violations
+    - followups
+    - evidence_refs
+    check_result_shape:
+      check_id: ''
+      boundary_id: ''
+      status: ''
+      severity: ''
+      fail_condition: ''
+      evidence_refs: []
+      remediation: ''
+    validation_status_allowed:
+    - passed
+    - passed_with_warnings
+    - failed
+    - blocked
 validation:
+  required_checks:
+  - id: BOUNDARY-VALIDATION-CHECK-001
+    check: boundary_validation_result_contains_required_checks_and_failures
+    applies_when:
+      boundary_validation_required: true
   fail_conditions:
-  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-001
-    condition: unknown_boundary_type
-    message: Unknown boundary type.
+  - id: BOUNDARY-VALIDATION-001
+    condition: required_boundary_check_not_routed
+    message: Every classified boundary type must route to required validation checks.
     severity: error
-    owner: boundaries/conventions.boundary-validation.yaml
-  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-002
-    condition: forbidden_boundary_crossing
-    message: Forbidden boundary crossing.
+  - id: BOUNDARY-VALIDATION-002
+    condition: validation_followup_missing_blocking_semantics
+    message: Boundary followups must declare severity, blocking points, and resolution requirement.
     severity: error
-    owner: boundaries/conventions.boundary-validation.yaml
-  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-003
-    condition: public_boundary_without_contract_classification
-    message: Public boundary without contract classification.
+  - id: BOUNDARY-VALIDATION-003
+    condition: blocking_boundary_violation_marked_passed
+    message: Boundary validation cannot pass while a blocking violation remains unresolved.
     severity: error
-    owner: boundaries/conventions.boundary-validation.yaml
-  - id: BOUNDARIES-CONVENTIONS-BOUNDARY-VALIDATION-YAML-FC-004
-    condition: boundary_required_routing_output_missing
-    message: Boundary required routing output missing.
-    severity: error
-    owner: boundaries/conventions.boundary-validation.yaml
-  required_checks: []

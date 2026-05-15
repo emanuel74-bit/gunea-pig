@@ -1,0 +1,216 @@
+version: '1.0'
+file:
+  name: conventions.boundary-leak-detection.yaml
+  path: boundaries/conventions.boundary-leak-detection.yaml
+  role: boundary_leak_detection_contract
+  executability: detector
+purpose: Define boundary leak types, detection rules, severity, remediation, and leak output schema independently from general boundary validation.
+ownership:
+  owns:
+  - boundary_leak_type_enum
+  - boundary_leak_definitions
+  - boundary_leak_detection_rules
+  - boundary_leak_severity_rules
+  - boundary_leak_remediation_mapping
+  - boundary_leak_output_schema
+  does_not_own:
+  - boundary_taxonomy
+  - boundary_crossing_permission_policy
+  - general_boundary_validation_algorithm
+  - contract_compatibility_decision
+activation:
+  mode: conditional
+  activates_when:
+  - boundary_validation_required
+  - post_implementation_validation_checks_boundary_leaks
+  - structure_rendering_requires_boundary_review
+  skips_when: []
+inputs:
+  required:
+  - boundary_classification_result
+  optional:
+  - source_inventory
+  - dependency_classification_result
+  - changed_file_manifest
+  - structure_plan
+outputs:
+  produces:
+  - boundary_leak_detection_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - boundaries/conventions.boundary-classification.yaml
+  optional_files:
+  - dependencies/conventions.dependency-classification.yaml
+  - dependencies/conventions.import-rules.yaml
+sections:
+  boundary_leak_type_enum:
+    allowed:
+    - transport_to_persistence_leak
+    - persistence_entity_to_public_contract_leak
+    - framework_to_domain_leak
+    - external_dto_to_domain_leak
+    - test_to_production_leak
+    - secret_boundary_leak
+  boundary_leak_definitions:
+    transport_to_persistence_leak:
+      definition: Boundary leak detected when controller/gateway/consumer imports repository or ORM model.
+      detect_when: &id001
+      - controller/gateway/consumer imports repository or ORM model
+      severity: error
+      remediation: introduce application service/use case and repository abstraction
+      blocks_when:
+      - severity is error or blocking
+      - leak affects public, security, domain, persistence, or external boundary
+    persistence_entity_to_public_contract_leak:
+      definition: Boundary leak detected when public DTO/response/event exposes ORM document/entity.
+      detect_when: &id002
+      - public DTO/response/event exposes ORM document/entity
+      severity: error
+      remediation: add mapper and stable contract shape
+      blocks_when:
+      - severity is error or blocking
+      - leak affects public, security, domain, persistence, or external boundary
+    framework_to_domain_leak:
+      definition: Boundary leak detected when domain artifact imports framework package/decorator/request object.
+      detect_when: &id003
+      - domain artifact imports framework package/decorator/request object
+      severity: error
+      remediation: move framework concern to transport/application layer
+      blocks_when:
+      - severity is error or blocking
+      - leak affects public, security, domain, persistence, or external boundary
+    external_dto_to_domain_leak:
+      definition: Boundary leak detected when third-party response passed directly into domain.
+      detect_when: &id004
+      - third-party response passed directly into domain
+      severity: warning
+      remediation: add anti-corruption mapper
+      blocks_when:
+      - severity is error or blocking
+      - leak affects public, security, domain, persistence, or external boundary
+    test_to_production_leak:
+      definition: Boundary leak detected when production source imports test helper/mock/fixture.
+      detect_when: &id005
+      - production source imports test helper/mock/fixture
+      severity: error
+      remediation: move shared builder to production-safe test support or remove import
+      blocks_when:
+      - severity is error or blocking
+      - leak affects public, security, domain, persistence, or external boundary
+    secret_boundary_leak:
+      definition: Boundary leak detected when secret/token appears in report/log/public output.
+      detect_when: &id006
+      - secret/token appears in report/log/public output
+      severity: blocking
+      remediation: redact secret and route through secret/config provider
+      blocks_when:
+      - severity is error or blocking
+      - leak affects public, security, domain, persistence, or external boundary
+  boundary_leak_detection_rules:
+  - leak_type: transport_to_persistence_leak
+    detect_when: *id001
+    severity: error
+    remediation: introduce application service/use case and repository abstraction
+  - leak_type: persistence_entity_to_public_contract_leak
+    detect_when: *id002
+    severity: error
+    remediation: add mapper and stable contract shape
+  - leak_type: framework_to_domain_leak
+    detect_when: *id003
+    severity: error
+    remediation: move framework concern to transport/application layer
+  - leak_type: external_dto_to_domain_leak
+    detect_when: *id004
+    severity: warning
+    remediation: add anti-corruption mapper
+  - leak_type: test_to_production_leak
+    detect_when: *id005
+    severity: error
+    remediation: move shared builder to production-safe test support or remove import
+  - leak_type: secret_boundary_leak
+    detect_when: *id006
+    severity: blocking
+    remediation: redact secret and route through secret/config provider
+  boundary_leak_severity_rules:
+  - severity: blocking
+    meaning: Leak must block implementation or final validation until resolved or explicitly revised.
+    applies_when:
+    - secret/security leak
+    - consumed invalidated boundary output
+    - public contract leak with unknown consumers
+  - severity: error
+    meaning: Leak violates boundary rules and must be fixed or escalated before final validation.
+    applies_when:
+    - transport-to-persistence leak
+    - framework-to-domain leak
+    - persistence entity exposed publicly
+    - production imports test
+  - severity: warning
+    meaning: Leak is risky but may be accepted with documented adapter/remediation plan if gates allow.
+    applies_when:
+    - external DTO leakage mitigated by planned mapper
+    - internal boundary exposure with known consumers
+  boundary_leak_remediation_mapping:
+  - leak_type: transport_to_persistence_leak
+    remediation: introduce application service/use case and repository abstraction
+    required_followup: boundary_validation_required
+  - leak_type: persistence_entity_to_public_contract_leak
+    remediation: add mapper and stable contract shape
+    required_followup: boundary_validation_required
+  - leak_type: framework_to_domain_leak
+    remediation: move framework concern to transport/application layer
+    required_followup: boundary_validation_required
+  - leak_type: external_dto_to_domain_leak
+    remediation: add anti-corruption mapper
+    required_followup: boundary_validation_required
+  - leak_type: test_to_production_leak
+    remediation: move shared builder to production-safe test support or remove import
+    required_followup: boundary_validation_required
+  - leak_type: secret_boundary_leak
+    remediation: redact secret and route through secret/config provider
+    required_followup: implementation_blocked
+  boundary_leak_detection_algorithm:
+  - step_id: LOAD_BOUNDARY_CLASSIFICATION
+    action: read
+    input: boundary_classification_result
+  - step_id: LOAD_EVIDENCE
+    action: read
+    input: source_inventory_or_changed_file_manifest_when_available
+  - step_id: EVALUATE_LEAK_RULES
+    action: for_each
+    target: boundary_leak_detection_rules
+    assertion: detect_when signals absent
+  - step_id: CLASSIFY_LEAK_SEVERITY
+    action: lookup
+    input: boundary_leak_severity_rules
+  - step_id: MAP_REMEDIATION
+    action: lookup
+    input: boundary_leak_remediation_mapping
+  - step_id: WRITE_LEAK_RESULT
+    action: write
+    output: boundary_leak_detection_result
+  boundary_leak_output_schema:
+    required_fields:
+    - checked_boundaries
+    - detected_leaks
+    - leak_severity
+    - remediation_actions
+    - required_followups
+    - evidence_refs
+validation:
+  required_checks:
+  - id: BOUNDARY-LEAK-CHECK-001
+    check: all_detected_leaks_have_severity_and_remediation
+    applies_when:
+      boundary_leaks_detected: true
+  fail_conditions:
+  - id: BOUNDARY-LEAK-001
+    condition: leak_type_missing_definition
+    message: Every boundary leak type must have definition, detection rule, severity, and remediation.
+    severity: error
+  - id: BOUNDARY-LEAK-002
+    condition: blocking_leak_not_blocking_execution
+    message: Blocking boundary leak must block implementation or final validation.
+    severity: error

@@ -1,0 +1,596 @@
+version: '1.0'
+file:
+  name: conventions.boundary-crossing-rules.yaml
+  path: boundaries/conventions.boundary-crossing-rules.yaml
+  role: boundary_crossing_policy_contract
+  executability: rulebook
+purpose: Define how code may legally cross boundary types, which crossing mechanisms are allowed, and which crossings are
+  forbidden or conditional.
+ownership:
+  owns:
+  - boundary_crossing_mechanism_enum
+  - boundary_crossing_mechanism_definitions
+  - allowed_crossing_mechanisms
+  - forbidden_crossing_mechanisms
+  - conditional_crossing_mechanisms
+  - boundary_adapter_requirements
+  - public_api_crossing_rules
+  - internal_boundary_crossing_rules
+  - anti_corruption_boundary_rules
+  - event_message_boundary_crossing_rules
+  - repository_persistence_boundary_crossing_rules
+  does_not_own:
+  - boundary_vocabulary_definitions
+  - boundary_classification_algorithm
+  - boundary_leak_detection_rules
+  - boundary_validation_algorithm
+activation:
+  mode: conditional
+  activates_when:
+  - boundary_crossing_rules_required
+  - boundary_validation_required
+  - structure_rendering_requires_boundary_crossing_policy
+  skips_when: []
+inputs:
+  required:
+  - boundary_taxonomy
+  optional:
+  - boundary_classification_result
+  - dependency_classification_result
+  - contract_classification_result
+outputs:
+  produces:
+  - boundary_crossing_policy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  optional_files:
+  - dependencies/conventions.dependency-direction-rules.yaml
+  - contracts/conventions.contract-classification.yaml
+sections:
+  boundary_crossing_mechanism_enum:
+    allowed:
+    - direct_call
+    - application_service_call
+    - use_case_call
+    - repository_port
+    - adapter
+    - mapper
+    - dto_mapping
+    - event_contract
+    - message_contract
+    - client_adapter
+    - gateway_adapter
+    - storage_adapter
+    - config_provider
+    - authorization_policy
+    - transaction_manager
+    - unit_of_work
+    - public_export
+    - module_export
+    - test_double
+  boundary_crossing_mechanism_definitions:
+    direct_call:
+      definition: Synchronous call across a boundary without an intermediate abstraction; allowed only for same-layer or explicitly
+        public internal APIs.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    application_service_call:
+      definition: Call from transport or orchestration boundary into an application service that owns use-case orchestration.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    use_case_call:
+      definition: Call into a single business action/use-case boundary using a stable input contract.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    repository_port:
+      definition: Application/domain-facing persistence abstraction that prevents ORM/client details from leaking upward.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    adapter:
+      definition: Boundary object that translates one interface or protocol into another while isolating implementation details.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    mapper:
+      definition: Explicit conversion unit between transport, persistence, external, and domain shapes.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    dto_mapping:
+      definition: Validation and conversion of external DTO/request/response shapes before crossing into application/domain
+        logic.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    event_contract:
+      definition: Published/subscribed event schema used as an asynchronous boundary crossing contract.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    message_contract:
+      definition: Queue/message payload schema used across asynchronous processing boundaries.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    client_adapter:
+      definition: External API/SDK wrapper that isolates third-party protocol, retries, errors, and response shapes.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    gateway_adapter:
+      definition: Realtime or streaming gateway adapter that isolates connection/session protocol from application logic.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    storage_adapter:
+      definition: Adapter that isolates blob/file/object storage provider semantics from application/domain code.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    config_provider:
+      definition: Configuration access abstraction that isolates environment, secret, and feature flag sources.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    authorization_policy:
+      definition: Policy or guard that controls crossing into privileged/security-sensitive behavior.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    transaction_manager:
+      definition: Boundary object controlling transaction/session lifecycle and commit/rollback semantics.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    unit_of_work:
+      definition: Consistency boundary abstraction that coordinates persistence operations as one logical unit.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    public_export:
+      definition: Explicit public export that makes an artifact visible outside its module/package boundary.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    module_export:
+      definition: Module-level provider/export contract that makes an artifact available to other modules.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+    test_double:
+      definition: Test-only fake/mock/stub crossing mechanism that must not leak into production code.
+      valid_when:
+      - mechanism preserves source and target boundary responsibilities
+      - mechanism does not expose lower-layer implementation details
+      - mechanism is allowed by the source and target boundary type rules
+      invalid_when:
+      - mechanism bypasses required adapter/mapper/policy
+      - mechanism leaks transport, persistence, framework, secret, or external client details across a protected boundary
+  boundary_type_crossing_rules:
+  - source_boundary_type: transport_boundary
+    target_boundary_type:
+    - application_boundary
+    - domain_boundary
+    - persistence_boundary
+    - external_system_boundary
+    allowed_mechanisms:
+    - application_service_call
+    - use_case_call
+    - dto_mapping
+    - authorization_policy
+    forbidden_mechanisms:
+    - repository_port
+    - storage_adapter
+    - client_adapter
+    - direct_call
+    requires:
+    - validated_or_mapped_input_before_domain
+    - no_repository_or_external_client_access_from_transport
+    blocks_before:
+    - pre_implementation_gate
+    fail_condition: transport_boundary_bypasses_application_or_mapping
+  - source_boundary_type: application_boundary
+    target_boundary_type:
+    - domain_boundary
+    - persistence_boundary
+    - external_system_boundary
+    - event_boundary
+    - message_queue_boundary
+    allowed_mechanisms:
+    - use_case_call
+    - repository_port
+    - client_adapter
+    - event_contract
+    - message_contract
+    - transaction_manager
+    - unit_of_work
+    - mapper
+    forbidden_mechanisms:
+    - raw_framework_request
+    - raw_orm_model
+    - third_party_sdk_direct_without_adapter
+    requires:
+    - application_orchestration_preserves_domain_purity
+    - lower_level_details_hidden_behind_port_or_adapter
+    blocks_before:
+    - implementation_sequence
+    - pre_implementation_gate
+    fail_condition: application_boundary_leaks_lower_level_implementation
+  - source_boundary_type: domain_boundary
+    target_boundary_type:
+    - application_boundary
+    - persistence_boundary
+    - external_system_boundary
+    - transport_boundary
+    - configuration_boundary
+    allowed_mechanisms: []
+    forbidden_mechanisms:
+    - direct_call
+    - repository_port
+    - client_adapter
+    - config_provider
+    - framework_decorator
+    - database_model
+    requires:
+    - domain_depends_only_on_domain_concepts_or_ports_defined_at_domain_boundary
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+    fail_condition: domain_boundary_depends_on_outer_boundary
+  - source_boundary_type: persistence_boundary
+    target_boundary_type:
+    - domain_boundary
+    - application_boundary
+    - public_api_boundary
+    allowed_mechanisms:
+    - mapper
+    - repository_port
+    - unit_of_work
+    - transaction_manager
+    forbidden_mechanisms:
+    - raw_orm_entity_exposed
+    - database_model_passed_upward
+    - direct_public_api_response_from_entity
+    requires:
+    - persistence_shape_mapped_before_crossing_upward
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    fail_condition: persistence_boundary_leaks_storage_shape
+  - source_boundary_type: external_system_boundary
+    target_boundary_type:
+    - application_boundary
+    - domain_boundary
+    - public_api_boundary
+    allowed_mechanisms:
+    - client_adapter
+    - mapper
+    - anti_corruption_adapter
+    forbidden_mechanisms:
+    - third_party_dto_passed_to_domain
+    - third_party_error_model_exposed_publicly
+    requires:
+    - external_response_mapped
+    - timeout_or_failure_policy_recorded
+    blocks_before:
+    - pre_implementation_gate
+    fail_condition: external_system_boundary_leaks_provider_shape
+  - source_boundary_type:
+    - event_boundary
+    - message_queue_boundary
+    target_boundary_type:
+    - application_boundary
+    - domain_boundary
+    - external_system_boundary
+    allowed_mechanisms:
+    - event_contract
+    - message_contract
+    - mapper
+    - application_service_call
+    forbidden_mechanisms:
+    - unversioned_public_payload
+    - domain_entity_as_message_payload
+    - consumer_unsafe_breaking_change
+    requires:
+    - message_or_event_contract_defined
+    - idempotency_considered_when_consumer_can_retry
+    blocks_before:
+    - pre_implementation_gate
+    fail_condition: async_boundary_contract_or_idempotency_missing
+  - source_boundary_type: security_boundary
+    target_boundary_type:
+    - application_boundary
+    - domain_boundary
+    - persistence_boundary
+    - external_system_boundary
+    allowed_mechanisms:
+    - authorization_policy
+    - identity_context
+    - validated_claim_mapping
+    forbidden_mechanisms:
+    - implicit_trust
+    - raw_token_passed_to_domain
+    - secret_value_crosses_public_boundary
+    requires:
+    - authorization_or_trust_check_before_privileged_action
+    blocks_before:
+    - implementation
+    - final_validation
+    fail_condition: security_boundary_crossed_without_policy
+  - source_boundary_type: test_boundary
+    target_boundary_type:
+    - production_boundary
+    allowed_mechanisms:
+    - test_double
+    - fixture
+    - mock
+    - stub
+    - fake
+    forbidden_mechanisms:
+    - production_imports_test_artifact
+    - test_exception_used_in_production_code
+    requires:
+    - test_only_dependencies_remain_test_scoped
+    blocks_before:
+    - final_validation
+    fail_condition: test_boundary_leaks_into_production
+  core_crossing_rules:
+  - rule_id: BOUNDARY-CROSS-001
+    applies_when:
+      source_boundary_type: transport_boundary
+      target_boundary_type:
+      - application_boundary
+      - domain_boundary
+      - persistence_boundary
+    pass_when:
+    - transport calls application service/use-case through validated input
+    - transport DTO/request is mapped before domain or persistence use
+    fail_when:
+    - transport calls repository/ORM/storage/external client directly
+    - raw request/response object crosses into domain or persistence
+    severity: blocking
+    fail_condition: transport_boundary_invalid_crossing
+  - rule_id: BOUNDARY-CROSS-002
+    applies_when:
+      source_boundary_type: domain_boundary
+      target_boundary_type:
+      - transport_boundary
+      - persistence_boundary
+      - external_system_boundary
+      - configuration_boundary
+    pass_when:
+    - no outward dependency exists
+    - domain uses domain-owned abstractions only when allowed
+    fail_when:
+    - domain imports framework decorators/request types/database models/external SDK/config provider
+    severity: blocking
+    fail_condition: domain_boundary_outer_dependency
+  - rule_id: BOUNDARY-CROSS-003
+    applies_when:
+      source_boundary_type: persistence_boundary
+      target_boundary_type:
+      - application_boundary
+      - domain_boundary
+      - public_api_boundary
+    pass_when:
+    - repository/mapper converts persistence shape before crossing upward
+    fail_when:
+    - ORM/database entity is returned to controller/domain/public contract
+    severity: blocking
+    fail_condition: persistence_shape_leak
+  - rule_id: BOUNDARY-CROSS-004
+    applies_when:
+      source_boundary_type: external_system_boundary
+      target_boundary_type:
+      - domain_boundary
+      - public_api_boundary
+    pass_when:
+    - client adapter maps external DTO/error model to internal contract
+    fail_when:
+    - third-party SDK/DTO/error leaks into domain or public API
+    severity: error
+    fail_condition: external_provider_shape_leak
+  - rule_id: BOUNDARY-CROSS-005
+    applies_when:
+      source_boundary_type:
+      - event_boundary
+      - message_queue_boundary
+      target_boundary_type: public_api_boundary
+    pass_when:
+    - message/event contract is explicit and compatibility impact is reviewed when changed
+    fail_when:
+    - public payload is changed without compatibility decision or consumer impact review
+    severity: blocking
+    fail_condition: async_public_contract_unreviewed
+  - rule_id: BOUNDARY-CROSS-006
+    applies_when:
+      source_boundary_type: security_boundary
+      target_boundary_type: any
+    pass_when:
+    - authorization/trust policy is applied before privileged or sensitive crossing
+    fail_when:
+    - privileged action or sensitive data crossing occurs without trust decision
+    severity: blocking
+    fail_condition: security_crossing_without_trust_policy
+  conditional_crossing_rules:
+  - condition: same_module_private_boundary
+    allowed_when:
+    - source and target are private to same module
+    - no public contract or lower-layer implementation detail crosses
+    forbidden_when:
+    - crossing hides dependency direction violation
+    - crossing exposes persistence/transport/external shape
+    required_record: boundary_classification_record
+  - condition: public_boundary_changed
+    allowed_when:
+    - compatibility decision exists
+    - consumer impact reviewed
+    - migration/deprecation strategy recorded when breaking
+    forbidden_when:
+    - change is public and compatibility state is unknown
+    required_report: compatibility-decision
+  - condition: test_boundary_exception
+    allowed_when:
+    - dependency is test-scoped
+    - production code does not import test artifact
+    - exception is declared in test dependency rules
+    forbidden_when:
+    - test helper is imported by production runtime
+    required_report: dependency-validation
+  - condition: anti_corruption_required
+    allowed_when:
+    - external or legacy shape is isolated by adapter/mapper
+    - domain/application contracts remain internal and stable
+    forbidden_when:
+    - external/legacy shape becomes domain model or public API
+    required_report: boundary-validation
+  crossing_policy_algorithm:
+    steps:
+    - step_id: LOAD_CLASSIFIED_BOUNDARIES
+      action: read
+      input: boundary_classification_result
+    - step_id: LOAD_DEPENDENCY_AND_CONTRACT_CONTEXT
+      action: read_optional
+      input:
+      - dependency_classification_result
+      - contract_classification_result
+    - step_id: MATCH_TYPE_CROSSING_RULES
+      action: for_each_crossing
+      input: boundary_type_crossing_rules
+      output: candidate_crossing_rules
+    - step_id: APPLY_CORE_RULES
+      action: evaluate
+      input: core_crossing_rules
+      output: core_rule_results
+    - step_id: APPLY_CONDITIONAL_RULES
+      action: evaluate_when_condition_matches
+      input: conditional_crossing_rules
+      output: conditional_rule_results
+    - step_id: DETERMINE_PASS_FAIL
+      action: aggregate
+      rules:
+      - blocking failure blocks crossing
+      - error failure requires remediation before pre_implementation_gate
+      - warning records followup but does not pass silently
+    - step_id: EMIT_CROSSING_POLICY_RESULT
+      action: write
+      output: boundary_crossing_output_schema
+  boundary_crossing_output_schema:
+    required_fields:
+    - crossing_results
+    - allowed_crossings
+    - forbidden_crossings
+    - conditional_crossings
+    - blocking_violations
+    - evidence_refs
+    crossing_result_shape:
+      source_boundary_id: ''
+      target_boundary_id: ''
+      mechanism: ''
+      status: ''
+      rule_id: ''
+      severity: ''
+      fail_condition: ''
+      required_followups: []
+      evidence_refs: []
+validation:
+  required_checks:
+  - id: BOUNDARY-CROSSING-CHECK-001
+    check: known_crossing_mechanism_values
+    applies_when:
+      boundary_crossing_mechanism_referenced: true
+  - id: BOUNDARY-CROSSING-CHECK-002
+    check: no_forbidden_crossing_present
+    applies_when:
+      boundary_crossing_policy_required: true
+  fail_conditions:
+  - id: BOUNDARY-CROSSING-001
+    condition: crossing_rule_missing_applies_when
+    message: Crossing rules must identify source and target boundary constraints.
+    severity: error
+  - id: BOUNDARY-CROSSING-002
+    condition: forbidden_crossing_allowed
+    message: Forbidden boundary crossing must block or fail validation.
+    severity: error
+  - id: BOUNDARY-CROSSING-003
+    condition: conditional_crossing_missing_required_record
+    message: Conditional boundary crossing requires its declared report or evidence.
+    severity: error

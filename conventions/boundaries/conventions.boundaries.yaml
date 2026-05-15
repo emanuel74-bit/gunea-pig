@@ -2,40 +2,75 @@ version: '1.0'
 file:
   name: conventions.boundaries.yaml
   path: boundaries/conventions.boundaries.yaml
-  role: boundary_system_entrypoint
+  role: boundaries_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for boundary taxonomy and validation.
+purpose: Provide the entrypoint, file index, local execution order, and ownership boundaries for the boundary subsystem.
 ownership:
   owns:
-  - boundary_system_metadata
+  - boundaries_subsystem_metadata
   - boundary_file_index
   - boundary_system_execution_order
+  - boundary_subsystem_contract
   does_not_own:
-  - boundary_definitions
-  - detailed_boundary_validation
+  - boundary_vocabulary
+  - boundary_classification_logic
+  - boundary_crossing_policy
+  - boundary_leak_detection
+  - boundary_validation_logic
 activation:
-  mode: always
-  activates_when: []
+  mode: entrypoint
+  activates_when:
+  - boundary_subsystem_loaded
+  - boundary_contract_classification_phase_active
   skips_when: []
 inputs:
   required: []
   optional: []
 outputs:
   produces:
-  - boundaries_result
+  - boundary_subsystem_index
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - boundaries/conventions.boundary-classification.yaml
+  - boundaries/conventions.boundary-crossing-rules.yaml
+  - boundaries/conventions.boundary-leak-detection.yaml
+  - boundaries/conventions.boundary-validation.yaml
   optional_files: []
 sections:
   boundary_file_index:
     taxonomy: boundaries/conventions.boundary-taxonomy.yaml
+    classification: boundaries/conventions.boundary-classification.yaml
+    crossing_rules: boundaries/conventions.boundary-crossing-rules.yaml
+    leak_detection: boundaries/conventions.boundary-leak-detection.yaml
     validation: boundaries/conventions.boundary-validation.yaml
   boundary_system_execution_order:
   - load_boundary_taxonomy
   - classify_boundaries
-  - validate_boundary_crossings
-  - route_boundary_required_checks
-  - produce_boundary_system_result
+  - evaluate_boundary_crossing_rules
+  - detect_boundary_leaks
+  - validate_boundaries
+  - emit_boundary_followups
+  boundary_subsystem_contract:
+    absolute_rules:
+    - id: BOUNDARY-SYSTEM-ABS-001
+      rule: Boundary taxonomy defines boundary concepts only; classification and validation rules must live in their dedicated files.
+      fail_condition: boundary_taxonomy_owns_classification_or_validation
+    - id: BOUNDARY-SYSTEM-ABS-002
+      rule: Boundary validation may consume classification output but must not redefine boundary types.
+      fail_condition: boundary_validation_redefines_taxonomy
+    - id: BOUNDARY-SYSTEM-ABS-003
+      rule: Boundary subsystem must not own contract compatibility decisions; it may emit compatibility_required signals.
+      fail_condition: boundary_subsystem_owns_contract_compatibility
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: BOUNDARIES-SYSTEM-CHECK-001
+    check: boundary_subsystem_files_present
+    applies_when:
+      boundary_subsystem_loaded: true
+  fail_conditions:
+  - id: BOUNDARIES-SYSTEM-001
+    condition: boundary_required_file_missing
+    message: Boundary subsystem required file is missing.
+    severity: error

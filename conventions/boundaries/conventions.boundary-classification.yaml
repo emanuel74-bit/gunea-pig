@@ -1,0 +1,726 @@
+version: '1.0'
+file:
+  name: conventions.boundary-classification.yaml
+  path: boundaries/conventions.boundary-classification.yaml
+  role: boundary_classification_decision_engine
+  executability: decision_engine
+purpose: Classify boundary surfaces from evidence and produce structured boundary records for downstream contract, dependency,
+  risk, and validation phases.
+ownership:
+  owns:
+  - boundary_classification_inputs
+  - boundary_evidence_sources
+  - boundary_type_detection_rules
+  - boundary_surface_classification_rules
+  - boundary_visibility_classification_rules
+  - boundary_ownership_classification_rules
+  - boundary_classification_algorithm
+  - boundary_classification_output_schema
+  does_not_own:
+  - boundary_type_definitions
+  - boundary_validation_checks
+  - compatibility_strategy_selection
+  - dependency_direction_policy
+activation:
+  mode: conditional
+  activates_when:
+  - boundary_contract_classification_phase_active
+  - boundary_classification_required
+  skips_when: []
+inputs:
+  required:
+  - behavior_contract_report
+  - codebase_reconnaissance_report
+  optional:
+  - architecture_blueprint
+  - artifact_actions_report
+  - dependency_classification_report
+  - contract_classification_report
+  - structure_plan
+outputs:
+  produces:
+  - boundary_classification_result
+  - boundary_contract_classification_report_content
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  optional_files:
+  - contracts/conventions.contract-classification.yaml
+  - dependencies/conventions.dependency-classification.yaml
+sections:
+  boundary_classification_inputs:
+    required:
+    - behavior_contract_report
+    - codebase_reconnaissance_report
+    optional:
+    - architecture_blueprint
+    - artifact_actions_report
+    - dependency_classification_report
+    - contract_classification_report
+    - structure_plan
+    input_invariants:
+    - codebase evidence must identify source paths or explicit no_evidence_available
+    - contract/dependency reports may refine classification but must not override stronger direct boundary evidence
+    - unknown visibility or ownership must be represented explicitly instead of guessed
+  boundary_evidence_sources:
+  - source: file_path
+    confidence: medium
+    detects:
+    - module_boundary
+    - test_boundary
+    - persistence_boundary
+    - transport_boundary
+    - configuration_boundary
+  - source: imports
+    confidence: high
+    detects:
+    - dependency_direction
+    - external_system_boundary
+    - persistence_boundary
+    - test_boundary
+    - framework_to_domain_risk
+  - source: decorators_or_annotations
+    confidence: high
+    detects:
+    - transport_boundary
+    - realtime_boundary
+    - configuration_boundary
+    - security_boundary
+  - source: public_exports
+    confidence: high
+    detects:
+    - public_api_boundary
+    - internal_api_boundary
+    - module_boundary
+  - source: payload_dto_or_event_names
+    confidence: medium
+    detects:
+    - public_api_boundary
+    - event_boundary
+    - message_queue_boundary
+    - transport_boundary
+  - source: client_repository_storage_usage
+    confidence: high
+    detects:
+    - external_system_boundary
+    - persistence_boundary
+    - file_storage_boundary
+  - source: runtime_entrypoint_or_scheduler
+    confidence: high
+    detects:
+    - process_boundary
+    - transaction_boundary
+    - message_queue_boundary
+  - source: security_or_identity_usage
+    confidence: high
+    detects:
+    - security_boundary
+  - source: test_folder_or_test_imports
+    confidence: high
+    detects:
+    - test_boundary
+  boundary_type_detection_rules:
+  - boundary_type: transport_boundary
+    definition_ref: boundary_type_definitions.transport_boundary
+    choose_when:
+    - artifact receives external HTTP/RPC/socket/CLI/message input
+    - artifact uses framework routing, controller, gateway, resolver, handler, or listener annotations
+    - artifact translates transport payload into application input
+    reject_when:
+    - artifact is only called by internal application services
+    - artifact only models domain concepts
+    - artifact only performs persistence operations behind repository interface
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - transport_shape_leak_possible
+    - public_contract_change_possible
+  - boundary_type: public_api_boundary
+    definition_ref: boundary_type_definitions.public_api_boundary
+    choose_when:
+    - external or cross-module consumer depends on exported name, route, event, DTO, or response shape
+    - artifact is exported from public index/module/package API
+    - change can break callers outside owning unit
+    reject_when:
+    - artifact is private helper not exported
+    - implementation detail is hidden behind stable public interface
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - compatibility_decision_required
+    - consumer_impact_detected
+  - boundary_type: internal_api_boundary
+    definition_ref: boundary_type_definitions.internal_api_boundary
+    choose_when:
+    - artifact is consumed by multiple internal modules but not external consumers
+    - module public provider/export exists for internal workspace consumption
+    - change impacts internal callers but not external contract
+    reject_when:
+    - artifact has external consumers
+    - artifact is private to one artifact only
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - call_site_update_required
+  - boundary_type: module_boundary
+    definition_ref: boundary_type_definitions.module_boundary
+    choose_when:
+    - folder/module exposes public exports/imports
+    - module has provider/export/import metadata
+    - cross-module imports or dependencies exist
+    reject_when:
+    - all artifacts are private to same file
+    - module surface is not used by any other module
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - dependency_wiring_changed
+    - circular_dependency_possible
+  - boundary_type: domain_boundary
+    definition_ref: boundary_type_definitions.domain_boundary
+    choose_when:
+    - artifact contains core business rules, policies, invariants, or domain services
+    - artifact should remain independent from transport/persistence/framework details
+    reject_when:
+    - artifact primarily handles I/O, framework, persistence, or external protocol concerns
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - framework_to_domain_leak_possible
+    - persistence_to_domain_leak_possible
+  - boundary_type: application_boundary
+    definition_ref: boundary_type_definitions.application_boundary
+    choose_when:
+    - artifact orchestrates use cases, workflows, policies, ports, or application services
+    - artifact coordinates domain and infrastructure without owning persistence implementation
+    reject_when:
+    - artifact is pure domain rule
+    - artifact is framework transport adapter
+    - artifact is low-level repository/client implementation
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - orchestration_boundary_leak_possible
+  - boundary_type: persistence_boundary
+    definition_ref: boundary_type_definitions.persistence_boundary
+    choose_when:
+    - artifact imports ORM/database model/repository/storage client
+    - artifact maps persistence records to domain/application shapes
+    - artifact owns transactions, queries, migrations, or persistence schemas
+    reject_when:
+    - artifact only consumes repository port from application/domain side
+    - artifact does not depend on storage/database concerns
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - persistence_entity_leak_possible
+    - data_loss_possible
+  - boundary_type: external_system_boundary
+    definition_ref: boundary_type_definitions.external_system_boundary
+    choose_when:
+    - artifact calls third-party API/SDK/service/client
+    - artifact translates external response or error model
+    - artifact owns retries/timeouts/failure policies for remote system
+    reject_when:
+    - artifact only calls internal module
+    - external dependency is hidden behind adapter already classified elsewhere
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - external_client_leak_possible
+    - failure_mode_analysis_required
+  - boundary_type: event_boundary
+    definition_ref: boundary_type_definitions.event_boundary
+    choose_when:
+    - artifact publishes/subscribes domain/application events
+    - event payload shape is consumed asynchronously
+    - event name/version/schema is part of contract
+    reject_when:
+    - synchronous direct call only
+    - message is private implementation detail with no consumer contract
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - event_contract_change_possible
+    - idempotency_required
+  - boundary_type: message_queue_boundary
+    definition_ref: boundary_type_definitions.message_queue_boundary
+    choose_when:
+    - artifact sends/receives queue messages
+    - message has delivery/retry/dead-letter semantics
+    - consumer can process message independently/asynchronously
+    reject_when:
+    - event is in-process only
+    - transport is synchronous request/response
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - message_contract_change_possible
+    - retry_or_dlq_policy_required
+  - boundary_type: realtime_boundary
+    definition_ref: boundary_type_definitions.realtime_boundary
+    choose_when:
+    - artifact manages websocket/subscription/stream connection or bidirectional channel
+    - artifact emits real-time payloads to connected consumers
+    reject_when:
+    - artifact only handles stateless request/response
+    - artifact is internal event processor only
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - connection_lifecycle_policy_required
+  - boundary_type: file_storage_boundary
+    definition_ref: boundary_type_definitions.file_storage_boundary
+    choose_when:
+    - artifact reads/writes object storage/filesystem/blob store
+    - artifact owns presigned URL or file metadata translation
+    - file path/key format is part of behavior
+    reject_when:
+    - artifact only receives already-normalized file reference
+    - file access is hidden behind storage adapter
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - storage_contract_change_possible
+  - boundary_type: configuration_boundary
+    definition_ref: boundary_type_definitions.configuration_boundary
+    choose_when:
+    - artifact reads environment/config/secrets/feature flags
+    - artifact translates runtime configuration into typed settings
+    reject_when:
+    - artifact receives typed config value from provider
+    - artifact contains static constants only
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - configuration_leak_possible
+    - secret_leak_possible
+  - boundary_type: security_boundary
+    definition_ref: boundary_type_definitions.security_boundary
+    choose_when:
+    - artifact performs authentication, authorization, trust, tenancy, identity, or secret handling
+    - artifact gates privileged action or sensitive data access
+    reject_when:
+    - artifact only receives already-authorized principal and has no trust decision
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - security_sensitive_behavior_possible
+    - authorization_bypass_possible
+  - boundary_type: transaction_boundary
+    definition_ref: boundary_type_definitions.transaction_boundary
+    choose_when:
+    - artifact starts/commits/rolls back transaction or unit of work
+    - multiple persistence operations require atomicity or compensation
+    reject_when:
+    - operation is single non-transactional persistence call
+    - transaction is owned by lower layer and not exposed
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - transaction_scope_unclear
+    - partial_failure_possible
+  - boundary_type: process_boundary
+    definition_ref: boundary_type_definitions.process_boundary
+    choose_when:
+    - artifact starts background job, scheduler, worker process, child process, or long-running workflow
+    - artifact owns lifecycle/retry/cancellation for process execution
+    reject_when:
+    - artifact is pure synchronous helper
+    - process lifecycle is external and not represented in code
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - operational_failure_mode_required
+  - boundary_type: test_boundary
+    definition_ref: boundary_type_definitions.test_boundary
+    choose_when:
+    - artifact is test/spec/fixture/mock/stub/fake/helper
+    - artifact may use controlled test-only dependency exceptions
+    reject_when:
+    - artifact is imported by production runtime
+    - artifact ships as production source
+    required_evidence:
+      min_positive_signals: 1
+      required_absent_signals:
+      - stronger_negative_signal
+      confidence_threshold: medium
+    tie_breakers:
+    - prefer more specific boundary over generic module/internal boundary
+    - prefer public_api_boundary when consumer-visible contract evidence exists
+    - prefer persistence_boundary when storage client/model evidence exists
+    - classify multiple boundaries only when artifact genuinely owns multiple boundary surfaces
+    emits_risk_when:
+    - test_to_production_dependency_possible
+  boundary_surface_classification_rules:
+  - surface: inbound
+    choose_when:
+    - boundary receives control/data from outside its owning layer/module/process
+    - framework/runtime/external system calls this artifact first
+    reject_when:
+    - artifact only sends data outward
+    - artifact is only called by already-classified internal owner
+    tie_breakers:
+    - if both sends and receives across same boundary classify bidirectional
+  - surface: outbound
+    choose_when:
+    - boundary sends calls/messages/events/data to external system, persistence, storage, or downstream module
+    - artifact translates internal shape to external or lower-level shape
+    reject_when:
+    - artifact only accepts inbound requests
+    - artifact has no outgoing boundary crossing
+    tie_breakers:
+    - if outbound call also exposes public consumer shape, also classify public visibility
+  - surface: bidirectional
+    choose_when:
+    - artifact both receives and emits across the same boundary
+    - connection/session/stream has two-way communication or request/response with stateful external contract
+    reject_when:
+    - only one direction is present
+    - two directions belong to different boundary records and should be split
+    tie_breakers:
+    - prefer bidirectional for realtime boundaries with connection state
+  - surface: internal
+    choose_when:
+    - crossing occurs only inside one bounded context/module/workspace
+    - no external consumer can observe shape directly
+    reject_when:
+    - contract is exported externally or public package/API route exists
+  - surface: public
+    choose_when:
+    - external consumer, package user, cross-service client, or public route/event depends on the surface
+    - compatibility decision may be required
+    reject_when:
+    - surface is private implementation detail
+  - surface: private
+    choose_when:
+    - artifact is used only inside a single artifact/module and not exported
+    - change cannot affect external or cross-module consumer
+    reject_when:
+    - any public export or cross-module use exists
+  boundary_visibility_classification_rules:
+  - visibility: private
+    choose_when:
+    - only same artifact or private module internals consume it
+    - no index/module/package export exists
+    reject_when:
+    - exported from public module index
+    - external or cross-module consumer detected
+    confidence: high
+  - visibility: module_public
+    choose_when:
+    - exported or injected for consumers inside same module/bounded context
+    - not exported from package/workspace public API
+    reject_when:
+    - external package/API consumer detected
+    confidence: medium
+  - visibility: workspace_public
+    choose_when:
+    - used by multiple internal modules/packages inside the same workspace
+    - no known external consumer outside workspace
+    reject_when:
+    - published public API or external client exists
+    confidence: medium
+  - visibility: external_public
+    choose_when:
+    - published route, package export, event/message contract, SDK/client, or external consumer detected
+    reject_when:
+    - only internal consumers exist
+    confidence: high
+  - visibility: unknown
+    choose_when:
+    - consumer evidence is missing or contradictory
+    reject_when:
+    - private/module/workspace/external visibility can be proven
+    confidence: low
+    required_followup: consumer_impact_review_when_public_possible
+  boundary_ownership_classification_rules:
+  - ownership: single_artifact
+    choose_when:
+    - one file/class/function owns the boundary surface and all crossing mechanisms
+    reject_when:
+    - multiple modules share responsibility
+    confidence: high
+  - ownership: single_module
+    choose_when:
+    - one module/bounded context owns exports, adapters, providers, or route group
+    reject_when:
+    - shared kernel or external consumer controls contract
+    confidence: high
+  - ownership: shared_kernel
+    choose_when:
+    - multiple modules rely on shared type/policy/contract as stable kernel
+    reject_when:
+    - owned by a single feature or external provider
+    confidence: medium
+  - ownership: external_consumer
+    choose_when:
+    - consumer outside owning module controls compatibility obligations or expects stability
+    reject_when:
+    - no consumer dependency exists
+    confidence: medium
+  - ownership: third_party
+    choose_when:
+    - boundary contract or behavior is defined by external provider/API/SDK/schema
+    reject_when:
+    - contract is fully controlled in repository
+    confidence: high
+  boundary_classification_priority_order:
+  - priority: 1
+    prefer: security_boundary
+    when: trust, authorization, identity, or secret handling evidence exists
+    reason: security boundaries impose stricter validation regardless of other boundary types
+  - priority: 2
+    prefer: public_api_boundary
+    when: external_public visibility or consumer-visible contract evidence exists
+    reason: compatibility obligations must not be hidden by lower-level boundary labels
+  - priority: 3
+    prefer: persistence_boundary
+    when: database model, repository implementation, migration, schema, or storage client evidence exists
+    reason: persistence leaks are high-risk and require mapping validation
+  - priority: 4
+    prefer: external_system_boundary
+    when: third-party client/SDK/remote API evidence exists
+    reason: external failure modes and adapters are required
+  - priority: 5
+    prefer:
+    - message_queue_boundary
+    - event_boundary
+    - realtime_boundary
+    when: asynchronous or streaming communication evidence exists
+    reason: delivery/consumer semantics dominate generic transport classification
+  - priority: 6
+    prefer: transport_boundary
+    when: framework/runtime entrypoint evidence exists
+    reason: inbound entrypoints must be mapped before application/domain use
+  - priority: 7
+    prefer: application_boundary
+    when: use-case orchestration evidence exists
+    reason: application flow owns coordination without lower-level implementation
+  - priority: 8
+    prefer: domain_boundary
+    when: business invariant/rule evidence exists
+    reason: domain must remain dependency-clean
+  - priority: 9
+    prefer: module_boundary
+    when: only module/export/dependency evidence exists
+    reason: module is the generic structural fallback
+  ambiguous_classification_policy:
+    when_multiple_types_match:
+    - apply boundary_classification_priority_order
+    - allow multiple boundary records only when each has distinct surface or responsibility
+    - if tie remains, emit boundary_validation_required and mark confidence low
+    when_visibility_unknown:
+    - mark visibility unknown
+    - emit public_contract_change_possible when public evidence cannot be ruled out
+    - block compatibility-sensitive implementation until consumer impact is reviewed
+    when_evidence_missing:
+    - record no_evidence_available marker
+    - do not infer private boundary from absence of evidence
+    - prefer lower confidence and request reconnaissance followup when downstream decision depends on classification
+  boundary_classification_algorithm:
+    steps:
+    - step_id: LOAD_INPUT_REPORTS
+      action: read
+      input:
+      - behavior_contract_report
+      - codebase_reconnaissance_report
+      - optional_dependency_and_contract_reports
+    - step_id: COLLECT_EVIDENCE
+      action: extract
+      input: boundary_evidence_sources
+      output: boundary_evidence_records
+    - step_id: MATCH_BOUNDARY_TYPES
+      action: evaluate_rules
+      input: boundary_type_detection_rules
+      output: candidate_boundary_types
+    - step_id: CLASSIFY_SURFACE
+      action: evaluate_rules
+      input: boundary_surface_classification_rules
+      output: surface_classification
+    - step_id: CLASSIFY_VISIBILITY
+      action: evaluate_rules
+      input: boundary_visibility_classification_rules
+      output: visibility_classification
+    - step_id: CLASSIFY_OWNERSHIP
+      action: evaluate_rules
+      input: boundary_ownership_classification_rules
+      output: ownership_classification
+    - step_id: APPLY_PRIORITY_AND_TIE_BREAKERS
+      action: rank
+      input: boundary_classification_priority_order
+      output: selected_boundary_records
+    - step_id: HANDLE_AMBIGUITY
+      action: apply_policy
+      input: ambiguous_classification_policy
+      output: classification_followups
+    - step_id: EMIT_OUTPUT
+      action: write
+      output: boundary_classification_output_schema
+  boundary_classification_output_schema:
+    required_fields:
+    - classified_boundaries
+    - classification_confidence
+    - evidence_refs
+    - ambiguous_boundaries
+    - emitted_triggers
+    boundary_record_shape:
+      boundary_id: ''
+      boundary_type: ''
+      surface: ''
+      visibility: ''
+      ownership: ''
+      source_artifacts: []
+      crossing_candidates: []
+      risk_signals: []
+      confidence: ''
+      evidence_refs: []
+      followups_required: []
+validation:
+  required_checks:
+  - id: BOUNDARY-CLASSIFICATION-CHECK-001
+    check: boundary_classification_records_have_type_surface_visibility_ownership_and_evidence
+    applies_when:
+      boundary_classification_required: true
+  fail_conditions:
+  - id: BOUNDARY-CLASSIFICATION-001
+    condition: boundary_type_selected_without_required_evidence
+    message: Boundary type classification requires explicit evidence and confidence.
+    severity: error
+  - id: BOUNDARY-CLASSIFICATION-002
+    condition: ambiguous_boundary_classification_without_policy
+    message: Ambiguous boundary classifications must use priority/tie-break policy or emit followup.
+    severity: error
+  - id: BOUNDARY-CLASSIFICATION-003
+    condition: visibility_guessed_without_evidence
+    message: Boundary visibility must not be guessed from absence of evidence.
+    severity: error
