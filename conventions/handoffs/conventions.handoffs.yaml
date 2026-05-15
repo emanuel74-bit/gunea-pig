@@ -4,20 +4,33 @@ file:
   path: handoffs/conventions.handoffs.yaml
   role: handoffs_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for phase handoff schemas and validation.
+purpose: Provide the entrypoint, local execution order, ownership contract, and lookup index for phase-to-phase handoffs.
 ownership:
   owns:
   - handoffs_file_index
+  - handoffs_local_execution_order
+  - handoffs_subsystem_contract
+  - handoff_authority_boundaries
   does_not_own:
+  - phase_output_schema
+  - report_artifact_registry
   - alpha_runtime_scheduling
+  - trigger_resolution
+  - revision_policy
+  - gate_validation_logic
 activation:
   mode: entrypoint
   activates_when:
   - phase_handoff_validation_required
+  - phase_transition_requested
+  - downstream_phase_input_resolution_required
   skips_when: []
 inputs:
   required: []
-  optional: []
+  optional:
+  - mission_state
+  - phase_contract_registry
+  - report_artifact_registry
 outputs:
   produces:
   - handoffs_subsystem_result
@@ -25,12 +38,68 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - handoffs/conventions.handoff-schema.yaml
+  - handoffs/conventions.handoff-consumption-policy.yaml
   - handoffs/conventions.handoff-validation.yaml
-  optional_files: []
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+  - reports/conventions.report-artifacts.yaml
+  - missions/conventions.mission-state.yaml
 sections:
   handoffs_file_index:
     schema: handoffs/conventions.handoff-schema.yaml
+    consumption_policy: handoffs/conventions.handoff-consumption-policy.yaml
     validation: handoffs/conventions.handoff-validation.yaml
+  handoffs_local_execution_order:
+  - load_handoff_schema
+  - load_consumption_policy
+  - load_source_phase_output_and_gate_result
+  - load_target_phase_contract_and_owner_agent_permissions
+  - evaluate_downstream_consumption_policy
+  - validate_handoff_record_and_result
+  - write_or_update_handoff_record
+  - allow_or_block_downstream_consumption
+  handoff_authority_boundaries:
+    handoffs_own:
+    - phase-to-phase transfer record shape
+    - downstream consumption policy
+    - source output consumability checks
+    - target input declaration checks
+    - downstream consumption lifecycle states
+    - handoff validation pass/fail result shape
+    handoffs_do_not_own:
+    - whether a phase should run
+    - whether a source output was semantically correct
+    - trigger routing decisions
+    - revision approval decisions
+    - report artifact definitions
+    - agent execution prompts
+  handoffs_subsystem_contract:
+    absolute_rules:
+    - id: HANDOFFS-SYSTEM-ABS-001
+      rule: Every downstream phase consumption must be backed by a valid handoff record.
+      fail_condition: downstream_consumption_without_handoff_record
+    - id: HANDOFFS-SYSTEM-ABS-002
+      rule: A handoff validates consumability; it must not rewrite source reports or target phase contracts.
+      fail_condition: handoff_mutated_source_or_target_contract
+    - id: HANDOFFS-SYSTEM-ABS-003
+      rule: Handoff validation must fail closed when source output, target input declaration, permissions, lifecycle state,
+        or evidence is missing.
+      fail_condition: handoff_validation_failed_open
+    - id: HANDOFFS-SYSTEM-ABS-004
+      rule: Invalidated, blocked, failed, or replaced-without-replacement handoffs must block downstream consumption.
+      fail_condition: blocked_handoff_allowed_downstream_consumption
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: HANDOFFS-SYSTEM-CHECK-001
+    check: handoff_subsystem_files_follow_file_contract
+    applies_when:
+      handoffs_subsystem_loaded: true
+  fail_conditions:
+  - id: HANDOFFS-SYSTEM-001
+    condition: downstream_consumption_without_handoff_record
+    message: Downstream phase consumption requires a valid handoff record.
+    severity: error
+  - id: HANDOFFS-SYSTEM-002
+    condition: handoff_validation_failed_open
+    message: Handoff validation must fail closed when required handoff evidence is missing.
+    severity: error

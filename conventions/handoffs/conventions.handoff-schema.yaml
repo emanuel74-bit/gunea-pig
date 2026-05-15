@@ -4,18 +4,32 @@ file:
   path: handoffs/conventions.handoff-schema.yaml
   role: phase_handoff_schema_contract
   executability: schema
-purpose: Define phase handoff records and lifecycle states.
+purpose: Define strict handoff lifecycle states, handoff kinds, handoff record shape, handoff evidence, and blocking semantics.
 ownership:
   owns:
-  - phase_handoff_schema
   - handoff_lifecycle_state_enum
+  - handoff_lifecycle_state_definitions
+  - handoff_kind_enum
+  - handoff_kind_definitions
+  - handoff_record_schema
+  - handoff_evidence_schema
+  - handoff_failure_schema
+  - handoff_blocking_status_enum
   does_not_own:
+  - handoff_validation_algorithm
+  - phase_contracts
   - report_artifact_registry
-  - alpha_runtime_scheduling
+  - trigger_resolution
+  - revision_policy
+  - downstream_consumption_policy
+  - validation_checks
+  - remediation_decisions
 activation:
   mode: reference_only
   activates_when:
   - phase_handoff_schema_referenced
+  - handoff_record_created
+  - downstream_consumption_requested
   skips_when: []
 inputs:
   required: []
@@ -26,7 +40,10 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
-  optional_files: []
+  optional_files:
+  - reports/conventions.report-artifacts.yaml
+  - missions/conventions.mission-state.yaml
+  - phases/conventions.phase-contracts.yaml
 sections:
   handoff_lifecycle_state_enum:
     allowed:
@@ -35,92 +52,249 @@ sections:
     - blocked
     - invalidated
     - replaced
-  phase_handoff_schema:
+    - superseded
+    - revalidation_required
+  handoff_lifecycle_state_definitions:
+    pending:
+      definition: Handoff record was created but required checks have not yet been executed.
+      choose_when:
+      - source phase finished but handoff validation has not completed
+      - handoff is awaiting source output gate or target input checks
+      reject_when:
+      - all handoff validation checks passed
+      - handoff failed or was invalidated
+      blocks_downstream_consumption: true
+    valid:
+      definition: Handoff passed all required checks and target phase may consume declared outputs.
+      choose_when:
+      - source output gate passed
+      - source output is not invalidated
+      - target phase declares the consumed input
+      - target agent may read the input
+      - handoff record includes evidence
+      reject_when:
+      - any required handoff check failed
+      - source output was superseded without replacement validation
+      blocks_downstream_consumption: false
+    blocked:
+      definition: Handoff failed or cannot be completed until a required condition is resolved.
+      choose_when:
+      - required source output is missing
+      - source gate failed
+      - target phase does not declare the input
+      - target agent cannot read the input
+      - evidence is missing
+      reject_when:
+      - all required checks pass
+      - handoff is intentionally invalidated instead of blocked
+      blocks_downstream_consumption: true
+    invalidated:
+      definition: Handoff previously existed but one or more source outputs or assumptions became unsafe to consume.
+      choose_when:
+      - source output is listed in mission_state.invalidated_outputs
+      - revision invalidated a consumed report
+      - replacement output is required but unavailable
+      reject_when:
+      - source output remains valid
+      - handoff is merely pending validation
+      blocks_downstream_consumption: true
+    replaced:
+      definition: Handoff was replaced by a newer handoff that references replacement outputs.
+      choose_when:
+      - source output has a valid replacement output
+      - new handoff record references the old handoff as replacement_for
+      reject_when:
+      - replacement output missing
+      - replacement handoff not validated
+      blocks_downstream_consumption: true
+      unblocks_when:
+      - replacement handoff lifecycle_state is valid
+    superseded:
+      definition: Handoff is obsolete because a later phase plan or revision no longer consumes the original output.
+      choose_when:
+      - target phase no longer requires the source output
+      - active phase plan changed and handoff is no longer applicable
+      reject_when:
+      - target still consumes the source output
+      blocks_downstream_consumption: true
+    revalidation_required:
+      definition: Handoff was previously valid but a dependent source, permission, or target contract changed and must be
+        checked again.
+      choose_when:
+      - source output changed
+      - target phase contract changed
+      - agent permission profile changed
+      - report registry changed
+      reject_when:
+      - no relevant dependency changed
+      blocks_downstream_consumption: true
+  handoff_kind_enum:
+    allowed:
+    - direct_report_handoff
+    - derived_report_handoff
+    - mission_state_handoff
+    - trigger_handoff
+    - revision_handoff
+    - implementation_artifact_handoff
+    - validation_result_handoff
+  handoff_kind_definitions:
+    direct_report_handoff:
+      definition: A target phase consumes a report produced directly by a source phase.
+      required_source: report artifact path
+      required_checks:
+      - source_output_gate_passed
+      - report_exists
+      - report_schema_valid
+    derived_report_handoff:
+      definition: A target phase consumes an output derived from one or more prior reports.
+      required_source: derivation record with evidence refs
+      required_checks:
+      - all_source_reports_valid
+      - derivation_evidence_present
+    mission_state_handoff:
+      definition: A target phase consumes mission state values such as active phase plan, gate status, triggers, or implementation_allowed.
+      required_source: .ai/mission-state.yaml
+      required_checks:
+      - mission_state_exists
+      - mission_state_schema_valid
+      - state_value_not_stale
+    trigger_handoff:
+      definition: Trigger review consumes emitted triggers from a source phase.
+      required_source: phase output triggers_emitted
+      required_checks:
+      - trigger_registered
+      - trigger_type_known
+      - trigger_resolution_path_exists
+    revision_handoff:
+      definition: A revision or rerun process consumes a revision request or invalidation record.
+      required_source: revision request record
+      required_checks:
+      - revision_request_schema_valid
+      - invalidated_outputs_recorded
+    implementation_artifact_handoff:
+      definition: Post-implementation validation consumes changed files or implementation results.
+      required_source: changed-file-manifest and implementation-result reports
+      required_checks:
+      - manifest_exists
+      - changed_files_within_scope
+    validation_result_handoff:
+      definition: Final validation consumes validation outputs from post-implementation or report artifact validation.
+      required_source: validation report
+      required_checks:
+      - validation_report_exists
+      - validation_status_known
+  handoff_record_schema:
     required_fields:
     - handoff_id
+    - handoff_kind
     - source_phase
     - target_phase
     - source_outputs
     - target_required_inputs
     - source_gate_status
-    - lifecycle_state
+    - handoff_lifecycle_state
+    - validation_status
     - evidence_refs
-  handoff_lifecycle_state_definitions:
-    pending:
-      definition: pending handoff_lifecycle_state vocabulary value.
-      meaning: Represents the pending case within the handoff_lifecycle_state taxonomy.
-      detection_signals:
-      - pending signals are present in the request, codebase evidence, or prior phase reports
+    - blocking_status
+    optional_fields:
+    - target_optional_inputs
+    - source_report_refs
+    - target_report_refs
+    - trigger_refs
+    - revision_refs
+    - invalidated_outputs
+    - replacement_for
+    - replacement_handoff
+    - created_by
+    - validated_by
+    - notes
+  handoff_record_shape:
+    handoff_id: ''
+    handoff_kind: direct_report_handoff
+    source_phase: ''
+    target_phase: ''
+    source_outputs: []
+    target_required_inputs: []
+    target_optional_inputs: []
+    source_gate_status: ''
+    handoff_lifecycle_state: pending
+    validation_status: pending
+    blocking_status: blocking
+    evidence_refs: []
+    source_report_refs: []
+    target_report_refs: []
+    trigger_refs: []
+    revision_refs: []
+    invalidated_outputs: []
+    replacement_for: ''
+    replacement_handoff: ''
+    created_by: alpha_controller
+    validated_by: handoff_validation
+  handoff_evidence_schema:
+    required_fields:
+    - evidence_ref_id
+    - supports_check
+    - source_file
+    - source_path
+    - result
+    optional_fields:
+    - source_phase
+    - source_report_id
+    - notes
+  handoff_failure_schema:
+    required_fields:
+    - failure_id
+    - fail_condition
+    - severity
+    - blocking
+    - reason
+    - remediation
+    optional_fields:
+    - source_output
+    - target_input
+    - source_phase
+    - target_phase
+    - evidence_refs
+  handoff_blocking_status_enum:
+    allowed:
+    - non_blocking
+    - blocking
+    - hard_blocking
+  handoff_blocking_status_definitions:
+    non_blocking:
+      definition: Handoff issue does not prevent downstream consumption.
+      allowed_only_when:
+      - issue is informational
+      - target can safely proceed without consumed output
+    blocking:
+      definition: Handoff issue blocks target phase until remediation or valid replacement exists.
       choose_when:
-      - the active evidence best matches pending
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - handoff_lifecycle_state decisions using pending must include reason and evidence
-    valid:
-      definition: valid handoff_lifecycle_state vocabulary value.
-      meaning: Represents the valid case within the handoff_lifecycle_state taxonomy.
-      detection_signals:
-      - valid signals are present in the request, codebase evidence, or prior phase reports
+      - required input missing
+      - source output pending
+      - revalidation required
+    hard_blocking:
+      definition: Handoff issue blocks target phase and requires revision, rerun, or explicit invalidation handling.
       choose_when:
-      - the active evidence best matches valid
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - handoff_lifecycle_state decisions using valid must include reason and evidence
-    blocked:
-      definition: blocked handoff_lifecycle_state vocabulary value.
-      meaning: Represents the blocked case within the handoff_lifecycle_state taxonomy.
-      detection_signals:
-      - blocked signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches blocked
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - handoff_lifecycle_state decisions using blocked must include reason and evidence
-    invalidated:
-      definition: invalidated handoff_lifecycle_state vocabulary value.
-      meaning: Represents the invalidated case within the handoff_lifecycle_state taxonomy.
-      detection_signals:
-      - invalidated signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches invalidated
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - handoff_lifecycle_state decisions using invalidated must include reason and evidence
-    replaced:
-      definition: replaced handoff_lifecycle_state vocabulary value.
-      meaning: Represents the replaced case within the handoff_lifecycle_state taxonomy.
-      detection_signals:
-      - replaced signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches replaced
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - handoff_lifecycle_state decisions using replaced must include reason and evidence
+      - source output failed gate
+      - source output invalidated
+      - permission violation
+      - undeclared input consumption
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: HANDOFF-SCHEMA-CHECK-001
+    check: handoff_lifecycle_state_known
+    applies_when:
+      handoff_record_exists: true
+  - id: HANDOFF-SCHEMA-CHECK-002
+    check: handoff_record_has_required_fields
+    applies_when:
+      handoff_record_created: true
+  fail_conditions:
+  - id: HANDOFF-SCHEMA-001
+    condition: unknown_handoff_lifecycle_state
+    message: Handoff lifecycle state must be defined in handoff schema.
+    severity: error
+  - id: HANDOFF-SCHEMA-002
+    condition: handoff_record_missing_required_field
+    message: Handoff record is missing required fields.
+    severity: error

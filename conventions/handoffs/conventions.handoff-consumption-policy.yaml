@@ -1,0 +1,348 @@
+version: '1.0'
+file:
+  name: conventions.handoff-consumption-policy.yaml
+  path: handoffs/conventions.handoff-consumption-policy.yaml
+  role: phase_handoff_downstream_consumption_policy
+  executability: decision_engine
+purpose: Define strict downstream consumption policy for phase handoffs, including consumability, invalidation, replacement,
+  and revalidation blocking rules.
+ownership:
+  owns:
+  - downstream_consumption_policy
+  - consumable_output_rules
+  - blocked_consumption_rules
+  - invalidated_output_consumption_rules
+  - replaced_output_consumption_rules
+  - pending_revalidation_rules
+  - downstream_blocking_decision_rules
+  - consumption_policy_algorithm
+  - consumption_policy_result_schema
+  does_not_own:
+  - handoff_record_schema
+  - generic_handoff_validation_algorithm
+  - alpha_runtime_scheduling
+  - revision_approval_policy
+  - source_report_schema
+  - phase_contract_definitions
+activation:
+  mode: conditional
+  activates_when:
+  - target_phase_about_to_consume_source_output
+  - handoff_consumability_check_required
+  - handoff_revalidation_required
+  skips_when: []
+inputs:
+  required:
+  - handoff_record
+  - source_gate_result
+  - source_outputs
+  - target_phase_contract
+  - target_agent_permission_profile
+  - mission_state
+  optional:
+  - report_registry
+  - trigger_registry
+  - revision_registry
+  - replacement_handoff_record
+outputs:
+  produces:
+  - handoff_consumption_policy_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - handoffs/conventions.handoff-schema.yaml
+  - missions/conventions.mission-state.yaml
+  - phases/conventions.phase-contracts.yaml
+  - agents/conventions.agent-permissions.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+  - revisions/conventions.invalidation-policy.yaml
+  - reports/conventions.report-artifacts.yaml
+sections:
+  downstream_consumption_policy:
+    default_behavior: fail_closed
+    allow_requires: explicit_valid_consumption_decision
+    missing_or_ambiguous_result: hard_blocking
+    absolute_rules:
+    - id: HANDOFF-CONSUME-ABS-001
+      rule: A target phase may consume only outputs whose source output gate passed.
+      fail_condition: target_consumed_output_without_passed_source_gate
+      severity: error
+      blocking: hard_blocking
+      blocks_before:
+      - target_phase_entry_gate
+      - target_phase_execution
+    - id: HANDOFF-CONSUME-ABS-002
+      rule: A target phase must not consume invalidated outputs.
+      fail_condition: target_consumed_invalidated_output
+      severity: error
+      blocking: hard_blocking
+      blocks_before:
+      - target_phase_entry_gate
+      - target_phase_execution
+      - final_validation
+    - id: HANDOFF-CONSUME-ABS-003
+      rule: A target phase may consume replaced output only through the latest valid replacement handoff.
+      fail_condition: target_consumed_superseded_output
+      severity: error
+      blocking: hard_blocking
+      blocks_before:
+      - target_phase_entry_gate
+      - target_phase_execution
+    - id: HANDOFF-CONSUME-ABS-004
+      rule: A target phase must block when required input is pending revalidation.
+      fail_condition: target_consumed_pending_revalidation_output
+      severity: error
+      blocking: hard_blocking
+      blocks_before:
+      - target_phase_entry_gate
+      - target_phase_execution
+    - id: HANDOFF-CONSUME-ABS-005
+      rule: A target phase may consume only inputs declared by its phase contract as required or optional.
+      fail_condition: target_phase_consumed_undeclared_input
+      severity: error
+      blocking: hard_blocking
+      blocks_before:
+      - target_phase_entry_gate
+      - target_phase_execution
+    - id: HANDOFF-CONSUME-ABS-006
+      rule: A target agent may consume only inputs permitted by its active permission profile.
+      fail_condition: target_agent_read_not_allowed
+      severity: error
+      blocking: hard_blocking
+      blocks_before:
+      - target_phase_entry_gate
+      - target_phase_execution
+    - id: HANDOFF-CONSUME-ABS-007
+      rule: Optional input omission is allowed only when the target contract marks the input optional and no required downstream
+        dependency depends on it.
+      fail_condition: optional_input_omission_breaks_required_dependency
+      severity: error
+      blocking: blocking
+      blocks_before:
+      - target_phase_execution
+  consumable_output_rules:
+  - id: CONSUMABLE-OUTPUT-VALID-REPORT
+    applies_when:
+    - source_output.kind is report
+    - target_phase declares report as input
+    pass_when:
+    - source_output exists
+    - source output gate status is passed
+    - report schema validation passed
+    - source output lifecycle is current
+    fail_when:
+    - report missing
+    - source output gate not passed
+    - report schema invalid
+    - report invalidated or superseded
+    fail_condition: report_output_not_consumable
+    blocking: hard_blocking
+  - id: CONSUMABLE-OUTPUT-MISSION-STATE
+    applies_when:
+    - source_output.kind is mission_state_value
+    pass_when:
+    - mission_state exists
+    - requested state path exists
+    - state value is not stale or invalidated
+    fail_when:
+    - mission_state missing
+    - state path missing
+    - state value stale or invalidated
+    fail_condition: mission_state_output_not_consumable
+    blocking: hard_blocking
+  - id: CONSUMABLE-OUTPUT-IMPLEMENTATION-ARTIFACT
+    applies_when:
+    - source_output.kind is implementation_artifact
+    pass_when:
+    - changed-file-manifest exists
+    - implementation_result exists
+    - artifact is within allowed edit scope
+    fail_when:
+    - manifest missing
+    - implementation result missing
+    - artifact outside allowed scope
+    fail_condition: implementation_artifact_not_consumable
+    blocking: hard_blocking
+  blocked_consumption_rules:
+  - id: BLOCK-CONSUME-SOURCE-GATE
+    applies_when:
+    - source_gate_result.status is not passed
+    decision:
+      allow_downstream_consumption: false
+      blocking_status: hard_blocking
+      required_action: rerun_or_fix_source_phase
+  - id: BLOCK-CONSUME-MISSING-REQUIRED-INPUT
+    applies_when:
+    - target_required_input has no valid source output or external source marker
+    decision:
+      allow_downstream_consumption: false
+      blocking_status: hard_blocking
+      required_action: produce_required_input_or_revise_phase_plan
+  - id: BLOCK-CONSUME-PERMISSION
+    applies_when:
+    - target_agent_permission_profile does not permit reading consumed input
+    decision:
+      allow_downstream_consumption: false
+      blocking_status: hard_blocking
+      required_action: fix_permission_profile_or_remove_input
+  invalidated_output_consumption_rules:
+  - id: INVALIDATED-CONSUME-001
+    applies_when:
+    - source_output is listed in mission_state.invalidated_outputs
+    pass_when:
+    - valid replacement_handoff exists and target consumes replacement output
+    fail_when:
+    - target consumes invalidated output directly
+    - replacement handoff missing
+    - replacement handoff failed validation
+    fail_condition: target_consumed_invalidated_output
+    required_action: process_revision_or_validate_replacement_handoff
+    blocking: hard_blocking
+  replaced_output_consumption_rules:
+  - id: REPLACED-CONSUME-001
+    applies_when:
+    - handoff_lifecycle_state is replaced or source_output is superseded
+    pass_when:
+    - replacement_handoff lifecycle_state is valid
+    - replacement source output gate passed
+    fail_when:
+    - replacement_handoff missing
+    - replacement_handoff pending
+    - replacement_handoff blocked or invalidated
+    fail_condition: target_consumed_superseded_output
+    required_action: consume_latest_valid_replacement_or_block
+    blocking: hard_blocking
+  pending_revalidation_rules:
+  - id: REVALIDATION-CONSUME-001
+    applies_when:
+    - handoff_lifecycle_state is revalidation_required
+    - source, target contract, permission profile, or report registry changed
+    pass_when:
+    - handoff revalidation completed and status is valid
+    fail_when:
+    - target attempts consumption before revalidation passes
+    fail_condition: target_consumed_pending_revalidation_output
+    required_action: rerun_handoff_validation
+    blocking: hard_blocking
+  downstream_blocking_decision_rules:
+  - id: HANDOFF-CONSUME-DECISION-ALLOW
+    priority: 1
+    match:
+      all_consumption_checks: passed
+      handoff_lifecycle_state: valid
+    decision:
+      allow_downstream_consumption: true
+      blocking_status: non_blocking
+      target_phase_entry_gate_may_run: true
+  - id: HANDOFF-CONSUME-DECISION-INVALIDATED
+    priority: 2
+    match:
+      any_fail_condition:
+      - target_consumed_invalidated_output
+      - source_output_invalidated
+    decision:
+      allow_downstream_consumption: false
+      blocking_status: hard_blocking
+      target_phase_entry_gate_may_run: false
+      required_action: revision_or_replacement_handoff
+  - id: HANDOFF-CONSUME-DECISION-REVALIDATE
+    priority: 3
+    match:
+      handoff_lifecycle_state: revalidation_required
+    decision:
+      allow_downstream_consumption: false
+      blocking_status: hard_blocking
+      target_phase_entry_gate_may_run: false
+      required_action: rerun_handoff_validation
+  - id: HANDOFF-CONSUME-DECISION-BLOCK
+    priority: 99
+    match:
+      otherwise: true
+    decision:
+      allow_downstream_consumption: false
+      blocking_status: blocking
+      target_phase_entry_gate_may_run: false
+      required_action: manual_review_or_revision_request
+  consumption_policy_algorithm:
+    steps:
+    - step_id: LOAD_HANDOFF_RECORD
+      action: read
+      input: handoff_record
+    - step_id: LOAD_SOURCE_GATE_RESULT
+      action: read
+      input: source_gate_result
+    - step_id: LOAD_TARGET_PHASE_CONTRACT
+      action: read
+      input: target_phase_contract
+    - step_id: LOAD_TARGET_AGENT_PERMISSION_PROFILE
+      action: read
+      input: target_agent_permission_profile
+    - step_id: CHECK_SOURCE_CONSUMABILITY
+      action: evaluate
+      input: consumable_output_rules
+    - step_id: CHECK_DECLARED_INPUTS_AND_PERMISSIONS
+      action: evaluate
+      input: downstream_consumption_policy.absolute_rules
+    - step_id: CHECK_INVALIDATION_REPLACEMENT_REVALIDATION
+      action: evaluate
+      input:
+      - invalidated_output_consumption_rules
+      - replaced_output_consumption_rules
+      - pending_revalidation_rules
+    - step_id: APPLY_BLOCKING_DECISION_RULES
+      action: apply_priority_rules
+      input: downstream_blocking_decision_rules
+    - step_id: EMIT_CONSUMPTION_POLICY_RESULT
+      action: write
+      output: handoff_consumption_policy_result
+  consumption_policy_result_schema:
+    required_fields:
+    - handoff_id
+    - allow_downstream_consumption
+    - blocking_status
+    - target_phase_entry_gate_may_run
+    - consumption_check_results
+    - failures
+    - required_actions
+    - evidence_refs
+    record_shape:
+      handoff_id: ''
+      allow_downstream_consumption: false
+      blocking_status: blocking
+      target_phase_entry_gate_may_run: false
+      consumption_check_results: []
+      failures: []
+      required_actions: []
+      evidence_refs: []
+validation:
+  required_checks:
+  - id: HANDOFF-CONSUME-CHECK-001
+    check: consumption_policy_result_explicit
+    applies_when:
+      handoff_consumption_policy_required: true
+  - id: HANDOFF-CONSUME-CHECK-002
+    check: invalidated_or_revalidation_state_blocks_consumption
+    applies_when:
+      handoff_lifecycle_not_valid: true
+  fail_conditions:
+  - id: HANDOFF-CONSUME-001
+    condition: target_consumed_output_without_passed_source_gate
+    message: Target phase cannot consume output before source output gate passes.
+    severity: error
+  - id: HANDOFF-CONSUME-002
+    condition: target_consumed_invalidated_output
+    message: Target phase cannot consume invalidated output.
+    severity: error
+  - id: HANDOFF-CONSUME-003
+    condition: target_consumed_superseded_output
+    message: Target phase must consume the latest valid replacement output.
+    severity: error
+  - id: HANDOFF-CONSUME-004
+    condition: target_consumed_pending_revalidation_output
+    message: Target phase cannot consume output pending revalidation.
+    severity: error
+  - id: HANDOFF-CONSUME-005
+    condition: target_agent_read_not_allowed
+    message: Target agent is not allowed to read the handed-off input.
+    severity: error

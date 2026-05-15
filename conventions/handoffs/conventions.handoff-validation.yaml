@@ -4,52 +4,268 @@ file:
   path: handoffs/conventions.handoff-validation.yaml
   role: phase_handoff_validation_contract
   executability: validator
-purpose: Define handoff validation rules and algorithm.
+purpose: Validate handoff records and consume the downstream consumption policy result without owning consumption policy definitions.
 ownership:
   owns:
-  - handoff_validation_rules
+  - handoff_validation_policy
+  - handoff_validation_check_catalog
   - handoff_validation_algorithm
+  - handoff_output_schema
+  - handoff_remediation_mapping
   does_not_own:
   - phase_output_schema
-  - trigger_resolution
+  - trigger_resolution_matrix
+  - revision_approval_policy
+  - gate_template_definitions
+  - agent_permission_definitions
+  - downstream_consumption_policy
+  - consumable_output_rules
+  - invalidated_output_consumption_rules
+  - replaced_output_consumption_rules
+  - pending_revalidation_rules
 activation:
   mode: conditional
   activates_when:
   - phase_handoff_validation_required
+  - target_phase_about_to_consume_source_output
+  - handoff_revalidation_required
   skips_when: []
 inputs:
   required:
+  - handoff_record
+  - handoff_consumption_policy_result
   - source_phase_output
+  - source_gate_result
   - target_phase_contract
+  - target_agent_permission_profile
   - mission_state
-  optional: []
+  optional:
+  - report_registry
+  - trigger_registry
+  - revision_registry
 outputs:
   produces:
-  - handoff_result
+  - handoff_validation_result
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - handoffs/conventions.handoff-schema.yaml
+  - handoffs/conventions.handoff-consumption-policy.yaml
   - missions/conventions.mission-state.yaml
-  optional_files: []
+  - phases/conventions.phase-contracts.yaml
+  - agents/conventions.agent-permissions.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - revisions/conventions.invalidation-policy.yaml
+  - reports/conventions.report-artifacts.yaml
 sections:
-  handoff_validation_rules:
+  handoff_validation_policy:
+    default_behavior: fail_closed
+    pass_requires:
+    - handoff_record_schema_valid
+    - consumption_policy_result_allows_consumption
+    - required_validation_metadata_present
+    blocking_default: hard_blocking_for_missing_or_failed_consumption_policy_result
     absolute_rules:
     - id: HANDOFF-VALIDATION-ABS-001
-      rule: A downstream phase may consume only outputs whose output gate passed.
-      fail_condition: downstream_phase_consumed_failed_output
+      rule: Handoff validation must consume an explicit handoff consumption policy result before allowing downstream consumption.
+      fail_condition: handoff_consumption_policy_missing_or_ambiguous
+      severity: error
+      blocking: hard_blocking
     - id: HANDOFF-VALIDATION-ABS-002
-      rule: A downstream phase may not consume invalidated outputs.
-      fail_condition: downstream_phase_consumed_invalidated_output
+      rule: Handoff validation must fail when the consumption policy blocks downstream consumption.
+      fail_condition: blocked_consumption_policy_overridden
+      severity: error
+      blocking: hard_blocking
+    - id: HANDOFF-VALIDATION-ABS-003
+      rule: Every phase-to-phase transfer must create a handoff record before target execution.
+      fail_condition: phase_handoff_record_missing
+      severity: error
+      blocking: hard_blocking
+    - id: HANDOFF-VALIDATION-ABS-004
+      rule: Handoff records must include lifecycle state, validation status, blocking status, and evidence refs.
+      fail_condition: handoff_record_incomplete
+      severity: error
+      blocking: blocking
+    - id: HANDOFF-VALIDATION-ABS-005
+      rule: Handoff validation must not mutate source output reports, target phase contracts, mission profile definitions,
+        or consumption policy definitions.
+      fail_condition: handoff_validation_mutated_contract_or_policy
+      severity: error
+      blocking: hard_blocking
+  handoff_validation_check_catalog:
+  - check_id: handoff_record_schema_valid
+    description: Handoff record satisfies handoff schema before any decision is applied.
+    pass_when:
+    - handoff record contains all required fields
+    - handoff lifecycle/status values are known
+    fail_when:
+    - handoff record missing required field
+    - unknown lifecycle/status value
+    fail_condition: handoff_record_schema_invalid
+    blocking: hard_blocking
+  - check_id: consumption_policy_result_present
+    description: Downstream consumption policy produced an explicit allow/block result.
+    pass_when:
+    - consumption_policy_result exists
+    - allow_downstream_consumption is explicitly true or false
+    fail_when:
+    - consumption policy not evaluated
+    - consumption result ambiguous
+    fail_condition: handoff_consumption_policy_missing_or_ambiguous
+    blocking: hard_blocking
+  - check_id: remediation_mapping_exists_for_failures
+    description: Every blocking handoff failure maps to a remediation action.
+    pass_when:
+    - each failure has a remediation mapping or explicit block_without_remediation marker
+    fail_when:
+    - blocking failure lacks remediation mapping
+    fail_condition: handoff_failure_missing_remediation
+    blocking: blocking
+  handoff_decision_rules:
+  - id: HANDOFF-VALIDATION-DECISION-PASS
+    priority: 1
+    match:
+      handoff_record_schema_valid: true
+      consumption_policy.allow_downstream_consumption: true
+    decision:
+      handoff_lifecycle_state: valid
+      validation_status: passed
+      blocking_status: non_blocking
+      allow_downstream_consumption: true
+  - id: HANDOFF-VALIDATION-DECISION-CONSUMPTION-BLOCKED
+    priority: 2
+    match:
+      consumption_policy.allow_downstream_consumption: false
+    decision:
+      handoff_lifecycle_state: blocked
+      validation_status: failed
+      blocking_status: hard_blocking
+      allow_downstream_consumption: false
+      required_action: follow_consumption_policy_required_action
+  - id: HANDOFF-VALIDATION-DECISION-SCHEMA-INVALID
+    priority: 3
+    match:
+      fail_condition: handoff_record_schema_invalid
+    decision:
+      handoff_lifecycle_state: blocked
+      validation_status: failed
+      blocking_status: hard_blocking
+      allow_downstream_consumption: false
+      required_action: repair_handoff_record_schema
+  - id: HANDOFF-VALIDATION-DECISION-DEFAULT-BLOCK
+    priority: 99
+    match:
+      otherwise: true
+    decision:
+      handoff_lifecycle_state: blocked
+      validation_status: failed
+      blocking_status: blocking
+      allow_downstream_consumption: false
+      required_action: manual_review_or_revision_request
   handoff_validation_algorithm:
     steps:
-    - load_source_phase_result
-    - load_target_phase_contract
-    - assert_source_output_gate_passed
-    - assert_source_output_not_invalidated
-    - assert_target_declares_inputs
-    - assert_target_agent_can_read
+    - step_id: LOAD_HANDOFF_RECORD
+      action: read
+      input: handoff_record
+    - step_id: VALIDATE_HANDOFF_RECORD_SCHEMA
+      action: validate
+      input: handoff_record_schema
+    - step_id: RUN_HANDOFF_CONSUMPTION_POLICY
+      action: delegate
+      input: handoffs/conventions.handoff-consumption-policy.yaml
+    - step_id: LOAD_CONSUMPTION_POLICY_RESULT
+      action: read
+      input: handoff_consumption_policy_result
+    - step_id: RUN_VALIDATION_CHECK_CATALOG
+      action: for_each
+      target: handoff_validation_check_catalog
+      assertion: check_result is passed or emits blocking failure
+    - step_id: APPLY_HANDOFF_VALIDATION_DECISION_RULES
+      action: apply_priority_rules
+      input: handoff_decision_rules
+    - step_id: WRITE_HANDOFF_RECORD
+      action: write
+      output: .ai/reports/handoffs.yaml
+    - step_id: BLOCK_OR_ALLOW_TARGET
+      action: branch
+      branches:
+        allow_downstream_consumption: target_phase_entry_gate_may_run
+        block_downstream_consumption: target_phase_blocked_until_remediation
+    - step_id: EMIT_FAILURES
+      action: emit_fail_conditions
+  handoff_output_schema:
+    required_fields:
+    - handoff_id
+    - validation_status
+    - handoff_lifecycle_state
+    - blocking_status
+    - allow_downstream_consumption
+    - check_results
+    - failures
+    - required_actions
+    - evidence_refs
+    record_shape:
+      handoff_id: ''
+      validation_status: ''
+      handoff_lifecycle_state: ''
+      blocking_status: ''
+      allow_downstream_consumption: false
+      check_results: []
+      failures: []
+      required_actions: []
+      evidence_refs: []
+  handoff_remediation_mapping:
+  - fail_condition: handoff_consumption_policy_missing_or_ambiguous
+    remediation:
+    - run_handoff_consumption_policy
+    - block_target_phase
+  - fail_condition: blocked_consumption_policy_overridden
+    remediation:
+    - honor_consumption_policy_block
+    - block_target_phase
+    - record_policy_failure
+  - fail_condition: handoff_record_schema_invalid
+    remediation:
+    - repair_handoff_record_schema
+    - rerun_handoff_validation
+  - fail_condition: phase_handoff_record_missing
+    remediation:
     - create_handoff_record
+    - rerun_handoff_validation
+  - fail_condition: handoff_failure_missing_remediation
+    remediation:
+    - add_remediation_mapping
+    - block_target_phase
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: HANDOFF-VALIDATION-CHECK-001
+    check: all_required_handoff_checks_execute
+    applies_when:
+      phase_handoff_validation_required: true
+  - id: HANDOFF-VALIDATION-CHECK-002
+    check: blocking_failure_blocks_downstream_consumption
+    applies_when:
+      handoff_failure_detected: true
+  fail_conditions:
+  - id: HANDOFF-VALIDATION-001
+    condition: handoff_consumption_policy_missing_or_ambiguous
+    message: Handoff validation requires an explicit consumption policy result.
+    severity: error
+  - id: HANDOFF-VALIDATION-002
+    condition: blocked_consumption_policy_overridden
+    message: Handoff validation must not override a blocking consumption policy result.
+    severity: error
+  - id: HANDOFF-VALIDATION-003
+    condition: phase_handoff_record_missing
+    message: Every phase-to-phase transfer requires a handoff record.
+    severity: error
+  - id: HANDOFF-VALIDATION-004
+    condition: handoff_record_schema_invalid
+    message: Handoff record must satisfy the handoff schema.
+    severity: error
+  - id: HANDOFF-VALIDATION-005
+    condition: handoff_validation_failed_open
+    message: Handoff validation must fail closed, not allow downstream consumption on missing evidence.
+    severity: error
