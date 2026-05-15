@@ -4,19 +4,22 @@ file:
   path: actions/conventions.action-taxonomy.yaml
   role: artifact_action_taxonomy_contract
   executability: vocabulary
-purpose: Define artifact action vocabulary, families, priority, validity rules, followups, impact surfaces, and action collisions.
+purpose: Define the artifact action vocabulary used to decide whether artifacts are created, reused, modified, decomposed, consolidated, retired,
+  or left unchanged.
 ownership:
   owns:
   - artifact_action_enum
+  - artifact_action_family_enum
   - artifact_action_families
   - artifact_action_definition_schema
   - artifact_action_definitions
-  - artifact_action_priority
-  - action_specific_validity_rules
+  - action_validity_invariants
   - action_risk_signals
-  - artifact_action_collision_rules
   does_not_own:
   - action_selection_process
+  - action_collision_resolution
+  - artifact_action_table_generation
+  - implementation_sequence
 activation:
   mode: always
   activates_when: []
@@ -29,24 +32,35 @@ outputs:
   - action_taxonomy_registry
 dependencies:
   required_files: []
-  optional_files: []
+  optional_files:
+  - roles/conventions.role-taxonomy.yaml
+  - patterns/conventions.pattern-catalog.yaml
+  - risk/conventions.risk-taxonomy.yaml
 sections:
   artifact_action_enum:
     allowed:
-    - create_new
+    - no_code_change
     - reuse_existing
+    - create_new
+    - wrap_existing
     - modify_existing
+    - rename_existing
+    - move_existing
     - extract_from_existing
     - split_existing
-    - merge_existing
-    - wrap_existing
-    - move_existing
-    - rename_existing
-    - replace_existing
     - inline_existing
+    - merge_existing
+    - replace_existing
     - deprecate_existing
     - delete_existing
-    - no_code_change
+  artifact_action_family_enum:
+    allowed:
+    - non_change
+    - additive_change
+    - in_place_change
+    - decomposition_change
+    - consolidation_change
+    - lifecycle_change
   artifact_action_families:
     non_change:
     - no_code_change
@@ -68,540 +82,852 @@ sections:
     lifecycle_change:
     - deprecate_existing
     - delete_existing
+  artifact_action_definition_schema:
+    required_fields:
+    - family
+    - definition
+    - primary_intent
+    - positive_signals
+    - negative_signals
+    - choose_when
+    - reject_when
+    - required_preconditions
+    - must
+    - must_not
+    - produces
+    - required_followups
+    - downstream_checks_required
+    - impact_surfaces
+    - risk_profile
+    optional_fields:
+    - examples
+    - non_examples
+    - notes
   artifact_action_definitions:
     no_code_change:
       family: non_change
-      definition: Declare no production code change is required.
+      definition: Declare that the requested behavior is already satisfied or that the mission requires only reports/configuration with no production
+        or test file edit.
+      primary_intent: Avoid unnecessary edits when the requested outcome is already satisfied or requires only analysis output.
+      positive_signals:
+      - behavior contract asks for analysis, report, explanation, or no source change
+      - reconnaissance proves existing behavior already satisfies acceptance criteria
+      - requested change is explicitly documentation/report-only
+      - all acceptance criteria are satisfied by existing artifact evidence
+      negative_signals:
+      - acceptance criteria require new behavior
+      - existing code does not satisfy requested behavior
+      - user requested concrete source/test edits
+      - contract, dependency, or persistence surface must change
       choose_when:
-      - declare no production code change is required.
+      - all acceptance criteria are already satisfied by cited evidence
+      - no source, test, config, schema, or public contract edit is needed
+      - the required output is a report or decision artifact only
       reject_when:
-      - preconditions are not met
+      - any requested behavior is not implemented
+      - verification evidence is missing
+      - a required report indicates implementation is needed
+      required_preconditions:
+      - behavior_contract exists
+      - reconnaissance evidence proves no edit is required
       must:
-      - record reason
-      - validate output artifacts
-      - record evidence
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
       - prove existing behavior satisfies request
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - identify exact evidence used to avoid code changes
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
+      - report_artifact_validation
       - final_validation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the no code change case within the artifact_action taxonomy.
-      detection_signals:
-      - no code change signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using no_code_change must include reason and evidence
+      - none
+      - report_only
+      risk_profile: low
+      examples:
+      - User asks whether a class violates conventions and no edit is requested.
+      non_examples:
+      - Bugfix request with failing behavior.
     reuse_existing:
       family: non_change
-      definition: Use an existing artifact as-is.
+      definition: Use an existing artifact exactly as-is to satisfy the requested responsibility.
+      primary_intent: Bind the new responsibility to an existing artifact without editing it.
+      positive_signals:
+      - existing artifact already owns the same responsibility
+      - artifact role and boundary match the requested capability
+      - no new behavior or structural change is required
+      - existing artifact can be referenced by downstream design
+      negative_signals:
+      - existing artifact only partially matches requested responsibility
+      - reuse would mix responsibilities
+      - reuse requires hidden behavior changes
+      - existing artifact belongs to incompatible boundary
       choose_when:
-      - use an existing artifact as-is.
+      - an existing artifact is a full semantic match
+      - no modification is required
+      - reuse does not violate ownership or dependency rules
       reject_when:
-      - preconditions are not met
+      - artifact would need edits
+      - artifact has different primary role
+      - reuse creates boundary leakage
+      required_preconditions:
+      - reconnaissance identifies reusable artifact
+      - role compatibility evidence exists
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
+      - final_role_assignment
+      - test_derivation
       - final_validation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the reuse existing case within the artifact_action taxonomy.
-      detection_signals:
-      - reuse existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using reuse_existing must include reason and evidence
+      - existing_artifact_reference
+      - consumer_usage
+      risk_profile: low
+      examples: []
+      non_examples: []
     create_new:
       family: additive_change
-      definition: create new artifact_action vocabulary value.
+      definition: Create a new artifact because no existing artifact can safely own the responsibility.
+      primary_intent: Introduce a new focused artifact only after reuse, modify, split, and extract have been evaluated.
+      positive_signals:
+      - no existing artifact owns the responsibility
+      - new behavior has a distinct role and boundary
+      - creating new artifact avoids mixing responsibilities
+      - new artifact is required by accepted architecture decomposition
+      negative_signals:
+      - existing artifact already matches responsibility
+      - new artifact would be thin pass-through or folder bloat
+      - create_new chosen before reconnaissance
+      - new artifact duplicates existing behavior
       choose_when:
-      - create a new artifact.
+      - reconnaissance found no valid reuse/modify target
+      - the candidate has a distinct single responsibility
+      - the new artifact has a defined role and consumer
+      - creation is supported by architecture blueprint
       reject_when:
-      - preconditions are not met
+      - existing artifact can be safely reused, modified, split, or extracted from
+      - candidate lacks distinct responsibility
+      - creation is only for aesthetic symmetry
+      required_preconditions:
+      - artifact_reuse_analysis completed
+      - create_new justification exists
+      - role signal exists
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
-      - create_new_by_default
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      - record why reuse/modify/extract/split were rejected
+      - define intended owner role
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
+      - select create_new by default
+      - create orphan artifact with no consumer
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - final_role_assignment
+      - structure_rendering
+      - implementation_sequence
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
+      - new_artifact
+      - imports
+      - providers_or_exports
       risk_profile: medium
-      meaning: Represents the create new case within the artifact_action taxonomy.
-      detection_signals:
-      - create new signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using create_new must include reason and evidence
+      examples: []
+      non_examples: []
     wrap_existing:
       family: additive_change
-      definition: Wrap existing behavior behind a boundary.
+      definition: Create a wrapper, adapter, facade, or boundary artifact around existing behavior without changing the wrapped artifact as the
+        primary change.
+      primary_intent: Add a boundary around existing behavior to adapt interface, protect consumers, or isolate external/framework concerns.
+      positive_signals:
+      - external interface differs from internal model
+      - compatibility requires preserving existing artifact while exposing new contract
+      - adapter/facade/decorator pressure is detected
+      - existing artifact should not absorb integration concerns
+      negative_signals:
+      - wrapper adds no interface or boundary value
+      - wrapper only forwards calls without policy/adaptation
+      - direct modification is simpler and safe
+      - wrapper hides required behavior change
       choose_when:
-      - wrap existing behavior behind a boundary.
+      - a boundary/adaptation concern exists
+      - wrapped artifact remains valid and should be protected
+      - wrapper owns a distinct role such as adapter, facade, gateway, or decorator
       reject_when:
-      - preconditions are not met
+      - no boundary or compatibility issue exists
+      - wrapper duplicates existing artifact API exactly
+      - wrapper would violate dependency direction
+      required_preconditions:
+      - boundary or compatibility signal exists
+      - wrapped artifact identified
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - boundary_contract_classification
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the wrap existing case within the artifact_action taxonomy.
-      detection_signals:
-      - wrap existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using wrap_existing must include reason and evidence
+      - boundary
+      - contract
+      - dependency_direction
+      risk_profile: medium_high
+      examples: []
+      non_examples: []
     modify_existing:
       family: in_place_change
-      definition: Modify an existing artifact while preserving responsibility.
+      definition: Modify an existing artifact while preserving its primary responsibility and public identity.
+      primary_intent: Change an artifact in-place without changing its role, boundary, or public identity.
+      positive_signals:
+      - existing artifact owns the responsibility
+      - change is localized to current responsibility
+      - public identity stays stable
+      - no mixed responsibility is introduced
+      negative_signals:
+      - change adds a second responsibility
+      - change crosses boundary into another module
+      - change requires new public contract
+      - artifact is already too large or mixed
       choose_when:
-      - modify an existing artifact while preserving responsibility.
+      - artifact already owns the behavior
+      - modification preserves role and cohesion
+      - impact is smaller than extract/split/create
       reject_when:
-      - preconditions are not met
+      - modification would mix roles
+      - change belongs to another artifact
+      - public contract or dependency direction becomes unclear
+      required_preconditions:
+      - existing artifact identified
+      - role compatibility checked
+      - change impact considered
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
+      - existing_artifact
+      - call_sites
+      - tests
       risk_profile: medium
-      meaning: Represents the modify existing case within the artifact_action taxonomy.
-      detection_signals:
-      - modify existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using modify_existing must include reason and evidence
+      examples: []
+      non_examples: []
     rename_existing:
       family: in_place_change
-      definition: Rename artifact or symbol without behavior change.
+      definition: Rename an artifact, symbol, class, function, provider, or file without changing behavior or responsibility.
+      primary_intent: Improve naming without changing behavior, responsibility, or structure semantics.
+      positive_signals:
+      - name is misleading relative to role
+      - rename improves discoverability
+      - symbol/file name conflicts with taxonomy
+      - no behavior change required
+      negative_signals:
+      - rename hides semantic change
+      - call sites are unknown
+      - public exported name may break consumers
+      - name change also requires responsibility change
       choose_when:
-      - rename artifact or symbol without behavior change.
+      - old name conflicts with role or intent
+      - all references can be updated or compatibility handled
+      - behavior remains identical
       reject_when:
-      - preconditions are not met
+      - public compatibility cannot be preserved
+      - rename is cosmetic without value
+      - rename would mask a split/extract need
+      required_preconditions:
+      - call sites identified
+      - compatibility assessed for public surfaces
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - call_site_impact_analysis
+      - dependency_classification
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
+      - imports
+      - exports
+      - call_sites
       risk_profile: medium
-      meaning: Represents the rename existing case within the artifact_action taxonomy.
-      detection_signals:
-      - rename existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using rename_existing must include reason and evidence
+      examples: []
+      non_examples: []
     move_existing:
       family: in_place_change
-      definition: Move artifact without behavior change.
+      definition: Move an artifact to a different folder/module/boundary without changing behavior or responsibility.
+      primary_intent: Relocate an artifact to the correct module/folder/boundary while preserving behavior and role.
+      positive_signals:
+      - artifact is in wrong layer or feature boundary
+      - move improves dependency direction
+      - folder placement conflicts with role
+      - local alignment supports move
+      negative_signals:
+      - move changes public import path without compatibility plan
+      - move creates circular dependency
+      - move is cosmetic only
+      - artifact role is unclear
       choose_when:
-      - move artifact without behavior change.
+      - placement violates structure or boundary rules
+      - move preserves responsibility and behavior
+      - imports/exports can be updated safely
       reject_when:
-      - preconditions are not met
+      - role should change instead
+      - move would create forbidden dependency
+      - consumer impact is unknown
+      required_preconditions:
+      - target placement justified
+      - import/call-site impact known
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - dependency_classification
+      - structure_rendering
+      - call_site_impact_analysis
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the move existing case within the artifact_action taxonomy.
-      detection_signals:
-      - move existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using move_existing must include reason and evidence
+      - file_path
+      - imports
+      - module_exports
+      risk_profile: medium_high
+      examples: []
+      non_examples: []
     extract_from_existing:
       family: decomposition_change
-      definition: Extract useful behavior into focused artifact.
+      definition: Extract a coherent responsibility from an existing artifact into a new focused artifact while preserving behavior.
+      primary_intent: Move a coherent responsibility out of an existing artifact into a new focused artifact.
+      positive_signals:
+      - mixed responsibility is detected
+      - reusable sub-behavior is hidden inside larger artifact
+      - existing artifact violates role purity
+      - extracted unit has clear role and consumers
+      negative_signals:
+      - candidate extraction has no independent responsibility
+      - extraction would increase coupling
+      - behavior boundaries are unclear
+      - extracting would create tiny unnecessary artifact
       choose_when:
-      - extract useful behavior into focused artifact.
+      - a coherent sub-responsibility can be named and owned
+      - extraction improves SRP without changing behavior
+      - callers/owner artifact can depend on extracted artifact cleanly
       reject_when:
-      - preconditions are not met
+      - sub-behavior is purely local implementation detail
+      - extraction introduces indirection without reuse or clarity
+      - behavior preservation cannot be verified
+      required_preconditions:
+      - draft_role_pass identified extract target
+      - behavior preservation requirements considered
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - refactor_strategy_selection
+      - final_role_assignment
+      - structure_rendering
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the extract from existing case within the artifact_action taxonomy.
-      detection_signals:
-      - extract from existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using extract_from_existing must include reason and evidence
+      - source_artifact
+      - new_artifact
+      - internal_calls
+      - tests
+      risk_profile: medium_high
+      examples: []
+      non_examples: []
     split_existing:
       family: decomposition_change
-      definition: Split mixed artifact into focused artifacts.
+      definition: Split an artifact with multiple responsibilities into two or more focused artifacts.
+      primary_intent: Separate a multi-responsibility artifact into multiple focused artifacts.
+      positive_signals:
+      - artifact has multiple distinct roles
+      - artifact crosses architectural layers
+      - different consumers need different responsibilities
+      - role collision is unresolved inside one file/class
+      negative_signals:
+      - artifact is cohesive despite size
+      - split boundaries are arbitrary
+      - split creates circular dependencies
+      - consumers cannot be cleanly migrated
       choose_when:
-      - split mixed artifact into focused artifacts.
+      - at least two stable responsibilities are identifiable
+      - split resolves role/layer collision
+      - post-split artifacts each have clear owner role
       reject_when:
-      - preconditions are not met
+      - responsibilities cannot be separated cleanly
+      - behavior preservation risk is uncontrolled
+      - split is only for file length
+      required_preconditions:
+      - mixed responsibility evidence
+      - post-split candidate list
+      - behavior preservation plan when refactor-like
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - refactor_strategy_selection
+      - final_role_assignment
+      - structure_rendering
+      - call_site_impact_analysis
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
-      - call_site_analysis
-      - regression_test_review
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the split existing case within the artifact_action taxonomy.
-      detection_signals:
-      - split existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using split_existing must include reason and evidence
+      - source_artifact
+      - new_artifacts
+      - imports
+      - call_sites
+      risk_profile: high
+      examples: []
+      non_examples: []
     inline_existing:
       family: decomposition_change
-      definition: Inline unjustified artifact into valid caller.
+      definition: Inline a needless indirection into its caller or owner when the separate artifact no longer has independent responsibility.
+      primary_intent: Remove an unnecessary artifact by moving its trivial behavior into its only valid consumer.
+      positive_signals:
+      - artifact has exactly one consumer
+      - artifact adds no semantic boundary
+      - artifact is trivial pass-through
+      - inlining reduces indirection without mixing roles
+      negative_signals:
+      - artifact represents a meaningful boundary
+      - artifact has multiple consumers
+      - artifact is part of public contract
+      - inlining would mix responsibilities
       choose_when:
-      - inline unjustified artifact into valid caller.
+      - artifact has no independent role or boundary
+      - single consumer owns the responsibility
+      - behavior remains identical and simpler
       reject_when:
-      - preconditions are not met
+      - artifact is externally visible
+      - artifact supports test seam or boundary
+      - inlining creates responsibility collision
+      required_preconditions:
+      - consumer analysis proves safe inlining
+      - public contract impact checked
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
+      - call_site_impact_analysis
+      - test_derivation
       - final_validation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
+      - consumer_artifact
+      - deleted_or_removed_artifact
+      - tests
       risk_profile: medium
-      meaning: Represents the inline existing case within the artifact_action taxonomy.
-      detection_signals:
-      - inline existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using inline_existing must include reason and evidence
+      examples: []
+      non_examples: []
     merge_existing:
       family: consolidation_change
-      definition: Merge duplicated same responsibility artifacts.
+      definition: Merge two or more artifacts that represent the same responsibility or artificially split one cohesive concept.
+      primary_intent: Combine duplicate or artificially separated artifacts into one cohesive artifact.
+      positive_signals:
+      - two artifacts own same responsibility
+      - separation creates coordination overhead without boundary value
+      - merge improves cohesion
+      - consumers treat artifacts as one concept
+      negative_signals:
+      - artifacts have different roles or layers
+      - merge would create god object
+      - merge crosses module boundary incorrectly
+      - separate artifacts are needed for testing or compatibility
       choose_when:
-      - merge duplicated same responsibility artifacts.
+      - artifacts represent the same responsibility
+      - merged artifact remains cohesive
+      - dependency direction improves or stays valid
       reject_when:
-      - preconditions are not met
+      - merge increases responsibilities
+      - public consumers require separate contracts
+      - merge hides needed abstraction
+      required_preconditions:
+      - duplicate responsibility evidence
+      - consumer impact analysis
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - refactor_strategy_selection
+      - final_role_assignment
+      - call_site_impact_analysis
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the merge existing case within the artifact_action taxonomy.
-      detection_signals:
-      - merge existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using merge_existing must include reason and evidence
+      - multiple_artifacts
+      - imports
+      - call_sites
+      risk_profile: high
+      examples: []
+      non_examples: []
     replace_existing:
       family: consolidation_change
-      definition: Replace invalid artifact with valid one and migrate consumers.
+      definition: Replace an existing artifact with a new implementation while preserving or explicitly changing the required contract.
+      primary_intent: Supersede an existing artifact with a new implementation because modification is unsafe or the artifact is structurally
+        invalid.
+      positive_signals:
+      - existing artifact is incompatible with required design
+      - artifact cannot be modified without breaking responsibility
+      - replacement allows compatibility boundary
+      - old artifact is obsolete or unsafe
+      negative_signals:
+      - modify_existing would suffice
+      - replacement discards behavior without preservation
+      - consumer migration is unknown
+      - old artifact still owns valid public contract
       choose_when:
-      - replace invalid artifact with valid one and migrate consumers.
+      - old artifact is not a safe base for required behavior
+      - replacement plan preserves or intentionally changes contract
+      - migration/compatibility is addressed
       reject_when:
-      - preconditions are not met
+      - replacement is just preference
+      - behavior preservation cannot be proven
+      - consumers cannot be migrated
+      required_preconditions:
+      - replacement rationale
+      - compatibility decision when public
+      - migration or deprecation plan when needed
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - boundary_contract_classification
+      - refactor_strategy_selection
+      - change_impact_analysis
+      - test_derivation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
-      - consumer_migration
-      - compatibility_plan
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the replace existing case within the artifact_action taxonomy.
-      detection_signals:
-      - replace existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using replace_existing must include reason and evidence
+      - public_contract
+      - consumers
+      - tests
+      - old_artifact
+      risk_profile: high
+      examples: []
+      non_examples: []
     deprecate_existing:
       family: lifecycle_change
-      definition: Mark artifact as no longer preferred while preserving compatibility.
+      definition: Mark an existing artifact as no longer preferred while keeping it available for compatibility or migration.
+      primary_intent: Keep an artifact temporarily while marking it as superseded or not recommended.
+      positive_signals:
+      - artifact is public or consumed but should be phased out
+      - replacement exists or is planned
+      - backward compatibility is required
+      - migration path is needed
+      negative_signals:
+      - artifact can be safely deleted now
+      - no replacement or migration exists
+      - deprecation is used to avoid cleanup
+      - artifact is private and unused
       choose_when:
-      - mark artifact as no longer preferred while preserving compatibility.
+      - consumers need transition time
+      - compatibility policy requires non-breaking change
+      - replacement or preferred path is documented
       reject_when:
-      - preconditions are not met
+      - delete_existing is safe
+      - deprecation would leave ambiguous duplicate authority
+      - migration path is missing
+      required_preconditions:
+      - affected consumers known
+      - migration or replacement plan exists
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
+      - compatibility_decision
+      - consumer_impact
       - final_validation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the deprecate existing case within the artifact_action taxonomy.
-      detection_signals:
-      - deprecate existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using deprecate_existing must include reason and evidence
+      - public_contract
+      - documentation
+      - consumers
+      risk_profile: medium_high
+      examples: []
+      non_examples: []
     delete_existing:
       family: lifecycle_change
-      definition: Delete unused obsolete artifact safely.
+      definition: Remove an artifact that is proven unused, obsolete, unsafe, or superseded.
+      primary_intent: Remove an artifact proven unused, obsolete, or unsafe after impact analysis.
+      positive_signals:
+      - artifact has no consumers
+      - artifact is dead code
+      - artifact is replaced and migration complete
+      - artifact is forbidden or unsafe
+      negative_signals:
+      - consumer analysis incomplete
+      - artifact is public or exported
+      - tests still depend on artifact
+      - deprecation is required first
       choose_when:
-      - delete unused obsolete artifact safely.
+      - no valid consumers remain
+      - deletion does not break public contract
+      - replacement/migration is complete if needed
       reject_when:
-      - preconditions are not met
+      - usage is unknown
+      - artifact is externally visible
+      - deletion is being used instead of refactor
+      required_preconditions:
+      - call-site and dependency analysis proves safe deletion
+      - public contract impact checked
       must:
-      - record reason
-      - validate output artifacts
-      forbidden:
-      - silent behavior change
-      - bypassing validation
+      - record selected action with reason
+      - record evidence references
+      - record rejected plausible alternatives
+      - state expected downstream impacts
+      must_not:
+      - hide behavior change
+      - bypass required validation
+      - select action without evidence
       produces:
       - artifact_action_table_entry
+      - post_action_artifact_candidate_when_applicable
       required_followups:
-      - final_validation
+      - call_site_impact_analysis
+      - dependency_classification
+      - post_implementation_validation
       downstream_checks_required:
+      - change_impact_analysis
+      - test_derivation
       - final_validation
       impact_surfaces:
-      - internal_private
-      risk_profile: medium
-      meaning: Represents the delete existing case within the artifact_action taxonomy.
-      detection_signals:
-      - delete existing signals are present in the request, codebase evidence, or prior phase reports
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - artifact_action decisions using delete_existing must include reason and evidence
-  artifact_action_priority:
-    principle: least_necessary_change_before_more_disruptive_change
-    priority_order:
-    - no_code_change
-    - reuse_existing
-    - modify_existing
-    - rename_existing
-    - move_existing
-    - extract_from_existing
-    - split_existing
-    - wrap_existing
-    - replace_existing
-    - inline_existing
-    - merge_existing
-    - create_new
-    - deprecate_existing
-    - delete_existing
-  artifact_action_collision_rules:
-    modify_existing_vs_extract_from_existing: modify when same responsibility remains cohesive; extract when desired behavior
-      is mixed with unrelated responsibilities
-    wrap_existing_vs_replace_existing: wrap when behavior is useful behind unsafe interface; replace when artifact is fundamentally
-      invalid
-    inline_existing_vs_delete_existing: inline when behavior still needed; delete when behavior no longer needed
+      - file_system
+      - imports
+      - exports
+      - tests
+      risk_profile: high
+      examples: []
+      non_examples: []
+  action_validity_invariants:
+  - id: ACTION-INVARIANT-001
+    rule: Every artifact candidate must receive exactly one selected action or an explicit blocked decision.
+    fail_condition: artifact_candidate_without_action
+  - id: ACTION-INVARIANT-002
+    rule: create_new is valid only after reuse_existing, modify_existing, extract_from_existing, and split_existing are considered and rejected
+      with evidence.
+    fail_condition: create_new_without_prior_reuse_review
+  - id: ACTION-INVARIANT-003
+    rule: delete_existing requires consumer, import, and public-contract impact evidence.
+    fail_condition: delete_without_impact_evidence
+  - id: ACTION-INVARIANT-004
+    rule: rename_existing and move_existing must not hide behavior or responsibility change.
+    fail_condition: rename_or_move_hides_semantic_change
+  - id: ACTION-INVARIANT-005
+    rule: extract_from_existing, split_existing, merge_existing, replace_existing, and inline_existing are refactor-like unless the behavior contract
+      explicitly allows behavior change.
+    fail_condition: refactor_like_action_without_behavior_preservation_review
+  - id: ACTION-INVARIANT-006
+    rule: wrap_existing requires a real boundary, adaptation, compatibility, or policy reason.
+    fail_condition: wrapper_without_boundary_reason
+  - id: ACTION-INVARIANT-007
+    rule: no_code_change requires evidence that all acceptance criteria are already satisfied.
+    fail_condition: no_code_change_without_acceptance_evidence
   action_risk_signals:
-    create_new:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    reuse_existing:
-      minimum_risk_hint: low
-      emits_contexts:
-      - design_risk
-      emits_concerns: []
-    modify_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    extract_from_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    split_existing:
-      minimum_risk_hint: high
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    merge_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    wrap_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    move_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    rename_existing:
-      minimum_risk_hint: low
-      emits_contexts:
-      - change_risk
-      emits_concerns: []
-    replace_existing:
-      minimum_risk_hint: high
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    inline_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    deprecate_existing:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    delete_existing:
-      minimum_risk_hint: high
-      emits_contexts:
-      - change_risk
-      emits_concerns:
-      - behavior
-    no_code_change:
-      minimum_risk_hint: low
-      emits_contexts:
-      - design_risk
-      emits_concerns: []
+    low_risk:
+    - reuse_existing with evidence
+    - no_code_change with satisfied acceptance criteria
+    - private rename with complete call-site update
+    medium_risk:
+    - modify_existing in one cohesive artifact
+    - create_new inside one module
+    - wrap_existing around private behavior
+    high_risk:
+    - split_existing across modules
+    - replace_existing public artifact
+    - delete_existing exported artifact
+    - move_existing across module boundary
+    critical_risk:
+    - delete or replace persistence/migration artifact
+    - breaking public contract without compatibility plan
+    - action changes security or data integrity boundary
 validation:
+  required_checks:
+  - id: ACTION-TAXONOMY-CHECK-001
+    check: every_action_has_definition
+    applies_when:
+      action_taxonomy_loaded: true
+  - id: ACTION-TAXONOMY-CHECK-002
+    check: every_action_family_member_exists_in_enum
+    applies_when:
+      action_families_loaded: true
+  - id: ACTION-TAXONOMY-CHECK-003
+    check: every_action_definition_has_choose_and_reject_rules
+    applies_when:
+      artifact_action_definitions_loaded: true
   fail_conditions:
-  - id: ACTIONS-CONVENTIONS-ACTION-TAXONOMY-YAML-FC-001
-    condition: action_definition_duplicated_outside_taxonomy
-    message: Action definition duplicated outside taxonomy.
+  - id: ACTION-TAXONOMY-001
+    condition: unknown_artifact_action
+    message: Selected artifact action must exist in artifact_action_enum.allowed.
     severity: error
-    owner: actions/conventions.action-taxonomy.yaml
-  - id: ACTIONS-CONVENTIONS-ACTION-TAXONOMY-YAML-FC-002
-    condition: unknown_action
-    message: Unknown action.
+  - id: ACTION-TAXONOMY-002
+    condition: action_missing_definition
+    message: Every artifact action must have a complete active definition.
     severity: error
-    owner: actions/conventions.action-taxonomy.yaml
-  - id: ACTIONS-CONVENTIONS-ACTION-TAXONOMY-YAML-FC-003
-    condition: action_missing_validity_rules
-    message: Action missing validity rules.
+  - id: ACTION-TAXONOMY-003
+    condition: action_definition_missing_choose_or_reject_rules
+    message: Every artifact action definition must include choose_when and reject_when rules.
     severity: error
-    owner: actions/conventions.action-taxonomy.yaml
-  required_checks: []
+  - id: ACTION-TAXONOMY-004
+    condition: action_family_references_unknown_action
+    message: Artifact action family references an action not listed in the action enum.
+    severity: error

@@ -4,23 +4,41 @@ file:
   path: actions/conventions.action-resolution.yaml
   role: artifact_action_resolution_engine
   executability: decision_engine
-purpose: Select the correct artifact action for each artifact candidate.
+purpose: Select and justify the correct artifact action for each artifact candidate using behavior, reconnaissance, draft roles, reuse analysis,
+  risk, contract, and dependency evidence.
 ownership:
   owns:
   - artifact_action_decision_process
-  - action_selection_pipeline
+  - action_selection_algorithm
   - artifact_candidate_matching
+  - reuse_before_create_policy
+  - action_decision_matrix
+  - action_collision_rules
   - post_action_artifact_candidate_generation
-  - artifact_action_validation_report
+  - artifact_action_output_schema
   does_not_own:
   - artifact_action_definitions
+  - role_taxonomy
+  - pattern_selection
+  - structure_rendering
+  - implementation_sequence
 activation:
   mode: always
   activates_when: []
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - behavior_contract
+  - artifact_candidates
+  - draft_role_signals
+  - artifact_reuse_analysis
+  optional:
+  - codebase_reconnaissance_report
+  - pattern_pressure_report
+  - risk_classification
+  - boundary_contract_classification
+  - dependency_classification
+  - local_alignment
 outputs:
   produces:
   - action_resolution_decision_report
@@ -29,48 +47,382 @@ dependencies:
   - actions/conventions.action-taxonomy.yaml
   - planning/conventions.behavior-contract.yaml
   - planning/conventions.codebase-reconnaissance.yaml
-  optional_files: []
+  - roles/conventions.role-taxonomy.yaml
+  optional_files:
+  - risk/conventions.risk-taxonomy.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - patterns/conventions.pattern-selection.yaml
 sections:
-  action_selection_pipeline:
-  - load_action_taxonomy
-  - match_artifact_candidates_to_existing_artifacts
-  - evaluate_no_code_change
-  - evaluate_reuse_existing
-  - evaluate_in_place_actions
-  - evaluate_decomposition_actions
-  - evaluate_additive_actions
-  - evaluate_consolidation_actions
-  - evaluate_lifecycle_actions
-  - resolve_action_collisions
-  - produce_artifact_action_table
-  - produce_post_action_artifact_candidates
+  resolution_policy:
+    default_bias: reuse_or_modify_before_create_new
+    must_select_exactly_one_action_per_candidate: true
+    must_record_rejected_alternatives: true
+    must_record_evidence: true
+    must_emit_followups: true
+    blocked_decision_allowed_when: required evidence is missing or actions conflict with accepted constraints
+  required_input_contract:
+    required_reports:
+    - 02-behavior-contract
+    - artifact-candidates
+    - 04-draft-role-signals
+    - artifact-reuse-analysis
+    optional_reports:
+    - 03-codebase-reconnaissance
+    - pattern-pressure
+    - risk-classification
+    - boundary-contract-classification
+    - dependency-classification
+    - local-alignment
+    missing_required_input_behavior: block_action_resolution_and_request_revision
+  action_selection_algorithm:
+  - step_id: LOAD_INPUTS
+    action: read_required_reports
+    fail_when: required_input_missing
+  - step_id: NORMALIZE_CANDIDATES
+    action: derive_candidate_records
+    output: normalized_artifact_candidates
+  - step_id: MATCH_EXISTING_ARTIFACTS
+    action: match_candidates_to_reconnaissance_and_reuse_analysis
+    output: candidate_existing_matches
+  - step_id: EVALUATE_NO_CODE_CHANGE
+    action: check_if_behavior_already_satisfied
+    reject_unless: acceptance_criteria_satisfied_by_evidence
+  - step_id: EVALUATE_REUSE
+    action: evaluate_reuse_existing
+    reject_unless: existing_artifact_fully_matches_responsibility
+  - step_id: EVALUATE_MODIFY_OR_WRAP
+    action: evaluate_modify_existing_and_wrap_existing
+    output: in_place_or_boundary_options
+  - step_id: EVALUATE_DECOMPOSITION
+    action: evaluate_extract_split_inline
+    output: decomposition_options
+  - step_id: EVALUATE_CREATE_NEW
+    action: evaluate_create_new_last
+    requires: reuse_modify_extract_split_rejected_with_evidence
+  - step_id: EVALUATE_CONSOLIDATION_AND_LIFECYCLE
+    action: evaluate_merge_replace_deprecate_delete_when_existing_artifacts_are_affected
+  - step_id: RESOLVE_COLLISIONS
+    action: apply_action_collision_rules
+  - step_id: SELECT_ACTION
+    action: select_highest_valid_action_by_priority_and_evidence
+  - step_id: GENERATE_POST_ACTION_ARTIFACTS
+    action: produce_post_action_artifact_candidates
+  - step_id: EMIT_FOLLOWUPS
+    action: emit_required_phase_triggers_and_reports
+  - step_id: WRITE_REPORT
+    action: write_artifact_action_table
+  candidate_matching_rules:
+  - id: MATCH-EXACT-RESPONSIBILITY
+    match_when:
+    - existing artifact role equals candidate role
+    - existing artifact intent satisfies requested behavior
+    - boundary is compatible
+    preferred_actions:
+    - reuse_existing
+    - modify_existing
+  - id: MATCH-PARTIAL-RESPONSIBILITY
+    match_when:
+    - existing artifact contains useful behavior but owns more than one responsibility
+    preferred_actions:
+    - extract_from_existing
+    - split_existing
+    - modify_existing
+  - id: MATCH-BOUNDARY-MISMATCH
+    match_when:
+    - existing behavior is useful but interface or boundary is incompatible
+    preferred_actions:
+    - wrap_existing
+    - extract_from_existing
+    - replace_existing
+  - id: MATCH-DUPLICATE-RESPONSIBILITY
+    match_when:
+    - two or more artifacts own the same responsibility
+    preferred_actions:
+    - merge_existing
+    - replace_existing
+    - delete_existing
+  - id: MATCH-NO-VALID-EXISTING
+    match_when:
+    - no existing artifact safely owns candidate responsibility
+    preferred_actions:
+    - create_new
+  action_priority_order:
+  - no_code_change
+  - reuse_existing
+  - modify_existing
+  - wrap_existing
+  - extract_from_existing
+  - split_existing
+  - inline_existing
+  - merge_existing
+  - rename_existing
+  - move_existing
+  - replace_existing
+  - deprecate_existing
+  - delete_existing
+  - create_new
+  priority_policy:
+    note: Priority is not automatic selection. It is the order of consideration to avoid unnecessary creation and overengineering.
+    create_new_priority: last_unless_candidate_is_new_behavior_with_no_existing_owner
+    delete_existing_priority: requires_strongest_evidence
+    replace_existing_priority: requires_compatibility_or_migration_review_when_public
+  action_decision_matrix:
+    candidate_already_satisfied:
+      select: no_code_change
+      requires:
+      - acceptance_criteria_evidence
+      - no_required_edit
+      reject_if:
+      - missing_evidence
+      - new_behavior_required
+    existing_full_match_no_edit:
+      select: reuse_existing
+      requires:
+      - existing_artifact_evidence
+      - role_compatibility
+      reject_if:
+      - edit_required
+      - boundary_mismatch
+    existing_owner_needs_local_change:
+      select: modify_existing
+      requires:
+      - same_role
+      - same_boundary
+      - impact_known
+      reject_if:
+      - mixed_responsibility_introduced
+    existing_behavior_needs_boundary:
+      select: wrap_existing
+      requires:
+      - boundary_or_adapter_reason
+      reject_if:
+      - wrapper_is_empty_passthrough
+    mixed_existing_artifact:
+      select: split_existing
+      requires:
+      - multiple_roles_evidence
+      - post_split_roles
+      reject_if:
+      - split_boundaries_arbitrary
+    coherent_subresponsibility:
+      select: extract_from_existing
+      requires:
+      - extract_target_role
+      - consumer_path
+      reject_if:
+      - subresponsibility_not_independent
+    duplicate_artifacts:
+      select: merge_existing
+      requires:
+      - same_responsibility_evidence
+      reject_if:
+      - different_roles_or_boundaries
+    obsolete_public_artifact:
+      select: deprecate_existing
+      requires:
+      - replacement_or_migration_path
+      reject_if:
+      - safe_delete_possible
+    unused_private_artifact:
+      select: delete_existing
+      requires:
+      - no_consumers_evidence
+      - contract_safe
+      reject_if:
+      - usage_unknown
+    no_existing_owner:
+      select: create_new
+      requires:
+      - reuse_modify_extract_split_rejected
+      - single_responsibility_candidate
+      reject_if:
+      - existing_owner_available
+  action_collision_rules:
+  - collision_id: CREATE_VS_REUSE
+    condition: create_new and reuse_existing both appear valid
+    resolution: prefer reuse_existing unless existing artifact cannot own the full responsibility
+    requires_evidence:
+    - existing artifact responsibility match or mismatch
+  - collision_id: MODIFY_VS_EXTRACT
+    condition: modify_existing would add a second responsibility
+    resolution: prefer extract_from_existing or split_existing
+    requires_evidence:
+    - mixed responsibility signal
+  - collision_id: WRAP_VS_MODIFY
+    condition: both wrap_existing and modify_existing appear valid
+    resolution: prefer wrap_existing when boundary, compatibility, or external interface adaptation is the main concern; otherwise prefer modify_existing
+    requires_evidence:
+    - boundary or compatibility classification
+  - collision_id: SPLIT_VS_EXTRACT
+    condition: both split_existing and extract_from_existing appear valid
+    resolution: select split_existing when the source artifact has multiple peer responsibilities; select extract_from_existing when one subresponsibility
+      is pulled out and the source keeps primary role
+    requires_evidence:
+    - role distribution before and after action
+  - collision_id: REPLACE_VS_MODIFY
+    condition: both replace_existing and modify_existing appear valid
+    resolution: prefer modify_existing unless the existing artifact is structurally invalid, unsafe, obsolete, or incompatible with required contract
+    requires_evidence:
+    - replacement rationale and migration impact
+  - collision_id: DELETE_VS_DEPRECATE
+    condition: both delete_existing and deprecate_existing appear valid
+    resolution: prefer deprecate_existing when public or unknown consumers exist; prefer delete_existing only when usage is proven absent or migration
+      complete
+    requires_evidence:
+    - consumer and public contract impact
+  - collision_id: MOVE_VS_RENAME
+    condition: both move_existing and rename_existing appear valid
+    resolution: apply both only when path and name are independently justified; otherwise choose the minimal action
+    requires_evidence:
+    - placement reason
+    - naming reason
+  - collision_id: NO_CODE_CHANGE_VS_ANY_CHANGE
+    condition: no_code_change competes with any edit action
+    resolution: select no_code_change only when all acceptance criteria are already satisfied by evidence; otherwise reject no_code_change
+    requires_evidence:
+    - acceptance criteria satisfaction
+  followup_trigger_mapping:
+    create_new:
+    - structure_rendering_required
+    - test_derivation_required
+    modify_existing:
+    - call_site_impact_required
+    - test_derivation_required
+    wrap_existing:
+    - boundary_validation_required
+    - pattern_pressure_possible
+    extract_from_existing:
+    - refactor_like_action_selected
+    - final_role_assignment_required
+    split_existing:
+    - refactor_like_action_selected
+    - role_collision_possible
+    merge_existing:
+    - refactor_like_action_selected
+    - call_site_update_required
+    replace_existing:
+    - compatibility_decision_required
+    - consumer_impact_detected
+    rename_existing:
+    - call_site_update_required
+    - dependency_validation_required
+    move_existing:
+    - dependency_validation_required
+    - import_path_change_detected
+    deprecate_existing:
+    - compatibility_decision_required
+    - consumer_impact_detected
+    delete_existing:
+    - dependency_validation_required
+    - consumer_impact_detected
+    no_code_change:
+    - final_validation_ready
+    reuse_existing:
+    - final_role_assignment_required
   artifact_action_table_schema:
     required_fields:
+    - candidate_id
     - desired_artifact
     - desired_responsibility
     - selected_action
-    - reason
+    - selected_action_family
+    - target_existing_artifacts
+    - new_artifacts
+    - reason_summary
+    - rejected_alternatives
+    - evidence_refs
     - confidence
+    - required_followups
+    - downstream_checks_required
+    record_shape:
+      candidate_id: ''
+      desired_artifact: ''
+      desired_responsibility: ''
+      selected_action: ''
+      selected_action_family: ''
+      target_existing_artifacts: []
+      new_artifacts: []
+      reason_summary: ''
+      rejected_alternatives:
+      - action: ''
+        reason: ''
+        evidence_refs: []
+      evidence_refs: []
+      confidence: ''
+      required_followups: []
+      downstream_checks_required: []
+  post_action_artifact_candidate_generation:
+    create_new: create new artifact candidate with intended role, boundary, and consumer
+    reuse_existing: carry forward existing artifact with selected role candidate
+    modify_existing: carry forward modified artifact candidate preserving identity
+    extract_from_existing: create extracted artifact candidate and updated source artifact candidate
+    split_existing: create one candidate per split responsibility and mark source as replaced or reduced
+    merge_existing: create merged artifact candidate and mark source artifacts as merged
+    wrap_existing: create wrapper artifact candidate and referenced wrapped artifact
+    move_existing: update artifact path candidate without role change
+    rename_existing: update artifact name candidate without role change
+    replace_existing: create replacement candidate and mark old artifact replacement relationship
+    inline_existing: remove inlined artifact candidate and update consumer candidate
+    deprecate_existing: carry forward deprecated artifact and preferred replacement relationship
+    delete_existing: mark artifact for deletion and remove from post-action active artifacts
+    no_code_change: carry forward existing state without post-action artifact change
 validation:
+  required_checks:
+  - id: ACTION-RESOLUTION-CHECK-001
+    check: every_candidate_has_selected_action_or_blocked_decision
+    applies_when:
+      artifact_candidates_loaded: true
+  - id: ACTION-RESOLUTION-CHECK-002
+    check: selected_actions_exist_in_taxonomy
+    applies_when:
+      artifact_action_table_written: true
+  - id: ACTION-RESOLUTION-CHECK-003
+    check: create_new_has_reuse_review
+    applies_when:
+      selected_action: create_new
+  - id: ACTION-RESOLUTION-CHECK-004
+    check: refactor_like_actions_emit_refactor_followup
+    applies_when:
+      selected_action_family:
+      - decomposition_change
+      - consolidation_change
+  - id: ACTION-RESOLUTION-CHECK-005
+    check: delete_and_replace_have_impact_evidence
+    applies_when:
+      selected_action:
+      - delete_existing
+      - replace_existing
   fail_conditions:
-  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-001
+  - id: ACTION-RESOLUTION-001
     condition: artifact_without_action
-    message: Artifact without action.
+    message: Every artifact candidate must have a selected action or explicit blocked decision.
     severity: error
-    owner: actions/conventions.action-resolution.yaml
-  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-002
+  - id: ACTION-RESOLUTION-002
     condition: selected_action_not_in_action_taxonomy
-    message: Selected action not in action taxonomy.
+    message: Selected action must exist in action taxonomy.
     severity: error
-    owner: actions/conventions.action-resolution.yaml
-  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-003
+  - id: ACTION-RESOLUTION-003
     condition: create_new_without_existing_artifact_check
-    message: Create new without existing artifact check.
+    message: create_new cannot be selected before reuse/modify/extract/split are evaluated and rejected with evidence.
     severity: error
-    owner: actions/conventions.action-resolution.yaml
-  - id: ACTIONS-CONVENTIONS-ACTION-RESOLUTION-YAML-FC-004
+  - id: ACTION-RESOLUTION-004
     condition: no_code_change_without_evidence
-    message: No code change without evidence.
+    message: no_code_change requires evidence that the behavior contract is already satisfied.
     severity: error
-    owner: actions/conventions.action-resolution.yaml
-  required_checks: []
+  - id: ACTION-RESOLUTION-005
+    condition: delete_without_consumer_impact_review
+    message: delete_existing requires consumer, import, and public-contract impact evidence.
+    severity: error
+  - id: ACTION-RESOLUTION-006
+    condition: refactor_like_action_without_followup
+    message: Refactor-like actions must emit refactor strategy or behavior preservation followup.
+    severity: error
+  - id: ACTION-RESOLUTION-007
+    condition: action_collision_unresolved
+    message: Conflicting valid actions must be resolved using action collision rules.
+    severity: error
+  - id: ACTION-RESOLUTION-008
+    condition: action_decision_missing_rejected_alternatives
+    message: Selected artifact action must include rejected alternatives.
+    severity: error

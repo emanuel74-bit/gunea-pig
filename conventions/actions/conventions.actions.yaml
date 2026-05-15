@@ -4,17 +4,21 @@ file:
   path: actions/conventions.actions.yaml
   role: artifact_action_system_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for action taxonomy and action resolution.
+purpose: Entrypoint for the artifact action subsystem. It indexes action taxonomy and action resolution without owning their detailed content.
 ownership:
   owns:
   - action_system_metadata
   - action_file_index
   - action_system_execution_order
+  - action_subsystem_contract
   does_not_own:
   - action_definitions
   - action_resolution_details
+  - role_assignment
+  - pattern_selection
+  - implementation_sequence
 activation:
-  mode: always
+  mode: entrypoint
   activates_when: []
   skips_when: []
 inputs:
@@ -22,9 +26,12 @@ inputs:
   optional: []
 outputs:
   produces:
-  - actions_result
+  - actions_subsystem_result
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - actions/conventions.action-resolution.yaml
   optional_files: []
 sections:
   action_file_index:
@@ -32,9 +39,30 @@ sections:
     resolution: actions/conventions.action-resolution.yaml
   action_system_execution_order:
   - load_action_taxonomy
+  - load_action_resolution_engine
   - resolve_artifact_actions
   - validate_action_resolution
   - produce_action_system_result
+  action_subsystem_contract:
+    absolute_rules:
+    - id: ACTIONS-SYSTEM-ABS-001
+      rule: The action subsystem decides artifact actions but does not assign final roles, select patterns, render structure, or implement code.
+      fail_condition: action_subsystem_exceeded_authority
+    - id: ACTIONS-SYSTEM-ABS-002
+      rule: Action taxonomy defines action meaning; action resolution defines selection and collision handling.
+      fail_condition: action_authority_overlap_detected
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: ACTIONS-SYSTEM-CHECK-001
+    check: action_subsystem_files_exist
+    applies_when:
+      actions_subsystem_loaded: true
+  fail_conditions:
+  - id: ACTIONS-SYSTEM-001
+    condition: action_subsystem_missing_required_file
+    message: Action subsystem requires taxonomy and resolution files.
+    severity: error
+  - id: ACTIONS-SYSTEM-002
+    condition: action_authority_overlap_detected
+    message: Action taxonomy and action resolution must not duplicate authority.
+    severity: error
