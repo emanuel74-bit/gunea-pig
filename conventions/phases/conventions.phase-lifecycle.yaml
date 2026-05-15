@@ -1,0 +1,212 @@
+version: '1.0'
+file:
+  name: conventions.phase-lifecycle.yaml
+  path: phases/conventions.phase-lifecycle.yaml
+  role: phase_lifecycle_contract
+  executability: state_machine
+purpose: Define phase status vocabulary, allowed transitions, lifecycle invariants, and phase status record requirements.
+ownership:
+  owns:
+  - phase_status_enum
+  - phase_status_definitions
+  - phase_transition_matrix
+  - phase_lifecycle_absolute_rules
+  - phase_status_record_schema
+  does_not_own:
+  - mission_state_storage
+  - gate_validation_logic
+  - revision_policy_definitions
+activation:
+  mode: conditional
+  activates_when:
+  - phase_status_is_recorded_or_updated
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - phase_lifecycle_rules
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files:
+  - missions/conventions.mission-state.yaml
+  - gates/conventions.gate-validation.yaml
+  - revisions/conventions.invalidation-policy.yaml
+sections:
+  phase_status_enum:
+    allowed:
+    - pending
+    - executed
+    - skipped
+    - blocked
+    - deferred
+    - invalidated
+  phase_status_definitions:
+    pending:
+      definition: The phase is active in the plan but has not started or completed.
+      choose_when:
+      - phase is required or scheduled and no valid output exists yet
+      reject_when:
+      - phase output gate has passed
+      - phase was explicitly skipped, blocked, deferred, or invalidated
+      transition_allowed_to:
+      - executed
+      - skipped
+      - blocked
+      - deferred
+    executed:
+      definition: The phase ran and its output gate passed.
+      choose_when:
+      - owner agent ran or Alpha completed mission-control work
+      - required outputs exist
+      - output gate status is passed
+      reject_when:
+      - required output missing
+      - output gate failed or blocked
+      - required report is invalidated
+      transition_allowed_to:
+      - invalidated
+    skipped:
+      definition: The phase was not run because the selected mission profile or trigger state explicitly allowed it.
+      choose_when:
+      - skip is allowed by mission profile or condition
+      - skip record includes reason, evidence, and downstream risk review
+      reject_when:
+      - phase is required and no valid blocker exists
+      - downstream required output depends on skipped phase
+      transition_allowed_to:
+      - pending
+      - blocked
+    blocked:
+      definition: The phase cannot proceed because a required gate, input, permission, report, trigger, or approval is missing
+        or invalid.
+      choose_when:
+      - blocking condition is present and no valid fallback exists
+      reject_when:
+      - blocker is resolved or converted into a scheduled trigger/revision
+      transition_allowed_to:
+      - pending
+      - deferred
+      - invalidated
+    deferred:
+      definition: The phase is intentionally postponed until a trigger, dependency, approval, or prerequisite phase is resolved.
+      choose_when:
+      - phase is conditionally required but prerequisite evidence is not ready
+      reject_when:
+      - deferral hides a required blocker or required phase skip
+      transition_allowed_to:
+      - pending
+      - blocked
+      - skipped
+    invalidated:
+      definition: The phase output was previously valid but can no longer be consumed because an upstream revision, rerun,
+        or contradiction invalidated it.
+      choose_when:
+      - mission_state.invalidated_outputs references this phase output
+      - replacement or rerun is required
+      reject_when:
+      - output is still current and no invalidation record exists
+      transition_allowed_to:
+      - pending
+      - blocked
+  phase_transition_matrix:
+    pending:
+      allowed_to:
+      - executed
+      - skipped
+      - blocked
+      - deferred
+      forbidden_to:
+      - invalidated
+      requires:
+      - entry_gate_result_or_skip_gate_result
+    executed:
+      allowed_to:
+      - invalidated
+      forbidden_to:
+      - pending
+      - skipped
+      - deferred
+      requires:
+      - output_gate_passed
+      - required_outputs_exist
+    skipped:
+      allowed_to:
+      - pending
+      - blocked
+      forbidden_to:
+      - executed
+      - invalidated
+      requires:
+      - skip_gate_passed
+      - skip_record
+    blocked:
+      allowed_to:
+      - pending
+      - deferred
+      - invalidated
+      forbidden_to:
+      - executed
+      requires:
+      - block_record
+      - blocking_reason
+    deferred:
+      allowed_to:
+      - pending
+      - blocked
+      - skipped
+      forbidden_to:
+      - executed
+      requires:
+      - deferral_reason
+      - unresolved_prerequisite
+    invalidated:
+      allowed_to:
+      - pending
+      - blocked
+      forbidden_to:
+      - executed
+      - skipped
+      requires:
+      - invalidation_record
+      - replacement_or_rerun_requirement
+  phase_lifecycle_absolute_rules:
+    absolute_rules:
+    - id: PHASE-LIFECYCLE-ABS-001
+      rule: A phase may be marked executed only after its output gate passes and required outputs exist.
+      fail_condition: phase_marked_executed_without_output_gate
+    - id: PHASE-LIFECYCLE-ABS-002
+      rule: A skipped phase requires an explicit skip gate result, skip reason, evidence, and downstream risk review.
+      fail_condition: phase_skipped_without_valid_skip_record
+    - id: PHASE-LIFECYCLE-ABS-003
+      rule: Invalidated phase outputs cannot be consumed by downstream phases until replaced or revalidated.
+      fail_condition: downstream_consumed_invalidated_phase_output
+    - id: PHASE-LIFECYCLE-ABS-004
+      rule: Blocked phases must preserve blocker reason and required resolution; silent blocking is forbidden.
+      fail_condition: phase_blocked_without_block_record
+  phase_status_record_schema:
+    required_fields:
+    - phase_id
+    - status
+    - reason
+    - evidence_refs
+    - gate_results
+    - output_refs
+    optional_fields:
+    - skip_record
+    - block_record
+    - invalidation_record
+    - rerun_record
+validation:
+  required_checks:
+  - id: PHASE-LIFECYCLE-CHECK-001
+    check: phase_status_transition_allowed
+    applies_when:
+      phase_status_changes: true
+  fail_conditions:
+  - id: PHASE-LIFECYCLE-001
+    condition: invalid_phase_status_transition
+    message: Phase status transition must be allowed by lifecycle matrix.
+    severity: error

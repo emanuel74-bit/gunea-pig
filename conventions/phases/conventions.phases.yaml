@@ -2,37 +2,80 @@ version: '1.0'
 file:
   name: conventions.phases.yaml
   path: phases/conventions.phases.yaml
-  role: phases_subsystem_entrypoint
+  role: phase_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for phase taxonomy and phase contracts.
+purpose: Provide the entrypoint, file index, local execution order, and ownership boundaries for the phase subsystem.
 ownership:
   owns:
   - phases_file_index
-  - phases_subsystem_contract
+  - phases_local_execution_order
+  - phase_subsystem_contract
   does_not_own:
-  - agent_capabilities
+  - phase_taxonomy_values
+  - phase_lifecycle_rules
+  - phase_contract_registry
+  - phase_dependency_graph
+  - phase_validation_rules
+  - agent_runtime_execution
   - mission_profile_selection
+  - gate_template_definitions
 activation:
   mode: entrypoint
   activates_when:
-  - phase_values_are_referenced
+  - phase_subsystem_loaded
   skips_when: []
 inputs:
   required: []
   optional: []
 outputs:
   produces:
-  - phases_subsystem_result
+  - phase_subsystem_index
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  optional_files:
   - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-lifecycle.yaml
   - phases/conventions.phase-contracts.yaml
-  optional_files: []
+  - phases/conventions.phase-dependencies.yaml
+  - phases/conventions.phase-validation.yaml
 sections:
   phases_file_index:
     taxonomy: phases/conventions.phase-taxonomy.yaml
+    lifecycle: phases/conventions.phase-lifecycle.yaml
     contracts: phases/conventions.phase-contracts.yaml
+    dependencies: phases/conventions.phase-dependencies.yaml
+    validation: phases/conventions.phase-validation.yaml
+  phases_local_execution_order:
+  - load_phase_taxonomy
+  - load_phase_lifecycle
+  - load_phase_contracts
+  - load_phase_dependencies
+  - validate_phase_subsystem
+  phase_subsystem_contract:
+    absolute_rules:
+    - id: PHASE-SYSTEM-ABS-001
+      rule: The phase subsystem defines phase identities and contracts, not mission profile selection or runtime scheduling.
+      fail_condition: phase_subsystem_selected_mission_profile_or_runtime_phase
+    - id: PHASE-SYSTEM-ABS-002
+      rule: Every phase must have exactly one taxonomy definition, one lifecycle-compatible status model, and one contract.
+      fail_condition: phase_missing_taxonomy_lifecycle_or_contract
+    - id: PHASE-SYSTEM-ABS-003
+      rule: Phase contracts may reference gates, reports, agents, handoffs, triggers, and revisions but must not redefine
+        those subsystems.
+      fail_condition: phase_contract_redefines_external_subsystem_authority
+    - id: PHASE-SYSTEM-ABS-004
+      rule: Phase work is fail-closed; missing inputs, missing outputs, invalid reports, or failed gates block downstream
+        consumption.
+      fail_condition: phase_progressed_after_blocking_failure
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: PHASES-SYSTEM-CHECK-001
+    check: all_phase_subsystem_files_exist
+    applies_when:
+      phase_subsystem_loaded: true
+  fail_conditions:
+  - id: PHASES-SYSTEM-001
+    condition: phase_subsystem_file_missing
+    message: All phase subsystem files must exist.
+    severity: error

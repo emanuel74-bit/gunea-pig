@@ -2,20 +2,25 @@ version: '1.0'
 file:
   name: conventions.phase-taxonomy.yaml
   path: phases/conventions.phase-taxonomy.yaml
-  role: global_phase_vocabulary_contract
+  role: phase_vocabulary_contract
   executability: vocabulary
-purpose: Define the global 32-phase vocabulary, categories, statuses, and definitions.
+purpose: Define the canonical phase catalog, phase categories, phase definitions, and strict phase addition policy.
 ownership:
   owns:
-  - phase_enum
   - phase_category_enum
-  - phase_status_enum
+  - phase_enum
+  - phase_category_mapping
   - phase_definitions
+  - phase_category_definitions
+  - phase_taxonomy_schema
+  - phase_addition_policy
   does_not_own:
-  - runtime_scheduling
-  - mission_profile_selection
+  - phase_lifecycle_transitions
+  - phase_contract_registry
+  - mission_profile_phase_selection
+  - runtime_phase_scheduling
 activation:
-  mode: reference_only
+  mode: conditional
   activates_when:
   - phase_values_are_referenced
   skips_when: []
@@ -25,32 +30,23 @@ inputs:
 outputs:
   produces:
   - phase_taxonomy
-  - phase_catalog
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   optional_files: []
 sections:
-  phase_status_enum:
-    allowed:
-    - pending
-    - executed
-    - skipped
-    - blocked
-    - deferred
-    - invalidated
   phase_category_enum:
     allowed:
+    - mission_control
+    - understanding
     - classification
     - design
-    - execution
-    - execution_planning
-    - mission_control
-    - repair
-    - reporting
-    - understanding
-    - validation
     - verification_planning
+    - execution_planning
+    - execution
+    - repair
+    - validation
+    - reporting
   phase_enum:
     allowed:
     - mission_profile_selection
@@ -120,732 +116,1211 @@ sections:
     final_validation: validation
   phase_definitions:
     mission_profile_selection:
-      definition: mission profile selection phase vocabulary value.
-      meaning: Represents the mission profile selection case within the phase taxonomy.
-      detection_signals:
-      - mission profile selection signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mission profile selection
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using mission_profile_selection must include reason and evidence
+      definition: Select the mission profile that governs required phases, strictness, edit scope, and reports.
+      category: mission_control
+      owner_agent: alpha_controller
+      primary_output_contract: .ai/reports/00-mission-profile.yaml
+      positive_signals:
+      - mission_profile_selection is required by the selected mission profile
+      - a trigger or dependency requires mission_profile_selection
+      - downstream phases require outputs produced by mission_profile_selection
+      negative_signals:
+      - mission_profile_selection is forbidden by the selected mission profile
+      - mission_profile_selection has no required inputs available and no valid external source
+      - mission_profile_selection would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by alpha_controller
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     mission_initialization:
-      definition: mission initialization phase vocabulary value.
-      meaning: Represents the mission initialization case within the phase taxonomy.
-      detection_signals:
-      - mission initialization signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mission initialization
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using mission_initialization must include reason and evidence
+      definition: Initialize mission state, report registry, and the active execution container.
+      category: mission_control
+      owner_agent: alpha_controller
+      primary_output_contract: .ai/reports/report-registry.yaml
+      positive_signals:
+      - mission_initialization is required by the selected mission profile
+      - a trigger or dependency requires mission_initialization
+      - downstream phases require outputs produced by mission_initialization
+      negative_signals:
+      - mission_initialization is forbidden by the selected mission profile
+      - mission_initialization has no required inputs available and no valid external source
+      - mission_initialization would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by alpha_controller
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     active_context_manifest:
-      definition: active context manifest phase vocabulary value.
-      meaning: Represents the active context manifest case within the phase taxonomy.
-      detection_signals:
-      - active context manifest signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches active context manifest
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using active_context_manifest must include reason and evidence
+      definition: Create the active context manifest used by agents to know which convention files, phases, reports, and agents
+        are active.
+      category: mission_control
+      owner_agent: alpha_controller
+      primary_output_contract: .ai/reports/01-active-context-manifest.yaml
+      positive_signals:
+      - active_context_manifest is required by the selected mission profile
+      - a trigger or dependency requires active_context_manifest
+      - downstream phases require outputs produced by active_context_manifest
+      negative_signals:
+      - active_context_manifest is forbidden by the selected mission profile
+      - active_context_manifest has no required inputs available and no valid external source
+      - active_context_manifest would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by alpha_controller
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     phase_accounting:
-      definition: phase accounting phase vocabulary value.
-      meaning: Represents the phase accounting case within the phase taxonomy.
-      detection_signals:
-      - phase accounting signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches phase accounting
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using phase_accounting must include reason and evidence
+      definition: Account for every active, skipped, blocked, invalidated, rerun, or completed phase.
+      category: mission_control
+      owner_agent: alpha_controller
+      primary_output_contract: .ai/reports/phase-accounting.yaml
+      positive_signals:
+      - phase_accounting is required by the selected mission profile
+      - a trigger or dependency requires phase_accounting
+      - downstream phases require outputs produced by phase_accounting
+      negative_signals:
+      - phase_accounting is forbidden by the selected mission profile
+      - phase_accounting has no required inputs available and no valid external source
+      - phase_accounting would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by alpha_controller
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     behavior_contract:
-      definition: behavior contract phase vocabulary value.
-      meaning: Represents the behavior contract case within the phase taxonomy.
-      detection_signals:
-      - behavior contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches behavior contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using behavior_contract must include reason and evidence
+      definition: Convert the user request into explicit behavior, scope, acceptance criteria, assumptions, non-goals, and
+        ambiguity records.
+      category: understanding
+      owner_agent: behavior_agent
+      primary_output_contract: .ai/reports/02-behavior-contract.yaml; .ai/reports/assumptions.yaml
+      positive_signals:
+      - behavior_contract is required by the selected mission profile
+      - a trigger or dependency requires behavior_contract
+      - downstream phases require outputs produced by behavior_contract
+      negative_signals:
+      - behavior_contract is forbidden by the selected mission profile
+      - behavior_contract has no required inputs available and no valid external source
+      - behavior_contract would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by behavior_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     codebase_reconnaissance:
-      definition: codebase reconnaissance phase vocabulary value.
-      meaning: Represents the codebase reconnaissance case within the phase taxonomy.
-      detection_signals:
-      - codebase reconnaissance signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches codebase reconnaissance
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using codebase_reconnaissance must include reason and evidence
+      definition: Inspect existing code, files, conventions, call sites, and reusable behavior before design decisions are
+        made.
+      category: understanding
+      owner_agent: reconnaissance_agent
+      primary_output_contract: .ai/reports/03-codebase-reconnaissance.yaml; .ai/reports/local-convention-candidates.yaml
+      positive_signals:
+      - codebase_reconnaissance is required by the selected mission profile
+      - a trigger or dependency requires codebase_reconnaissance
+      - downstream phases require outputs produced by codebase_reconnaissance
+      negative_signals:
+      - codebase_reconnaissance is forbidden by the selected mission profile
+      - codebase_reconnaissance has no required inputs available and no valid external source
+      - codebase_reconnaissance would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by reconnaissance_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     local_alignment:
-      definition: local alignment phase vocabulary value.
-      meaning: Represents the local alignment case within the phase taxonomy.
-      detection_signals:
-      - local alignment signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches local alignment
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using local_alignment must include reason and evidence
+      definition: Compare local project conventions against global conventions and record compatible or conflicting local
+        signals.
+      category: understanding
+      owner_agent: reconnaissance_agent
+      primary_output_contract: .ai/reports/local-alignment.yaml
+      positive_signals:
+      - local_alignment is required by the selected mission profile
+      - a trigger or dependency requires local_alignment
+      - downstream phases require outputs produced by local_alignment
+      negative_signals:
+      - local_alignment is forbidden by the selected mission profile
+      - local_alignment has no required inputs available and no valid external source
+      - local_alignment would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by reconnaissance_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     risk_classification:
-      definition: risk classification phase vocabulary value.
-      meaning: Represents the risk classification case within the phase taxonomy.
-      detection_signals:
-      - risk classification signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches risk classification
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using risk_classification must include reason and evidence
+      definition: Classify mission and change risk so downstream phases can tighten gates and require followups.
+      category: classification
+      owner_agent: classification_agent
+      primary_output_contract: .ai/reports/risk-classification.yaml
+      positive_signals:
+      - risk_classification is required by the selected mission profile
+      - a trigger or dependency requires risk_classification
+      - downstream phases require outputs produced by risk_classification
+      negative_signals:
+      - risk_classification is forbidden by the selected mission profile
+      - risk_classification has no required inputs available and no valid external source
+      - risk_classification would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by classification_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     boundary_contract_classification:
-      definition: boundary contract classification phase vocabulary value.
-      meaning: Represents the boundary contract classification case within the phase taxonomy.
-      detection_signals:
-      - boundary contract classification signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches boundary contract classification
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using boundary_contract_classification must include reason and evidence
+      definition: Classify affected boundaries, contracts, public surfaces, compatibility obligations, and consumer risks.
+      category: classification
+      owner_agent: classification_agent
+      primary_output_contract: .ai/reports/boundary-contract-classification.yaml; .ai/reports/compatibility-decision.yaml
+      positive_signals:
+      - boundary_contract_classification is required by the selected mission profile
+      - a trigger or dependency requires boundary_contract_classification
+      - downstream phases require outputs produced by boundary_contract_classification
+      negative_signals:
+      - boundary_contract_classification is forbidden by the selected mission profile
+      - boundary_contract_classification has no required inputs available and no valid external source
+      - boundary_contract_classification would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by classification_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     dependency_classification:
-      definition: dependency classification phase vocabulary value.
-      meaning: Represents the dependency classification case within the phase taxonomy.
-      detection_signals:
-      - dependency classification signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches dependency classification
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using dependency_classification must include reason and evidence
+      definition: Classify static, runtime, external, cross-module, and test dependencies plus validation needs.
+      category: classification
+      owner_agent: classification_agent
+      primary_output_contract: .ai/reports/dependency-classification.yaml; .ai/reports/dependency-validation.yaml
+      positive_signals:
+      - dependency_classification is required by the selected mission profile
+      - a trigger or dependency requires dependency_classification
+      - downstream phases require outputs produced by dependency_classification
+      negative_signals:
+      - dependency_classification is forbidden by the selected mission profile
+      - dependency_classification has no required inputs available and no valid external source
+      - dependency_classification would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by classification_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     architecture_decomposition:
-      definition: architecture decomposition phase vocabulary value.
-      meaning: Represents the architecture decomposition case within the phase taxonomy.
-      detection_signals:
-      - architecture decomposition signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches architecture decomposition
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using architecture_decomposition must include reason and evidence
+      definition: Decompose behavior into capabilities, intents, atomic units, constraints, and artifact candidates before
+        structure is rendered.
+      category: design
+      owner_agent: architecture_agent
+      primary_output_contract: .ai/reports/architecture-blueprint.yaml; .ai/reports/artifact-candidates.yaml
+      positive_signals:
+      - architecture_decomposition is required by the selected mission profile
+      - a trigger or dependency requires architecture_decomposition
+      - downstream phases require outputs produced by architecture_decomposition
+      negative_signals:
+      - architecture_decomposition is forbidden by the selected mission profile
+      - architecture_decomposition has no required inputs available and no valid external source
+      - architecture_decomposition would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by architecture_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     draft_role_pass:
-      definition: draft role pass phase vocabulary value.
-      meaning: Represents the draft role pass case within the phase taxonomy.
-      detection_signals:
-      - draft role pass signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches draft role pass
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using draft_role_pass must include reason and evidence
+      definition: Produce provisional role signals and mixed-responsibility findings before artifact actions are selected.
+      category: design
+      owner_agent: role_agent
+      primary_output_contract: .ai/reports/04-draft-role-signals.yaml
+      positive_signals:
+      - draft_role_pass is required by the selected mission profile
+      - a trigger or dependency requires draft_role_pass
+      - downstream phases require outputs produced by draft_role_pass
+      negative_signals:
+      - draft_role_pass is forbidden by the selected mission profile
+      - draft_role_pass has no required inputs available and no valid external source
+      - draft_role_pass would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by role_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     pattern_pressure_detection:
-      definition: pattern pressure detection phase vocabulary value.
-      meaning: Represents the pattern pressure detection case within the phase taxonomy.
-      detection_signals:
-      - pattern pressure detection signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pattern pressure detection
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using pattern_pressure_detection must include reason and evidence
+      definition: Detect pattern pressure without forcing pattern selection or structure decisions.
+      category: design
+      owner_agent: pattern_agent
+      primary_output_contract: .ai/reports/pattern-pressure.yaml
+      positive_signals:
+      - pattern_pressure_detection is required by the selected mission profile
+      - a trigger or dependency requires pattern_pressure_detection
+      - downstream phases require outputs produced by pattern_pressure_detection
+      negative_signals:
+      - pattern_pressure_detection is forbidden by the selected mission profile
+      - pattern_pressure_detection has no required inputs available and no valid external source
+      - pattern_pressure_detection would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by pattern_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     artifact_reuse_analysis:
-      definition: artifact reuse analysis phase vocabulary value.
-      meaning: Represents the artifact reuse analysis case within the phase taxonomy.
-      detection_signals:
-      - artifact reuse analysis signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches artifact reuse analysis
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using artifact_reuse_analysis must include reason and evidence
+      definition: Analyze existing artifacts for reuse, modification, split, extraction, replacement, or creation opportunities.
+      category: design
+      owner_agent: artifact_action_agent
+      primary_output_contract: .ai/reports/artifact-reuse-analysis.yaml
+      positive_signals:
+      - artifact_reuse_analysis is required by the selected mission profile
+      - a trigger or dependency requires artifact_reuse_analysis
+      - downstream phases require outputs produced by artifact_reuse_analysis
+      negative_signals:
+      - artifact_reuse_analysis is forbidden by the selected mission profile
+      - artifact_reuse_analysis has no required inputs available and no valid external source
+      - artifact_reuse_analysis would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by artifact_action_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     artifact_action_resolution:
-      definition: artifact action resolution phase vocabulary value.
-      meaning: Represents the artifact action resolution case within the phase taxonomy.
-      detection_signals:
-      - artifact action resolution signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches artifact action resolution
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using artifact_action_resolution must include reason and evidence
+      definition: Select artifact actions for candidates and record rejected alternatives, collisions, and required followups.
+      category: design
+      owner_agent: artifact_action_agent
+      primary_output_contract: .ai/reports/05-artifact-actions.yaml; .ai/reports/post-action-artifact-candidates.yaml
+      positive_signals:
+      - artifact_action_resolution is required by the selected mission profile
+      - a trigger or dependency requires artifact_action_resolution
+      - downstream phases require outputs produced by artifact_action_resolution
+      negative_signals:
+      - artifact_action_resolution is forbidden by the selected mission profile
+      - artifact_action_resolution has no required inputs available and no valid external source
+      - artifact_action_resolution would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by artifact_action_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     refactor_strategy_selection:
-      definition: refactor strategy selection phase vocabulary value.
-      meaning: Represents the refactor strategy selection case within the phase taxonomy.
-      detection_signals:
-      - refactor strategy selection signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches refactor strategy selection
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using refactor_strategy_selection must include reason and evidence
+      definition: Select behavior-preserving refactor strategy and preservation requirements when refactor-like actions are
+        selected.
+      category: design
+      owner_agent: refactor_strategy_agent
+      primary_output_contract: .ai/reports/06-refactor-strategy.yaml; .ai/reports/behavior-preservation-requirements.yaml;
+        .ai/reports/refactor-required-followups.yaml
+      positive_signals:
+      - refactor_strategy_selection is required by the selected mission profile
+      - a trigger or dependency requires refactor_strategy_selection
+      - downstream phases require outputs produced by refactor_strategy_selection
+      negative_signals:
+      - refactor_strategy_selection is forbidden by the selected mission profile
+      - refactor_strategy_selection has no required inputs available and no valid external source
+      - refactor_strategy_selection would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by refactor_strategy_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     call_site_impact_analysis:
-      definition: call site impact analysis phase vocabulary value.
-      meaning: Represents the call site impact analysis case within the phase taxonomy.
-      detection_signals:
-      - call site impact analysis signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches call site impact analysis
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using call_site_impact_analysis must include reason and evidence
+      definition: Identify direct call sites, imports, consumers, dynamic references, and invocation paths affected by selected
+        actions.
+      category: design
+      owner_agent: impact_agent
+      primary_output_contract: .ai/reports/call-site-impact.yaml
+      positive_signals:
+      - call_site_impact_analysis is required by the selected mission profile
+      - a trigger or dependency requires call_site_impact_analysis
+      - downstream phases require outputs produced by call_site_impact_analysis
+      negative_signals:
+      - call_site_impact_analysis is forbidden by the selected mission profile
+      - call_site_impact_analysis has no required inputs available and no valid external source
+      - call_site_impact_analysis would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by impact_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     change_impact_analysis:
-      definition: change impact analysis phase vocabulary value.
-      meaning: Represents the change impact analysis case within the phase taxonomy.
-      detection_signals:
-      - change impact analysis signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches change impact analysis
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using change_impact_analysis must include reason and evidence
+      definition: Summarize total impact across artifacts, contracts, dependencies, tests, consumers, and sequence implications.
+      category: design
+      owner_agent: impact_agent
+      primary_output_contract: .ai/reports/07-change-impact.yaml; .ai/reports/consumer-impact.yaml
+      positive_signals:
+      - change_impact_analysis is required by the selected mission profile
+      - a trigger or dependency requires change_impact_analysis
+      - downstream phases require outputs produced by change_impact_analysis
+      negative_signals:
+      - change_impact_analysis is forbidden by the selected mission profile
+      - change_impact_analysis has no required inputs available and no valid external source
+      - change_impact_analysis would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by impact_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     final_role_assignment:
-      definition: final role assignment phase vocabulary value.
-      meaning: Represents the final role assignment case within the phase taxonomy.
-      detection_signals:
-      - final role assignment signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches final role assignment
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using final_role_assignment must include reason and evidence
+      definition: Assign final artifact roles after actions and impact are known, resolving collisions and rejected role alternatives.
+      category: design
+      owner_agent: role_agent
+      primary_output_contract: .ai/reports/08-final-role-assignment.yaml; .ai/reports/role-collision-resolution.yaml
+      positive_signals:
+      - final_role_assignment is required by the selected mission profile
+      - a trigger or dependency requires final_role_assignment
+      - downstream phases require outputs produced by final_role_assignment
+      negative_signals:
+      - final_role_assignment is forbidden by the selected mission profile
+      - final_role_assignment has no required inputs available and no valid external source
+      - final_role_assignment would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by role_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     pattern_selection:
-      definition: pattern selection phase vocabulary value.
-      meaning: Represents the pattern selection case within the phase taxonomy.
-      detection_signals:
-      - pattern selection signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pattern selection
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using pattern_selection must include reason and evidence
+      definition: Select a justified pattern or no_pattern after pressure, roles, actions, restrictions, and compatibility
+        are known.
+      category: design
+      owner_agent: pattern_agent
+      primary_output_contract: .ai/reports/pattern-decision-log.yaml
+      positive_signals:
+      - pattern_selection is required by the selected mission profile
+      - a trigger or dependency requires pattern_selection
+      - downstream phases require outputs produced by pattern_selection
+      negative_signals:
+      - pattern_selection is forbidden by the selected mission profile
+      - pattern_selection has no required inputs available and no valid external source
+      - pattern_selection would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by pattern_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     structure_rendering:
-      definition: structure rendering phase vocabulary value.
-      meaning: Represents the structure rendering case within the phase taxonomy.
-      detection_signals:
-      - structure rendering signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches structure rendering
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using structure_rendering must include reason and evidence
+      definition: Render minimum sufficient folder/file structure from roles, actions, patterns, local alignment, and dependency
+        constraints.
+      category: design
+      owner_agent: structure_agent
+      primary_output_contract: .ai/reports/structure-plan.yaml; .ai/reports/final-file-tree.yaml
+      positive_signals:
+      - structure_rendering is required by the selected mission profile
+      - a trigger or dependency requires structure_rendering
+      - downstream phases require outputs produced by structure_rendering
+      negative_signals:
+      - structure_rendering is forbidden by the selected mission profile
+      - structure_rendering has no required inputs available and no valid external source
+      - structure_rendering would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by structure_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     test_derivation:
-      definition: test derivation phase vocabulary value.
-      meaning: Represents the test derivation case within the phase taxonomy.
-      detection_signals:
-      - test derivation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches test derivation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using test_derivation must include reason and evidence
+      definition: Derive required tests, regression expectations, characterization tests, validation commands, and test gaps.
+      category: verification_planning
+      owner_agent: testing_agent
+      primary_output_contract: .ai/reports/09-test-plan.yaml; .ai/reports/regression-test-plan.yaml; .ai/reports/characterization-test-plan.yaml
+      positive_signals:
+      - test_derivation is required by the selected mission profile
+      - a trigger or dependency requires test_derivation
+      - downstream phases require outputs produced by test_derivation
+      negative_signals:
+      - test_derivation is forbidden by the selected mission profile
+      - test_derivation has no required inputs available and no valid external source
+      - test_derivation would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by testing_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     implementation_sequence:
-      definition: implementation sequence phase vocabulary value.
-      meaning: Represents the implementation sequence case within the phase taxonomy.
-      detection_signals:
-      - implementation sequence signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation sequence
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using implementation_sequence must include reason and evidence
+      definition: Produce deterministic implementation steps, step dependencies, affected files, and expected temporary failures.
+      category: execution_planning
+      owner_agent: execution_planning_agent
+      primary_output_contract: .ai/reports/10-implementation-sequence.yaml; .ai/reports/checkpoint-groups.yaml
+      positive_signals:
+      - implementation_sequence is required by the selected mission profile
+      - a trigger or dependency requires implementation_sequence
+      - downstream phases require outputs produced by implementation_sequence
+      negative_signals:
+      - implementation_sequence is forbidden by the selected mission profile
+      - implementation_sequence has no required inputs available and no valid external source
+      - implementation_sequence would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by execution_planning_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     checkpoint_validation_plan:
-      definition: checkpoint validation plan phase vocabulary value.
-      meaning: Represents the checkpoint validation plan case within the phase taxonomy.
-      detection_signals:
-      - checkpoint validation plan signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches checkpoint validation plan
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using checkpoint_validation_plan must include reason and evidence
+      definition: Define checkpoint validation groups, pass/fail criteria, repair conditions, and validation commands.
+      category: execution_planning
+      owner_agent: execution_planning_agent
+      primary_output_contract: .ai/reports/checkpoint-validation-plan.yaml
+      positive_signals:
+      - checkpoint_validation_plan is required by the selected mission profile
+      - a trigger or dependency requires checkpoint_validation_plan
+      - downstream phases require outputs produced by checkpoint_validation_plan
+      negative_signals:
+      - checkpoint_validation_plan is forbidden by the selected mission profile
+      - checkpoint_validation_plan has no required inputs available and no valid external source
+      - checkpoint_validation_plan would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by execution_planning_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     pre_implementation_gate:
-      definition: pre implementation gate phase vocabulary value.
-      meaning: Represents the pre implementation gate case within the phase taxonomy.
-      detection_signals:
-      - pre implementation gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pre implementation gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using pre_implementation_gate must include reason and evidence
+      definition: Decide whether implementation may begin by checking reports, gates, triggers, scopes, sequence, and permissions.
+      category: validation
+      owner_agent: pre_implementation_gate_agent
+      primary_output_contract: .ai/reports/pre-implementation-gate.yaml
+      positive_signals:
+      - pre_implementation_gate is required by the selected mission profile
+      - a trigger or dependency requires pre_implementation_gate
+      - downstream phases require outputs produced by pre_implementation_gate
+      negative_signals:
+      - pre_implementation_gate is forbidden by the selected mission profile
+      - pre_implementation_gate has no required inputs available and no valid external source
+      - pre_implementation_gate would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by pre_implementation_gate_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     implementation:
-      definition: implementation phase vocabulary value.
-      meaning: Represents the implementation case within the phase taxonomy.
-      detection_signals:
-      - implementation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using implementation must include reason and evidence
+      definition: Apply approved code changes only within allowed scope and record changed files, validation commands, and
+        results.
+      category: execution
+      owner_agent: implementation_agent
+      primary_output_contract: .ai/reports/changed-file-manifest.yaml; .ai/reports/implementation-result.yaml; .ai/reports/checkpoint-results.yaml
+      positive_signals:
+      - implementation is required by the selected mission profile
+      - a trigger or dependency requires implementation
+      - downstream phases require outputs produced by implementation
+      negative_signals:
+      - implementation is forbidden by the selected mission profile
+      - implementation has no required inputs available and no valid external source
+      - implementation would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by implementation_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     failure_classification:
-      definition: failure classification phase vocabulary value.
-      meaning: Represents the failure classification case within the phase taxonomy.
-      detection_signals:
-      - failure classification signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches failure classification
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using failure_classification must include reason and evidence
+      definition: Classify validation or implementation failures before repair, rerun, revision, or blocking is selected.
+      category: repair
+      owner_agent: failure_analysis_agent
+      primary_output_contract: .ai/reports/failure-classification.yaml
+      positive_signals:
+      - failure_classification is required by the selected mission profile
+      - a trigger or dependency requires failure_classification
+      - downstream phases require outputs produced by failure_classification
+      negative_signals:
+      - failure_classification is forbidden by the selected mission profile
+      - failure_classification has no required inputs available and no valid external source
+      - failure_classification would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by failure_analysis_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     feedback_repair:
-      definition: feedback repair phase vocabulary value.
-      meaning: Represents the feedback repair case within the phase taxonomy.
-      detection_signals:
-      - feedback repair signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches feedback repair
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using feedback_repair must include reason and evidence
+      definition: Apply authorized repair only when failure classification and repair permissions allow it.
+      category: repair
+      owner_agent: repair_agent
+      primary_output_contract: .ai/reports/repair-plan.yaml; .ai/reports/feedback-repair-result.yaml
+      positive_signals:
+      - feedback_repair is required by the selected mission profile
+      - a trigger or dependency requires feedback_repair
+      - downstream phases require outputs produced by feedback_repair
+      negative_signals:
+      - feedback_repair is forbidden by the selected mission profile
+      - feedback_repair has no required inputs available and no valid external source
+      - feedback_repair would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by repair_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     post_implementation_validation:
-      definition: post implementation validation phase vocabulary value.
-      meaning: Represents the post implementation validation case within the phase taxonomy.
-      detection_signals:
-      - post implementation validation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches post implementation validation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using post_implementation_validation must include reason and evidence
+      definition: Validate implementation results, scope adherence, changed files, sequence adherence, and test/build evidence.
+      category: validation
+      owner_agent: validation_agent
+      primary_output_contract: .ai/reports/post-implementation-validation.yaml; .ai/reports/failure-report.yaml
+      positive_signals:
+      - post_implementation_validation is required by the selected mission profile
+      - a trigger or dependency requires post_implementation_validation
+      - downstream phases require outputs produced by post_implementation_validation
+      negative_signals:
+      - post_implementation_validation is forbidden by the selected mission profile
+      - post_implementation_validation has no required inputs available and no valid external source
+      - post_implementation_validation would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by validation_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     trigger_review:
-      definition: trigger review phase vocabulary value.
-      meaning: Represents the trigger review case within the phase taxonomy.
-      detection_signals:
-      - trigger review signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches trigger review
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using trigger_review must include reason and evidence
+      definition: Review, schedule, resolve, block, or invalidate emitted runtime triggers before blocked transitions continue.
+      category: validation
+      owner_agent: alpha_controller
+      primary_output_contract: .ai/reports/trigger-review.yaml
+      positive_signals:
+      - trigger_review is required by the selected mission profile
+      - a trigger or dependency requires trigger_review
+      - downstream phases require outputs produced by trigger_review
+      negative_signals:
+      - trigger_review is forbidden by the selected mission profile
+      - trigger_review has no required inputs available and no valid external source
+      - trigger_review would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by alpha_controller
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     report_artifact_validation:
-      definition: report artifact validation phase vocabulary value.
-      meaning: Represents the report artifact validation case within the phase taxonomy.
-      detection_signals:
-      - report artifact validation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches report artifact validation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using report_artifact_validation must include reason and evidence
+      definition: Validate required report files, schemas, lifecycle states, and console-only output failures.
+      category: reporting
+      owner_agent: alpha_controller
+      primary_output_contract: .ai/reports/report-artifact-validation.yaml
+      positive_signals:
+      - report_artifact_validation is required by the selected mission profile
+      - a trigger or dependency requires report_artifact_validation
+      - downstream phases require outputs produced by report_artifact_validation
+      negative_signals:
+      - report_artifact_validation is forbidden by the selected mission profile
+      - report_artifact_validation has no required inputs available and no valid external source
+      - report_artifact_validation would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by alpha_controller
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
     final_validation:
-      definition: final validation phase vocabulary value.
-      meaning: Represents the final validation case within the phase taxonomy.
-      detection_signals:
-      - final validation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches final validation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase decisions using final_validation must include reason and evidence
+      definition: Produce the final mission result only after required phases, reports, gates, triggers, revisions, and implementation
+        state are valid.
+      category: validation
+      owner_agent: validation_agent
+      primary_output_contract: .ai/reports/99-validation-summary.yaml; .ai/reports/final-unresolved-items.yaml
+      positive_signals:
+      - final_validation is required by the selected mission profile
+      - a trigger or dependency requires final_validation
+      - downstream phases require outputs produced by final_validation
+      negative_signals:
+      - final_validation is forbidden by the selected mission profile
+      - final_validation has no required inputs available and no valid external source
+      - final_validation would duplicate authority owned by another subsystem
+      entry_requirement:
+      - entry gate must pass
+      - owner agent must exist
+      - phase contract must exist
+      - required inputs must exist unless declared external
+      exit_requirement:
+      - required outputs must be written to declared files
+      - output gate must pass
+      - triggers and revision requests must be registered
+      - handoff records must be valid before downstream consumption
+      bounded_authority:
+      - owned by validation_agent
+      - may perform only work declared by its phase contract
+      - must not redefine agents, gates, reports, mission profiles, or runtime vocabulary
+      integration_points:
+      - agent contract
+      - report artifact registry
+      - gate refs
+      - handoff policy
+      - trigger resolution
+      - mission state accounting
+  phase_category_definitions:
+    mission_control:
+      definition: Phases that initialize, schedule, account for, or finalize the mission runtime rather than produce domain
+        design work.
+      positive_signals:
+      - phase updates mission state, active plan, report registry, trigger review, or accounting
+      negative_signals:
+      - phase primarily classifies code, renders design, edits source, or validates implementation
+      authority: Owned by Alpha except final validation-specific checks owned by validation_agent when assigned.
+    understanding:
+      definition: Phases that convert the request and existing workspace evidence into explicit facts before design decisions.
+      positive_signals:
+      - behavior needs clarification
+      - codebase/local convention evidence must be gathered
+      negative_signals:
+      - phase makes final action, pattern, role, or implementation decisions
+      authority: May record evidence and assumptions but must not select implementation actions.
+    classification:
+      definition: Phases that classify risk, boundaries, contracts, dependencies, or compatibility needs using global vocabularies.
+      positive_signals:
+      - evidence must be mapped into risk, boundary, contract, or dependency categories
+      negative_signals:
+      - phase renders architecture or edits code
+      authority: May emit followup triggers but must not change structure or implementation.
+    design:
+      definition: Phases that transform behavior and evidence into architecture, roles, actions, impacts, patterns, and structure.
+      positive_signals:
+      - artifact candidates, roles, actions, patterns, impacts, or file tree decisions are required
+      negative_signals:
+      - phase directly edits source or validates runtime reports
+      authority: May decide design outputs but must not bypass gates or implementation approval.
+    verification_planning:
+      definition: Phases that derive validation obligations before implementation.
+      positive_signals:
+      - acceptance criteria or behavior preservation must map to tests
+      negative_signals:
+      - phase executes tests or marks final validation passed
+      authority: Defines expected validation; does not validate results.
+    execution_planning:
+      definition: Phases that convert approved design into deterministic implementation order and checkpoints.
+      positive_signals:
+      - ordered implementation steps or checkpoints are needed
+      negative_signals:
+      - phase edits code or approves implementation itself
+      authority: Plans execution; pre_implementation_gate approves it.
+    execution:
+      definition: The phase that applies approved source/test/config changes.
+      positive_signals:
+      - pre-implementation gate passed and implementation sequence exists
+      negative_signals:
+      - planning, classification, or validation-only work
+      authority: Only implementation_agent may edit source by default.
+    repair:
+      definition: Phases that classify failures and apply bounded repair after validation or implementation failure.
+      positive_signals:
+      - validation failure, test failure, or implementation deviation exists
+      negative_signals:
+      - normal implementation with no classified failure
+      authority: Repair must be authorized by failure classification and permissions.
+    validation:
+      definition: Phases that decide whether runtime transitions or implementation results may pass.
+      positive_signals:
+      - gate, trigger, implementation, or final status must be checked
+      negative_signals:
+      - phase is producing design content or editing unapproved code
+      authority: May block progress; cannot rewrite prior reports to force pass.
+    reporting:
+      definition: Phases that validate durable report artifacts and report lifecycle state.
+      positive_signals:
+      - required report existence, schema, lifecycle, or console-only failures must be checked
+      negative_signals:
+      - phase performs design or implementation work
+      authority: May block final validation when reports are missing or invalid.
+  phase_taxonomy_schema:
+    required_fields:
+    - definition
+    - category
+    - owner_agent
+    - primary_output_contract
+    - positive_signals
+    - negative_signals
+    - entry_requirement
+    - exit_requirement
+    - bounded_authority
+    - integration_points
   phase_addition_policy:
     absolute_rules:
     - id: PHASE-TAXONOMY-ABS-001
-      rule: Mission profiles must not define new phases.
-      fail_condition: mission_profile_defines_unknown_phase
-  phase_status_definitions:
-    pending:
-      definition: pending phase_status vocabulary value.
-      meaning: Represents the pending case within the phase_status taxonomy.
-      detection_signals:
-      - pending signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pending
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_status decisions using pending must include reason and evidence
-    executed:
-      definition: executed phase_status vocabulary value.
-      meaning: Represents the executed case within the phase_status taxonomy.
-      detection_signals:
-      - executed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches executed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_status decisions using executed must include reason and evidence
-    skipped:
-      definition: skipped phase_status vocabulary value.
-      meaning: Represents the skipped case within the phase_status taxonomy.
-      detection_signals:
-      - skipped signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches skipped
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_status decisions using skipped must include reason and evidence
-    blocked:
-      definition: blocked phase_status vocabulary value.
-      meaning: Represents the blocked case within the phase_status taxonomy.
-      detection_signals:
-      - blocked signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches blocked
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_status decisions using blocked must include reason and evidence
-    deferred:
-      definition: deferred phase_status vocabulary value.
-      meaning: Represents the deferred case within the phase_status taxonomy.
-      detection_signals:
-      - deferred signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches deferred
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_status decisions using deferred must include reason and evidence
-    invalidated:
-      definition: invalidated phase_status vocabulary value.
-      meaning: Represents the invalidated case within the phase_status taxonomy.
-      detection_signals:
-      - invalidated signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches invalidated
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_status decisions using invalidated must include reason and evidence
-  phase_category_definitions:
-    classification:
-      definition: classification phase_category vocabulary value.
-      meaning: Represents the classification case within the phase_category taxonomy.
-      detection_signals:
-      - classification signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches classification
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using classification must include reason and evidence
-    design:
-      definition: design phase_category vocabulary value.
-      meaning: Represents the design case within the phase_category taxonomy.
-      detection_signals:
-      - design signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches design
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using design must include reason and evidence
-    execution:
-      definition: execution phase_category vocabulary value.
-      meaning: Represents the execution case within the phase_category taxonomy.
-      detection_signals:
-      - execution signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches execution
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using execution must include reason and evidence
-    execution_planning:
-      definition: execution planning phase_category vocabulary value.
-      meaning: Represents the execution planning case within the phase_category taxonomy.
-      detection_signals:
-      - execution planning signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches execution planning
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using execution_planning must include reason and evidence
-    mission_control:
-      definition: mission control phase_category vocabulary value.
-      meaning: Represents the mission control case within the phase_category taxonomy.
-      detection_signals:
-      - mission control signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mission control
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using mission_control must include reason and evidence
-    repair:
-      definition: repair phase_category vocabulary value.
-      meaning: Represents the repair case within the phase_category taxonomy.
-      detection_signals:
-      - repair signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches repair
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using repair must include reason and evidence
-    reporting:
-      definition: reporting phase_category vocabulary value.
-      meaning: Represents the reporting case within the phase_category taxonomy.
-      detection_signals:
-      - reporting signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches reporting
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using reporting must include reason and evidence
-    understanding:
-      definition: understanding phase_category vocabulary value.
-      meaning: Represents the understanding case within the phase_category taxonomy.
-      detection_signals:
-      - understanding signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches understanding
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using understanding must include reason and evidence
-    validation:
-      definition: validation phase_category vocabulary value.
-      meaning: Represents the validation case within the phase_category taxonomy.
-      detection_signals:
-      - validation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches validation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using validation must include reason and evidence
-    verification_planning:
-      definition: verification planning phase_category vocabulary value.
-      meaning: Represents the verification planning case within the phase_category taxonomy.
-      detection_signals:
-      - verification planning signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches verification planning
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - phase_category decisions using verification_planning must include reason and evidence
+      rule: Mission profiles, agents, adapters, and local project rules must not define new phases.
+      fail_condition: unknown_phase_declared_outside_phase_taxonomy
+    - id: PHASE-TAXONOMY-ABS-002
+      rule: New phases require updating taxonomy, lifecycle, contract, dependency, validation, agent ownership, report registry,
+        and mission profile references together.
+      fail_condition: phase_added_without_complete_subsystem_update
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: PHASE-TAXONOMY-CHECK-001
+    check: every_phase_has_definition_category_owner_and_output_contract
+    applies_when:
+      phase_taxonomy_loaded: true
+  fail_conditions:
+  - id: PHASE-TAXONOMY-001
+    condition: unknown_phase_id
+    message: Phase ID must be defined in phase taxonomy.
+    severity: error
+  - id: PHASE-TAXONOMY-002
+    condition: phase_definition_missing_required_semantics
+    message: Phase definitions must contain meaning, authority, inputs/outputs, and integration points.
+    severity: error

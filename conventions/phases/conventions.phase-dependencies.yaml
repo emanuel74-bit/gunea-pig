@@ -1,0 +1,342 @@
+version: '1.0'
+file:
+  name: conventions.phase-dependencies.yaml
+  path: phases/conventions.phase-dependencies.yaml
+  role: phase_dependency_contract
+  executability: graph_contract
+purpose: Define phase prerequisite edges, producer-consumer relationships, conditional dependencies, and graph validation
+  inputs without owning runtime scheduling.
+ownership:
+  owns:
+  - phase_dependency_edge_schema
+  - phase_dependency_edge_type_enum
+  - phase_dependency_edges
+  - phase_dependency_authority_boundaries
+  - phase_dependency_rules
+  - phase_dependency_graph_algorithm
+  does_not_own:
+  - mission_profile_phase_selection
+  - runtime_phase_scheduling
+  - trigger_resolution_policy
+  - gate_validation_logic
+activation:
+  mode: conditional
+  activates_when:
+  - phase_graph_validation_required
+  - active_phase_plan_created
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - phase_dependency_graph
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  optional_files:
+  - core/conventions.pipeline-contract.yaml
+  - missions/conventions.mission-profiles.yaml
+  - triggers/conventions.trigger-resolution.yaml
+sections:
+  phase_dependency_edge_schema:
+    required_fields:
+    - source_phase
+    - target_phase
+    - edge_type
+    - reason
+    - blocking
+    optional_fields:
+    - required_output
+    - condition
+    - trigger_type
+    - validation_gate
+  phase_dependency_edge_type_enum:
+    allowed:
+    - hard_prerequisite
+    - conditional_prerequisite
+    - soft_signal
+    - rerun_edge
+    - validation_prerequisite
+  phase_dependency_edges:
+  - source_phase: mission_profile_selection
+    target_phase: mission_initialization
+    edge_type: hard_prerequisite
+    reason: mission_initialization requires output or state from mission_profile_selection
+    blocking: true
+  - source_phase: mission_initialization
+    target_phase: active_context_manifest
+    edge_type: hard_prerequisite
+    reason: active_context_manifest requires output or state from mission_initialization
+    blocking: true
+  - source_phase: active_context_manifest
+    target_phase: phase_accounting
+    edge_type: hard_prerequisite
+    reason: phase_accounting requires output or state from active_context_manifest
+    blocking: true
+  - source_phase: behavior_contract
+    target_phase: codebase_reconnaissance
+    edge_type: hard_prerequisite
+    reason: codebase_reconnaissance requires output or state from behavior_contract
+    blocking: true
+  - source_phase: behavior_contract
+    target_phase: risk_classification
+    edge_type: hard_prerequisite
+    reason: risk_classification requires output or state from behavior_contract
+    blocking: true
+  - source_phase: behavior_contract
+    target_phase: boundary_contract_classification
+    edge_type: hard_prerequisite
+    reason: boundary_contract_classification requires output or state from behavior_contract
+    blocking: true
+  - source_phase: behavior_contract
+    target_phase: dependency_classification
+    edge_type: hard_prerequisite
+    reason: dependency_classification requires output or state from behavior_contract
+    blocking: true
+  - source_phase: behavior_contract
+    target_phase: architecture_decomposition
+    edge_type: hard_prerequisite
+    reason: architecture_decomposition requires output or state from behavior_contract
+    blocking: true
+  - source_phase: behavior_contract
+    target_phase: test_derivation
+    edge_type: hard_prerequisite
+    reason: test_derivation requires output or state from behavior_contract
+    blocking: true
+  - source_phase: codebase_reconnaissance
+    target_phase: local_alignment
+    edge_type: conditional_prerequisite
+    reason: local_alignment requires output or state from codebase_reconnaissance
+    blocking: true
+  - source_phase: codebase_reconnaissance
+    target_phase: architecture_decomposition
+    edge_type: hard_prerequisite
+    reason: architecture_decomposition requires output or state from codebase_reconnaissance
+    blocking: true
+  - source_phase: codebase_reconnaissance
+    target_phase: draft_role_pass
+    edge_type: hard_prerequisite
+    reason: draft_role_pass requires output or state from codebase_reconnaissance
+    blocking: true
+  - source_phase: codebase_reconnaissance
+    target_phase: artifact_reuse_analysis
+    edge_type: hard_prerequisite
+    reason: artifact_reuse_analysis requires output or state from codebase_reconnaissance
+    blocking: true
+  - source_phase: codebase_reconnaissance
+    target_phase: call_site_impact_analysis
+    edge_type: hard_prerequisite
+    reason: call_site_impact_analysis requires output or state from codebase_reconnaissance
+    blocking: true
+  - source_phase: architecture_decomposition
+    target_phase: draft_role_pass
+    edge_type: hard_prerequisite
+    reason: draft_role_pass requires output or state from architecture_decomposition
+    blocking: true
+  - source_phase: architecture_decomposition
+    target_phase: pattern_pressure_detection
+    edge_type: hard_prerequisite
+    reason: pattern_pressure_detection requires output or state from architecture_decomposition
+    blocking: true
+  - source_phase: architecture_decomposition
+    target_phase: artifact_reuse_analysis
+    edge_type: hard_prerequisite
+    reason: artifact_reuse_analysis requires output or state from architecture_decomposition
+    blocking: true
+  - source_phase: draft_role_pass
+    target_phase: artifact_action_resolution
+    edge_type: hard_prerequisite
+    reason: artifact_action_resolution requires output or state from draft_role_pass
+    blocking: true
+  - source_phase: artifact_reuse_analysis
+    target_phase: artifact_action_resolution
+    edge_type: hard_prerequisite
+    reason: artifact_action_resolution requires output or state from artifact_reuse_analysis
+    blocking: true
+  - source_phase: pattern_pressure_detection
+    target_phase: pattern_selection
+    edge_type: conditional_prerequisite
+    reason: pattern_selection requires output or state from pattern_pressure_detection
+    blocking: true
+  - source_phase: artifact_action_resolution
+    target_phase: refactor_strategy_selection
+    edge_type: conditional_prerequisite
+    reason: refactor_strategy_selection requires output or state from artifact_action_resolution
+    blocking: true
+  - source_phase: artifact_action_resolution
+    target_phase: call_site_impact_analysis
+    edge_type: hard_prerequisite
+    reason: call_site_impact_analysis requires output or state from artifact_action_resolution
+    blocking: true
+  - source_phase: call_site_impact_analysis
+    target_phase: change_impact_analysis
+    edge_type: hard_prerequisite
+    reason: change_impact_analysis requires output or state from call_site_impact_analysis
+    blocking: true
+  - source_phase: change_impact_analysis
+    target_phase: final_role_assignment
+    edge_type: hard_prerequisite
+    reason: final_role_assignment requires output or state from change_impact_analysis
+    blocking: true
+  - source_phase: final_role_assignment
+    target_phase: pattern_selection
+    edge_type: hard_prerequisite
+    reason: pattern_selection requires output or state from final_role_assignment
+    blocking: true
+  - source_phase: pattern_selection
+    target_phase: structure_rendering
+    edge_type: conditional_prerequisite
+    reason: structure_rendering requires output or state from pattern_selection
+    blocking: true
+  - source_phase: final_role_assignment
+    target_phase: structure_rendering
+    edge_type: hard_prerequisite
+    reason: structure_rendering requires output or state from final_role_assignment
+    blocking: true
+  - source_phase: artifact_action_resolution
+    target_phase: structure_rendering
+    edge_type: hard_prerequisite
+    reason: structure_rendering requires output or state from artifact_action_resolution
+    blocking: true
+  - source_phase: structure_rendering
+    target_phase: test_derivation
+    edge_type: hard_prerequisite
+    reason: test_derivation requires output or state from structure_rendering
+    blocking: true
+  - source_phase: test_derivation
+    target_phase: implementation_sequence
+    edge_type: hard_prerequisite
+    reason: implementation_sequence requires output or state from test_derivation
+    blocking: true
+  - source_phase: structure_rendering
+    target_phase: implementation_sequence
+    edge_type: hard_prerequisite
+    reason: implementation_sequence requires output or state from structure_rendering
+    blocking: true
+  - source_phase: implementation_sequence
+    target_phase: checkpoint_validation_plan
+    edge_type: hard_prerequisite
+    reason: checkpoint_validation_plan requires output or state from implementation_sequence
+    blocking: true
+  - source_phase: checkpoint_validation_plan
+    target_phase: pre_implementation_gate
+    edge_type: hard_prerequisite
+    reason: pre_implementation_gate requires output or state from checkpoint_validation_plan
+    blocking: true
+  - source_phase: trigger_review
+    target_phase: pre_implementation_gate
+    edge_type: conditional_prerequisite
+    reason: trigger_review must be valid or not required before implementation approval
+    blocking: true
+  - source_phase: report_artifact_validation
+    target_phase: pre_implementation_gate
+    edge_type: conditional_prerequisite
+    reason: report_artifact_validation must be valid or not required before implementation approval
+    blocking: true
+  - source_phase: phase_accounting
+    target_phase: pre_implementation_gate
+    edge_type: conditional_prerequisite
+    reason: phase_accounting must be valid or not required before implementation approval
+    blocking: true
+  - source_phase: pre_implementation_gate
+    target_phase: implementation
+    edge_type: hard_prerequisite
+    reason: implementation requires output or state from pre_implementation_gate
+    blocking: true
+  - source_phase: implementation
+    target_phase: post_implementation_validation
+    edge_type: hard_prerequisite
+    reason: post_implementation_validation requires output or state from implementation
+    blocking: true
+  - source_phase: post_implementation_validation
+    target_phase: failure_classification
+    edge_type: conditional_prerequisite
+    reason: failure_classification requires output or state from post_implementation_validation
+    blocking: true
+  - source_phase: failure_classification
+    target_phase: feedback_repair
+    edge_type: conditional_prerequisite
+    reason: feedback_repair requires output or state from failure_classification
+    blocking: true
+  - source_phase: feedback_repair
+    target_phase: post_implementation_validation
+    edge_type: conditional_prerequisite
+    reason: repair requires validation rerun
+    blocking: true
+  - source_phase: post_implementation_validation
+    target_phase: final_validation
+    edge_type: hard_prerequisite
+    reason: final_validation requires output or state from post_implementation_validation
+    blocking: true
+  - source_phase: report_artifact_validation
+    target_phase: final_validation
+    edge_type: hard_prerequisite
+    reason: final_validation requires output or state from report_artifact_validation
+    blocking: true
+  - source_phase: trigger_review
+    target_phase: final_validation
+    edge_type: conditional_prerequisite
+    reason: final_validation requires output or state from trigger_review
+    blocking: true
+  - source_phase: phase_accounting
+    target_phase: final_validation
+    edge_type: hard_prerequisite
+    reason: final_validation requires output or state from phase_accounting
+    blocking: true
+  phase_dependency_authority_boundaries:
+    owns:
+    - phase-level prerequisite declarations
+    - producer-consumer edge declarations
+    - conditional dependency hints
+    - phase graph validation inputs
+    does_not_own:
+    - mission profile phase selection
+    - runtime scheduling decision
+    - gate pass/fail decision
+    - trigger resolution policy
+  phase_dependency_rules:
+    absolute_rules:
+    - id: PHASE-DEPENDENCY-ABS-001
+      rule: A target phase must not start until all hard prerequisite source phases have executed or been validly replaced.
+      fail_condition: phase_started_before_hard_prerequisite
+    - id: PHASE-DEPENDENCY-ABS-002
+      rule: Conditional prerequisites must be either scheduled, explicitly not triggered, or blocked with reason before dependent
+        phase execution.
+      fail_condition: conditional_phase_dependency_unresolved
+    - id: PHASE-DEPENDENCY-ABS-003
+      rule: No dependency edge may reference an unknown phase.
+      fail_condition: phase_dependency_edge_references_unknown_phase
+    - id: PHASE-DEPENDENCY-ABS-004
+      rule: Phase dependency graph must not contain unapproved cycles except declared rerun edges.
+      fail_condition: unapproved_phase_dependency_cycle
+  phase_dependency_graph_algorithm:
+    steps:
+    - load_phase_taxonomy
+    - load_phase_dependency_edges
+    - assert_all_edge_phases_known
+    - build_directed_graph
+    - detect_unapproved_cycles
+    - validate_active_phase_plan_against_hard_edges
+    - validate_conditional_edges_against_triggers
+    - emit_dependency_validation_result
+validation:
+  required_checks:
+  - id: PHASE-DEPENDENCY-CHECK-001
+    check: phase_dependency_edges_reference_known_phases
+    applies_when:
+      phase_dependency_edges_loaded: true
+  - id: PHASE-DEPENDENCY-CHECK-002
+    check: active_phase_plan_respects_hard_prerequisites
+    applies_when:
+      active_phase_plan_exists: true
+  fail_conditions:
+  - id: PHASE-DEPENDENCY-001
+    condition: phase_dependency_edge_references_unknown_phase
+    message: Phase dependency edge references unknown phase.
+    severity: error
+  - id: PHASE-DEPENDENCY-002
+    condition: phase_started_before_hard_prerequisite
+    message: Phase cannot start before hard prerequisites pass.
+    severity: error

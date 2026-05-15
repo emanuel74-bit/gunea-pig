@@ -1,0 +1,176 @@
+version: '1.0'
+file:
+  name: conventions.phase-validation.yaml
+  path: phases/conventions.phase-validation.yaml
+  role: phase_contract_validation_engine
+  executability: validator
+purpose: Define validation checks and algorithms for phase taxonomy, lifecycle, contracts, dependencies, ownership, IO, and
+  scope boundaries.
+ownership:
+  owns:
+  - phase_validation_scope
+  - phase_validation_check_catalog
+  - phase_validation_algorithm
+  - phase_validation_result_schema
+  does_not_own:
+  - gate_validation_logic
+  - report_artifact_field_validation
+  - agent_prompt_validation
+  - mission_profile_selection
+activation:
+  mode: conditional
+  activates_when:
+  - phase_subsystem_validation_required
+  - phase_execution_requested
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - phase_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - phases/conventions.phase-contracts.yaml
+  - phases/conventions.phase-dependencies.yaml
+  optional_files:
+  - agents/conventions.agent-taxonomy.yaml
+  - reports/conventions.report-artifacts.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  - missions/conventions.mission-state.yaml
+sections:
+  phase_validation_scope:
+    validates:
+    - taxonomy coverage
+    - lifecycle status transitions
+    - one contract per phase
+    - owner agent references
+    - required input producers
+    - required output registration
+    - gate reference shape
+    - dependency edges
+    - scope boundaries
+    does_not_validate:
+    - actual gate pass/fail internals
+    - actual report schema fields
+    - agent prompt content
+    - source-code correctness
+  phase_validation_check_catalog:
+  - check_id: phase_taxonomy_complete
+    applies_when:
+    - phase_subsystem_loaded
+    pass_when:
+    - all 32 canonical phases exist
+    - every phase has definition, category, and owner_agent
+    fail_when:
+    - missing phase definition
+    - unknown phase referenced
+    severity: blocking
+    fail_condition: phase_taxonomy_incomplete
+  - check_id: phase_contract_complete
+    applies_when:
+    - phase_contract_registry_loaded
+    pass_when:
+    - every phase has exactly one contract
+    - contract contains required fields
+    - required outputs are durable files or state updates
+    fail_when:
+    - missing contract
+    - duplicate contract
+    - missing required contract field
+    severity: blocking
+    fail_condition: phase_contract_incomplete
+  - check_id: phase_owner_valid
+    applies_when:
+    - agent taxonomy available
+    pass_when:
+    - contract owner_agent exists
+    - owner is allowed to execute phase category
+    fail_when:
+    - unknown owner_agent
+    - owner mismatch against agent phase ownership
+    severity: blocking
+    fail_condition: phase_owner_invalid
+  - check_id: phase_io_producer_consumer_valid
+    applies_when:
+    - phase contracts and report registry available
+    pass_when:
+    - required inputs have producer or external source
+    - required outputs are registered or explicitly state-owned
+    fail_when:
+    - orphan required input
+    - unregistered output
+    - downstream consumes undeclared output
+    severity: blocking
+    fail_condition: phase_io_invalid
+  - check_id: phase_gate_refs_valid
+    applies_when:
+    - gate taxonomy available
+    pass_when:
+    - entry/output/handoff gate refs exist or match generated gate id format
+    fail_when:
+    - missing gate ref
+    - malformed gate ref
+    severity: blocking
+    fail_condition: phase_gate_ref_invalid
+  - check_id: phase_dependency_graph_valid
+    applies_when:
+    - phase dependency edges loaded
+    pass_when:
+    - all edges reference known phases
+    - no unapproved cycles
+    - active plan respects hard prerequisites
+    fail_when:
+    - unknown edge phase
+    - cycle without rerun declaration
+    - hard prerequisite violation
+    severity: blocking
+    fail_condition: phase_dependency_graph_invalid
+  - check_id: phase_scope_boundaries_valid
+    applies_when:
+    - phase execution requested
+    pass_when:
+    - phase writes only allowed outputs
+    - phase does not edit source unless implementation/repair policy allows it
+    fail_when:
+    - out-of-scope write
+    - source edit by non-implementation phase
+    severity: blocking
+    fail_condition: phase_scope_boundary_violation
+  phase_validation_algorithm:
+    steps:
+    - load_phase_taxonomy
+    - load_phase_lifecycle
+    - load_phase_contracts
+    - load_phase_dependencies
+    - load_agent_taxonomy_when_available
+    - load_report_registry_when_available
+    - load_gate_taxonomy_when_available
+    - run_phase_validation_check_catalog
+    - aggregate_blocking_failures
+    - emit_phase_validation_result
+  phase_validation_result_schema:
+    required_fields:
+    - validation_status
+    - checks_run
+    - blocking_failures
+    - warnings
+    - validated_files
+    status_values:
+    - passed
+    - failed
+    - blocked
+validation:
+  required_checks:
+  - id: PHASE-VALIDATION-CHECK-001
+    check: phase_validation_result_emitted
+    applies_when:
+      phase_subsystem_validation_required: true
+  fail_conditions:
+  - id: PHASE-VALIDATION-001
+    condition: phase_validation_not_run
+    message: Phase validation must run before phase execution when validation is required.
+    severity: error
