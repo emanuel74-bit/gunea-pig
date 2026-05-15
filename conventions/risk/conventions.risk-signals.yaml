@@ -1,0 +1,159 @@
+version: '1.0'
+file:
+  name: conventions.risk-signals.yaml
+  path: risk/conventions.risk-signals.yaml
+  role: risk_signal_normalization_contract
+  executability: decision_engine
+purpose: Collect, normalize, preserve, and weight risk signals emitted by other subsystems before classification.
+ownership:
+  owns:
+  - risk_signal_collection_policy
+  - risk_signal_source_mapping
+  - normalization_rules
+  - signal_weighting_rules
+  - risk_signal_output_schema
+  does_not_own:
+  - risk level definitions
+  - final risk classification
+  - risk escalation policy
+activation:
+  mode: conditional
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - risk_taxonomy
+  optional: []
+outputs:
+  produces:
+  - normalized_risk_signals
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  optional_files:
+  - reports/conventions.report-registry.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+sections:
+  risk_signal_collection_policy:
+    absolute_rules:
+    - id: RISK-SIGNAL-ABS-001
+      rule: Every risk signal must identify source subsystem, source reference, risk concern, and confidence.
+      fail_condition: risk_signal_missing_source_or_concern
+    - id: RISK-SIGNAL-ABS-002
+      rule: Conflicting signals must be preserved and resolved during risk classification; they must not be discarded.
+      fail_condition: risk_signal_conflict_discarded
+    - id: RISK-SIGNAL-ABS-003
+      rule: Absence of validation evidence is a risk signal when a phase requires validation.
+      fail_condition: missing_validation_not_recorded_as_risk
+  risk_signal_source_mapping:
+    contracts:
+      signals:
+      - public_contract_change_possible
+      - breaking_change_possible
+      - unknown_consumers
+      - compatibility_decision_required
+      maps_to_concerns:
+      - public_contract
+    boundaries:
+      signals:
+      - boundary_leak_detected
+      - illegal_boundary_crossing
+      - external_boundary_changed
+      maps_to_concerns:
+      - boundary_integrity
+      - security_privacy
+    dependencies:
+      signals:
+      - forbidden_dependency_direction
+      - circular_dependency_possible
+      - external_runtime_dependency_added
+      maps_to_concerns:
+      - dependency_direction
+      - runtime_risk
+    actions:
+      signals:
+      - delete_selected
+      - replace_selected
+      - split_or_extract_large_artifact
+      - modify_shared_artifact
+      maps_to_concerns:
+      - change_risk
+      - behavior_preservation
+    reports:
+      signals:
+      - required_report_missing
+      - schema_invalid
+      - decision_missing_evidence
+      maps_to_concerns:
+      - testing_risk
+      - operational_rollout
+    testing:
+      signals:
+      - test_gap_detected
+      - validation_command_unknown
+      - characterization_missing
+      maps_to_concerns:
+      - test_coverage
+      - behavior_preservation
+    implementation:
+      signals:
+      - unexpected_file_change
+      - forbidden_scope_needed
+      - validation_command_failed
+      maps_to_concerns:
+      - implementation_risk
+      - testing_risk
+    triggers:
+      signals:
+      - active_trigger_before_implementation
+      - blocked_trigger
+      - unknown_trigger_type
+      maps_to_concerns:
+      - operational_rollout
+      - implementation_risk
+  normalization_rules:
+  - id: RISK-SIGNAL-NORM-001
+    applies_when:
+    - same source emits duplicate signal type for same artifact
+    decision: dedupe_keep_highest_confidence
+    fail_condition: duplicate_risk_signal_not_deduped
+  - id: RISK-SIGNAL-NORM-002
+    applies_when:
+    - signals refer to same concern but different levels
+    decision: preserve_conflict_for_classification
+    fail_condition: risk_conflict_collapsed_without_reason
+  - id: RISK-SIGNAL-NORM-003
+    applies_when:
+    - source subsystem is validation or gate and severity is blocking
+    decision: mark_as_escalation_signal
+    fail_condition: blocking_signal_not_escalating
+  signal_weighting_rules:
+  - risk_signal_type: escalation_signal
+    default_weight: 5
+    may_raise_level: true
+  - risk_signal_type: conflict_signal
+    default_weight: 4
+    may_raise_level: true
+  - risk_signal_type: absence_signal
+    default_weight: 3
+    may_raise_level: true
+  - risk_signal_type: evidence_signal
+    default_weight: 2
+    may_raise_level: false
+  - risk_signal_type: deescalation_signal
+    default_weight: -2
+    may_lower_level: only_with_validation_evidence
+  risk_signal_output_schema:
+    required_fields:
+    - normalized_signals
+    - conflicts
+    - unresolved_absences
+    - source_coverage
+    - signal_summary
+    optional_fields:
+    - deduped_signals
+    - ignored_signals_with_reason
+validation:
+  required_checks: []
+  fail_conditions: []

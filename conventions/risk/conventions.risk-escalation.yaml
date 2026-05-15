@@ -1,0 +1,185 @@
+version: '1.0'
+file:
+  name: conventions.risk-escalation.yaml
+  path: risk/conventions.risk-escalation.yaml
+  role: risk_escalation_policy
+  executability: decision_engine
+purpose: Translate classified risk into gate strictness, required triggers, required reports, blocking rules, and acceptance
+  requirements.
+ownership:
+  owns:
+  - risk_gate_strictness_matrix
+  - risk_to_trigger_mapping
+  - risk_to_required_report_mapping
+  - risk_acceptance_policy
+  - implementation_blocking_rules
+  - final_validation_blocking_rules
+  - risk_escalation_output_schema
+  does_not_own:
+  - risk classification algorithm
+  - trigger status transitions
+  - gate internals
+  - mission profile selection
+activation:
+  mode: conditional
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - risk_classification_result
+  optional: []
+outputs:
+  produces:
+  - risk_escalation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - risk/conventions.risk-classification.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - reports/conventions.report-registry.yaml
+  optional_files: []
+sections:
+  risk_gate_strictness_matrix:
+  - risk_level: low
+    gate_strictness: standard
+    requires:
+    - normal_entry_output_handoff_gates
+    blocks_before: []
+  - risk_level: medium
+    gate_strictness: strict
+    requires:
+    - impact_review
+    - test_plan
+    - report_validation
+    blocks_before:
+    - pre_implementation_gate_if_required_reports_missing
+  - risk_level: high
+    gate_strictness: strict
+    requires:
+    - trigger_review
+    - impact_analysis
+    - required_followup_reports
+    - explicit_gate_validation
+    blocks_before:
+    - pre_implementation_gate
+  - risk_level: critical
+    gate_strictness: strict_on_data_safety
+    requires:
+    - approval_if_policy_requires
+    - rollback_or_mitigation_plan
+    - all_required_safety_reports
+    - final_trigger_resolution
+    blocks_before:
+    - implementation
+    - final_validation
+  risk_to_trigger_mapping:
+  - risk_concern: public_contract
+    trigger_type: compatibility_decision_required
+    severity: blocking
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - risk_concern: boundary_integrity
+    trigger_type: boundary_validation_required
+    severity: blocking
+    blocks_before:
+    - pre_implementation_gate
+  - risk_concern: dependency_direction
+    trigger_type: dependency_validation_required
+    severity: blocking
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+  - risk_concern: data_safety
+    trigger_type: approval_before_implementation_required
+    severity: blocking
+    blocks_before:
+    - implementation
+  - risk_concern: behavior_preservation
+    trigger_type: behavior_lock_required
+    severity: blocking
+    blocks_before:
+    - test_derivation
+    - pre_implementation_gate
+  - risk_concern: test_coverage
+    trigger_type: validation_required
+    severity: blocking
+    blocks_before:
+    - final_validation
+  risk_to_required_report_mapping:
+  - risk_concern: public_contract
+    required_report: compatibility-decision
+    required_when: risk_level >= high
+  - risk_concern: data_safety
+    required_report: change-impact
+    required_when: risk_level >= high
+  - risk_concern: behavior_preservation
+    required_report: behavior-preservation-requirements
+    required_when: refactor_like_action_selected or risk_level >= high
+  - risk_concern: test_coverage
+    required_report: test-plan
+    required_when: always before implementation
+  - risk_concern: dependency_direction
+    required_report: dependency-validation
+    required_when: dependency_wiring_changed or risk_level >= high
+  - risk_concern: boundary_integrity
+    required_report: boundary-contract-classification
+    required_when: boundary_validation_required
+  risk_acceptance_policy:
+    allowed_only_when:
+    - risk has explicit owner
+    - risk has evidence refs
+    - required followups are resolved or intentionally blocked
+    - gate policy allows acceptance
+    forbidden_when:
+    - critical risk without approval
+    - data loss possible without rollback/mitigation
+    - unknown consumers on breaking contract
+    - security/privacy risk unresolved
+    fail_condition: risk_accepted_without_required_evidence_or_approval
+  implementation_blocking_rules:
+  - id: RISK-BLOCK-IMPL-001
+    applies_when:
+    - risk_level is high or critical
+    - required_followups unresolved
+    decision: block_implementation
+    fail_condition: implementation_started_with_unresolved_high_risk
+  - id: RISK-BLOCK-IMPL-002
+    applies_when:
+    - risk_concern is data_safety
+    - rollback_or_mitigation_missing
+    decision: block_implementation
+    fail_condition: implementation_started_without_data_safety_plan
+  - id: RISK-BLOCK-IMPL-003
+    applies_when:
+    - risk_concern is public_contract
+    - compatibility_decision_missing
+    decision: block_implementation
+    fail_condition: implementation_started_without_compatibility_decision
+  final_validation_blocking_rules:
+  - id: RISK-BLOCK-FINAL-001
+    applies_when:
+    - accepted_risk exists
+    - acceptance evidence missing
+    decision: block_final_validation
+    fail_condition: final_validation_passed_with_unaccepted_risk
+  - id: RISK-BLOCK-FINAL-002
+    applies_when:
+    - risk required trigger remains active or blocked
+    decision: block_final_validation
+    fail_condition: final_validation_passed_with_risk_trigger_unresolved
+  risk_escalation_output_schema:
+    required_fields:
+    - gate_strictness
+    - required_triggers
+    - required_reports
+    - blocked_phases
+    - accepted_risks
+    - unresolved_risks
+    optional_fields:
+    - approval_requirements
+    - risk_owner_notes
+validation:
+  required_checks: []
+  fail_conditions: []

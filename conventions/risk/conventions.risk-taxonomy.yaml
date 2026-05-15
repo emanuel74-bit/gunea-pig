@@ -2,21 +2,29 @@ version: '1.0'
 file:
   name: conventions.risk-taxonomy.yaml
   path: risk/conventions.risk-taxonomy.yaml
-  role: risk_taxonomy_contract
+  role: risk_vocabulary_contract
   executability: vocabulary
-purpose: Define risk levels, contexts, concerns, signals, escalation rules, and required checks by risk level.
+purpose: Define risk levels, contexts, concerns, signal types, and record schemas used by all risk decisions.
 ownership:
   owns:
   - risk_level_enum
+  - risk_level_definitions
   - risk_context_enum
-  - risk_concern_taxonomy
-  - risk_signal_definitions
-  - risk_escalation_rules
-  - required_checks_by_risk_level
+  - risk_context_definitions
+  - risk_concern_enum
+  - risk_concern_definitions
+  - risk_signal_type_enum
+  - risk_signal_type_definitions
+  - risk_record_schema
+  - risk_signal_schema
+  - risk_classification_report_schema
   does_not_own:
-  - risk_classification_process
+  - risk signal normalization
+  - risk classification algorithm
+  - risk escalation policy
+  - risk validation algorithm
 activation:
-  mode: always
+  mode: conditional
   activates_when: []
   skips_when: []
 inputs:
@@ -24,9 +32,10 @@ inputs:
   optional: []
 outputs:
   produces:
-  - risk_taxonomy_registry
+  - risk_taxonomy
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
   optional_files: []
 sections:
   risk_level_enum:
@@ -35,6 +44,69 @@ sections:
     - medium
     - high
     - critical
+  risk_level_definitions:
+    low:
+      definition: Localized, reversible, well-understood change with limited blast radius and clear validation path.
+      positive_signals:
+      - single artifact or contained module change
+      - no public contract change
+      - no persistence or external system effect
+      - tests already cover affected behavior
+      - rollback is trivial
+      negative_signals:
+      - public surface may change
+      - data migration may be needed
+      - unknown consumers exist
+      - multiple subsystems affected
+      default_gate_strictness: standard
+      implementation_policy: allowed_after_required_phase_outputs_validate
+      blocks_implementation: false
+    medium:
+      definition: Change with bounded but non-trivial impact requiring explicit impact review, targeted tests, and gate validation.
+      positive_signals:
+      - multiple files or shared artifact touched
+      - some call-site updates likely
+      - behavior surface is affected but consumers are known
+      - new dependency or boundary crossing introduced with controlled scope
+      negative_signals:
+      - unknown consumers
+      - irreversible data change
+      - security-sensitive behavior
+      - distributed transaction or external system failure mode
+      default_gate_strictness: strict
+      implementation_policy: allowed_after_impact_and_test_plans_validate
+      blocks_implementation: false
+    high:
+      definition: Change with significant blast radius, compatibility concerns, boundary risks, data risks, or uncertain downstream
+        effects.
+      positive_signals:
+      - public contract change possible
+      - persistence model or migration involved
+      - cross-module dependency direction changes
+      - unknown dynamic references
+      - integration failure modes or retry/idempotency concerns
+      - large refactor or behavior-preservation uncertainty
+      negative_signals:
+      - all consumers known and compatibility is additive
+      - no runtime behavior change and characterization exists
+      default_gate_strictness: strict
+      implementation_policy: blocked_until_required_followups_resolved
+      blocks_implementation: true
+    critical:
+      definition: Change that can cause data loss, security exposure, production outage, irreversible migration damage, or
+        widespread compatibility breakage.
+      positive_signals:
+      - data loss possible
+      - breaking public contract with unknown consumers
+      - security or authorization boundary affected
+      - irreversible migration without rollback
+      - distributed workflow compensation required
+      - production-critical runtime dependency changed
+      negative_signals:
+      - risk eliminated by validated migration/rollback plan and explicit approval
+      default_gate_strictness: strict_on_data_safety
+      implementation_policy: blocked_until_approval_and_required_safety_reports_pass
+      blocks_implementation: true
   risk_context_enum:
     allowed:
     - design_risk
@@ -46,662 +118,215 @@ sections:
     - runtime_risk
     - operational_risk
     - testing_risk
-  risk_concerns:
-    behavior:
-      definition: Risk that externally observable behavior changes, regresses, or diverges from the behavior contract.
-      detection_signals:
-      - behavior_signal_detected
-      - behavior_surface_changed
-      requires_review_when:
-      - behavior_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - behavior concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    public_contract:
-      definition: Risk that a public/API/module/event contract changes in a way consumers can observe or break.
-      detection_signals:
-      - public_contract_signal_detected
-      - public_contract_surface_changed
-      requires_review_when:
-      - public_contract_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - public contract concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    security:
-      definition: Risk affecting confidentiality, integrity, availability, trust boundaries, or secure defaults.
-      detection_signals:
-      - security_signal_detected
-      - security_surface_changed
-      requires_review_when:
-      - security_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - security concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    authentication:
-      definition: Risk affecting identity verification, session validity, credentials, or auth flow correctness.
-      detection_signals:
-      - authentication_signal_detected
-      - authentication_surface_changed
-      requires_review_when:
-      - authentication_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - authentication concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    authorization:
-      definition: Risk affecting permissions, access checks, role scope, tenant access, or policy enforcement.
-      detection_signals:
-      - authorization_signal_detected
-      - authorization_surface_changed
-      requires_review_when:
-      - authorization_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - authorization concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    tenant_boundary:
-      definition: Risk that data, permissions, or behavior leaks across tenant/account/workspace boundaries.
-      detection_signals:
-      - tenant_boundary_signal_detected
-      - tenant_boundary_surface_changed
-      requires_review_when:
-      - tenant_boundary_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - tenant boundary concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    persistence:
-      definition: Risk affecting stored data shape, read/write consistency, repository behavior, or durability.
-      detection_signals:
-      - persistence_signal_detected
-      - persistence_surface_changed
-      requires_review_when:
-      - persistence_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - persistence concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    migration:
-      definition: Risk from schema/data migrations, backfills, rollback behavior, or version compatibility.
-      detection_signals:
-      - migration_signal_detected
-      - migration_surface_changed
-      requires_review_when:
-      - migration_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - migration concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    data_loss:
-      definition: Risk that existing or future persisted data may be lost, corrupted, made unreachable, or incorrectly transformed.
-      detection_signals:
-      - data_loss_signal_detected
-      - data_loss_surface_changed
-      requires_review_when:
-      - data_loss_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - data loss concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    external_integration:
-      definition: Risk from third-party APIs, queues, webhooks, SDKs, providers, network behavior, or external contracts.
-      detection_signals:
-      - external_integration_signal_detected
-      - external_integration_surface_changed
-      requires_review_when:
-      - external_integration_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - external integration concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    payment:
-      definition: Risk affecting money movement, billing, pricing, invoices, refunds, payment provider callbacks, or financial
-        correctness.
-      detection_signals:
-      - payment_signal_detected
-      - payment_surface_changed
-      requires_review_when:
-      - payment_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - payment concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    async_processing:
-      definition: Risk from asynchronous execution where ordering, visibility, retries, delays, concurrency, or eventual consistency
-        affects behavior.
-      detection_signals:
-      - async_processing_signal_detected
-      - async_processing_surface_changed
-      requires_review_when:
-      - async_processing_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - async processing concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    idempotency:
-      definition: Risk that repeated requests/messages/jobs produce duplicate side effects or fail to safely handle retries.
-      detection_signals:
-      - idempotency_signal_detected
-      - idempotency_surface_changed
-      requires_review_when:
-      - idempotency_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - idempotency concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    retry:
-      definition: Risk that retry behavior causes duplicate work, stuck loops, backoff failures, timeout amplification, or
-        inconsistent state.
-      detection_signals:
-      - retry_signal_detected
-      - retry_surface_changed
-      requires_review_when:
-      - retry_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - retry concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    performance:
-      definition: Risk that latency, throughput, memory, CPU, or query cost regresses.
-      detection_signals:
-      - performance_signal_detected
-      - performance_surface_changed
-      requires_review_when:
-      - performance_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - performance concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    observability:
-      definition: Risk that failures cannot be detected, traced, logged, or diagnosed in operation.
-      detection_signals:
-      - observability_signal_detected
-      - observability_surface_changed
-      requires_review_when:
-      - observability_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - observability concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    runtime_wiring:
-      definition: Risk from DI/provider registration, module imports, lifecycle ordering, or runtime configuration.
-      detection_signals:
-      - runtime_wiring_signal_detected
-      - runtime_wiring_surface_changed
-      requires_review_when:
-      - runtime_wiring_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - runtime wiring concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-    testing_gap:
-      definition: Risk that required behavior, regression surface, failure mode, or contract compatibility lacks executable
-        validation.
-      detection_signals:
-      - testing_gap_signal_detected
-      - testing_gap_surface_changed
-      requires_review_when:
-      - testing_gap_surface_changed
-      - risk_level_high_or_unknown
-      must_not_be_used_for:
-      - local_renaming_without_global_taxonomy_match
-      choose_when:
-      - testing gap concern is directly relevant to the requested change
-      reject_when:
-      - no evidence for this concern
-      - concern belongs to a more specific category
-      required_followups:
-      - record risk evidence
-      - emit trigger when unresolved
-  risk_levels:
-    low:
-      definition: low severity risk.
-      required_checks:
-      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
-        check: final_validation
-    medium:
-      definition: medium severity risk.
-      required_checks:
-      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
-        check: final_validation
-    high:
-      definition: high severity risk.
-      required_checks:
-      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
-        check: final_validation
-    critical:
-      definition: critical severity risk.
-      required_checks:
-      - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-RC-001
-        check: final_validation
-  context_sensitive_risk_rules:
-    design_risk:
-      emphasize:
-      - required_checks_for_design_risk
-    implementation_risk:
-      emphasize:
-      - required_checks_for_implementation_risk
-    change_risk:
-      emphasize:
-      - required_checks_for_change_risk
-    refactor_risk:
-      emphasize:
-      - required_checks_for_refactor_risk
-    integration_risk:
-      emphasize:
-      - required_checks_for_integration_risk
-    migration_risk:
-      emphasize:
-      - required_checks_for_migration_risk
-    runtime_risk:
-      emphasize:
-      - required_checks_for_runtime_risk
-    operational_risk:
-      emphasize:
-      - required_checks_for_operational_risk
-    testing_risk:
-      emphasize:
-      - required_checks_for_testing_risk
-  required_checks_by_risk_level:
-    low:
-    - behavior_contract_exists
-    - final_validation
-    medium:
-    - codebase_reconnaissance_if_context_available
-    - artifact_action_validation
-    - dependency_validation
-    - final_validation
-    high:
-    - change_impact_analysis
-    - compatibility_review_if_contract_boundary
-    - test_plan
-    - checkpoint_grouped_implementation_sequence
-    - final_validation
-    critical:
-    - blocking_uncertainties_resolved
-    - rollback_or_recovery_plan
-    - integration_or_contract_test_review
-    - final_validation
-  semantic_depth_restoration:
-    enriched_generic_risk_concern_definitions: true
-  risk_level_definitions:
-    low:
-      definition: 'Low risk: localized, reversible change with no public contract, persistence, security, or cross-module
-        impact.'
-      meaning: Represents the low case within the risk level taxonomy.
-      detection_signals:
-      - low signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches low
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk level decisions using low must include reason and evidence
-      escalation: standard gates are sufficient unless later triggers raise risk
-      required_checks:
-      - basic behavior validation
-      - changed file scope check
-    medium:
-      definition: 'Medium risk: limited shared impact or moderate uncertainty requiring impact review and standard test coverage.'
-      meaning: Represents the medium case within the risk level taxonomy.
-      detection_signals:
-      - medium signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches medium
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk level decisions using medium must include reason and evidence
-      escalation: requires explicit impact and test derivation before implementation
-      required_checks:
-      - risk evidence
-      - impact review
-      - test plan
-    high:
-      definition: 'High risk: public contract, dependency, integration, persistence, migration, security, or broad refactor
-        impact is possible.'
-      meaning: Represents the high case within the risk level taxonomy.
-      detection_signals:
-      - high signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches high
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk level decisions using high must include reason and evidence
-      escalation: tighten gates to strict and require followup classification/validation
-      required_checks:
-      - compatibility/dependency/boundary review when relevant
-      - pre-implementation gate strict pass
-    critical:
-      definition: 'Critical risk: change may cause data loss, security exposure, breaking external behavior, production outage,
-        or irreversible migration.'
-      meaning: Represents the critical case within the risk level taxonomy.
-      detection_signals:
-      - critical signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches critical
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk level decisions using critical must include reason and evidence
-      escalation: block implementation until explicit approval, rollback/mitigation, and full validation plan exist
-      required_checks:
-      - approval
-      - rollback or mitigation plan
-      - strict validation
-      - final unresolved item review
   risk_context_definitions:
     design_risk:
-      definition: Risk caused by unclear or incorrect design decomposition, roles, actions, or patterns.
-      meaning: Represents the design risk case within the risk context taxonomy.
-      detection_signals:
-      - design risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches design risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using design_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by unclear, unstable, or over-coupled design choices before implementation.
+      signals:
+      - unclear abstraction boundary
+      - pattern selected without pressure
+      - mixed responsibility artifact
+      - speculative shared code
+      primary_consumers:
+      - architecture_decomposition
+      - structure_rendering
+      - final_validation
     implementation_risk:
-      definition: Risk introduced while editing source, tests, configs, or dependencies.
-      meaning: Represents the implementation risk case within the risk context taxonomy.
-      detection_signals:
-      - implementation risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using implementation_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by the concrete code-change plan, edit scope, or ability to apply changes safely.
+      signals:
+      - many files changed
+      - sequence has unsafe temporary states
+      - implementation requires forbidden scope
+      - manual migration steps needed
+      primary_consumers:
+      - implementation_sequence
+      - pre_implementation_gate
+      - implementation
     change_risk:
-      definition: Risk caused by the requested behavior or scope changing existing behavior.
-      meaning: Represents the change risk case within the risk context taxonomy.
-      detection_signals:
-      - change risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches change risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using change_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by the difference between current and intended behavior or structure.
+      signals:
+      - behavior change unclear
+      - large delta from current implementation
+      - existing tests do not describe old behavior
+      primary_consumers:
+      - change_impact_analysis
+      - test_derivation
     refactor_risk:
-      definition: Risk of behavior drift during structural changes intended to preserve behavior.
-      meaning: Represents the refactor risk case within the risk context taxonomy.
-      detection_signals:
-      - refactor risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches refactor risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using refactor_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk that a behavior-preserving refactor will accidentally alter behavior or compatibility.
+      signals:
+      - behavior preservation uncertain
+      - characterization tests missing
+      - large move/split/extract actions selected
+      primary_consumers:
+      - refactor_strategy_selection
+      - test_derivation
+      - final_validation
     integration_risk:
-      definition: Risk at external service, queue, webhook, client, adapter, or cross-service boundary.
-      meaning: Represents the integration risk case within the risk context taxonomy.
-      detection_signals:
-      - integration risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches integration risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using integration_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by external systems, queues, clients, webhooks, APIs, events, or cross-service contracts.
+      signals:
+      - external provider semantics involved
+      - retry/idempotency needed
+      - message contract changed
+      - network or eventual-consistency behavior affected
+      primary_consumers:
+      - boundary_contract_classification
+      - dependency_classification
+      - test_derivation
     migration_risk:
-      definition: Risk involving schema/data migration, backfill, version compatibility, or rollback.
-      meaning: Represents the migration risk case within the risk context taxonomy.
-      detection_signals:
-      - migration risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches migration risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using migration_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by data migration, schema evolution, backfill, compatibility windows, or rollback constraints.
+      signals:
+      - migration required
+      - backfill required
+      - rollback plan missing
+      - dual-read/write period needed
+      primary_consumers:
+      - change_impact_analysis
+      - implementation_sequence
+      - pre_implementation_gate
     runtime_risk:
-      definition: Risk that appears during execution, concurrency, scheduling, retries, errors, or resource usage.
-      meaning: Represents the runtime risk case within the risk context taxonomy.
-      detection_signals:
-      - runtime risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches runtime risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using runtime_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by runtime behavior, performance, concurrency, lifecycle, resource use, or operational failure
+        mode.
+      signals:
+      - concurrency behavior changed
+      - performance-sensitive path touched
+      - resource cleanup uncertain
+      - runtime dependency changed
+      primary_consumers:
+      - implementation_sequence
+      - post_implementation_validation
     operational_risk:
-      definition: Risk affecting deployment, monitoring, environment, configuration, or production operation.
-      meaning: Represents the operational risk case within the risk context taxonomy.
-      detection_signals:
-      - operational risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches operational risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using operational_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by deployment, rollout, observability, configuration, or production operations.
+      signals:
+      - feature flag needed
+      - config value changed
+      - observability missing
+      - manual rollout step required
+      primary_consumers:
+      - pre_implementation_gate
+      - final_validation
     testing_risk:
-      definition: Risk that behavior is insufficiently covered, untestable, or falsely validated.
-      meaning: Represents the testing risk case within the risk context taxonomy.
-      detection_signals:
-      - testing risk signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches testing risk
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - risk context decisions using testing_risk must include reason and evidence
-      required_followups:
-      - record context evidence
-      - emit followup trigger if unresolved
+      definition: Risk caused by insufficient validation, missing coverage, untestable behavior, or unreliable test signals.
+      signals:
+      - test gap exists
+      - no validation command known
+      - flaky test surface
+      - behavior not directly observable
+      primary_consumers:
+      - test_derivation
+      - post_implementation_validation
+      - final_validation
+  risk_concern_enum:
+    allowed:
+    - public_contract
+    - boundary_integrity
+    - dependency_direction
+    - data_safety
+    - behavior_preservation
+    - test_coverage
+    - operational_rollout
+    - security_privacy
+    - performance_capacity
+    - concurrency_consistency
+  risk_concern_definitions:
+    public_contract:
+      definition: User or consumer-visible API, event, DTO, module export, CLI, or message contract may change.
+      requires_explicit_status: true
+    boundary_integrity:
+      definition: Layer, module, transport, domain, persistence, or external integration boundary may leak or be crossed incorrectly.
+      requires_explicit_status: true
+    dependency_direction:
+      definition: Dependency direction, import path, or runtime coupling may violate architecture rules.
+      requires_explicit_status: true
+    data_safety:
+      definition: Persistence shape, migration, backfill, deletion, or rollback may affect stored data.
+      requires_explicit_status: true
+    behavior_preservation:
+      definition: Existing behavior must be preserved but is not fully locked by tests or evidence.
+      requires_explicit_status: true
+    test_coverage:
+      definition: Required validation is missing, incomplete, unreliable, or disconnected from acceptance criteria.
+      requires_explicit_status: true
+    operational_rollout:
+      definition: Deployment, configuration, rollout, observability, or runtime safety requirements are unclear.
+      requires_explicit_status: true
+    security_privacy:
+      definition: Authorization, secrets, personal data, trust boundaries, or sensitive operations may be affected.
+      requires_explicit_status: true
+    performance_capacity:
+      definition: Latency, throughput, resource use, memory, batching, or scaling behavior may be affected.
+      requires_explicit_status: true
+    concurrency_consistency:
+      definition: Ordering, idempotency, transactionality, eventual consistency, locking, or race conditions may be affected.
+      requires_explicit_status: true
+  risk_signal_type_enum:
+    allowed:
+    - evidence_signal
+    - absence_signal
+    - conflict_signal
+    - escalation_signal
+    - deescalation_signal
+  risk_signal_type_definitions:
+    evidence_signal:
+      definition: Fact observed in request, report, code, dependency graph, or validation output.
+      confidence_default: medium
+    absence_signal:
+      definition: Missing expected evidence that increases uncertainty or requires followup.
+      confidence_default: medium
+    conflict_signal:
+      definition: Two or more reports, rules, or observations contradict each other.
+      confidence_default: high
+    escalation_signal:
+      definition: Signal that directly raises risk level or requires additional gate strictness.
+      confidence_default: high
+    deescalation_signal:
+      definition: Signal that lowers risk only when supported by concrete validation, tests, or bounded scope.
+      confidence_default: medium
+  risk_record_schema:
+    required_fields:
+    - risk_id
+    - risk_level
+    - risk_contexts
+    - risk_concerns
+    - signals
+    - confidence
+    - required_followups
+    - blocking_status
+    optional_fields:
+    - source_reports
+    - escalation_reason
+    - deescalation_reason
+    - accepted_by
+    - expires_when
+  risk_signal_schema:
+    required_fields:
+    - signal_id
+    - signal_type
+    - source_subsystem
+    - source_ref
+    - risk_context
+    - risk_concern
+    - weight
+    - confidence
+    - reason
+    optional_fields:
+    - supports_level
+    - contradicts_level
+    - evidence_refs
+  risk_classification_report_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - risk_level
+    - risk_contexts
+    - risk_concerns
+    - normalized_signals
+    - classification_decisions
+    - required_followups
+    - gate_strictness_hint
+    - blocking_status
+    optional_fields:
+    - deescalation_decisions
+    - accepted_risks
+    - unresolved_risks
 validation:
-  fail_conditions:
-  - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-FC-001
-    condition: risk_level_set_without_risk_context
-    message: Risk level set without risk context.
-    severity: error
-    owner: risk/conventions.risk-taxonomy.yaml
-  - id: RISK-CONVENTIONS-RISK-TAXONOMY-YAML-FC-002
-    condition: critical_signal_not_escalated_to_critical
-    message: Critical signal not escalated to critical.
-    severity: error
-    owner: risk/conventions.risk-taxonomy.yaml
   required_checks: []
+  fail_conditions: []

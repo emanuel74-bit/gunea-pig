@@ -1,0 +1,246 @@
+version: '1.0'
+file:
+  name: conventions.risk-classification.yaml
+  path: risk/conventions.risk-classification.yaml
+  role: risk_classification_decision_engine
+  executability: decision_engine
+purpose: Classify final risk level, contexts, concerns, confidence, and required followups from normalized risk signals.
+ownership:
+  owns:
+  - classification_inputs
+  - risk_level_decision_rules
+  - risk_concern_decision_rules
+  - cross_signal_escalation_matrix
+  - deescalation_rules
+  - unknown_risk_policy
+  - risk_classification_algorithm
+  - risk_classification_output_schema
+  does_not_own:
+  - risk vocabulary definitions
+  - risk signal normalization
+  - gate validation
+  - trigger resolution
+activation:
+  mode: conditional
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - normalized_risk_signals
+  optional: []
+outputs:
+  produces:
+  - risk_classification_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - risk/conventions.risk-signals.yaml
+  optional_files: []
+sections:
+  classification_inputs:
+    required:
+    - normalized_risk_signals
+    - risk_taxonomy
+    - active_phase_plan
+    - mission_profile_gate_strictness
+    optional:
+    - contract_classification
+    - boundary_validation
+    - dependency_validation
+    - test_plan
+    - change_impact
+    - trigger_review
+    - report_artifact_validation
+  risk_level_decision_rules:
+  - risk_level: critical
+    choose_when:
+    - data_loss_possible
+    - security_privacy_concern_has_high_confidence_signal
+    - breaking_public_contract_with_unknown_consumers
+    - irreversible_migration_without_rollback
+    - active_blocking_trigger_affects_implementation_safety
+    reject_when:
+    - risk eliminated by explicit compatibility plan, rollback plan, validation evidence, and approval
+    required_evidence:
+      min_escalation_signals: 1
+      min_confidence: high
+    blocks_implementation: true
+  - risk_level: high
+    choose_when:
+    - public_contract_change_possible
+    - migration_or_backfill_required
+    - forbidden_dependency_direction_possible
+    - unknown_dynamic_reference_detected
+    - behavior_preservation_uncertain
+    - external integration failure modes not resolved
+    reject_when:
+    - all effects bounded, consumers known, validation plan complete, no blocking followups
+    required_evidence:
+      min_signals: 1
+      min_confidence: medium
+    blocks_implementation: until_followups_resolved
+  - risk_level: medium
+    choose_when:
+    - multiple artifacts affected
+    - shared artifact modified
+    - call site impact exists
+    - new dependency added with known scope
+    - test gaps are non-blocking but present
+    reject_when:
+    - single contained change with full validation or high/critical signal exists
+    required_evidence:
+      min_signals: 1
+      min_confidence: medium
+    blocks_implementation: false
+  - risk_level: low
+    choose_when:
+    - change is local and reversible
+    - no public contract or data surface touched
+    - validation path exists
+    - no unresolved triggers or unknowns
+    reject_when:
+    - any high or critical escalation signal exists
+    - required evidence missing
+    required_evidence:
+      min_deescalation_evidence: 1
+      min_confidence: medium
+    blocks_implementation: false
+  risk_concern_decision_rules:
+  - risk_concern: public_contract
+    choose_when:
+    - public_contract signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for public_contract and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: boundary_integrity
+    choose_when:
+    - boundary_integrity signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for boundary_integrity and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: dependency_direction
+    choose_when:
+    - dependency_direction signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for dependency_direction and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: data_safety
+    choose_when:
+    - data_safety signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for data_safety and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: behavior_preservation
+    choose_when:
+    - behavior_preservation signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for behavior_preservation and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: test_coverage
+    choose_when:
+    - test_coverage signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for test_coverage and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: operational_rollout
+    choose_when:
+    - operational_rollout signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for operational_rollout and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: security_privacy
+    choose_when:
+    - security_privacy signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for security_privacy and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: performance_capacity
+    choose_when:
+    - performance_capacity signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for performance_capacity and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  - risk_concern: concurrency_consistency
+    choose_when:
+    - concurrency_consistency signal exists or corresponding subsystem emits concern
+    reject_when:
+    - no evidence for concurrency_consistency and no related trigger/report requirement
+    required_evidence: source signal or explicit no_evidence_available
+  cross_signal_escalation_matrix:
+  - when:
+    - public_contract
+    - unknown_consumers
+    minimum_level: high
+    reason: Compatibility cannot be guaranteed.
+  - when:
+    - data_safety
+    - migration_risk
+    minimum_level: critical
+    reason: Persistence changes can be irreversible.
+  - when:
+    - boundary_integrity
+    - security_privacy
+    minimum_level: critical
+    reason: Security or trust boundary may be affected.
+  - when:
+    - behavior_preservation
+    - test_coverage_missing
+    minimum_level: high
+    reason: Refactor safety cannot be proven.
+  - when:
+    - dependency_direction
+    - forbidden_dependency_possible
+    minimum_level: high
+    reason: Architecture dependency rule may be violated.
+  deescalation_rules:
+  - id: RISK-DEESC-001
+    allowed_when:
+    - specific risk has concrete validation evidence
+    - all required followups resolved
+    - no blocking triggers remain
+    forbidden_when:
+    - risk based on unknown consumers
+    - risk based on missing validation
+    - risk based on unresolved data loss possibility
+    fail_condition: risk_deescalated_without_evidence
+  - id: RISK-DEESC-002
+    allowed_when:
+    - critical signal was disproven by source evidence
+    requires:
+    - evidence_refs
+    - reason
+    - validation_report_ref
+    fail_condition: critical_risk_deescalated_without_validation
+  unknown_risk_policy:
+    default_level: high
+    rule: Unknown risk that affects public contract, data safety, dependency direction, or implementation safety must classify
+      as high until resolved.
+    fail_condition: unknown_risk_classified_below_high
+  risk_classification_algorithm:
+  - load_normalized_signals
+  - select_concerns
+  - apply_cross_signal_escalation_matrix
+  - select_highest_required_level
+  - evaluate_deescalation_only_with_evidence
+  - emit_required_followups
+  - write_risk_classification_report
+  risk_classification_output_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - risk_level
+    - risk_contexts
+    - risk_concerns
+    - normalized_signals
+    - classification_decisions
+    - required_followups
+    - gate_strictness_hint
+    - blocking_status
+    optional_fields:
+    - deescalation_decisions
+    - accepted_risks
+    - unresolved_risks
+validation:
+  required_checks: []
+  fail_conditions: []

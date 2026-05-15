@@ -1,0 +1,135 @@
+version: '1.0'
+file:
+  name: conventions.risk-validation.yaml
+  path: risk/conventions.risk-validation.yaml
+  role: risk_validation_contract
+  executability: validator
+purpose: Validate risk taxonomy usage, signal completeness, classification outputs, escalation followups, and blocking enforcement.
+ownership:
+  owns:
+  - risk_validation_policy
+  - validation_check_catalog
+  - risk_validation_algorithm
+  - remediation_mapping
+  - risk_validation_output_schema
+  does_not_own:
+  - risk taxonomy
+  - risk classification
+  - risk escalation
+  - gate internals
+  - trigger resolution
+activation:
+  mode: conditional
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - risk_classification_result
+  - risk_escalation_result
+  optional: []
+outputs:
+  produces:
+  - risk_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - risk/conventions.risk-signals.yaml
+  - risk/conventions.risk-classification.yaml
+  - risk/conventions.risk-escalation.yaml
+  optional_files: []
+sections:
+  risk_validation_policy:
+    absolute_rules:
+    - id: RISK-VALIDATION-ABS-001
+      rule: Every risk classification must use a known risk level and known risk contexts.
+      fail_condition: risk_classification_uses_unknown_value
+    - id: RISK-VALIDATION-ABS-002
+      rule: High and critical risk classifications must include required followups.
+      fail_condition: high_or_critical_risk_missing_followups
+    - id: RISK-VALIDATION-ABS-003
+      rule: Risk deescalation must include evidence and validation reference.
+      fail_condition: risk_deescalation_missing_evidence
+    - id: RISK-VALIDATION-ABS-004
+      rule: Implementation must be blocked when risk escalation policy blocks it.
+      fail_condition: risk_blocking_policy_not_enforced
+  validation_check_catalog:
+  - check_id: risk_values_known
+    applies_when:
+    - risk report exists
+    pass_when:
+    - risk_level and contexts exist in taxonomy
+    fail_when:
+    - unknown risk value
+    severity: blocking
+    fail_condition: risk_unknown_taxonomy_value
+  - check_id: risk_signals_have_sources
+    applies_when:
+    - normalized signals exist
+    pass_when:
+    - every signal has source_subsystem and source_ref
+    fail_when:
+    - signal missing source
+    severity: error
+    fail_condition: risk_signal_missing_source
+  - check_id: high_risk_followups_present
+    applies_when:
+    - risk_level is high or critical
+    pass_when:
+    - required_followups not empty and routable
+    fail_when:
+    - required_followups missing
+    severity: blocking
+    fail_condition: high_risk_followups_missing
+  - check_id: blocking_policy_reflected_in_gate
+    applies_when:
+    - risk blocks implementation
+    pass_when:
+    - pre_implementation_gate blocks or requires resolution
+    fail_when:
+    - gate allows implementation
+    severity: blocking
+    fail_condition: risk_gate_policy_not_reflected
+  - check_id: accepted_risk_valid
+    applies_when:
+    - accepted_risks not empty
+    pass_when:
+    - acceptance has evidence, owner, and allowed policy
+    fail_when:
+    - acceptance unsupported
+    severity: blocking
+    fail_condition: risk_acceptance_invalid
+  risk_validation_algorithm:
+  - load_risk_taxonomy
+  - load_risk_classification_report
+  - validate_known_values
+  - validate_signal_sources
+  - validate_required_followups
+  - validate_escalation_outputs
+  - validate_gate_and_trigger_reflection
+  - emit_validation_result
+  remediation_mapping:
+  - fail_condition: risk_unknown_taxonomy_value
+    remediation: rerun_risk_classification_with_known_values
+  - fail_condition: risk_signal_missing_source
+    remediation: rerun_risk_signal_collection
+  - fail_condition: high_risk_followups_missing
+    remediation: run_risk_escalation
+  - fail_condition: risk_gate_policy_not_reflected
+    remediation: block_pre_implementation_gate_and_update_trigger_review
+  - fail_condition: risk_acceptance_invalid
+    remediation: remove_acceptance_or_add_required_evidence
+  risk_validation_output_schema:
+    required_fields:
+    - validation_status
+    - checks_run
+    - passed_checks
+    - failed_checks
+    - blocking_failures
+    - required_remediations
+    optional_fields:
+    - warnings
+    - evidence_refs
+validation:
+  required_checks: []
+  fail_conditions: []

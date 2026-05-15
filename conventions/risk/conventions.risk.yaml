@@ -2,39 +2,85 @@ version: '1.0'
 file:
   name: conventions.risk.yaml
   path: risk/conventions.risk.yaml
-  role: risk_system_entrypoint
+  role: risk_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for risk taxonomy and risk resolution.
+purpose: Provide entrypoint, ownership boundaries, local execution order, and integration usage for the risk subsystem.
 ownership:
   owns:
-  - risk_system_metadata
   - risk_file_index
-  - risk_system_execution_order
+  - local_execution_order
+  - risk_subsystem_contract
+  - integration_usage
   does_not_own:
-  - risk_definitions
-  - risk_resolution_details
+  - risk level definitions
+  - risk signal collection
+  - risk classification decisions
+  - risk escalation decisions
+  - risk validation checks
 activation:
-  mode: always
-  activates_when: []
+  mode: entrypoint
+  activates_when:
+  - risk_subsystem_loaded
   skips_when: []
 inputs:
   required: []
   optional: []
 outputs:
   produces:
-  - risk_result
+  - risk_subsystem_context
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
   optional_files: []
 sections:
   risk_file_index:
     taxonomy: risk/conventions.risk-taxonomy.yaml
-    resolution: risk/conventions.risk-resolution.yaml
-  risk_system_execution_order:
-  - load_risk_taxonomy
-  - classify_risk
-  - validate_risk_classification
-  - produce_risk_system_result
+    signals: risk/conventions.risk-signals.yaml
+    classification: risk/conventions.risk-classification.yaml
+    escalation: risk/conventions.risk-escalation.yaml
+    validation: risk/conventions.risk-validation.yaml
+  local_execution_order:
+  - risk-taxonomy
+  - risk-signals
+  - risk-classification
+  - risk-escalation
+  - risk-validation
+  risk_subsystem_contract:
+    absolute_rules:
+    - id: RISK-SYSTEM-ABS-001
+      rule: Risk subsystem classifies and escalates risk; it does not own phase scheduling, gate pass/fail internals, or implementation
+        decisions.
+      fail_condition: risk_subsystem_overrides_runtime_authority
+    - id: RISK-SYSTEM-ABS-002
+      rule: Risk classification must be evidence-based; unknown risk must not be silently downgraded.
+      fail_condition: risk_unknown_silently_deescalated
+    - id: RISK-SYSTEM-ABS-003
+      rule: High and critical risks must emit followups consumed by gates/triggers/reports before implementation.
+      fail_condition: high_or_critical_risk_without_followup
+  integration_usage:
+    consumed_by:
+    - gates
+    - triggers
+    - phases
+    - reports
+    - actions
+    - contracts
+    - boundaries
+    - dependencies
+    - testing
+    - execution
+    - revisions
+    - missions
+    - multi-agent
+    provides:
+    - risk_level
+    - risk_contexts
+    - risk_concerns
+    - required_followups
+    - gate_strictness_hint
+    - blocking_reasons
+    - required_reports
+    - required_phases
 validation:
   required_checks: []
   fail_conditions: []
