@@ -1,0 +1,229 @@
+version: '1.0'
+file:
+  name: conventions.contract-classification.yaml
+  path: contracts/conventions.contract-classification.yaml
+  role: contract_classification_decision_engine
+  executability: decision_engine
+purpose: Classify contract surfaces, contract types, stability levels, consumers, consumer knowledge, and risk signals from evidence without selecting
+  compatibility strategy.
+ownership:
+  owns:
+  - contract_classification_inputs
+  - contract_type_detection_rules
+  - contract_surface_detection_rules
+  - consumer_detection_rules
+  - stability_classification_rules
+  - consumer_knowledge_classification_rules
+  - contract_classification_algorithm
+  - contract_classification_output_schema
+  - contract_risk_signals
+  does_not_own:
+  - contract_type_vocabulary
+  - contract_change_type_vocabulary
+  - compatibility_strategy_selection
+  - migration_strategy_selection
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - behavior_contract
+  - codebase_reconnaissance_report
+  optional:
+  - boundary_contract_classification
+  - dependency_classification
+  - change_impact_analysis
+outputs:
+  produces:
+  - contract_classification_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  - contracts/conventions.contract-change-taxonomy.yaml
+  optional_files:
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+sections:
+  contract_classification_inputs:
+    required:
+    - behavior_contract
+    - codebase_reconnaissance_report
+    optional:
+    - boundary_signals
+    - dependency_signals
+    - consumer_evidence
+    - prior_contract_reports
+  contract_classification_rules:
+    classification_order:
+    - detect_contract_surface
+    - classify_contract_type
+    - classify_stability_level
+    - classify_consumers
+    - classify_consumer_knowledge
+    - classify_change_type
+    - emit_risk_and_compatibility_followups
+    absolute_rules:
+    - id: CONTRACT-CLASSIFY-ABS-001
+      rule: A public, module-public, external, or durable contract change must record consumers and consumer knowledge.
+      fail_condition: contract_change_missing_consumer_record
+    - id: CONTRACT-CLASSIFY-ABS-002
+      rule: Unknown change type on a shared/public/durable contract must be treated as unsafe until compatibility decision resolves it.
+      fail_condition: unknown_contract_change_treated_as_safe
+    - id: CONTRACT-CLASSIFY-ABS-003
+      rule: Contract classification must not select compatibility strategy; it may only emit compatibility_decision_required.
+      fail_condition: taxonomy_selected_compatibility_strategy
+    evidence_requirements:
+    - source file/path or report reference
+    - contract surface touched
+    - consumer evidence or unknown reason
+    - change type reasoning
+  contract_risk_signals:
+    request_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    response_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    api_contract:
+      minimum_risk_hint: high
+      emits_concerns:
+      - public_contract
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    event_contract:
+      minimum_risk_hint: high
+      emits_concerns:
+      - public_contract
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    port_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    module_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    public_type_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - public_contract
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    persistence_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+    configuration_contract:
+      minimum_risk_hint: medium
+      emits_concerns:
+      - behavior
+      emits_contexts:
+      - change_risk
+      escalate_when:
+      - change_type is breaking
+      - consumer_knowledge is unknown
+      - stability_default is external_public or durable_versioned
+  contract_classification_algorithm:
+  - step_id: LOAD_EVIDENCE
+    action: read behavior, reconnaissance, boundary, and dependency evidence
+    fail_when: required_evidence_missing
+  - step_id: DETECT_CONTRACT_SURFACE
+    action: identify public, module, durable, integration, persistence, configuration, or type surfaces
+    output: contract_surface_candidates
+  - step_id: CLASSIFY_CONTRACT_TYPE
+    action: match each candidate to contract_type_definitions positive/negative signals
+    output: contract_type
+  - step_id: CLASSIFY_STABILITY
+    action: derive stability level from contract definition, consumer visibility, and durability
+    output: stability_level
+  - step_id: CLASSIFY_CONSUMERS
+    action: identify consumer types and consumer knowledge
+    output: consumer_records
+  - step_id: CLASSIFY_CHANGE_TYPE
+    action: delegate shape/semantic change classification to contract-change-taxonomy
+    uses: contracts/conventions.contract-change-taxonomy.yaml
+  - step_id: EMIT_RISK_SIGNALS
+    action: attach risk signals and compatibility_required flag
+    output: contract_risk_signals
+  - step_id: WRITE_CLASSIFICATION
+    action: produce contract classification report
+    output: contract_classification_result
+  contract_classification_output_schema:
+    required_fields:
+    - contract_id
+    - contract_type
+    - stability_level
+    - consumer_types
+    - consumer_knowledge
+    - change_type
+    - evidence_refs
+    - compatibility_required
+    - required_followups
+    optional_fields:
+    - affected_consumers
+    - migration_required
+    - risk_signals
+    - notes
+validation:
+  required_checks:
+  - id: CONTRACT-CLASSIFICATION-CHECK-001
+    check: public_or_shared_contract_changes_record_consumers_and_evidence
+    applies_when:
+      contract_change_possible: true
+  fail_conditions:
+  - id: CONTRACT-CLASSIFICATION-001
+    condition: contract_change_missing_consumer_record
+    message: Public, shared, external, or durable contract changes must record consumers and consumer knowledge.
+    severity: error
+  - id: CONTRACT-CLASSIFICATION-002
+    condition: classification_selected_compatibility_strategy
+    message: Contract classification may require compatibility review but must not select compatibility strategy.
+    severity: error

@@ -1,0 +1,266 @@
+version: '1.0'
+file:
+  name: conventions.action-followups.yaml
+  path: actions/conventions.action-followups.yaml
+  role: artifact_action_followup_contract
+  executability: decision_engine
+purpose: Define downstream triggers, phases, reports, risk reviews, and validation obligations created by selected artifact actions.
+ownership:
+  owns:
+  - action_followup_type_enum
+  - action_to_followup_mapping
+  - action_to_required_phase_mapping
+  - action_to_required_report_mapping
+  - action_to_risk_review_mapping
+  - action_followup_algorithm
+  does_not_own:
+  - artifact_action_vocabulary
+  - action_selection_algorithm
+  - action_collision_resolution
+  - phase_scheduling_authority
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - selected_artifact_actions
+  optional:
+  - risk_classification
+  - boundary_contract_classification
+  - dependency_classification
+  - change_impact_analysis
+outputs:
+  produces:
+  - action_followup_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  optional_files:
+  - phases/conventions.phase-taxonomy.yaml
+  - reports/conventions.report-artifacts.yaml
+  - risk/conventions.risk-taxonomy.yaml
+sections:
+  action_followup_type_enum:
+    allowed:
+    - boundary_validation_required
+    - call_site_impact_required
+    - call_site_update_required
+    - compatibility_decision_required
+    - consumer_impact_detected
+    - dependency_validation_required
+    - final_role_assignment_required
+    - final_validation_ready
+    - import_path_change_detected
+    - pattern_pressure_possible
+    - refactor_like_action_selected
+    - role_collision_possible
+    - structure_rendering_required
+    - test_derivation_required
+  action_to_followup_mapping:
+    create_new: &id001
+    - structure_rendering_required
+    - test_derivation_required
+    modify_existing: &id002
+    - call_site_impact_required
+    - test_derivation_required
+    wrap_existing: &id003
+    - boundary_validation_required
+    - pattern_pressure_possible
+    extract_from_existing: &id004
+    - refactor_like_action_selected
+    - final_role_assignment_required
+    split_existing: &id005
+    - refactor_like_action_selected
+    - role_collision_possible
+    merge_existing: &id006
+    - refactor_like_action_selected
+    - call_site_update_required
+    replace_existing: &id007
+    - compatibility_decision_required
+    - consumer_impact_detected
+    rename_existing: &id008
+    - call_site_update_required
+    - dependency_validation_required
+    move_existing: &id009
+    - dependency_validation_required
+    - import_path_change_detected
+    deprecate_existing: &id010
+    - compatibility_decision_required
+    - consumer_impact_detected
+    delete_existing: &id011
+    - dependency_validation_required
+    - consumer_impact_detected
+    no_code_change: &id012
+    - final_validation_ready
+    reuse_existing: &id013
+    - final_role_assignment_required
+  action_followup_records_by_action:
+    create_new:
+      emitted_followups: *id001
+      required_phases:
+      - test_derivation
+      required_reports: []
+      emitted_triggers:
+      - structure_rendering_required
+      risk_reviews: []
+    modify_existing:
+      emitted_followups: *id002
+      required_phases:
+      - call_site_impact
+      - test_derivation
+      required_reports: []
+      emitted_triggers: []
+      risk_reviews: []
+    wrap_existing:
+      emitted_followups: *id003
+      required_phases:
+      - boundary_validation
+      required_reports: []
+      emitted_triggers:
+      - pattern_pressure_possible
+      risk_reviews: []
+    extract_from_existing:
+      emitted_followups: *id004
+      required_phases:
+      - final_role_assignment
+      required_reports: []
+      emitted_triggers:
+      - refactor_like_action_selected
+      risk_reviews: []
+    split_existing:
+      emitted_followups: *id005
+      required_phases: []
+      required_reports: []
+      emitted_triggers:
+      - refactor_like_action_selected
+      - role_collision_possible
+      risk_reviews: []
+    merge_existing:
+      emitted_followups: *id006
+      required_phases: []
+      required_reports: []
+      emitted_triggers:
+      - refactor_like_action_selected
+      - call_site_update_required
+      risk_reviews: []
+    replace_existing:
+      emitted_followups: *id007
+      required_phases: []
+      required_reports: []
+      emitted_triggers:
+      - compatibility_decision_required
+      - consumer_impact_detected
+      risk_reviews: []
+    rename_existing:
+      emitted_followups: *id008
+      required_phases:
+      - dependency_validation
+      required_reports: []
+      emitted_triggers:
+      - call_site_update_required
+      risk_reviews: []
+    move_existing:
+      emitted_followups: *id009
+      required_phases:
+      - dependency_validation
+      required_reports: []
+      emitted_triggers:
+      - import_path_change_detected
+      risk_reviews: []
+    deprecate_existing:
+      emitted_followups: *id010
+      required_phases: []
+      required_reports: []
+      emitted_triggers:
+      - compatibility_decision_required
+      - consumer_impact_detected
+      risk_reviews: []
+    delete_existing:
+      emitted_followups: *id011
+      required_phases:
+      - dependency_validation
+      required_reports: []
+      emitted_triggers:
+      - consumer_impact_detected
+      risk_reviews: []
+    no_code_change:
+      emitted_followups: *id012
+      required_phases: []
+      required_reports: []
+      emitted_triggers:
+      - final_validation_ready
+      risk_reviews: []
+    reuse_existing:
+      emitted_followups: *id013
+      required_phases:
+      - final_role_assignment
+      required_reports: []
+      emitted_triggers: []
+      risk_reviews: []
+  followup_classification_rules:
+  - id: ACTION-FOLLOWUP-PHASE-001
+    match: followup value names a known phase or phase-like obligation
+    classification: required_phase
+  - id: ACTION-FOLLOWUP-TRIGGER-001
+    match: followup value names a trigger from trigger taxonomy
+    classification: emitted_trigger
+  - id: ACTION-FOLLOWUP-REPORT-001
+    match: followup value names a required report from report registry
+    classification: required_report
+  - id: ACTION-FOLLOWUP-RISK-001
+    match: followup indicates compatibility, dependency, consumer, or public contract impact
+    classification: risk_or_impact_review
+  action_followup_algorithm:
+  - step_id: LOAD_SELECTED_ACTIONS
+    action: read selected artifact actions
+    fail_when: selected_actions_missing
+  - step_id: LOOKUP_FOLLOWUPS
+    action: map each selected_action through action_to_followup_mapping
+    output: raw_followups
+  - step_id: CLASSIFY_FOLLOWUPS
+    action: classify each followup as phase, report, trigger, or risk review
+    output: classified_followups
+  - step_id: DEDUPLICATE_FOLLOWUPS
+    action: deduplicate repeated followups across artifact actions
+    output: deduplicated_followups
+  - step_id: VALIDATE_FOLLOWUPS
+    action: ensure followups reference known phases, reports, triggers, or declared obligations
+    fail_when: unknown_action_followup
+  - step_id: EMIT_RESULT
+    action: return followup result to action-resolution and trigger handling
+    output: action_followup_result
+  action_followup_output_schema:
+    required_fields:
+    - action_id
+    - selected_action
+    - emitted_triggers
+    - required_phases
+    - required_reports
+    - risk_reviews
+    - evidence_refs
+    record_shape:
+      action_id: ''
+      selected_action: ''
+      emitted_triggers: []
+      required_phases: []
+      required_reports: []
+      risk_reviews: []
+      evidence_refs: []
+validation:
+  required_checks:
+  - id: ACTION-FOLLOWUP-CHECK-001
+    check: every_selected_action_has_followup_record_or_explicit_no_followup
+    applies_when:
+      selected_artifact_actions_exist: true
+  fail_conditions:
+  - id: ACTION-FOLLOWUP-001
+    condition: selected_action_missing_followup_mapping
+    message: Every selected action must have a followup mapping or explicit no_followup record.
+    severity: error
+  - id: ACTION-FOLLOWUP-002
+    condition: unknown_action_followup
+    message: Action followup must reference a known trigger, phase, report, or declared obligation.
+    severity: error

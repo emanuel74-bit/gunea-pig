@@ -4,33 +4,45 @@ file:
   path: contracts/conventions.compatibility.yaml
   role: contract_compatibility_contract
   executability: decision_engine
-purpose: Detect breaking/non-breaking contract changes and select compatibility strategy using match/decision rules.
+purpose: Detect breaking/non-breaking contract changes and select compatibility strategy using explicit strategy definitions, decision rules,
+  invariants, and output schema.
 ownership:
   owns:
   - compatibility_strategy_enum
-  - compatibility_strategy_rules
+  - compatibility_strategy_definitions
   - compatibility_decision_rules
-  - breaking_change_detection
-  - compatibility_decision_schema
+  - compatibility_selection_algorithm
+  - compatibility_decision_output_schema
+  - compatibility_invariants
   does_not_own:
-  - contract_type_definitions
-  - boundary_classification
+  - contract_type_vocabulary
+  - contract_classification
+  - contract_change_type_definitions
+  - raw_breaking_change_detection
+  - consumer_classification
 activation:
   mode: always
   activates_when: []
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - contract_classification_or_boundary_contract_report
+  optional:
+  - risk_classification
+  - change_impact_report
+  - consumer_impact_report
 outputs:
   produces:
-  - compatibility_result
+  - compatibility_decision
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - contracts/conventions.contract-taxonomy.yaml
+  - contracts/conventions.contract-classification.yaml
+  - contracts/conventions.contract-change-taxonomy.yaml
+  optional_files:
   - risk/conventions.risk-taxonomy.yaml
   - boundaries/conventions.boundary-taxonomy.yaml
-  optional_files: []
 sections:
   compatibility_strategy_enum:
     allowed:
@@ -41,226 +53,377 @@ sections:
     - deprecation_period
     - synchronized_breaking_change
     - reject_breaking_change
-  compatibility_strategy_rules:
+  compatibility_strategy_schema:
+    required_fields:
+    - definition
+    - choose_when
+    - reject_when
+    - required_preconditions
+    - required_followups
+    optional_fields:
+    - examples
+    - non_examples
+    - risk_notes
+  compatibility_strategy_definitions:
     internal_only_change:
+      definition: Treat the change as private/internal with no compatibility mechanism beyond atomic updates to all known local consumers.
       choose_when:
-      - internal_only_change conditions match
+      - stability_level is internal_unstable or internal_stable
+      - consumer_knowledge is none or all_known
+      - change can be updated atomically with all consumers
+      - no durable/public/external contract surface is affected
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - consumer_knowledge is partially_known or unknown
+      - stability_level is external_public or durable_versioned
+      - change crosses module/public/integration/persistence boundary without compatibility
+      required_preconditions:
+      - consumer set proven controlled
+      - no public/durable boundary
+      - tests or direct evidence cover affected consumers
+      required_followups:
+      - update known call sites
+      - record no compatibility wrapper required
     backward_compatible_addition:
+      definition: Allow additive change while preserving old consumers and old contract semantics.
       choose_when:
-      - backward_compatible_addition conditions match
+      - change_type is additive
+      - old consumers can ignore new field/endpoint/export/config
+      - existing defaults and semantics remain valid
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - new value is mandatory for old consumers
+      - existing shape or semantics changes
+      - addition changes ordering/error/default behavior unexpectedly
+      required_preconditions:
+      - old contract remains valid
+      - new behavior is optional or version-tolerant
+      required_followups:
+      - add tests proving old behavior still works
+      - document new optional capability when public
     versioned_contract:
+      definition: Introduce or preserve explicit old and new contract versions so consumers can migrate safely.
       choose_when:
-      - versioned_contract conditions match
+      - breaking or behavioral change affects public/durable/unknown consumers
+      - old and new behavior must coexist
+      - event/API/schema versioning is feasible
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - all consumers are known and synchronized update is safer
+      - versioning cannot preserve required durable semantics
+      - change is purely internal
+      required_preconditions:
+      - version identifier or route/topic/schema/version policy available
+      - old version remains supported for defined period or migration path
+      required_followups:
+      - define version routing
+      - test old and new versions
+      - record deprecation/migration policy
     adapter_translation:
+      definition: Preserve compatibility by translating between old and new shapes/semantics at a boundary.
       choose_when:
-      - adapter_translation conditions match
+      - external/public/durable consumers need old contract shape
+      - new internal model differs from old contract
+      - translation can be deterministic and safe
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - semantic information is lost and cannot be translated
+      - translation hides data loss or incompatible behavior
+      - simple additive/versioned strategy is sufficient
+      required_preconditions:
+      - mapping old<->new is defined
+      - failure modes for unmappable values are specified
+      required_followups:
+      - create adapter/mapper contract
+      - test old consumer shape
+      - record translation limitations
     deprecation_period:
+      definition: Allow a controlled breaking change only after old contract remains available through a migration window.
       choose_when:
-      - deprecation_period conditions match
+      - consumers are partially or fully known
+      - migration requires time
+      - old and new contracts can coexist temporarily
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - unknown public consumers require indefinite safety or versioning
+      - old contract cannot safely coexist
+      - change must be immediate due to security/data integrity
+      required_preconditions:
+      - deprecation timeline or release policy
+      - consumer communication/migration plan when applicable
+      required_followups:
+      - record deprecation window
+      - track removal gate
+      - test both paths until removal
     synchronized_breaking_change:
+      definition: Permit breaking change only when every consumer is known, controlled, and updated/tested in the same coordinated change.
       choose_when:
-      - synchronized_breaking_change conditions match
+      - consumer_knowledge is all_known
+      - all consumers are in same repo/release or coordination scope
+      - no durable external data/event/API consumers require old behavior
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - consumer_knowledge is partially_known or unknown
+      - external_public or durable_versioned stability
+      - consumer update cannot be verified
+      required_preconditions:
+      - complete consumer list
+      - all consumer updates included or scheduled in same release
+      - tests cover affected consumers
+      required_followups:
+      - update all consumers
+      - run affected tests
+      - record synchronized scope
     reject_breaking_change:
+      definition: Block the proposed contract change because safe compatibility cannot be proven or provided.
       choose_when:
-      - reject_breaking_change conditions match
+      - breaking change with unknown consumers and no version/adapter/deprecation plan
+      - data loss or durable incompatibility cannot be mitigated
+      - required strategy conflicts with accepted risk/gate policy
       reject_when:
-      - preconditions do not match
-      must:
-      - record compatibility decision
+      - a safe compatibility strategy is available and validated
+      - change can be proven internal only
+      required_preconditions:
+      - blocking reason recorded
+      - required safe alternative identified or requested
+      required_followups:
+      - request redesign, versioning, adapter, or consumer discovery
   compatibility_decision_rules:
     rule_schema:
       required_fields:
+      - id
+      - priority
       - match
       - decision
-      optional_fields:
-      - priority
       - reason
+      optional_fields:
       - examples
+      - failure_modes
     decision_inputs:
-      contract_type: contracts/conventions.contract-taxonomy.yaml
-      stability_level: contracts/conventions.contract-taxonomy.yaml
-      change_type: contracts/conventions.contract-taxonomy.yaml
-      consumer_knowledge: contracts/conventions.contract-taxonomy.yaml
+      contract_type: contracts/conventions.contract-taxonomy.yaml#contract_type_enum
+      stability_level: contracts/conventions.contract-taxonomy.yaml#contract_stability_level_enum
+      change_type: contracts/conventions.contract-change-taxonomy.yaml#contract_change_type_enum
+      consumer_knowledge: contracts/conventions.contract-taxonomy.yaml#consumer_knowledge_enum
       boundary_type: boundaries/conventions.boundary-taxonomy.yaml
       risk_level: risk/conventions.risk-taxonomy.yaml
-    rule_groups:
-      public_or_durable_contract:
-        applies_when:
-          stability_level:
-          - external_public
-          - durable_versioned
-        rules:
-        - match:
-            change_type: breaking
-            consumer_knowledge: unknown
-          decision:
-            allowed_strategies:
-            - versioned_contract
-            - adapter_translation
-            - deprecation_period
-            - reject_breaking_change
-            forbidden_strategies:
-            - synchronized_breaking_change
-            - internal_only_change
-            required_followups:
-            - consumer_discovery_or_safe_compatibility_strategy
-  breaking_change_detection:
-    always_breaking:
-    - remove_required_field
-    - rename_field
-    - change_field_type
-    - remove_endpoint
-    - change_method_signature
-    - remove_module_export
-    non_breaking_when_verified:
-    - add_optional_field
-    - add_new_endpoint
-    - add_nullable_persistence_column
-  compatibility_strategy_definitions:
-    internal_only_change:
-      definition: internal only change compatibility_strategy vocabulary value.
-      meaning: Represents the internal only change case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - internal only change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches internal only change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using internal_only_change must include reason and evidence
-    backward_compatible_addition:
-      definition: backward compatible addition compatibility_strategy vocabulary value.
-      meaning: Represents the backward compatible addition case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - backward compatible addition signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches backward compatible addition
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using backward_compatible_addition must include reason and evidence
-    versioned_contract:
-      definition: versioned contract compatibility_strategy vocabulary value.
-      meaning: Represents the versioned contract case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - versioned contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches versioned contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using versioned_contract must include reason and evidence
-    adapter_translation:
-      definition: adapter translation compatibility_strategy vocabulary value.
-      meaning: Represents the adapter translation case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - adapter translation signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches adapter translation
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using adapter_translation must include reason and evidence
-    deprecation_period:
-      definition: deprecation period compatibility_strategy vocabulary value.
-      meaning: Represents the deprecation period case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - deprecation period signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches deprecation period
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using deprecation_period must include reason and evidence
-    synchronized_breaking_change:
-      definition: synchronized breaking change compatibility_strategy vocabulary value.
-      meaning: Represents the synchronized breaking change case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - synchronized breaking change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches synchronized breaking change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using synchronized_breaking_change must include reason and evidence
-    reject_breaking_change:
-      definition: reject breaking change compatibility_strategy vocabulary value.
-      meaning: Represents the reject breaking change case within the compatibility_strategy taxonomy.
-      detection_signals:
-      - reject breaking change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches reject breaking change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - compatibility_strategy decisions using reject_breaking_change must include reason and evidence
+    rules:
+    - id: COMPAT-DECISION-001
+      priority: 1
+      match:
+        change_type: none
+      decision:
+        strategy: internal_only_change
+        compatibility_required: false
+        required_followups:
+        - record no consumer-visible change
+      reason: No contract change requires no compatibility strategy.
+    - id: COMPAT-DECISION-002
+      priority: 2
+      match:
+        change_type: additive
+        stability_level:
+        - internal_stable
+        - module_public
+        - external_public
+        - durable_versioned
+      decision:
+        strategy: backward_compatible_addition
+        compatibility_required: true
+        required_followups:
+        - prove old consumers still work
+      reason: Additive changes can be safe only when old behavior is preserved.
+    - id: COMPAT-DECISION-003
+      priority: 3
+      match:
+        change_type: breaking
+        consumer_knowledge: unknown
+      decision:
+        allowed_strategies:
+        - versioned_contract
+        - adapter_translation
+        - deprecation_period
+        - reject_breaking_change
+        forbidden_strategies:
+        - internal_only_change
+        - synchronized_breaking_change
+        required_followups:
+        - consumer discovery or safe compatibility strategy
+      reason: Unknown consumers make synchronized breaking changes unsafe.
+    - id: COMPAT-DECISION-004
+      priority: 4
+      match:
+        change_type: breaking
+        consumer_knowledge: partially_known
+      decision:
+        allowed_strategies:
+        - versioned_contract
+        - adapter_translation
+        - deprecation_period
+        - reject_breaking_change
+        forbidden_strategies:
+        - internal_only_change
+        required_followups:
+        - document known and unknown consumers
+      reason: Partial consumer knowledge requires compatibility protection.
+    - id: COMPAT-DECISION-005
+      priority: 5
+      match:
+        change_type: breaking
+        consumer_knowledge: all_known
+        stability_level:
+        - internal_stable
+        - module_public
+      decision:
+        allowed_strategies:
+        - synchronized_breaking_change
+        - adapter_translation
+        - versioned_contract
+        required_followups:
+        - update and test all known consumers
+      reason: Known internal/module consumers can be coordinated when all are controlled.
+    - id: COMPAT-DECISION-006
+      priority: 6
+      match:
+        change_type: breaking
+        stability_level:
+        - external_public
+        - durable_versioned
+      decision:
+        allowed_strategies:
+        - versioned_contract
+        - adapter_translation
+        - deprecation_period
+        - reject_breaking_change
+        forbidden_strategies:
+        - internal_only_change
+        required_followups:
+        - public/durable migration strategy
+      reason: External or durable contracts require safe migration.
+    - id: COMPAT-DECISION-007
+      priority: 7
+      match:
+        change_type: behavioral
+        stability_level:
+        - external_public
+        - durable_versioned
+        - module_public
+      decision:
+        allowed_strategies:
+        - backward_compatible_addition
+        - versioned_contract
+        - adapter_translation
+        - deprecation_period
+        - synchronized_breaking_change
+        required_followups:
+        - classify whether behavior change is breaking for consumers
+      reason: Behavioral changes must be checked against consumer expectations.
+    - id: COMPAT-DECISION-008
+      priority: 8
+      match:
+        change_type: unknown
+      decision:
+        strategy: reject_breaking_change
+        required_followups:
+        - perform additional reconnaissance or compatibility analysis
+      reason: Unknown change type is unsafe until classified.
+  compatibility_selection_algorithm:
+  - step_id: LOAD_CONTRACT_CLASSIFICATION
+    action: read
+    input: boundary-contract-classification or compatibility-decision candidate
+  - step_id: LOAD_CONTRACT_CHANGE_CLASSIFICATION
+    action: read contract_change_classification_result
+    fail_when: contract_change_type_missing
+  - step_id: DETECT_BREAKING_CHANGE
+    action: match
+    input: breaking_change_detection
+  - step_id: CLASSIFY_CONSUMER_SAFETY
+    action: read
+    input: consumer_knowledge and stability_level
+  - step_id: APPLY_DECISION_RULES
+    action: first_matching_rule_by_priority
+    input: compatibility_decision_rules.rules
+  - step_id: FILTER_FORBIDDEN_STRATEGIES
+    action: remove strategies forbidden by matched rule or global restrictions
+  - step_id: SELECT_STRATEGY_OR_BLOCK
+    action: branch
+    branches:
+      single_safe_strategy: select_strategy
+      multiple_safe_strategies: rank_by_minimum_abstraction_and_maximum_compatibility
+      no_safe_strategy: select_reject_breaking_change
+  - step_id: EMIT_FOLLOWUPS
+    action: write
+    output: compatibility_decision.required_followups
+  - step_id: WRITE_COMPATIBILITY_DECISION
+    action: write
+    output: .ai/reports/compatibility-decision.yaml
+  compatibility_decision_output_schema:
+    required_fields:
+    - contract_id
+    - contract_type
+    - change_type
+    - stability_level
+    - consumer_knowledge
+    - selected_strategy
+    - strategy_reason
+    - required_followups
+    - evidence_refs
+    optional_fields:
+    - allowed_strategies
+    - forbidden_strategies
+    - affected_consumers
+    - migration_required
+    - deprecation_policy
+    - versioning_policy
+    - adapter_mapping
+    - blocked_reason
+  compatibility_invariants:
+  - id: COMPAT-INVARIANT-001
+    rule: Breaking changes with unknown consumers must not use synchronized_breaking_change.
+    fail_condition: unknown_consumers_synchronized_breaking_change
+  - id: COMPAT-INVARIANT-002
+    rule: External public or durable versioned contracts must not be treated as internal_only_change.
+    fail_condition: public_or_durable_contract_treated_internal_only
+  - id: COMPAT-INVARIANT-003
+    rule: Compatibility decision must include evidence for consumer knowledge and change type.
+    fail_condition: compatibility_decision_missing_evidence
+  - id: COMPAT-INVARIANT-004
+    rule: Reject breaking change when no safe strategy is available.
+    fail_condition: unsafe_breaking_change_allowed
+  external_policy_integrations:
+    contract_change_detection_source: contracts/conventions.contract-change-taxonomy.yaml
+    contract_classification_source: contracts/conventions.contract-classification.yaml
+    rule: Compatibility may consume classification and change results but must not redefine contract vocabulary or raw change detection.
 validation:
+  required_checks:
+  - id: COMPAT-CHECK-001
+    check: compatibility_strategy_known
+    applies_when:
+      compatibility_decision_written: true
+  - id: COMPAT-CHECK-002
+    check: breaking_change_has_safe_strategy_or_rejection
+    applies_when:
+      change_type: breaking
+  - id: COMPAT-CHECK-003
+    check: consumer_knowledge_evidence_present
+    applies_when:
+      compatibility_required: true
   fail_conditions:
-  - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-001
+  - id: COMPAT-001
     condition: breaking_change_without_compatibility_strategy
-    message: Breaking change without compatibility strategy.
+    message: Breaking contract change requires a compatibility strategy or explicit rejection.
     severity: error
-    owner: contracts/conventions.compatibility.yaml
-  - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-002
-    condition: compatibility_rule_not_match_decision_shape
-    message: Compatibility rule not match decision shape.
+  - id: COMPAT-002
+    condition: unknown_consumers_synchronized_breaking_change
+    message: Unknown consumers cannot be handled by synchronized breaking change.
     severity: error
-    owner: contracts/conventions.compatibility.yaml
-  - id: CONTRACTS-CONVENTIONS-COMPATIBILITY-YAML-FC-003
-    condition: unknown_or_partially_known_consumers_for_unsafe_breaking_change
-    message: Unknown or partially known consumers for unsafe breaking change.
+  - id: COMPAT-003
+    condition: public_or_durable_contract_treated_internal_only
+    message: Public or durable contracts cannot be classified as internal-only changes.
     severity: error
-    owner: contracts/conventions.compatibility.yaml
-  required_checks: []
+  - id: COMPAT-004
+    condition: compatibility_decision_missing_evidence
+    message: Compatibility decision must include evidence for change type and consumer knowledge.
+    severity: error
+  - id: COMPAT-005
+    condition: unsafe_breaking_change_allowed
+    message: Unsafe breaking change was allowed without a safe strategy.
+    severity: error
+  - id: COMPATIBILITY-003
+    condition: compatibility_redefines_contract_change_taxonomy
+    message: Compatibility strategy selection must consume contract change classification instead of redefining change types or raw breaking-change
+      rules.
+    severity: error

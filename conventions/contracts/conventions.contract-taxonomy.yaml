@@ -4,7 +4,8 @@ file:
   path: contracts/conventions.contract-taxonomy.yaml
   role: contract_taxonomy_contract
   executability: vocabulary
-purpose: Define contract types, stability levels, consumer types, consumer knowledge, and contract classification outputs.
+purpose: Define contract types, stability levels, consumer categories, consumer knowledge, change types, classification rules, risk signals, and
+  contract classification output shape.
 ownership:
   owns:
   - contract_type_enum
@@ -12,10 +13,13 @@ ownership:
   - contract_stability_levels
   - contract_consumer_types
   - consumer_knowledge_enum
-  - contract_risk_signals
+  - consumer_knowledge_definitions
   does_not_own:
+  - contract_classification_rules
+  - contract_change_type_definitions
+  - contract_change_detection
   - compatibility_strategy_selection
-  - breaking_change_detection
+  - breaking_change_policy
 activation:
   mode: always
   activates_when: []
@@ -27,8 +31,11 @@ outputs:
   produces:
   - contract_taxonomy_registry
 dependencies:
-  required_files: []
-  optional_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files:
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - risk/conventions.risk-taxonomy.yaml
 sections:
   contract_type_enum:
     allowed:
@@ -41,773 +48,724 @@ sections:
     - public_type_contract
     - persistence_contract
     - configuration_contract
+  contract_definition_schema:
+    required_fields:
+    - definition
+    - owner
+    - primary_consumers
+    - boundary_types
+    - stability_default
+    - positive_signals
+    - negative_signals
+    - breaking_change_examples
+    - non_breaking_change_examples
+    - required_checks
+    - choose_when
+    - reject_when
+    - compatibility_rules
+    optional_fields:
+    - examples
+    - non_examples
+    - related_roles
+    - related_patterns
   contract_definitions:
     request_contract:
-      definition: Consumer-visible input shape and semantics required by an operation, API, handler, command, or message consumer.
-      owner: request_contract_owner
-      consumer_types:
-      - internal_module
+      definition: Consumer-visible input shape and semantics required by an operation, API endpoint, command, handler, message consumer, or use-case
+        boundary.
+      owner: producer_of_operation_or_handler
+      primary_consumers:
+      - controller
+      - client
+      - message_producer
+      - caller_module
       boundary_types:
+      - transport
       - module
-      stability_default: internal_stable
+      - message_queue
+      stability_default: module_public
+      positive_signals:
+      - request DTO shape changes
+      - command/query input changes
+      - required parameter added, removed, renamed, or retyped
+      - validation rules on incoming data change
+      - input semantics such as defaulting or normalization change
+      negative_signals:
+      - pure internal variable rename
+      - private helper parameter not visible outside artifact
+      - implementation-only refactor with unchanged input behavior
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove required field
+      - rename field without alias
+      - change accepted type or validation from permissive to restrictive
+      - change default interpretation of missing value
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add optional field with safe default
+      - widen accepted input while preserving old behavior
+      - add backward-compatible alias
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - request_contract_shape_changed
-      - request_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - classify consumers
+      - classify required/optional field changes
+      - verify old callers still work or require migration
       choose_when:
-      - the artifact defines or changes a request contract
+      - the artifact defines or changes input accepted by another artifact, module, service, process, or external actor
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - no consumer-visible input obligation exists
+      - input is private and all callers are updated in same atomic artifact
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - emit compatibility_decision_required when public/shared and breaking or consumers unknown
     response_contract:
-      definition: Consumer-visible output shape and semantics returned by an operation, API, handler, query, or message producer.
-      owner: response_contract_owner
-      consumer_types:
-      - internal_module
+      definition: Consumer-visible output shape and semantics returned by an operation, API endpoint, query, message producer, use-case, or exported
+        module function.
+      owner: producer_of_response
+      primary_consumers:
+      - client
+      - caller_module
+      - downstream_service
+      - test_consumer
       boundary_types:
+      - transport
       - module
-      stability_default: internal_stable
+      - message_queue
+      stability_default: module_public
+      positive_signals:
+      - response DTO shape changes
+      - returned field removed, renamed, or retyped
+      - error/result semantics change
+      - pagination/filtering/sorting semantics change
+      - eventual consistency behavior changes visible to consumers
+      negative_signals:
+      - private internal representation changes mapped back to same response
+      - formatting change not consumed by code and explicitly non-contractual
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove field that consumers may read
+      - change nullability from nullable to omitted or vice versa without compatibility
+      - change error shape or status semantics
+      - change list ordering guarantee
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add optional response field
+      - add new error detail while preserving existing fields
+      - add metadata that old consumers can ignore
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - response_contract_shape_changed
-      - response_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
-      choose_when:
-      - the artifact defines or changes a response contract
-      reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
-      compatibility_rules:
       - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - verify output change type
+      - check contract tests or consumer expectations
+      choose_when:
+      - a produced value is visible beyond the implementation artifact
+      reject_when:
+      - output is purely local temporary data
+      compatibility_rules:
+      - emit consumer_impact_detected when response consumers are known or suspected
     api_contract:
-      definition: Stable agreement exposed by an HTTP/RPC/GraphQL/SDK/module API, including methods, paths, params, auth and
-        error semantics.
-      owner: api_contract_owner
-      consumer_types:
+      definition: Stable agreement exposed through HTTP, RPC, GraphQL, SDK, CLI, or public transport surface, including paths, methods, payloads,
+        status/error semantics, authentication, and versioning.
+      owner: api_boundary_owner
+      primary_consumers:
       - external_consumer
       - frontend_consumer
       - sdk_consumer
+      - downstream_service
       boundary_types:
       - public_api
       - transport
+      - external_boundary
       stability_default: external_public
+      positive_signals:
+      - endpoint route/method changes
+      - public DTO changes
+      - auth/permission semantics change
+      - status code or error behavior changes
+      - public SDK method signature changes
+      negative_signals:
+      - private controller refactor with same route and behavior
+      - internal service changes behind stable API
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove endpoint
+      - rename route
+      - change required request/response shape
+      - change auth requirements without migration
+      - change status code contract consumed by clients
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add endpoint
+      - add optional request parameter
+      - add optional response property
+      - add new version while preserving old version
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - api_contract_shape_changed
-      - api_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - compatibility decision
+      - consumer knowledge classification
+      - migration/versioning strategy for breaking change
+      - contract tests when available
       choose_when:
-      - the artifact defines or changes a api contract
+      - change touches any public API surface or its semantics
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - change cannot be observed by API consumers
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - unknown consumers require safe strategy such as versioning, adapter translation, deprecation, or rejection
     event_contract:
-      definition: Stable agreement for emitted or consumed events/messages, including payload, version, ordering, idempotency
-        and compatibility.
-      owner: event_contract_owner
-      consumer_types:
+      definition: Stable agreement for emitted or consumed events/messages, including topic/queue, payload, schema version, ordering, idempotency
+        keys, retry behavior, and compatibility expectations.
+      owner: event_producer_or_consumer_owner
+      primary_consumers:
       - worker
       - downstream_service
+      - external_consumer
+      - projection
+      - read_model
       boundary_types:
       - integration_event
       - message_queue
+      - external_boundary
       stability_default: durable_versioned
+      positive_signals:
+      - event payload changes
+      - topic/routing key changes
+      - event version changes
+      - ordering/idempotency/retry semantics change
+      - consumer handler expectations change
+      negative_signals:
+      - internal event class rename with same serialized message
+      - dead event removed after verified no producers/consumers
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove required payload field
+      - change meaning of event type
+      - change topic without bridge
+      - remove idempotency key
+      - change ordering guarantee
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add optional payload field
+      - emit new event version alongside old
+      - add metadata ignored by old consumers
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - event_contract_shape_changed
-      - event_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - identify producers and consumers
+      - verify durable compatibility
+      - define versioning or adapter strategy
+      - consider replay/backfill impact
       choose_when:
-      - the artifact defines or changes a event contract
+      - message/event crosses process, queue, worker, service, or time boundary
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - notification is purely in-memory and private to same artifact
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - durable events require versioning or compatibility strategy before implementation
     port_contract:
-      definition: Interface/port that defines how application/domain code depends on infrastructure or external capabilities.
-      owner: port_contract_owner
-      consumer_types:
+      definition: Interface or port describing how application/domain code depends on infrastructure, external services, repositories, clocks,
+        queues, storage, or other capabilities.
+      owner: port_owner_or_application_boundary_owner
+      primary_consumers:
+      - adapter
+      - client
+      - repository
       - internal_module
+      - test_double
       boundary_types:
       - module
+      - dependency_inversion_boundary
+      - external_boundary
       stability_default: internal_stable
+      positive_signals:
+      - interface method added/removed/changed
+      - adapter must implement new contract
+      - dependency inversion boundary changes
+      - test double/stub contract affected
+      negative_signals:
+      - private adapter implementation changes behind same port
+      - helper type not exported or implemented elsewhere
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove port method
+      - change method parameters or return type
+      - tighten error behavior without adapter updates
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add optional method only when all implementers support optional contract
+      - add overload with old signature preserved
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - port_contract_shape_changed
-      - port_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - find implementers
+      - find callers
+      - update tests/stubs
+      - check dependency direction remains valid
       choose_when:
-      - the artifact defines or changes a port contract
+      - artifact defines an interface used across architectural boundary or implemented by multiple adapters
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - interface is local implementation detail with single private caller
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - port changes require call-site and implementer impact analysis
     module_contract:
-      definition: Public exports and allowed imports for a module; internal files are not part of the contract.
-      owner: module_contract_owner
-      consumer_types:
+      definition: Public exports, allowed imports, provider/export surface, and module-level ownership boundary used by other parts of the codebase.
+      owner: module_owner
+      primary_consumers:
       - internal_module
+      - shared_module
+      - test_consumer
       boundary_types:
       - module
-      stability_default: internal_stable
+      - feature_boundary
+      stability_default: module_public
+      positive_signals:
+      - index/barrel exports change
+      - public provider/export changes
+      - module dependency direction changes
+      - folder public API changes
+      - module path consumed elsewhere changes
+      negative_signals:
+      - private file moved without public import change
+      - internal helper change not exported or imported by other module
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove exported class/function/type
+      - change public module path
+      - remove provider export used by consumers
+      - introduce forbidden dependency direction
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add export without changing existing exports
+      - move private file while keeping public barrel stable
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - module_contract_shape_changed
-      - module_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - inspect imports from module
+      - verify public API surface
+      - check dependency direction
+      - update consumers or provide compatibility alias
       choose_when:
-      - the artifact defines or changes a module contract
+      - change affects module boundary, exports, or allowed imports
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - file is wholly private and not imported outside module
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - module contract changes require dependency and consumer impact review
     public_type_contract:
-      definition: Type/interface/class exported for consumers where field/name/semantics changes may be breaking.
-      owner: public_type_contract_owner
-      consumer_types:
+      definition: Exported type, interface, class, enum, schema, or DTO that consumers compile against or structurally depend on.
+      owner: type_owner
+      primary_consumers:
       - internal_module
+      - frontend_consumer
+      - sdk_consumer
+      - test_consumer
       boundary_types:
       - module
-      stability_default: internal_stable
+      - public_api
+      - transport
+      stability_default: module_public
+      positive_signals:
+      - exported type fields/methods change
+      - enum values change
+      - public class constructor changes
+      - DTO/schema type exported to consumers
+      negative_signals:
+      - unexported private type change
+      - internal inferred type not consumed outside artifact
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove or rename exported field
+      - narrow union type
+      - remove enum value
+      - change class constructor signature
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add optional field
+      - add enum value only when consumers tolerate unknown values
+      - widen accepted type while preserving old shape
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - public_type_contract_shape_changed
-      - public_type_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - find type imports
+      - check compile-time consumers
+      - verify serialization compatibility when DTO/schema
       choose_when:
-      - the artifact defines or changes a public type contract
+      - type is exported or appears in a public/shared contract
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - type is private to one artifact
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - public type changes require compile/consumer compatibility review
     persistence_contract:
-      definition: Stored data shape, repository semantics, migration compatibility, and read/write invariants.
-      owner: persistence_contract_owner
-      consumer_types:
-      - internal_module
+      definition: Stored data shape, repository behavior, migration compatibility, indexes, read/write invariants, and durable data semantics.
+      owner: persistence_owner
+      primary_consumers:
+      - repository
+      - migration
+      - projection
+      - read_model
+      - runtime_system
+      - operations
       boundary_types:
+      - persistence
       - module
-      stability_default: internal_stable
+      - durable_state
+      stability_default: durable_versioned
+      positive_signals:
+      - schema/model fields change
+      - repository method semantics change
+      - migration added/changed
+      - index/unique constraint changes
+      - stored enum values change
+      - backfill/read model/projection affected
+      negative_signals:
+      - private query refactor with identical data behavior
+      - non-durable cache-only shape change
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - drop or rename stored field without migration
+      - change uniqueness/nullability without backfill
+      - change repository semantics expected by callers
+      - remove stored enum value used by existing data
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add nullable/optional field with safe default
+      - add backward-compatible index
+      - add migration preserving old reads
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - persistence_contract_shape_changed
-      - persistence_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - data migration/backfill review
+      - rollback or compatibility plan
+      - repository consumer review
+      - test persistence behavior
       choose_when:
-      - the artifact defines or changes a persistence contract
+      - change affects durable data, repository semantics, schema, model, migration, or data compatibility
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - change is purely transient and not persisted
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - data-loss possible triggers high risk and migration/rollback planning
     configuration_contract:
-      definition: Environment/configuration keys, defaults, validation rules, and runtime wiring assumptions.
-      owner: configuration_contract_owner
-      consumer_types:
+      definition: Environment/configuration keys, defaults, validation rules, runtime wiring assumptions, feature flags, and operational settings
+        consumed by code or deployment.
+      owner: configuration_owner
+      primary_consumers:
+      - runtime_system
+      - operations
+      - external_consumer
       - internal_module
       boundary_types:
+      - runtime
+      - operations
       - module
       stability_default: internal_stable
+      positive_signals:
+      - config key added/removed/renamed
+      - default changes
+      - validation rule changes
+      - required environment variable changes
+      - feature flag semantics change
+      negative_signals:
+      - private constant not externally configured
+      - documentation-only wording with no runtime behavior
       breaking_change_examples:
-      - remove_or_rename_required_shape
+      - remove config key without fallback
+      - make optional config required
+      - change default behavior in production
+      - rename environment variable without alias
       non_breaking_change_examples:
-      - add_optional_ignorable_shape
+      - add optional config with safe default
+      - support new key while old key still works
+      - tighten validation only for impossible invalid values
       required_checks:
-      - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-RC-001
-        check: compatibility_review_if_public_or_module_shared
-      detection_signals:
-      - configuration_contract_shape_changed
-      - configuration_contract_consumer_visible_semantics_changed
-      compatibility_questions:
-      - Is a required field removed or renamed?
-      - Can old consumers keep working?
-      - Is versioning or adapter/migration required?
+      - deployment/ops impact review
+      - default/backward compatibility review
+      - runtime validation tests when available
       choose_when:
-      - the artifact defines or changes a configuration contract
+      - runtime or deployment behavior depends on named configuration or environment contract
       reject_when:
-      - pure internal implementation detail
-      - no consumer-visible obligation
+      - value is hardcoded private implementation detail
       compatibility_rules:
-      - record consumers
-      - classify change type
-      - emit compatibility_decision_required when unknown or breaking
+      - ops-visible config changes require compatibility decision and release note/migration when breaking
+  contract_stability_level_enum:
+    allowed:
+    - internal_unstable
+    - internal_stable
+    - module_public
+    - external_public
+    - durable_versioned
   contract_stability_levels:
     internal_unstable:
-      definition: internal_unstable
+      definition: Private unstable contract local to one artifact or tightly controlled implementation area.
       compatibility_required: false
+      choose_when:
+      - all producers and consumers are edited atomically and no external/shared caller can observe the change
+      reject_when:
+      - used across module, process, public API, persistent data, or by unknown consumers
+      required_evidence:
+      - single-owner evidence
+      - no external imports/consumers found
     internal_stable:
-      definition: internal_stable
+      definition: Contract used within the codebase by known internal consumers where compatibility or coordinated updates are required.
       compatibility_required: true
+      choose_when:
+      - contract has internal consumers outside immediate artifact
+      - module/service callers rely on it
+      reject_when:
+      - contract is external public or durable versioned
+      - only one private caller exists and is updated atomically
+      required_evidence:
+      - consumer list or explicit partially_known marker
     module_public:
-      definition: module_public
+      definition: Contract exposed by module exports, feature boundary, provider export, or public folder/barrel API within the codebase.
       compatibility_required: true
+      choose_when:
+      - imports from outside module exist or module export is intended public
+      reject_when:
+      - file remains private implementation detail
+      required_evidence:
+      - module export/import evidence
     external_public:
-      definition: external_public
+      definition: Contract visible to external clients, frontends, SDKs, other services, users, or separately deployed systems.
       compatibility_required: true
+      choose_when:
+      - surface crosses deployment, network, SDK, CLI, public package, or user-facing boundary
+      reject_when:
+      - all consumers are internal and released atomically
+      required_evidence:
+      - boundary classification evidence
+      - consumer knowledge classification
     durable_versioned:
-      definition: durable_versioned
+      definition: Contract preserved across time because persisted data, event streams, queues, migrations, replays, or versioned consumers depend
+        on it.
       compatibility_required: true
+      choose_when:
+      - existing stored data/events/messages may be read later
+      - replay/backfill/versioned consumers exist or may exist
+      reject_when:
+      - data is transient and no durable consumer exists
+      required_evidence:
+      - durability evidence
+      - migration/replay compatibility assessment
+  contract_consumer_type_enum:
+    allowed:
+    - internal_artifact
+    - internal_module
+    - shared_module
+    - frontend_consumer
+    - external_consumer
+    - sdk_consumer
+    - downstream_service
+    - worker
+    - repository
+    - migration
+    - projection
+    - read_model
+    - runtime_system
+    - operations
+    - test_consumer
   contract_consumer_types:
     internal_artifact:
-      definition: internal_artifact is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A same-codebase artifact that directly consumes the contract through call, import, type use, or runtime dependency.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - internal_artifact imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     internal_module:
-      definition: internal_module is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A module inside the same codebase consuming a module/API/type/port contract across feature boundaries.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - internal_module imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     shared_module:
-      definition: shared_module is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A reusable module or shared kernel used by multiple features or services inside the codebase.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - shared_module imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     frontend_consumer:
-      definition: frontend_consumer is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A UI/client application consuming API, response, error, DTO, schema, SDK, or configuration behavior.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - frontend_consumer imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     external_consumer:
-      definition: external_consumer is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A consumer outside the repository or deployment unit, including public clients and third parties.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - external_consumer imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     sdk_consumer:
-      definition: sdk_consumer is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A consumer compiling against or executing an SDK/API client contract.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - sdk_consumer imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     downstream_service:
-      definition: downstream_service is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A separately deployed service that consumes API, event, message, or data contract.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - downstream_service imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     worker:
-      definition: worker is a consumer category that may depend on a contract and therefore may require compatibility review
-        when that contract changes.
+      definition: A background job, queue consumer, scheduler, or async process relying on event/message/data/config contracts.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - worker imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     repository:
-      definition: repository is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A persistence adapter or data access component consuming persistence schema and repository contracts.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - repository imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     migration:
-      definition: migration is a consumer category that may depend on a contract and therefore may require compatibility review
-        when that contract changes.
+      definition: A data migration or schema migration that consumes old and new persistence contracts.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - migration imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     projection:
-      definition: projection is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A projection/updater that consumes event or persistence contracts to maintain read models.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - projection imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     read_model:
-      definition: read_model is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: A query/read-side model that consumes persistence or event contracts.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - read_model imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     runtime_system:
-      definition: runtime_system is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: Runtime infrastructure, dependency injection, deployment, scheduler, or platform behavior consuming configuration/module contracts.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - runtime_system imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     operations:
-      definition: operations is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: Operational process, deployment, monitoring, runbook, or environment management depending on config/runtime contracts.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - operations imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
     test_consumer:
-      definition: test_consumer is a consumer category that may depend on a contract and therefore may require compatibility
-        review when that contract changes.
+      definition: Tests, stubs, mocks, fixtures, or contract tests depending on a contract shape or behavior.
       must_record:
       - knowledge_level
       - affected_contracts
       - migration_need
+      - evidence_refs
+      positive_signals:
+      - test_consumer imports, calls, subscribes to, persists, configures, or asserts the contract
+      unknown_policy: mark consumer knowledge partially_known or unknown when evidence is incomplete
   consumer_knowledge_enum:
     allowed:
     - none
     - all_known
     - partially_known
     - unknown
-  contract_change_type_enum:
-    allowed:
-    - none
-    - additive
-    - behavioral
-    - breaking
-    - unknown
-  contract_risk_signals:
-    request_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - change_risk
-    response_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - change_risk
-    api_contract:
-      minimum_risk_hint: high
-      emits_concerns:
-      - public_contract
-      emits_contexts:
-      - change_risk
-    event_contract:
-      minimum_risk_hint: high
-      emits_concerns:
-      - public_contract
-      emits_contexts:
-      - change_risk
-    port_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - change_risk
-    module_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - change_risk
-    public_type_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - public_contract
-      emits_contexts:
-      - change_risk
-    persistence_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - change_risk
-    configuration_contract:
-      minimum_risk_hint: medium
-      emits_concerns:
-      - behavior
-      emits_contexts:
-      - change_risk
-  semantic_depth_restoration:
-    enriched_generic_contract_definitions: true
   consumer_knowledge_definitions:
     none:
-      definition: No consumers are known or relevant after reconnaissance.
-      meaning: Represents the none case within the consumer knowledge taxonomy.
-      detection_signals:
-      - none signals are present in the request, codebase evidence, or prior phase reports
+      definition: No consumers exist or the contract is proven private and unused outside the current atomic change scope.
       choose_when:
-      - the active evidence best matches none
-      - no more specific vocabulary value applies
+      - search/reconnaissance finds no consumer and ownership proves no implicit/durable consumers
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
+      - any known, suspected, durable, external, or dynamic consumer exists
       required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - consumer knowledge decisions using none must include reason and evidence
+      - consumer search evidence
+      - durability check evidence
+      compatibility_effect: may allow internal_only_change when stability also permits
     all_known:
-      definition: All consumers are identified and can be reviewed or updated.
-      meaning: Represents the all known case within the consumer knowledge taxonomy.
-      detection_signals:
-      - all known signals are present in the request, codebase evidence, or prior phase reports
+      definition: All relevant consumers are identified and can be updated, tested, or protected deliberately.
       choose_when:
-      - the active evidence best matches all known
-      - no more specific vocabulary value applies
+      - static/dynamic analysis and ownership evidence identify every consumer class required by the contract stability level
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
+      - external users, durable events/data, plugin consumers, or dynamic references may exist outside the known list
       required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - consumer knowledge decisions using all_known must include reason and evidence
+      - complete consumer list
+      - impact assessment
+      compatibility_effect: coordinated or synchronized changes may be allowed when risk is acceptable
     partially_known:
-      definition: Some consumers are identified but discovery may be incomplete.
-      meaning: Represents the partially known case within the consumer knowledge taxonomy.
-      detection_signals:
-      - partially known signals are present in the request, codebase evidence, or prior phase reports
+      definition: Some consumers are identified but analysis cannot prove the full consumer set is complete.
       choose_when:
-      - the active evidence best matches partially known
-      - no more specific vocabulary value applies
+      - known consumers exist but dynamic/external/durable/shared usage may also exist
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
+      - all consumers are proven known
+      - no consumers exist
       required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - consumer knowledge decisions using partially_known must include reason and evidence
+      - known consumer list
+      - unknown surface description
+      compatibility_effect: requires safe compatibility strategy before breaking changes
     unknown:
-      definition: Consumers cannot be confidently enumerated; treat compatibility risk as elevated.
-      meaning: Represents the unknown case within the consumer knowledge taxonomy.
-      detection_signals:
-      - unknown signals are present in the request, codebase evidence, or prior phase reports
+      definition: Consumers cannot be reliably identified, or the contract is public/durable enough that unknown consumers must be assumed.
       choose_when:
-      - the active evidence best matches unknown
-      - no more specific vocabulary value applies
+      - external/public/durable contract without complete consumer registry
+      - dynamic plugin/API/event consumers possible
+      - insufficient reconnaissance evidence
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
+      - complete consumer set is proven and controlled
       required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - consumer knowledge decisions using unknown must include reason and evidence
-  contract_change_type_definitions:
-    none:
-      definition: No contract shape, semantic, compatibility, or consumer obligation change is detected.
-      meaning: Represents the none case within the contract change type taxonomy.
-      detection_signals:
-      - none signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches none
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract change type decisions using none must include reason and evidence
-      compatibility_required: false
-    additive:
-      definition: Contract gains optional or backward-compatible fields/behavior without breaking known consumers.
-      meaning: Represents the additive case within the contract change type taxonomy.
-      detection_signals:
-      - additive signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches additive
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract change type decisions using additive must include reason and evidence
-      compatibility_required: false
-    behavioral:
-      definition: Contract shape may remain stable but behavior, semantics, timing, errors, ordering, or side effects change.
-      meaning: Represents the behavioral case within the contract change type taxonomy.
-      detection_signals:
-      - behavioral signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches behavioral
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract change type decisions using behavioral must include reason and evidence
-      compatibility_required: true
-    breaking:
-      definition: Contract change may break existing consumers, require migration, or invalidate compatibility expectations.
-      meaning: Represents the breaking case within the contract change type taxonomy.
-      detection_signals:
-      - breaking signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches breaking
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract change type decisions using breaking must include reason and evidence
-      compatibility_required: true
-    unknown:
-      definition: Insufficient evidence exists to determine contract change type; must trigger review before implementation.
-      meaning: Represents the unknown case within the contract change type taxonomy.
-      detection_signals:
-      - unknown signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches unknown
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract change type decisions using unknown must include reason and evidence
-      compatibility_required: true
-  contract_type_definitions:
-    request_contract:
-      definition: request contract contract_type vocabulary value.
-      meaning: Represents the request contract case within the contract_type taxonomy.
-      detection_signals:
-      - request contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches request contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using request_contract must include reason and evidence
-    response_contract:
-      definition: response contract contract_type vocabulary value.
-      meaning: Represents the response contract case within the contract_type taxonomy.
-      detection_signals:
-      - response contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches response contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using response_contract must include reason and evidence
-    api_contract:
-      definition: api contract contract_type vocabulary value.
-      meaning: Represents the api contract case within the contract_type taxonomy.
-      detection_signals:
-      - api contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches api contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using api_contract must include reason and evidence
-    event_contract:
-      definition: event contract contract_type vocabulary value.
-      meaning: Represents the event contract case within the contract_type taxonomy.
-      detection_signals:
-      - event contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches event contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using event_contract must include reason and evidence
-    port_contract:
-      definition: port contract contract_type vocabulary value.
-      meaning: Represents the port contract case within the contract_type taxonomy.
-      detection_signals:
-      - port contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches port contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using port_contract must include reason and evidence
-    module_contract:
-      definition: module contract contract_type vocabulary value.
-      meaning: Represents the module contract case within the contract_type taxonomy.
-      detection_signals:
-      - module contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches module contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using module_contract must include reason and evidence
-    public_type_contract:
-      definition: public type contract contract_type vocabulary value.
-      meaning: Represents the public type contract case within the contract_type taxonomy.
-      detection_signals:
-      - public type contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches public type contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using public_type_contract must include reason and evidence
-    persistence_contract:
-      definition: persistence contract contract_type vocabulary value.
-      meaning: Represents the persistence contract case within the contract_type taxonomy.
-      detection_signals:
-      - persistence contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches persistence contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using persistence_contract must include reason and evidence
-    configuration_contract:
-      definition: configuration contract contract_type vocabulary value.
-      meaning: Represents the configuration contract case within the contract_type taxonomy.
-      detection_signals:
-      - configuration contract signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches configuration contract
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - contract_type decisions using configuration_contract must include reason and evidence
+      - unknown reason
+      - surface classification
+      compatibility_effect: breaking changes must be rejected or protected by versioning, adapter translation, or deprecation
 validation:
+  required_checks:
+  - id: CONTRACT-TAXONOMY-CHECK-001
+    check: every_contract_type_has_definition_schema_fields
+    applies_when:
+      contract_taxonomy_loaded: true
+  - id: CONTRACT-TAXONOMY-CHECK-002
+    check: every_contract_change_type_has_compatibility_effect
+    applies_when:
+      contract_change_type_referenced: true
+  - id: CONTRACT-TAXONOMY-CHECK-003
+    check: contract_classification_output_has_consumers_when_required
+    applies_when:
+      contract_change_possible: true
+  - id: CONTRACT-TAXONOMY-CHECK-003
+    check: taxonomy_does_not_define_classification_or_change_decision_logic
+    applies_when:
+      contract_taxonomy_loaded: true
   fail_conditions:
-  - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-FC-001
+  - id: CONTRACT-TAXONOMY-001
     condition: unknown_contract_type
-    message: Unknown contract type.
+    message: Contract type must be defined in contract taxonomy.
     severity: error
-    owner: contracts/conventions.contract-taxonomy.yaml
-  - id: CONTRACTS-CONVENTIONS-CONTRACT-TAXONOMY-YAML-FC-002
-    condition: consumer_knowledge_missing_for_public_contract
-    message: Consumer knowledge missing for public contract.
+  - id: CONTRACT-TAXONOMY-002
+    condition: contract_type_missing_semantic_fields
+    message: Contract type definition is missing required semantic fields.
     severity: error
-    owner: contracts/conventions.contract-taxonomy.yaml
-  required_checks: []
+  - id: CONTRACT-TAXONOMY-003
+    condition: contract_change_missing_consumer_record
+    message: Contract changes on shared/public/durable surfaces must record consumers and consumer knowledge.
+    severity: error
+  - id: CONTRACT-TAXONOMY-004
+    condition: unknown_contract_change_treated_as_safe
+    message: Unknown contract change type must not be treated as safe.
+    severity: error
+  - id: CONTRACT-TAXONOMY-003
+    condition: taxonomy_contains_classification_or_change_decision_logic
+    message: Contract taxonomy must define vocabulary only; classification and change decision logic belongs to dedicated files.
+    severity: error

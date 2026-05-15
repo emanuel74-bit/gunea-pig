@@ -1,0 +1,207 @@
+version: '1.0'
+file:
+  name: conventions.contract-change-taxonomy.yaml
+  path: contracts/conventions.contract-change-taxonomy.yaml
+  role: contract_change_taxonomy_and_detection_contract
+  executability: decision_engine
+purpose: Define contract change types and classify contract changes as none, additive, behavioral, breaking, or unknown from concrete evidence.
+ownership:
+  owns:
+  - contract_change_type_enum
+  - contract_change_type_definitions
+  - additive_change_rules
+  - behavioral_change_rules
+  - breaking_change_rules
+  - unknown_change_rules
+  - contract_change_detection_algorithm
+  - contract_change_output_schema
+  does_not_own:
+  - contract_type_vocabulary
+  - consumer_classification
+  - compatibility_strategy_selection
+  - migration_strategy_selection
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - contract_classification_evidence
+  optional:
+  - consumer_evidence
+  - boundary_classification
+  - dependency_classification
+outputs:
+  produces:
+  - contract_change_classification_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  optional_files:
+  - contracts/conventions.contract-classification.yaml
+sections:
+  contract_change_type_enum:
+    allowed:
+    - none
+    - additive
+    - behavioral
+    - breaking
+    - unknown
+  contract_change_type_definitions: &id001
+    none:
+      definition: No consumer-visible contract change is present.
+      choose_when: &id002
+      - shape, behavior, semantics, stability, and consumer obligations remain unchanged
+      reject_when: &id003
+      - any field/signature/semantics/default/error/persistence/config behavior changes
+      compatibility_effect: compatibility strategy usually not required
+    additive:
+      definition: A new optional capability, field, endpoint, export, config, or behavior is added without invalidating old consumers.
+      choose_when: &id004
+      - old consumers can ignore the addition
+      - no required behavior changes for existing callers
+      - defaults preserve old behavior
+      reject_when: &id005
+      - new requirement is mandatory
+      - old consumers must change
+      - semantics of existing fields change
+      compatibility_effect: usually backward_compatible_addition, still validate public/durable contracts
+    behavioral:
+      definition: Shape may remain compatible but observable semantics, defaults, validation, ordering, timing, errors, permissions, or side effects
+        change.
+      choose_when: &id006
+      - existing consumers may observe different results or obligations despite compatible structure
+      reject_when: &id007
+      - no observable semantics change
+      - change removes/renames/narrows required contract shape and is clearly breaking
+      compatibility_effect: requires compatibility review; may be breaking depending on consumer expectations
+    breaking:
+      definition: Existing valid consumers, stored data, messages, tests, or integrations can fail, misinterpret data, or require coordinated
+        changes.
+      choose_when: &id008
+      - required field/signature/export/route/type removed or changed
+      - validation narrowed
+      - consumer behavior breaks
+      - durable data/event compatibility broken
+      reject_when: &id009
+      - old consumers continue working without code/data/config change
+      compatibility_effect: requires explicit strategy; unsafe when consumers unknown
+    unknown:
+      definition: Available evidence is insufficient to classify the contract change safely.
+      choose_when: &id010
+      - contract surface changed but consumer impact cannot be determined
+      - reconnaissance incomplete
+      - dynamic/durable consumers possible
+      reject_when: &id011
+      - change can be confidently classified as none/additive/behavioral/breaking
+      compatibility_effect: treat as unsafe until compatibility decision resolves it
+  contract_change_detection_rules:
+    change_type_definitions: *id001
+    breaking_change_detection:
+      always_breaking:
+      - change: remove_required_field
+        reason: Old consumers cannot provide/read the removed required element.
+      - change: rename_field_without_alias
+        reason: Old consumers use the old name.
+      - change: change_field_type_narrower_or_incompatible
+        reason: Old valid values may fail or be misread.
+      - change: remove_endpoint_or_export
+        reason: Existing callers lose the contract surface.
+      - change: change_method_signature
+        reason: Compile/runtime callers break.
+      - change: remove_event_topic_or_payload_requirement
+        reason: Durable consumers cannot process old/new messages safely.
+      - change: drop_or_rename_persisted_field_without_migration
+        reason: Existing data may be lost or unreadable.
+      - change: make_optional_config_required
+        reason: Existing deployments may fail.
+      behavioral_or_potentially_breaking:
+      - change: change_default_value
+        classification: behavioral unless proven no consumer relies on old default
+      - change: change_validation_rule
+        classification: breaking when old valid input becomes invalid
+      - change: change_error_or_status_semantics
+        classification: breaking when consumers branch on errors/status
+      - change: change_ordering_or_timing
+        classification: behavioral/breaking when consumers rely on order/timing
+      normally_additive:
+      - change: add_optional_field
+        safe_when: old consumers ignore unknown fields and defaults preserve old behavior
+      - change: add_new_endpoint
+        safe_when: existing endpoints unchanged
+      - change: add_nullable_persistence_field
+        safe_when: old reads/writes still succeed and migration/backfill not required for old behavior
+      - change: add_export
+        safe_when: existing exports unchanged
+    change_detection_order:
+    - detect_none
+    - detect_always_breaking
+    - detect_behavioral_or_potentially_breaking
+    - detect_normally_additive
+    - classify_unknown_when_evidence_insufficient
+    change_detection_rules:
+    - id: CONTRACT-CHANGE-NONE
+      select: none
+      choose_when: *id002
+      reject_when: *id003
+    - id: CONTRACT-CHANGE-ADDITIVE
+      select: additive
+      choose_when: *id004
+      reject_when: *id005
+    - id: CONTRACT-CHANGE-BEHAVIORAL
+      select: behavioral
+      choose_when: *id006
+      reject_when: *id007
+    - id: CONTRACT-CHANGE-BREAKING
+      select: breaking
+      choose_when: *id008
+      reject_when: *id009
+    - id: CONTRACT-CHANGE-UNKNOWN
+      select: unknown
+      choose_when: *id010
+      reject_when: *id011
+  contract_change_detection_algorithm:
+  - step_id: LOAD_CONTRACT_BEFORE_AFTER
+    action: read before/after contract surface evidence
+    fail_when: change_evidence_missing
+  - step_id: CHECK_NO_CHANGE
+    action: select none only when shape, behavior, semantics, stability, and consumer obligations are unchanged
+  - step_id: CHECK_BREAKING_CHANGE
+    action: match change against always_breaking rules before considering additive safety
+  - step_id: CHECK_BEHAVIORAL_CHANGE
+    action: match semantic/default/error/timing/ordering/validation changes
+  - step_id: CHECK_ADDITIVE_CHANGE
+    action: select additive only when old consumers remain valid and defaults preserve old behavior
+  - step_id: CLASSIFY_UNKNOWN
+    action: select unknown when evidence is insufficient or consumers are dynamic/durable/unknown
+  - step_id: WRITE_CHANGE_CLASSIFICATION
+    action: produce contract change classification result
+    output: contract_change_classification_result
+  contract_change_output_schema:
+    required_fields:
+    - contract_id
+    - change_type
+    - change_reason
+    - breaking_change_matches
+    - behavioral_change_matches
+    - additive_safety_evidence
+    - evidence_refs
+    optional_fields:
+    - unknown_reason
+    - required_followups
+validation:
+  required_checks:
+  - id: CONTRACT-CHANGE-CHECK-001
+    check: every_contract_change_has_change_type_and_evidence
+    applies_when:
+      contract_change_possible: true
+  fail_conditions:
+  - id: CONTRACT-CHANGE-001
+    condition: contract_change_type_missing
+    message: Contract change classification must select none, additive, behavioral, breaking, or unknown.
+    severity: error
+  - id: CONTRACT-CHANGE-002
+    condition: breaking_change_treated_as_additive
+    message: Breaking-change signals must not be treated as additive without compatibility strategy.
+    severity: error

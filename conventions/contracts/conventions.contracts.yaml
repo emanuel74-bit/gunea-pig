@@ -4,15 +4,21 @@ file:
   path: contracts/conventions.contracts.yaml
   role: contract_system_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for contract taxonomy and compatibility analysis.
+purpose: Entrypoint for contract taxonomy and compatibility analysis. Defines file index, local execution order, and ownership boundaries for
+  contract-related conventions.
 ownership:
   owns:
   - contract_system_metadata
   - contract_file_index
   - contract_system_execution_order
+  - contract_system_contract
   does_not_own:
-  - contract_definitions
+  - contract_type_definitions
+  - contract_classification_rules
+  - contract_change_type_definitions
   - compatibility_strategy_details
+  - boundary_taxonomy
+  - risk_taxonomy
 activation:
   mode: always
   activates_when: []
@@ -24,18 +30,56 @@ outputs:
   produces:
   - contracts_result
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  - contracts/conventions.contract-classification.yaml
+  - contracts/conventions.contract-change-taxonomy.yaml
+  - contracts/conventions.compatibility.yaml
   optional_files: []
 sections:
   contract_file_index:
     taxonomy: contracts/conventions.contract-taxonomy.yaml
+    classification: contracts/conventions.contract-classification.yaml
+    change_taxonomy: contracts/conventions.contract-change-taxonomy.yaml
     compatibility: contracts/conventions.compatibility.yaml
   contract_system_execution_order:
   - load_contract_taxonomy
-  - classify_contracts
-  - detect_contract_changes
-  - evaluate_compatibility
-  - produce_contract_system_result
+  - classify_contract_surfaces
+  - classify_contract_change_types
+  - evaluate_compatibility_strategy
+  - emit_required_followups
+  - produce_contract_classification_or_compatibility_report
+  contract_system_contract:
+    absolute_rules:
+    - id: CONTRACTS-SYSTEM-ABS-001
+      rule: Contract taxonomy defines contract vocabulary only.
+      fail_condition: contract_taxonomy_performed_classification_or_compatibility_decision
+    - id: CONTRACTS-SYSTEM-ABS-002
+      rule: Contract classification owns evidence-based contract surface and consumer classification.
+      fail_condition: contract_classification_defined_outside_classification_file
+    - id: CONTRACTS-SYSTEM-ABS-003
+      rule: Contract change taxonomy owns change type definitions and raw change detection.
+      fail_condition: contract_change_taxonomy_defined_outside_change_file
+    - id: CONTRACTS-SYSTEM-ABS-004
+      rule: Compatibility owns compatibility strategy selection and consumer obligation decisions.
+      fail_condition: compatibility_strategy_defined_outside_compatibility_file
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: CONTRACTS-SYSTEM-CHECK-001
+    check: contract_subsystem_files_exist
+    applies_when:
+      contracts_subsystem_loaded: true
+  - id: CONTRACTS-SYSTEM-CHECK-002
+    check: contract_taxonomy_and_compatibility_do_not_duplicate_authority
+    applies_when:
+      contracts_subsystem_loaded: true
+  fail_conditions:
+  - id: CONTRACTS-SYSTEM-001
+    condition: contract_file_index_target_missing
+    message: Contract subsystem file index points to a missing file.
+    severity: error
+  - id: CONTRACTS-SYSTEM-002
+    condition: contract_authority_overlap_detected
+    message: Contract taxonomy and compatibility files must not define the same authority.
+    severity: error

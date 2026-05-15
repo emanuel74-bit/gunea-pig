@@ -1,0 +1,280 @@
+version: '1.0'
+file:
+  name: conventions.action-collisions.yaml
+  path: actions/conventions.action-collisions.yaml
+  role: artifact_action_collision_resolution_contract
+  executability: decision_engine
+purpose: Define incompatible or competing artifact action combinations, their detection rules, precedence behavior, required evidence, and escalation
+  behavior.
+ownership:
+  owns:
+  - action_collision_type_enum
+  - action_collision_definitions
+  - collision_detection_rules
+  - collision_resolution_rules
+  - incompatible_action_pairs
+  - action_precedence_when_colliding
+  - unresolved_collision_escalation_rules
+  does_not_own:
+  - artifact_action_definitions
+  - normal_action_selection
+  - followup_trigger_mapping
+  - implementation_sequence
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - candidate_actions
+  - artifact_action_decision_matrix
+  optional:
+  - risk_classification
+  - boundary_contract_classification
+  - dependency_classification
+  - consumer_impact
+outputs:
+  produces:
+  - action_collision_resolution_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - actions/conventions.action-resolution.yaml
+  optional_files:
+  - contracts/conventions.compatibility.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - risk/conventions.risk-taxonomy.yaml
+sections:
+  action_collision_type_enum:
+    allowed:
+    - create_vs_reuse
+    - modify_vs_extract
+    - wrap_vs_modify
+    - split_vs_extract
+    - replace_vs_modify
+    - delete_vs_deprecate
+    - move_vs_rename
+    - no_code_change_vs_any_change
+  action_collision_definition_schema:
+    required_fields:
+    - definition
+    - positive_signals
+    - resolution
+    - requires_evidence
+    optional_fields:
+    - escalate_when
+    - examples
+  action_collision_definitions:
+    create_vs_reuse:
+      definition: create_new and reuse_existing both appear valid
+      positive_signals:
+      - create_new and reuse_existing both appear valid
+      resolution: prefer reuse_existing unless existing artifact cannot own the full responsibility
+      requires_evidence: &id001
+      - existing artifact responsibility match or mismatch
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    modify_vs_extract:
+      definition: modify_existing would add a second responsibility
+      positive_signals:
+      - modify_existing would add a second responsibility
+      resolution: prefer extract_from_existing or split_existing
+      requires_evidence: &id002
+      - mixed responsibility signal
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    wrap_vs_modify:
+      definition: both wrap_existing and modify_existing appear valid
+      positive_signals:
+      - both wrap_existing and modify_existing appear valid
+      resolution: prefer wrap_existing when boundary, compatibility, or external interface adaptation is the main concern; otherwise prefer modify_existing
+      requires_evidence: &id003
+      - boundary or compatibility classification
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    split_vs_extract:
+      definition: both split_existing and extract_from_existing appear valid
+      positive_signals:
+      - both split_existing and extract_from_existing appear valid
+      resolution: select split_existing when the source artifact has multiple peer responsibilities; select extract_from_existing when one subresponsibility
+        is pulled out and the source keeps primary role
+      requires_evidence: &id004
+      - role distribution before and after action
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    replace_vs_modify:
+      definition: both replace_existing and modify_existing appear valid
+      positive_signals:
+      - both replace_existing and modify_existing appear valid
+      resolution: prefer modify_existing unless the existing artifact is structurally invalid, unsafe, obsolete, or incompatible with required
+        contract
+      requires_evidence: &id005
+      - replacement rationale and migration impact
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    delete_vs_deprecate:
+      definition: both delete_existing and deprecate_existing appear valid
+      positive_signals:
+      - both delete_existing and deprecate_existing appear valid
+      resolution: prefer deprecate_existing when public or unknown consumers exist; prefer delete_existing only when usage is proven absent or
+        migration complete
+      requires_evidence: &id006
+      - consumer and public contract impact
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    move_vs_rename:
+      definition: both move_existing and rename_existing appear valid
+      positive_signals:
+      - both move_existing and rename_existing appear valid
+      resolution: apply both only when path and name are independently justified; otherwise choose the minimal action
+      requires_evidence: &id007
+      - placement reason
+      - naming reason
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+    no_code_change_vs_any_change:
+      definition: no_code_change competes with any edit action
+      positive_signals:
+      - no_code_change competes with any edit action
+      resolution: select no_code_change only when all acceptance criteria are already satisfied by evidence; otherwise reject no_code_change
+      requires_evidence: &id008
+      - acceptance criteria satisfaction
+      escalate_when:
+      - required evidence is missing
+      - resolution would violate behavior contract
+      - resolution would violate contract compatibility
+  incompatible_action_pairs:
+  - actions:
+    - create
+    - reuse
+    collision_id: CREATE_VS_REUSE
+    resolution_ref: create_vs_reuse
+  - actions:
+    - modify
+    - extract
+    collision_id: MODIFY_VS_EXTRACT
+    resolution_ref: modify_vs_extract
+  - actions:
+    - wrap
+    - modify
+    collision_id: WRAP_VS_MODIFY
+    resolution_ref: wrap_vs_modify
+  - actions:
+    - split
+    - extract
+    collision_id: SPLIT_VS_EXTRACT
+    resolution_ref: split_vs_extract
+  - actions:
+    - replace
+    - modify
+    collision_id: REPLACE_VS_MODIFY
+    resolution_ref: replace_vs_modify
+  - actions:
+    - delete
+    - deprecate
+    collision_id: DELETE_VS_DEPRECATE
+    resolution_ref: delete_vs_deprecate
+  - actions:
+    - move
+    - rename
+    collision_id: MOVE_VS_RENAME
+    resolution_ref: move_vs_rename
+  - actions:
+    - no_code_change
+    - any_change
+    collision_id: NO_CODE_CHANGE_VS_ANY_CHANGE
+    resolution_ref: no_code_change_vs_any_change
+  collision_detection_rules:
+  - collision_id: CREATE_VS_REUSE
+    condition: create_new and reuse_existing both appear valid
+    resolution: prefer reuse_existing unless existing artifact cannot own the full responsibility
+    requires_evidence: *id001
+  - collision_id: MODIFY_VS_EXTRACT
+    condition: modify_existing would add a second responsibility
+    resolution: prefer extract_from_existing or split_existing
+    requires_evidence: *id002
+  - collision_id: WRAP_VS_MODIFY
+    condition: both wrap_existing and modify_existing appear valid
+    resolution: prefer wrap_existing when boundary, compatibility, or external interface adaptation is the main concern; otherwise prefer modify_existing
+    requires_evidence: *id003
+  - collision_id: SPLIT_VS_EXTRACT
+    condition: both split_existing and extract_from_existing appear valid
+    resolution: select split_existing when the source artifact has multiple peer responsibilities; select extract_from_existing when one subresponsibility
+      is pulled out and the source keeps primary role
+    requires_evidence: *id004
+  - collision_id: REPLACE_VS_MODIFY
+    condition: both replace_existing and modify_existing appear valid
+    resolution: prefer modify_existing unless the existing artifact is structurally invalid, unsafe, obsolete, or incompatible with required contract
+    requires_evidence: *id005
+  - collision_id: DELETE_VS_DEPRECATE
+    condition: both delete_existing and deprecate_existing appear valid
+    resolution: prefer deprecate_existing when public or unknown consumers exist; prefer delete_existing only when usage is proven absent or migration
+      complete
+    requires_evidence: *id006
+  - collision_id: MOVE_VS_RENAME
+    condition: both move_existing and rename_existing appear valid
+    resolution: apply both only when path and name are independently justified; otherwise choose the minimal action
+    requires_evidence: *id007
+  - collision_id: NO_CODE_CHANGE_VS_ANY_CHANGE
+    condition: no_code_change competes with any edit action
+    resolution: select no_code_change only when all acceptance criteria are already satisfied by evidence; otherwise reject no_code_change
+    requires_evidence: *id008
+  collision_resolution_algorithm:
+  - step_id: LOAD_CANDIDATE_ACTIONS
+    action: read candidate action set for artifact
+    fail_when: candidate_actions_missing
+  - step_id: DETECT_INCOMPATIBLE_PAIRS
+    action: match candidate set against incompatible_action_pairs
+    output: detected_collisions
+  - step_id: APPLY_EXPLICIT_COLLISION_RULES
+    action: apply matching collision_detection_rules by collision_id
+    output: resolved_collisions
+  - step_id: VALIDATE_EVIDENCE
+    action: require each selected resolution to satisfy requires_evidence
+    fail_when: collision_resolution_missing_evidence
+  - step_id: ESCALATE_UNRESOLVED
+    action: emit unresolved_action_collision when no rule resolves conflict
+    output: required_revision_or_blocker
+  - step_id: RETURN_FILTERED_ACTION_SET
+    action: return resolved action candidates to action-resolution
+    output: collision_resolution_result
+  unresolved_collision_escalation_rules:
+  - id: ACTION-COLLISION-ESC-001
+    condition: no collision rule matches detected conflict
+    decision: block action resolution and request human/architecture revision
+  - id: ACTION-COLLISION-ESC-002
+    condition: required evidence for collision resolution is missing
+    decision: request missing reconnaissance or impact evidence
+  - id: ACTION-COLLISION-ESC-003
+    condition: collision resolution would modify a public contract
+    decision: require compatibility decision before action is finalized
+validation:
+  required_checks:
+  - id: ACTION-COLLISION-CHECK-001
+    check: every_detected_action_collision_has_resolution_or_escalation
+    applies_when:
+      action_collisions_detected: true
+  fail_conditions:
+  - id: ACTION-COLLISION-001
+    condition: unresolved_action_collision_without_escalation
+    message: Action collisions must be resolved or explicitly escalated.
+    severity: error
+  - id: ACTION-COLLISION-002
+    condition: collision_resolution_missing_evidence
+    message: Action collision resolution requires evidence listed by the matching collision rule.
+    severity: error

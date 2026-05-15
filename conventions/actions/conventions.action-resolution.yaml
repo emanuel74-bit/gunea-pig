@@ -13,11 +13,14 @@ ownership:
   - artifact_candidate_matching
   - reuse_before_create_policy
   - action_decision_matrix
-  - action_collision_rules
+  - action_priority_order
+  - rejected_action_alternative_rules
   - post_action_artifact_candidate_generation
   - artifact_action_output_schema
   does_not_own:
   - artifact_action_definitions
+  - action_collision_rules
+  - action_followup_trigger_mapping
   - role_taxonomy
   - pattern_selection
   - structure_rendering
@@ -48,6 +51,8 @@ dependencies:
   - planning/conventions.behavior-contract.yaml
   - planning/conventions.codebase-reconnaissance.yaml
   - roles/conventions.role-taxonomy.yaml
+  - actions/conventions.action-collisions.yaml
+  - actions/conventions.action-followups.yaml
   optional_files:
   - risk/conventions.risk-taxonomy.yaml
   - contracts/conventions.contract-taxonomy.yaml
@@ -103,13 +108,15 @@ sections:
   - step_id: EVALUATE_CONSOLIDATION_AND_LIFECYCLE
     action: evaluate_merge_replace_deprecate_delete_when_existing_artifacts_are_affected
   - step_id: RESOLVE_COLLISIONS
-    action: apply_action_collision_rules
+    action: apply_action_collision_decision_from_action_collisions_file
+    uses: actions/conventions.action-collisions.yaml#action_collision_resolution_rules
   - step_id: SELECT_ACTION
     action: select_highest_valid_action_by_priority_and_evidence
   - step_id: GENERATE_POST_ACTION_ARTIFACTS
     action: produce_post_action_artifact_candidates
   - step_id: EMIT_FOLLOWUPS
-    action: emit_required_phase_triggers_and_reports
+    action: derive_required_followups_from_action_followups_file
+    uses: actions/conventions.action-followups.yaml#action_to_followup_mapping
   - step_id: WRITE_REPORT
     action: write_artifact_action_table
   candidate_matching_rules:
@@ -238,88 +245,6 @@ sections:
       - single_responsibility_candidate
       reject_if:
       - existing_owner_available
-  action_collision_rules:
-  - collision_id: CREATE_VS_REUSE
-    condition: create_new and reuse_existing both appear valid
-    resolution: prefer reuse_existing unless existing artifact cannot own the full responsibility
-    requires_evidence:
-    - existing artifact responsibility match or mismatch
-  - collision_id: MODIFY_VS_EXTRACT
-    condition: modify_existing would add a second responsibility
-    resolution: prefer extract_from_existing or split_existing
-    requires_evidence:
-    - mixed responsibility signal
-  - collision_id: WRAP_VS_MODIFY
-    condition: both wrap_existing and modify_existing appear valid
-    resolution: prefer wrap_existing when boundary, compatibility, or external interface adaptation is the main concern; otherwise prefer modify_existing
-    requires_evidence:
-    - boundary or compatibility classification
-  - collision_id: SPLIT_VS_EXTRACT
-    condition: both split_existing and extract_from_existing appear valid
-    resolution: select split_existing when the source artifact has multiple peer responsibilities; select extract_from_existing when one subresponsibility
-      is pulled out and the source keeps primary role
-    requires_evidence:
-    - role distribution before and after action
-  - collision_id: REPLACE_VS_MODIFY
-    condition: both replace_existing and modify_existing appear valid
-    resolution: prefer modify_existing unless the existing artifact is structurally invalid, unsafe, obsolete, or incompatible with required contract
-    requires_evidence:
-    - replacement rationale and migration impact
-  - collision_id: DELETE_VS_DEPRECATE
-    condition: both delete_existing and deprecate_existing appear valid
-    resolution: prefer deprecate_existing when public or unknown consumers exist; prefer delete_existing only when usage is proven absent or migration
-      complete
-    requires_evidence:
-    - consumer and public contract impact
-  - collision_id: MOVE_VS_RENAME
-    condition: both move_existing and rename_existing appear valid
-    resolution: apply both only when path and name are independently justified; otherwise choose the minimal action
-    requires_evidence:
-    - placement reason
-    - naming reason
-  - collision_id: NO_CODE_CHANGE_VS_ANY_CHANGE
-    condition: no_code_change competes with any edit action
-    resolution: select no_code_change only when all acceptance criteria are already satisfied by evidence; otherwise reject no_code_change
-    requires_evidence:
-    - acceptance criteria satisfaction
-  followup_trigger_mapping:
-    create_new:
-    - structure_rendering_required
-    - test_derivation_required
-    modify_existing:
-    - call_site_impact_required
-    - test_derivation_required
-    wrap_existing:
-    - boundary_validation_required
-    - pattern_pressure_possible
-    extract_from_existing:
-    - refactor_like_action_selected
-    - final_role_assignment_required
-    split_existing:
-    - refactor_like_action_selected
-    - role_collision_possible
-    merge_existing:
-    - refactor_like_action_selected
-    - call_site_update_required
-    replace_existing:
-    - compatibility_decision_required
-    - consumer_impact_detected
-    rename_existing:
-    - call_site_update_required
-    - dependency_validation_required
-    move_existing:
-    - dependency_validation_required
-    - import_path_change_detected
-    deprecate_existing:
-    - compatibility_decision_required
-    - consumer_impact_detected
-    delete_existing:
-    - dependency_validation_required
-    - consumer_impact_detected
-    no_code_change:
-    - final_validation_ready
-    reuse_existing:
-    - final_role_assignment_required
   artifact_action_table_schema:
     required_fields:
     - candidate_id
@@ -367,6 +292,10 @@ sections:
     deprecate_existing: carry forward deprecated artifact and preferred replacement relationship
     delete_existing: mark artifact for deletion and remove from post-action active artifacts
     no_code_change: carry forward existing state without post-action artifact change
+  external_policy_integrations:
+    collision_resolution_source: actions/conventions.action-collisions.yaml
+    followup_mapping_source: actions/conventions.action-followups.yaml
+    rule: Action resolution may call these policies but must not redefine them.
 validation:
   required_checks:
   - id: ACTION-RESOLUTION-CHECK-001
@@ -393,6 +322,10 @@ validation:
       selected_action:
       - delete_existing
       - replace_existing
+  - id: ACTION-RESOLUTION-CHECK-003
+    check: resolution_references_collision_and_followup_sources_without_redefining_them
+    applies_when:
+      action_resolution_loaded: true
   fail_conditions:
   - id: ACTION-RESOLUTION-001
     condition: artifact_without_action
@@ -425,4 +358,8 @@ validation:
   - id: ACTION-RESOLUTION-008
     condition: action_decision_missing_rejected_alternatives
     message: Selected artifact action must include rejected alternatives.
+    severity: error
+  - id: ACTION-RESOLUTION-003
+    condition: action_resolution_redefines_collision_or_followup_policy
+    message: Action resolution must reference collision and followup policies but must not own them.
     severity: error
