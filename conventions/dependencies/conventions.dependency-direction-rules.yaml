@@ -1,0 +1,206 @@
+version: '1.0'
+file:
+  name: conventions.dependency-direction-rules.yaml
+  path: dependencies/conventions.dependency-direction-rules.yaml
+  role: dependency_direction_rules_contract
+  executability: validator
+purpose: Define architectural dependency direction rules for layers, modules, cross-module access, dependency inversion, and
+  circular dependency prevention.
+ownership:
+  owns:
+  - allowed_dependency_directions
+  - forbidden_dependency_directions
+  - conditional_dependency_directions
+  - layer_dependency_rules
+  - module_dependency_rules
+  - cross_module_dependency_rules
+  - dependency_inversion_rules
+  - circular_dependency_rules
+  - dependency_direction_validation_algorithm
+  does_not_own:
+  - dependency_type_definitions
+  - static_import_syntax_rules
+  - test_dependency_exceptions
+  - dependency_validation_output
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - dependency_classification_report
+  optional:
+  - role_assignment_table
+  - boundary_contract_classification
+  - module_graph
+  - layer_map
+outputs:
+  produces:
+  - dependency_direction_validation_result
+dependencies:
+  required_files:
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - dependencies/conventions.dependency-classification.yaml
+  optional_files:
+  - roles/conventions.role-taxonomy.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - architecture/conventions.structure.yaml
+sections:
+  allowed_dependency_directions:
+    layer:
+    - transport_to_application
+    - application_to_domain
+    - application_to_port
+    - domain_to_domain
+    - infrastructure_to_port
+    - infrastructure_to_external_system
+    - test_to_artifact_under_test
+    module:
+    - module_internal_to_module_internal
+    - feature_to_shared_kernel
+    - cross_module_to_public_api
+    runtime:
+    - infrastructure_runtime_registration
+    - adapter_to_external_system
+    - test_to_fake_or_fixture
+  forbidden_dependency_directions:
+    layer:
+    - domain_to_infrastructure
+    - domain_to_transport
+    - domain_to_persistence_model
+    - application_to_transport
+    - transport_to_persistence_directly
+    - production_to_test_support
+    module:
+    - shared_to_feature_specific
+    - module_to_private_internal
+    - feature_to_other_feature_internal
+    - public_api_to_private_consumer
+    runtime:
+    - domain_runtime_framework_registration
+    - application_runtime_transport_registration
+    - production_to_test_runtime_registration
+  conditional_dependency_directions:
+    application_to_infrastructure:
+      allowed_only_when:
+      - target is abstract port/interface/token owned by application/domain boundary
+      required_followup:
+      - verify target is abstraction not concrete adapter
+    cross_module_dependency:
+      allowed_only_when:
+      - target path is exported public module API
+      - contract compatibility is preserved
+      required_followup:
+      - boundary_contract_classification when public surface changes
+    dynamic_import:
+      allowed_only_when:
+      - runtime loading is explicit, documented, and validated
+      required_followup:
+      - runtime_registration_review
+    shared_kernel_dependency:
+      allowed_only_when:
+      - target is stable, generic, and not feature-specific
+      required_followup:
+      - shared_kernel_purity_review
+    external_package_dependency:
+      allowed_only_when:
+      - package dependency is intentional and isolated according to layer rules
+      required_followup:
+      - external_package_risk_review when security/runtime sensitive
+  layer_dependency_rules:
+  - rule_id: IMPORT-LAYER-001
+    rule: Transport may depend on application/use-case boundary, not repositories or persistence models.
+    fail_condition: transport_to_persistence_directly
+  - rule_id: IMPORT-LAYER-002
+    rule: Application may depend on domain and ports, not transport adapters.
+    fail_condition: application_to_transport
+  - rule_id: IMPORT-LAYER-003
+    rule: Domain must not depend on infrastructure, frameworks, persistence models, or transport.
+    fail_condition: domain_depends_on_outer_layer
+  - rule_id: IMPORT-LAYER-004
+    rule: Infrastructure may implement ports and depend on external systems/packages.
+    fail_condition: infrastructure_bypasses_port_when_port_required
+  - rule_id: IMPORT-LAYER-005
+    rule: Tests may depend on artifacts under test and test helpers, but production may not depend on tests.
+    fail_condition: production_to_test_support
+  module_dependency_rules:
+  - &id001
+    rule_id: IMPORT-MODULE-001
+    rule: Cross-module imports must target exported public module API, never private/internal paths.
+    fail_condition: cross_module_private_import
+  - &id003
+    rule_id: IMPORT-MODULE-002
+    rule: Circular module dependencies are forbidden.
+    fail_condition: dependency_cycle_detected
+  - rule_id: IMPORT-MODULE-003
+    rule: Shared/common/kernel modules must not import feature-specific modules.
+    fail_condition: shared_imports_feature_specific
+  - &id002
+    rule_id: IMPORT-MODULE-004
+    rule: Feature modules may depend on shared kernel only through stable public exports.
+    fail_condition: feature_imports_shared_private
+  cross_module_dependency_rules:
+  - *id001
+  - *id002
+  dependency_inversion_rules:
+  - rule_id: DEPENDENCY-INVERSION-001
+    rule: High-level policy and domain/application behavior must depend on abstractions, not concrete infrastructure adapters.
+    fail_condition: policy_depends_on_concrete_adapter
+  - rule_id: DEPENDENCY-INVERSION-002
+    rule: Infrastructure adapters may implement or bind ports, but ports must be owned by an inner layer or boundary contract.
+    fail_condition: port_owned_by_outer_adapter
+  - rule_id: DEPENDENCY-INVERSION-003
+    rule: Provider registration may bind a concrete implementation to an abstraction only at composition/runtime wiring boundaries.
+    fail_condition: provider_binding_inside_domain_or_core_logic
+  circular_dependency_rules:
+  - *id003
+  - rule_id: DIRECTION-CYCLE-002
+    rule: Circular dependencies between layers, modules, or role groups are forbidden unless explicitly modeled as event/message
+      flow with no import cycle.
+    fail_condition: architectural_cycle_detected
+  dependency_direction_validation_algorithm:
+  - step_id: LOAD_DEPENDENCY_CLASSIFICATION
+    action: read dependency records
+  - step_id: RESOLVE_SOURCE_TARGET_ROLES
+    action: map artifacts to roles, layers, modules, scopes
+  - step_id: MATCH_FORBIDDEN_DIRECTIONS
+    action: reject dependencies matching forbidden direction rules
+  - step_id: MATCH_CONDITIONAL_DIRECTIONS
+    action: require condition evidence and followups for conditional directions
+  - step_id: MATCH_ALLOWED_DIRECTIONS
+    action: accept only dependencies matching allowed direction rules or validated conditional rules
+  - step_id: CHECK_LAYER_AND_MODULE_RULES
+    action: validate layer, module, cross-module, inversion, and cycle constraints
+  - step_id: EMIT_DIRECTION_RESULT
+    action: produce direction validation result consumed by dependency-validation
+validation:
+  required_checks:
+  - id: DEPENDENCY-DIRECTION-CHECK-001
+    check: forbidden_dependency_directions_are_rejected
+    applies_when:
+      dependency_direction_validated: true
+  - id: DEPENDENCY-DIRECTION-CHECK-002
+    check: conditional_dependency_requirements_are_enforced
+    applies_when:
+      conditional_dependency_detected: true
+  - id: DEPENDENCY-DIRECTION-CHECK-003
+    check: dependency_cycles_are_rejected
+    applies_when:
+      dependency_graph_available: true
+  fail_conditions:
+  - id: DEPENDENCY-DIRECTION-001
+    condition: forbidden_dependency_direction
+    message: Forbidden architectural dependency direction.
+    severity: error
+  - id: DEPENDENCY-DIRECTION-002
+    condition: conditional_dependency_without_required_followup
+    message: Conditional dependency direction requires evidence and followup.
+    severity: error
+  - id: DEPENDENCY-DIRECTION-003
+    condition: dependency_cycle_detected
+    message: Circular dependency detected.
+    severity: error
+  - id: DEPENDENCY-DIRECTION-004
+    condition: dependency_inversion_violation
+    message: Concrete outer dependency leaked into inner policy layer.
+    severity: error

@@ -4,15 +4,18 @@ file:
   path: dependencies/conventions.dependencies.yaml
   role: dependency_system_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for dependency taxonomy and import rule validation.
+purpose: Entrypoint for dependency taxonomy, classification, import direction rules, and dependency validation.
 ownership:
   owns:
-  - dependency_system_metadata
+  - dependency_subsystem_metadata
   - dependency_file_index
   - dependency_system_execution_order
+  - dependency_subsystem_contract
   does_not_own:
   - dependency_type_definitions
+  - dependency_classification_rules
   - detailed_import_rules
+  - dependency_validation_checks
 activation:
   mode: always
   activates_when: []
@@ -24,18 +27,51 @@ outputs:
   produces:
   - dependencies_result
 dependencies:
-  required_files: []
+  required_files:
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - dependencies/conventions.dependency-classification.yaml
+  - dependencies/conventions.import-rules.yaml
+  - dependencies/conventions.dependency-validation.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
+  - dependencies/conventions.test-dependency-rules.yaml
   optional_files: []
 sections:
   dependency_file_index:
     taxonomy: dependencies/conventions.dependency-taxonomy.yaml
+    classification: dependencies/conventions.dependency-classification.yaml
+    direction_rules: dependencies/conventions.dependency-direction-rules.yaml
     import_rules: dependencies/conventions.import-rules.yaml
+    test_dependency_rules: dependencies/conventions.test-dependency-rules.yaml
+    validation: dependencies/conventions.dependency-validation.yaml
   dependency_system_execution_order:
-  - load_dependency_taxonomy
-  - classify_dependencies
-  - validate_dependency_directions
-  - route_required_dependency_followups
-  - produce_dependency_system_result
+  - dependency-taxonomy
+  - dependency-classification
+  - dependency-direction-rules
+  - import-rules
+  - test-dependency-rules
+  - dependency-validation
+  dependency_system_contract:
+    absolute_rules:
+    - id: DEPENDENCY-SYSTEM-ABS-001
+      rule: Dependency taxonomy defines vocabulary only and must not decide project-specific dependency validity.
+      fail_condition: taxonomy_performed_dependency_validation
+    - id: DEPENDENCY-SYSTEM-ABS-002
+      rule: Dependency classification must produce evidence-backed dependency records before validation decisions are made.
+      fail_condition: dependency_validation_without_classification
+    - id: DEPENDENCY-SYSTEM-ABS-003
+      rule: Import rules own direction legality; classification may flag risk but must not redefine allowed directions.
+      fail_condition: classification_redefined_import_rules
+    - id: DEPENDENCY-SYSTEM-ABS-004
+      rule: Dependency validation must emit followups for blocking violations.
+      fail_condition: blocking_dependency_violation_without_followup
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: DEPENDENCIES-SYSTEM-CHECK-001
+    check: dependency_subsystem_files_exist
+    applies_when:
+      dependency_subsystem_loaded: true
+  fail_conditions:
+  - id: DEPENDENCIES-SYSTEM-001
+    condition: dependency_system_missing_required_file
+    message: Dependency subsystem required file is missing.
+    severity: error

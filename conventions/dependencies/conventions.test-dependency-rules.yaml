@@ -1,0 +1,148 @@
+version: '1.0'
+file:
+  name: conventions.test-dependency-rules.yaml
+  path: dependencies/conventions.test-dependency-rules.yaml
+  role: test_dependency_rules_contract
+  executability: validator
+purpose: Define test-only dependency allowances, test double rules, fixture/helper import rules, and production-to-test dependency
+  prohibitions.
+ownership:
+  owns:
+  - test_dependency_allowances
+  - production_to_test_prohibition_rules
+  - mock_stub_fake_rules
+  - test_helper_import_rules
+  - test_dependency_exception_rules
+  - test_dependency_validation_algorithm
+  does_not_own:
+  - production_dependency_direction_rules
+  - static_import_style_rules
+  - dependency_type_definitions
+  - general_dependency_validation_algorithm
+activation:
+  mode: conditional
+  activates_when:
+  - test_dependencies_detected
+  - test_scope_validation_required
+  skips_when: []
+inputs:
+  required:
+  - dependency_classification_report
+  optional:
+  - test_file_inventory
+  - import_graph
+  - test_plan
+outputs:
+  produces:
+  - test_dependency_validation_result
+dependencies:
+  required_files:
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - dependencies/conventions.dependency-classification.yaml
+  optional_files:
+  - testing/conventions.testing-taxonomy.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+sections:
+  test_dependency_allowances:
+    test_to_artifact_under_test:
+      allowed_when:
+      - test imports the production artifact it directly verifies
+      forbidden_when:
+      - test reaches through private internals when public behavior can be tested
+      required_evidence:
+      - test file path
+      - artifact under test path
+    test_to_fake_or_fixture:
+      allowed_when:
+      - fake, fixture, builder, or helper is test scoped
+      forbidden_when:
+      - fake or fixture is imported by production code
+      required_evidence:
+      - test support path
+      - import graph edge
+    test_to_public_module_api:
+      allowed_when:
+      - integration or contract test verifies public surface
+      forbidden_when:
+      - test relies on private module internals unnecessarily
+      required_evidence:
+      - public export path
+  production_to_test_prohibition_rules:
+  - rule_id: IMPORT-TEST-001
+    rule: Production code must never import mocks, fixtures, builders, or test support.
+    fail_condition: test_only_dependency_leaks_to_production
+  - rule_id: TEST-DEPENDENCY-PROD-002
+    rule: Production source files must not import test helpers, fixtures, mocks, builders, or generated test-only artifacts.
+    fail_condition: production_imports_test_support
+  - rule_id: TEST-DEPENDENCY-PROD-003
+    rule: Production runtime registration must not bind test fakes or mocks.
+    fail_condition: production_runtime_binds_test_fake
+  mock_stub_fake_rules:
+  - rule_id: IMPORT-TEST-002
+    rule: Fakes must satisfy the same port/contract as the production implementation.
+    fail_condition: fake_does_not_satisfy_contract
+  - rule_id: TEST-DOUBLE-002
+    rule: Mocks and stubs may simplify behavior only inside tests and must not redefine the production contract being verified.
+    fail_condition: test_double_redefines_contract
+  - rule_id: TEST-DOUBLE-003
+    rule: Fakes used for integration-like tests must preserve observable contract behavior required by the test scenario.
+    fail_condition: fake_breaks_observable_contract
+  test_helper_import_rules:
+  - rule_id: IMPORT-TEST-003
+    rule: Test helpers must not become public module API.
+    fail_condition: test_helper_exported_as_public_api
+  - rule_id: TEST-HELPER-002
+    rule: Test helpers must remain under test scope or explicitly named test-support scope.
+    fail_condition: test_helper_outside_test_scope
+  - rule_id: TEST-HELPER-003
+    rule: Shared test helpers must not introduce dependency cycles between unrelated feature test suites.
+    fail_condition: test_helper_creates_cross_feature_cycle
+  test_dependency_exception_rules:
+  - rule_id: TEST-EXCEPTION-001
+    rule: Tests may depend outward on adapters, repositories, clients, or infrastructure only when the test type requires
+      integration or e2e behavior.
+    fail_condition: unit_test_depends_on_infrastructure_without_reason
+  - rule_id: TEST-EXCEPTION-002
+    rule: Tests may access private internals only for characterization or migration safety when public behavior is insufficient
+      and the exception is recorded.
+    fail_condition: unrecorded_private_internal_test_access
+  test_dependency_validation_algorithm:
+  - step_id: LOAD_TEST_IMPORT_GRAPH
+    action: read test import edges and production import edges
+  - step_id: CLASSIFY_TEST_SCOPES
+    action: classify test files, fixtures, helpers, fakes, mocks, and builders
+  - step_id: CHECK_PRODUCTION_TO_TEST_PROHIBITION
+    action: reject production imports from test-only scope
+  - step_id: CHECK_TEST_DOUBLE_CONTRACTS
+    action: validate fakes/mocks/stubs against target ports or contracts
+  - step_id: CHECK_TEST_HELPER_VISIBILITY
+    action: validate helpers are not public production API
+  - step_id: EMIT_TEST_DEPENDENCY_RESULT
+    action: produce test dependency validation result consumed by dependency-validation
+validation:
+  required_checks:
+  - id: TEST-DEPENDENCY-CHECK-001
+    check: production_does_not_import_test_scope
+    applies_when:
+      production_import_graph_available: true
+  - id: TEST-DEPENDENCY-CHECK-002
+    check: test_doubles_satisfy_declared_contracts
+    applies_when:
+      test_doubles_detected: true
+  fail_conditions:
+  - id: TEST-DEPENDENCY-001
+    condition: test_only_dependency_leaks_to_production
+    message: Test-only dependency leaks to production code.
+    severity: error
+  - id: TEST-DEPENDENCY-002
+    condition: fake_does_not_satisfy_contract
+    message: Fake does not satisfy the same port or contract as the production implementation.
+    severity: error
+  - id: TEST-DEPENDENCY-003
+    condition: test_helper_exported_as_public_api
+    message: Test helper must not become public production API.
+    severity: error
+  - id: TEST-DEPENDENCY-004
+    condition: unrecorded_private_internal_test_access
+    message: Private internal test access requires explicit exception.
+    severity: warning

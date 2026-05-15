@@ -1,0 +1,190 @@
+version: '1.0'
+file:
+  name: conventions.dependency-validation.yaml
+  path: dependencies/conventions.dependency-validation.yaml
+  role: dependency_validation_contract
+  executability: validator
+purpose: Validate dependency classification output against taxonomy, direction rules, module boundaries, runtime dependency
+  rules, and test-scope isolation.
+ownership:
+  owns:
+  - dependency_validation_inputs
+  - validation_check_registry
+  - violation_severity_rules
+  - required_followup_mapping
+  - dependency_validation_output_schema
+  - dependency_validation_algorithm
+  does_not_own:
+  - dependency_type_definitions
+  - dependency_classification_rules
+  - import_direction_vocabulary
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - dependency_classification_report
+  - import_rules_validation_report
+  optional:
+  - boundary_contract_classification
+  - role_assignment_table
+  - source_inventory
+  - import_graph
+outputs:
+  produces:
+  - dependency_validation_report
+dependencies:
+  required_files:
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - dependencies/conventions.dependency-classification.yaml
+  - dependencies/conventions.import-rules.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
+  - dependencies/conventions.test-dependency-rules.yaml
+  optional_files:
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - roles/conventions.role-taxonomy.yaml
+sections:
+  dependency_validation_inputs:
+    required:
+    - dependency_classification_report
+    - import_rules
+    optional:
+    - boundary_contract_classification
+    - role_assignment_table
+    - source_inventory
+    - import_graph
+  validation_check_registry:
+  - check_id: DEP-VALID-001
+    name: known_dependency_type
+    pass_when: dependency_type exists in dependency_type_enum
+    fail_condition: unknown_dependency_type
+  - check_id: DEP-VALID-002
+    name: known_dependency_scope
+    pass_when: dependency_scope exists in dependency_scope_enum
+    fail_condition: unknown_dependency_scope
+  - check_id: DEP-VALID-003
+    name: allowed_direction
+    pass_when: dependency direction is allowed or conditional rule requirements are satisfied
+    fail_condition: forbidden_dependency_direction
+  - check_id: DEP-VALID-004
+    name: no_cycles
+    pass_when: dependency graph contains no unapproved cycles
+    fail_condition: dependency_cycle_detected
+  - check_id: DEP-VALID-005
+    name: public_api_cross_module
+    pass_when: cross-module dependency uses public exported API
+    fail_condition: cross_module_private_import
+  - check_id: DEP-VALID-006
+    name: no_test_leak
+    pass_when: production source has no test-only dependency
+    fail_condition: test_only_dependency_leaks_to_production
+  - check_id: DEP-VALID-007
+    name: runtime_registration_valid
+    pass_when: runtime registrations are present, documented, compatible, and non-duplicated
+    fail_condition: runtime_registration_invalid
+  - check_id: DEP-VALID-008
+    name: provider_binding_valid
+    pass_when: provider binding target satisfies expected abstraction/port
+    fail_condition: provider_binding_incompatible_with_port
+  - check_id: DEP-VALID-009
+    name: external_dependency_reviewed
+    pass_when: external package/system dependency has required boundary/risk review when sensitive
+    fail_condition: external_dependency_missing_review
+  - check_id: DEP-VALID-010
+    name: configuration_dependency_safe
+    pass_when: configuration references have documented defaults/validation or explicit requirement
+    fail_condition: configuration_dependency_unvalidated
+  violation_severity_rules:
+  - severity: error
+    when:
+    - domain_to_infrastructure
+    - domain_to_transport
+    - production_to_test_support
+    - dependency_cycle_detected
+    - cross_module_private_import
+  - severity: warning
+    when:
+    - dynamic_import_without_failure_mode
+    - external_package_without_version_review
+    - shared_kernel_instability_signal
+  - severity: info
+    when:
+    - allowed_dependency_requires_documentation
+    - test_only_dependency_valid
+  required_followup_mapping:
+  - fail_condition: forbidden_dependency_direction
+    followup: revision_request_or_artifact_action_review
+  - fail_condition: cross_module_private_import
+    followup: boundary_contract_classification_or_public_api_export
+  - fail_condition: dependency_cycle_detected
+    followup: action_resolution_consider_extract_port_event_or_split
+  - fail_condition: runtime_registration_invalid
+    followup: implementation_sequence_must_include_registration_fix
+  - fail_condition: external_dependency_missing_review
+    followup: boundary_validation_required
+  - fail_condition: test_only_dependency_leaks_to_production
+    followup: implementation_must_remove_test_dependency
+  dependency_validation_output_schema:
+    required_fields:
+    - validation_status
+    - checked_dependencies
+    - violations
+    - warnings
+    - required_followups
+    - evidence_refs
+    violation_shape:
+      violation_id: ''
+      dependency_id: ''
+      fail_condition: ''
+      severity: ''
+      message: ''
+      required_followup: ''
+      evidence_refs: []
+  dependency_validation_algorithm:
+  - step_id: LOAD_INPUTS
+    action: read dependency classification and import rules
+  - step_id: VALIDATE_VOCABULARY
+    action: check dependency type/scope/direction values
+  - step_id: VALIDATE_DIRECTIONS
+    action: apply allowed/conditional/forbidden direction rules
+  - step_id: VALIDATE_GRAPH
+    action: check cycles and private/public import boundaries
+  - step_id: VALIDATE_RUNTIME
+    action: check provider bindings, registrations, dynamic imports, callbacks
+  - step_id: VALIDATE_TEST_SCOPE
+    action: check test-only dependency isolation
+  - step_id: ASSIGN_SEVERITY
+    action: apply violation severity rules
+  - step_id: MAP_FOLLOWUPS
+    action: apply required followup mapping
+  - step_id: WRITE_REPORT
+    action: produce dependency-validation report
+  validation_source_rules:
+    dependency_direction_validation: consume dependencies/conventions.dependency-direction-rules.yaml
+    static_import_validation: consume dependencies/conventions.import-rules.yaml
+    test_dependency_validation: consume dependencies/conventions.test-dependency-rules.yaml
+    classification_validation: consume dependencies/conventions.dependency-classification.yaml
+validation:
+  required_checks:
+  - id: DEPENDENCY-VALIDATION-CHECK-001
+    check: dependency_validation_report_emitted
+    applies_when:
+      dependency_validation_required: true
+  - id: DEPENDENCY-VALIDATION-CHECK-002
+    check: blocking_violations_have_followups
+    applies_when:
+      blocking_dependency_violation_detected: true
+  fail_conditions:
+  - id: DEPENDENCY-VALIDATION-001
+    condition: dependency_validation_report_missing
+    message: Dependency validation report is required when dependency validation runs.
+    severity: error
+  - id: DEPENDENCY-VALIDATION-002
+    condition: blocking_dependency_violation_without_followup
+    message: Blocking dependency violation must emit required followup.
+    severity: error
+  - id: DEPENDENCY-VALIDATION-003
+    condition: dependency_validation_ignored_forbidden_direction
+    message: Forbidden dependency direction must fail validation.
+    severity: error

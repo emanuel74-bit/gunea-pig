@@ -1,0 +1,235 @@
+version: '1.0'
+file:
+  name: conventions.dependency-classification.yaml
+  path: dependencies/conventions.dependency-classification.yaml
+  role: dependency_classification_contract
+  executability: decision_engine
+purpose: Classify dependency relationships from reconnaissance evidence into dependency type, scope, direction, risk signals, and required followups.
+ownership:
+  owns:
+  - dependency_classification_inputs
+  - classification_evidence_sources
+  - dependency_type_detection_rules
+  - dependency_scope_classification_rules
+  - dependency_risk_classification_rules
+  - dependency_classification_algorithm
+  - dependency_classification_output_schema
+  does_not_own:
+  - dependency_type_definitions
+  - allowed_dependency_directions
+  - forbidden_dependency_directions
+  - dependency_validation_pass_fail
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required:
+  - codebase_reconnaissance_report
+  optional:
+  - boundary_contract_classification
+  - architecture_blueprint
+  - source_inventory
+  - import_graph
+outputs:
+  produces:
+  - dependency_classification_report
+dependencies:
+  required_files:
+  - dependencies/conventions.dependency-taxonomy.yaml
+  optional_files:
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+sections:
+  dependency_classification_inputs:
+    required:
+    - codebase_reconnaissance_report
+    - active_context_manifest
+    optional:
+    - boundary_contract_classification
+    - architecture_blueprint
+    - local_alignment
+    - source_inventory
+    - import_graph
+  classification_evidence_sources:
+  - source: static_import_graph
+    use_for:
+    - static_import
+    - dependency_direction
+    - cycle_detection
+  - source: framework_metadata_or_di_registration
+    use_for:
+    - constructor_injection
+    - provider_binding
+    - runtime_registration
+  - source: message_or_event_contracts
+    use_for:
+    - event_publication
+    - message_subscription
+  - source: configuration_access_patterns
+    use_for:
+    - configuration_reference
+  - source: test_file_inventory
+    use_for:
+    - test_only_dependency
+    - test_leak_detection
+  dependency_type_detection_rules:
+  - rule_id: DEP-CLASS-TYPE-001
+    match:
+      signal: static import/export edge exists
+    classify_as: static_import
+    reject_when:
+    - edge is only type erased with no runtime or architecture relevance and no boundary impact
+  - rule_id: DEP-CLASS-TYPE-002
+    match:
+      signal: runtime import/load path exists
+    classify_as: dynamic_import
+    required_followup:
+    - document_runtime_loading_reason
+  - rule_id: DEP-CLASS-TYPE-003
+    match:
+      signal: constructor parameter or injected member references collaborator
+    classify_as: constructor_injection
+  - rule_id: DEP-CLASS-TYPE-004
+    match:
+      signal: DI/container/module provider binding maps token to implementation
+    classify_as: provider_binding
+  - rule_id: DEP-CLASS-TYPE-005
+    match:
+      signal: module/plugin/handler is registered with framework or registry
+    classify_as: runtime_registration
+  - rule_id: DEP-CLASS-TYPE-006
+    match:
+      signal: event/topic is published without direct consumer call
+    classify_as: event_publication
+  - rule_id: DEP-CLASS-TYPE-007
+    match:
+      signal: handler subscribes to queue/topic/event stream
+    classify_as: message_subscription
+  - rule_id: DEP-CLASS-TYPE-008
+    match:
+      signal: callback/listener/hook/interceptor/middleware registration exists
+    classify_as: callback_registration
+  - rule_id: DEP-CLASS-TYPE-009
+    match:
+      signal: config/env/flag/secret read affects behavior
+    classify_as: configuration_reference
+  - rule_id: DEP-CLASS-TYPE-010
+    match:
+      signal: dependency exists only from test/fixture/spec scope
+    classify_as: test_only_dependency
+  dependency_scope_classification_rules:
+  - rule_id: DEP-CLASS-SCOPE-001
+    classify_as: same_artifact
+    when:
+    - source and target are same file/class/artifact
+  - rule_id: DEP-CLASS-SCOPE-002
+    classify_as: same_flow
+    when:
+    - source and target are in same use-case/flow boundary but different artifacts
+  - rule_id: DEP-CLASS-SCOPE-003
+    classify_as: same_module
+    when:
+    - source and target are under same module/capability root
+  - rule_id: DEP-CLASS-SCOPE-004
+    classify_as: cross_module
+    when:
+    - source and target belong to different module/capability roots
+  - rule_id: DEP-CLASS-SCOPE-005
+    classify_as: shared_kernel
+    when:
+    - target is shared stable kernel/common domain artifact consumed by multiple modules
+  - rule_id: DEP-CLASS-SCOPE-006
+    classify_as: external_package
+    when:
+    - target resolves to installed third-party package
+  - rule_id: DEP-CLASS-SCOPE-007
+    classify_as: external_system
+    when:
+    - target crosses process/service/network/storage/queue boundary
+  - rule_id: DEP-CLASS-SCOPE-008
+    classify_as: test_scope
+    when:
+    - source and target are contained in test/support scope only
+  dependency_risk_classification_rules:
+  - risk: forbidden_direction
+    positive_signals:
+    - source layer is inner than target layer
+    - target is concrete infrastructure from domain/application without port
+    required_action: dependency_validation_required
+  - risk: private_api_coupling
+    positive_signals:
+    - cross-module import targets non-exported internal path
+    - path contains internal/private folder
+    required_action: replace_with_public_contract_or_adapter
+  - risk: circular_dependency
+    positive_signals:
+    - dependency graph has cycle
+    - module imports each other directly/indirectly
+    required_action: break_cycle_with_port_event_or_extraction
+  - risk: runtime_hidden_dependency
+    positive_signals:
+    - dynamic import or runtime registration not documented
+    - activation order matters
+    required_action: document_and_validate_runtime_registration
+  - risk: test_leak
+    positive_signals:
+    - production artifact imports test fixture/mock/spec helper
+    required_action: remove_or_move_dependency
+  - risk: external_contract_drift
+    positive_signals:
+    - dependency targets external system/package contract without compatibility review
+    required_action: contract_or_boundary_review
+  dependency_classification_algorithm:
+  - step_id: LOAD_INPUTS
+    action: read required classification inputs
+  - step_id: COLLECT_EVIDENCE
+    action: extract dependency evidence from imports, DI bindings, runtime registrations, events, config, tests
+  - step_id: CLASSIFY_TYPE
+    action: apply dependency_type_detection_rules in priority order
+  - step_id: CLASSIFY_SCOPE
+    action: apply dependency_scope_classification_rules
+  - step_id: CLASSIFY_DIRECTION
+    action: map source/target roles/layers to direction vocabulary
+  - step_id: CLASSIFY_RISK
+    action: apply dependency_risk_classification_rules
+  - step_id: DETERMINE_REQUIRED_FOLLOWUPS
+    action: emit required validation/review triggers for risky dependencies
+  - step_id: WRITE_OUTPUT
+    action: produce dependency-classification report
+  dependency_classification_output_schema:
+    required_fields:
+    - dependency_records
+    - direction_risks
+    - validation_needs
+    - evidence_refs
+    dependency_record_shape:
+      dependency_id: ''
+      source_artifact: ''
+      target_artifact: ''
+      dependency_type: ''
+      dependency_scope: ''
+      direction: ''
+      is_allowed: null
+      risk_signals: []
+      required_followups: []
+      evidence_refs: []
+validation:
+  required_checks:
+  - id: DEPENDENCY-CLASSIFICATION-CHECK-001
+    check: dependency_records_have_evidence
+    applies_when:
+      dependency_classification_runs: true
+  - id: DEPENDENCY-CLASSIFICATION-CHECK-002
+    check: classified_dependency_values_are_known
+    applies_when:
+      dependency_classification_runs: true
+  fail_conditions:
+  - id: DEPENDENCY-CLASSIFICATION-001
+    condition: dependency_record_missing_evidence
+    message: Dependency classification record must include evidence or explicit no_evidence_available marker.
+    severity: error
+  - id: DEPENDENCY-CLASSIFICATION-002
+    condition: dependency_classification_uses_unknown_taxonomy_value
+    message: Dependency classification used an unknown type, scope, or direction value.
+    severity: error

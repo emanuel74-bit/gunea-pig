@@ -4,18 +4,22 @@ file:
   path: dependencies/conventions.dependency-taxonomy.yaml
   role: dependency_taxonomy_contract
   executability: vocabulary
-purpose: Define dependency types, scopes, direction vocabulary, relationship schema, and classification output.
+purpose: Define dependency vocabulary, relationship mechanisms, scopes, direction terms, relationship schema, and dependency risk signal vocabulary.
 ownership:
   owns:
   - dependency_type_enum
+  - dependency_type_definitions
   - dependency_scope_enum
-  - dependency_direction_vocabulary
+  - dependency_scope_definitions
+  - dependency_direction_enum
+  - dependency_direction_definitions
   - dependency_relationship_schema
-  - dependency_classification_schema
-  - dependency_risk_signals
+  - dependency_risk_signal_enum
   does_not_own:
+  - dependency_classification_rules
   - import_validation_rules
   - architecture_layer_definitions
+  - project_specific_dependency_decisions
 activation:
   mode: always
   activates_when: []
@@ -44,255 +48,350 @@ sections:
     - test_only_dependency
   dependency_type_definitions:
     static_import:
-      definition: Compile-time import/reference between files or modules that affects dependency direction and bundling.
+      definition: Compile-time source-level import or symbol reference between files, modules, or packages.
+      positive_signals:
+      - import statement exists
+      - exported symbol is referenced
+      - compile graph shows source depends on target
+      - target code must exist for compilation
+      negative_signals:
+      - dependency is discovered only through configuration
+      - relationship occurs only at runtime registration
+      - relationship is test-only and not compiled into production artifact
+      choose_when:
+      - a file/module imports another file/module directly
+      - the relationship changes TypeScript/JavaScript/Go/etc. compile graph
+      - dependency direction can be inferred statically
+      reject_when:
+      - only documentation mentions the dependency
+      - relationship is dependency injection binding without direct import by consumer
+      - relationship is event/message contract without direct symbol dependency
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - static_import_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as static import
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the static import case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - forbidden_layer_direction
+      - private_api_coupling
+      - circular_dependency
+      - barrel_export_leak
+      required_evidence: &id001
+      - source report reference
+      - import graph reference
+      - code reference
+      - explicit no_evidence_available marker
     dynamic_import:
-      definition: Runtime-loaded import/reference where dependency may be conditional, lazy, or harder to discover statically.
+      definition: Runtime or lazy import/load where dependency is created conditionally, by string, by plugin loader, or by async module loading.
+      positive_signals:
+      - import() call exists
+      - require() uses dynamic value
+      - module loader resolves target at runtime
+      - lazy route/provider registration references target
+      negative_signals:
+      - normal static import exists
+      - dependency is explicit constructor parameter
+      - event or message contract only
+      choose_when:
+      - runtime loading is a first-class behavior
+      - target may not be loaded during normal startup
+      - static import graph cannot fully prove the dependency
+      reject_when:
+      - dependency is always statically imported
+      - runtime indirection is not relevant to architecture boundary
+      - dynamic loader is external infrastructure only
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - dynamic_import_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as dynamic import
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the dynamic import case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - hidden_runtime_coupling
+      - unvalidated_plugin_boundary
+      - deployment_missing_module
+      - hard_to_trace_failure
+      required_evidence: *id001
     constructor_injection:
-      definition: Dependency supplied through constructor parameters, usually DI-managed and explicit at object creation.
+      definition: Dependency supplied through constructor parameters or equivalent object creation injection.
+      positive_signals:
+      - constructor parameter references dependency type/token
+      - DI framework injects dependency into class
+      - class stores dependency as field/member
+      - test can provide fake through constructor
+      negative_signals:
+      - dependency is fetched from global service locator
+      - dependency is instantiated manually inside method
+      - dependency is only imported as type with no runtime use
+      choose_when:
+      - the consumer explicitly requires a collaborator to operate
+      - dependency should be visible in object contract
+      - collaborator substitution/testing is needed
+      reject_when:
+      - dependency is optional runtime callback
+      - dependency should be created by factory inside same aggregate
+      - dependency belongs only to configuration bootstrap
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - constructor_injection_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as constructor injection
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the constructor injection case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - wrong_layer_collaborator
+      - over-injected_class
+      - container_token_leak
+      - hidden_side_effect_dependency
+      required_evidence: *id001
     provider_binding:
-      definition: DI/container binding that maps abstractions/tokens to implementations.
+      definition: Container or module binding that maps an abstraction, token, or port to an implementation.
+      positive_signals:
+      - provider/token binding exists
+      - module providers array maps token to class/value/factory
+      - interface/port is bound to adapter
+      - runtime container resolves implementation
+      negative_signals:
+      - class directly imports implementation without binding
+      - static import only
+      - configuration value without provider lifecycle
+      choose_when:
+      - the dependency is resolved by framework/container
+      - implementation should be swappable behind abstraction
+      - binding determines runtime collaborator
+      reject_when:
+      - no DI/container is involved
+      - consumer should own construction directly
+      - binding violates abstraction direction
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - provider_binding_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as provider binding
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the provider binding case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - wrong_implementation_bound_to_port
+      - infrastructure_leaks_into_domain
+      - missing_provider_registration
+      - ambiguous_provider_token
+      required_evidence: *id001
     runtime_registration:
-      definition: Runtime module/plugin/provider registration that changes behavior without direct import at call site.
+      definition: Runtime registration of modules, plugins, handlers, routes, providers, or lifecycle participants.
+      positive_signals:
+      - module/plugin registration API is called
+      - handler is registered in registry
+      - framework bootstrap includes component
+      - runtime list/config activates feature
+      negative_signals:
+      - simple direct method call
+      - constructor injection only
+      - event publication without registration responsibility
+      choose_when:
+      - behavior depends on a registration step
+      - component availability is determined at startup/runtime
+      - missing registration breaks feature without compile failure
+      reject_when:
+      - relationship is fully represented by static import
+      - registration is purely test setup
+      - registration is generated outside application ownership
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - runtime_registration_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as runtime registration
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the runtime registration case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - missing_runtime_entrypoint
+      - order_sensitive_registration
+      - duplicate_registration
+      - implicit_global_coupling
+      required_evidence: *id001
     event_publication:
-      definition: Dependency from publisher to event contract and downstream event consumers.
+      definition: Dependency from publisher to event contract/topic and downstream delivery semantics, without direct knowledge of consumers.
+      positive_signals:
+      - event is emitted/published
+      - topic/event name or event DTO is referenced
+      - publisher depends on event contract
+      - no direct call to consumer exists
+      negative_signals:
+      - publisher calls consumer method directly
+      - message is request/response command handled synchronously
+      - callback registered directly by consumer
+      choose_when:
+      - producer announces facts for unknown/multiple consumers
+      - publisher should not depend on consumers
+      - event contract compatibility matters
+      reject_when:
+      - control flow requires direct response from receiver
+      - only local callback inside same object
+      - event is internal implementation detail with no contract
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - event_publication_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as event publication
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the event publication case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - event_contract_breaking_change
+      - undocumented_consumer_obligation
+      - eventual_consistency_gap
+      - lost_delivery_assumption
+      required_evidence: *id001
     message_subscription:
-      definition: Dependency from consumer to queue/topic/event contract and delivery semantics.
+      definition: Dependency from consumer/handler to queue, topic, stream, event contract, delivery semantics, and idempotency requirements.
+      positive_signals:
+      - handler subscribes to queue/topic/event
+      - consumer decorator/registration exists
+      - message DTO/contract is consumed
+      - ack/retry/dead-letter behavior matters
+      negative_signals:
+      - component publishes but does not consume
+      - direct method call only
+      - handler is test double only
+      choose_when:
+      - code reacts to externally delivered messages/events
+      - consumer semantics affect correctness
+      - delivery failures and retries must be considered
+      reject_when:
+      - consumer is synchronous in-process collaborator
+      - subscription is not owned by this service/module
+      - no message contract exists
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - message_subscription_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as message subscription
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the message subscription case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - non_idempotent_consumer
+      - missing_retry_policy
+      - contract_drift
+      - poison_message_loop
+      required_evidence: *id001
     callback_registration:
-      definition: Dependency created when code registers callbacks/hooks/listeners into another component or framework.
+      definition: Dependency created when code registers callbacks, hooks, listeners, interceptors, middleware, or observers into another component/framework.
+      positive_signals:
+      - callback/listener is passed to registry
+      - hook/interceptor/middleware is registered
+      - inversion of control calls back into component
+      - ordering of callbacks matters
+      negative_signals:
+      - normal direct dependency from caller to callee
+      - event bus publication/subscription is explicit system event
+      - dependency is only constructor injection
+      choose_when:
+      - framework or owner component calls supplied function later
+      - control inversion is central to behavior
+      - callback lifetime/order must be validated
+      reject_when:
+      - callback is purely local private function call
+      - callback does not cross boundary or lifecycle
+      - registration is test-only
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - callback_registration_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as callback registration
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the callback registration case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - lifecycle_leak
+      - uncontrolled_callback_order
+      - implicit_dependency_on_framework
+      - callback_state_coupling
+      required_evidence: *id001
     configuration_reference:
-      definition: Dependency on config/env/feature flags/runtime settings.
+      definition: Dependency on configuration value, environment variable, feature flag, secret, or runtime option that affects behavior.
+      positive_signals:
+      - config key/env var is read
+      - feature flag controls branch
+      - secret/provider config is required
+      - configuration schema references key
+      negative_signals:
+      - value is hardcoded constant unrelated to deployment
+      - configuration is only test data
+      - type-only import
+      choose_when:
+      - runtime behavior changes based on externalized setting
+      - deployment must provide key/value
+      - missing/invalid config can break behavior
+      reject_when:
+      - value is computed solely from local domain data
+      - setting is not externally configurable
+      - relationship is better classified as provider binding
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - configuration_reference_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as configuration reference
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the configuration reference case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - missing_config_default
+      - secret_leak
+      - environment_coupling
+      - untested_flag_path
+      required_evidence: *id001
     test_only_dependency:
-      definition: Dependency valid only in test scope and forbidden from production paths.
+      definition: Dependency that exists only for tests, fixtures, fakes, mocks, builders, or validation utilities and must not leak into production
+        runtime.
+      positive_signals:
+      - file is under test scope
+      - import originates from spec/test file
+      - fake/mock/test builder is used
+      - dependency is declared as dev/test dependency
+      negative_signals:
+      - production file imports it
+      - dependency is required at runtime in built artifact
+      - test helper contains production behavior
+      choose_when:
+      - dependency supports verification only
+      - target is a test double or fixture
+      - scope is explicitly non-production
+      reject_when:
+      - production code relies on it
+      - test dependency becomes public module API
+      - dependency affects runtime behavior outside tests
       validation_focus:
       - dependency_direction
       - boundary_legality
-      common_risks:
-      - invalid_dependency
-      detection_signals:
-      - test_only_dependency_detected
-      - depends_on_external_symbol_or_runtime_binding
+      - lifecycle_scope
       validation_questions:
-      - Does this dependency obey layer direction?
+      - Does the dependency obey allowed direction?
       - Does it cross a boundary?
-      - Is an abstraction/adapter required?
-      choose_when:
-      - the dependency relationship is best represented as test only dependency
-      reject_when:
-      - no actual dependency exists
-      - relationship belongs to another dependency type
-      validation_rules:
-      - must obey dependency direction rules
-      - must not introduce forbidden coupling
-      meaning: Represents the test only dependency case within the dependency type taxonomy.
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
+      - Does the target expose a public contract?
+      - Is an abstraction, adapter, or port required?
+      common_risks:
+      - production_to_test_leak
+      - false_confidence_fake
+      - test_helper_public_api_leak
+      - unmaintained_fixture_contract
+      required_evidence: *id001
   dependency_scope_enum:
     allowed:
     - same_artifact
@@ -303,233 +402,249 @@ sections:
     - external_package
     - external_system
     - test_scope
-  dependency_direction_vocabulary:
-    layer_directions:
+  dependency_scope_definitions:
+    same_artifact:
+      definition: Dependency remains inside one file/class/function/artifact boundary.
+      positive_signals:
+      - source and target are within same artifact
+      - no public boundary crossed
+      negative_signals:
+      - separate file or module boundary crossed
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - hidden_mixed_responsibility
+    same_flow:
+      definition: Dependency remains within one use-case/flow folder or execution path.
+      positive_signals:
+      - same use-case flow
+      - directly supports one workflow
+      negative_signals:
+      - shared across multiple flows
+      - cross-module import
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - flow_overcoupling
+    same_module:
+      definition: Dependency stays inside one module/business capability boundary.
+      positive_signals:
+      - same module root
+      - private module internal allowed
+      negative_signals:
+      - target belongs to another feature/module
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - module_internal_cycle
+    cross_module:
+      definition: Dependency crosses from one module/capability to another.
+      positive_signals:
+      - source and target have different module roots
+      - consumer depends on exported API
+      negative_signals:
+      - same module private collaboration
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - private_api_coupling
+      - feature_coupling
+    shared_kernel:
+      definition: Dependency targets shared domain/kernel/common contracts used by multiple modules.
+      positive_signals:
+      - shared domain concept
+      - stable common contract
+      - multiple modules consume it
+      negative_signals:
+      - feature-specific artifact in shared folder
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - shared_dumping_ground
+      - kernel_instability
+    external_package:
+      definition: Dependency targets installed third-party/library package.
+      positive_signals:
+      - package.json/go.mod/etc dependency
+      - import from external package name
+      negative_signals:
+      - local workspace module
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - vendor_lock_in
+      - version_drift
+      - transitive_vulnerability
+    external_system:
+      definition: Dependency targets system outside process/service boundary.
+      positive_signals:
+      - HTTP/gRPC/client/queue/storage call
+      - network or external resource needed
+      negative_signals:
+      - local library package only
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - availability_failure
+      - contract_drift
+      - security_boundary
+    test_scope:
+      definition: Dependency exists only within test/fixture/spec support boundary.
+      positive_signals:
+      - test file or fixture imports target
+      - dev dependency only
+      negative_signals:
+      - production import path uses it
+      validation_focus:
+      - visibility
+      - boundary_distance
+      - allowed_coupling
+      common_risks:
+      - production_test_leak
+      - test_contract_divergence
+  dependency_direction_enum:
+    allowed:
     - transport_to_application
     - application_to_domain
     - application_to_port
     - domain_to_domain
-    - domain_to_infrastructure
-    - domain_to_transport
     - infrastructure_to_port
     - infrastructure_to_external_system
     - test_to_artifact_under_test
+    - domain_to_infrastructure
+    - domain_to_transport
+    - domain_to_persistence_model
+    - application_to_transport
+    - transport_to_persistence_directly
     - production_to_test_support
-    module_directions:
-    - same_module_internal
-    - module_to_public_export
-    - module_to_private_internal
-    - shared_to_feature_specific
-    - feature_to_shared
-    - cross_module_public_api
+  dependency_direction_definitions:
+    transport_to_application:
+      definition: Entry/transport layer delegates to application service/use-case without owning business logic.
+      allowed_when:
+      - controller/gateway/consumer invokes application boundary
+      forbidden_when:
+      - transport reaches repository or infrastructure directly
+    application_to_domain:
+      definition: Application layer orchestrates domain behavior through domain services/entities/policies.
+      allowed_when:
+      - application service/use-case coordinates business behavior
+      forbidden_when:
+      - domain layer would need to import application artifact back
+    application_to_port:
+      definition: Application depends on abstract port/contract rather than concrete infrastructure implementation.
+      allowed_when:
+      - side effect or external state is required through abstraction
+      forbidden_when:
+      - target is concrete infrastructure adapter
+    domain_to_domain:
+      definition: Domain artifact depends on another domain artifact inside allowed domain boundary.
+      allowed_when:
+      - dependency preserves pure domain model and direction
+      forbidden_when:
+      - target includes infrastructure, transport, persistence, or framework concern
+    infrastructure_to_port:
+      definition: Infrastructure adapter implements or binds to port owned by inner layer.
+      allowed_when:
+      - adapter satisfies abstract port contract
+      forbidden_when:
+      - port depends on adapter
+    infrastructure_to_external_system:
+      definition: Infrastructure adapter/client depends on external package/system boundary.
+      allowed_when:
+      - adapter isolates external dependency
+      forbidden_when:
+      - domain/application directly owns external system dependency
+    test_to_artifact_under_test:
+      definition: Test code depends on production artifact under test.
+      allowed_when:
+      - dependency is in test scope
+      forbidden_when:
+      - production code depends on test helper
+    domain_to_infrastructure:
+      definition: Forbidden reverse dependency from domain to infrastructure implementation.
+      severity: error
+      reason: Breaks clean architecture and makes domain framework/external-state aware.
+    domain_to_transport:
+      definition: Forbidden reverse dependency from domain to controller/gateway/transport.
+      severity: error
+      reason: Domain must not know entrypoints.
+    domain_to_persistence_model:
+      definition: Forbidden dependency from domain to database schema/ORM/document model.
+      severity: error
+      reason: Domain model must not depend on persistence representation.
+    application_to_transport:
+      definition: Forbidden dependency from application logic to transport layer.
+      severity: error
+      reason: Application should be callable by any transport.
+    transport_to_persistence_directly:
+      definition: Forbidden dependency from controller/gateway/consumer directly to repository/model/persistence.
+      severity: error
+      reason: Bypasses application/domain logic and validation.
+    production_to_test_support:
+      definition: Forbidden dependency from production code to test support, fakes, fixtures, or mocks.
+      severity: error
+      reason: Test-only dependencies must not leak into runtime artifact.
   dependency_relationship_schema:
     required_fields:
     - dependency_id
     - dependency_type
+    - dependency_scope
     - source_artifact
     - target_artifact
-    - source_role
-    - target_role
-    - source_layer
-    - target_layer
-    - dependency_scope
-    - boundary_crossed
     - direction
-  dependency_risk_signals:
-    static_import:
-      minimum_risk_hint: low
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-    dynamic_import:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-    constructor_injection:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-    provider_binding:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns:
-      - runtime_wiring
-    runtime_registration:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns:
-      - runtime_wiring
-    event_publication:
-      minimum_risk_hint: high
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-    message_subscription:
-      minimum_risk_hint: high
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-    callback_registration:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-    configuration_reference:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns:
-      - runtime_wiring
-    test_only_dependency:
-      minimum_risk_hint: medium
-      emits_contexts:
-      - implementation_risk
-      emits_concerns: []
-  semantic_depth_restoration:
-    enriched_generic_dependency_definitions: true
-  dependency_scope_definitions:
-    same_artifact:
-      definition: Dependency stays inside a single file/artifact boundary.
-      meaning: Represents the same artifact case within the dependency scope taxonomy.
-      detection_signals:
-      - same artifact signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches same artifact
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    same_flow:
-      definition: Dependency crosses artifacts within one use-case or execution flow.
-      meaning: Represents the same flow case within the dependency scope taxonomy.
-      detection_signals:
-      - same flow signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches same flow
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    same_module:
-      definition: Dependency stays inside one feature/module boundary.
-      meaning: Represents the same module case within the dependency scope taxonomy.
-      detection_signals:
-      - same module signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches same module
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    cross_module:
-      definition: Dependency crosses module boundaries and must obey public API/import rules.
-      meaning: Represents the cross module case within the dependency scope taxonomy.
-      detection_signals:
-      - cross module signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches cross module
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    shared_kernel:
-      definition: Dependency touches shared kernel/common code and affects multiple consumers.
-      meaning: Represents the shared kernel case within the dependency scope taxonomy.
-      detection_signals:
-      - shared kernel signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches shared kernel
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    external_package:
-      definition: Dependency on third-party package, SDK, or library.
-      meaning: Represents the external package case within the dependency scope taxonomy.
-      detection_signals:
-      - external package signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches external package
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    external_system:
-      definition: Dependency on external service, queue, API, database, or infrastructure system.
-      meaning: Represents the external system case within the dependency scope taxonomy.
-      detection_signals:
-      - external system signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches external system
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
-    test_scope:
-      definition: Dependency exists only in tests, fixtures, or validation support.
-      meaning: Represents the test scope case within the dependency scope taxonomy.
-      detection_signals:
-      - test scope signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches test scope
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - scope must be supported by import/dependency evidence
-      - scope determines allowed direction and gate strictness
+    - evidence_refs
+    optional_fields:
+    - risk_signals
+    - required_followups
+    - is_allowed
+    - notes
+  dependency_risk_signal_enum:
+    allowed:
+    - forbidden_direction
+    - private_api_coupling
+    - circular_dependency
+    - runtime_hidden_dependency
+    - test_leak
+    - external_contract_drift
+    - configuration_risk
+    - shared_kernel_instability
+    - provider_binding_mismatch
+    - callback_lifecycle_risk
+  dependency_taxonomy_invariants:
+  - Every dependency record must use known dependency_type and dependency_scope values.
+  - Dependency type describes relationship mechanism; dependency scope describes architectural distance.
+  - Direction legality is defined by import-rules, not by taxonomy.
+  - External package and external system dependencies require boundary/risk attention when behavior or availability depends on them.
 validation:
+  required_checks:
+  - id: DEPENDENCY-TAXONOMY-CHECK-001
+    check: dependency_type_values_have_definitions
+    applies_when:
+      dependency_taxonomy_loaded: true
+  - id: DEPENDENCY-TAXONOMY-CHECK-002
+    check: dependency_scope_values_have_definitions
+    applies_when:
+      dependency_taxonomy_loaded: true
   fail_conditions:
-  - id: DEPENDENCIES-CONVENTIONS-DEPENDENCY-TAXONOMY-YAML-FC-001
+  - id: DEPENDENCY-TAXONOMY-001
     condition: unknown_dependency_type
-    message: Unknown dependency type.
+    message: Dependency type must be defined in dependency taxonomy.
     severity: error
-    owner: dependencies/conventions.dependency-taxonomy.yaml
-  - id: DEPENDENCIES-CONVENTIONS-DEPENDENCY-TAXONOMY-YAML-FC-002
-    condition: dependency_scope_missing
-    message: Dependency scope missing.
+  - id: DEPENDENCY-TAXONOMY-002
+    condition: unknown_dependency_scope
+    message: Dependency scope must be defined in dependency taxonomy.
     severity: error
-    owner: dependencies/conventions.dependency-taxonomy.yaml
-  required_checks: []

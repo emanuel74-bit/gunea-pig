@@ -2,91 +2,166 @@ version: '1.0'
 file:
   name: conventions.import-rules.yaml
   path: dependencies/conventions.import-rules.yaml
-  role: dependency_import_and_direction_rules_contract
+  role: static_import_rules_contract
   executability: validator
-purpose: Define allowed, conditional, and forbidden dependency directions and violation detection.
+purpose: Define static import syntax, public API import, barrel export, relative import, index export, external package import,
+  and runtime import hygiene rules.
 ownership:
   owns:
-  - allowed_dependency_directions
-  - conditional_dependency_directions
-  - forbidden_dependency_directions
-  - module_import_rules
-  - runtime_dependency_rules
-  - test_dependency_rules
-  - dependency_violation_detection
+  - static_import_syntax_rules
+  - public_api_import_rules
+  - barrel_export_rules
+  - relative_import_rules
+  - index_export_rules
+  - external_package_import_rules
+  - runtime_import_hygiene_rules
+  - import_rule_validation_algorithm
   does_not_own:
   - dependency_type_definitions
-  - role_definitions
-  - boundary_definitions
+  - architectural_dependency_direction_policy
+  - test_dependency_exceptions
+  - dependency_classification_output
 activation:
   mode: always
   activates_when: []
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - dependency_classification_report
+  optional:
+  - import_graph
+  - role_assignment_table
+  - boundary_contract_classification
 outputs:
   produces:
   - import_rules_validation_report
 dependencies:
   required_files:
   - dependencies/conventions.dependency-taxonomy.yaml
+  - dependencies/conventions.dependency-classification.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
+  optional_files:
   - boundaries/conventions.boundary-taxonomy.yaml
-  optional_files: []
+  - contracts/conventions.contract-taxonomy.yaml
 sections:
-  allowed_dependency_directions:
-    layer:
-    - transport_to_application
-    - application_to_domain
-    - application_to_port
-    - domain_to_domain
-    - infrastructure_to_port
-    - infrastructure_to_external_system
-    - test_to_artifact_under_test
-  forbidden_dependency_directions:
-    layer:
-    - domain_to_infrastructure
-    - domain_to_transport
-    - domain_to_persistence_model
-    - application_to_transport
-    - transport_to_persistence_directly
-    - production_to_test_support
-    module:
-    - shared_to_feature_specific
-    - module_to_private_internal
-  conditional_dependency_directions:
-    application_to_infrastructure: allowed only when target is abstract port/interface
-    cross_module_dependency: allowed only through public module API
-    dynamic_import: allowed only when runtime loading is documented
-  module_import_rules:
-  - Cross-module imports must use exported public module API
-  - Circular module dependencies are forbidden
-  runtime_dependency_rules:
-  - Provider binding must map abstraction/token/port to compatible implementation
-  - Runtime entrypoints must be registered
-  test_dependency_rules:
-  - Production code must never depend on test support
-  - Fakes must satisfy same port/contract
+  static_import_syntax_rules:
+  - rule_id: IMPORT-SYNTAX-001
+    rule: Imports must point to stable source paths or public package/module entrypoints, not accidental private implementation
+      paths.
+    fail_condition: unstable_private_import_path
+  - rule_id: IMPORT-SYNTAX-002
+    rule: Type-only dependencies should use type-only import syntax when supported and when no runtime value is needed.
+    fail_condition: runtime_import_used_for_type_only_dependency
+  - rule_id: IMPORT-SYNTAX-003
+    rule: Import aliases must resolve deterministically through the project configuration.
+    fail_condition: unresolved_or_ambiguous_import_alias
+  public_api_import_rules:
+  - rule_id: IMPORT-MODULE-001
+    rule: Cross-module imports must target exported public module API, never private/internal paths.
+    fail_condition: cross_module_private_import
+  - rule_id: IMPORT-PUBLIC-002
+    rule: Cross-boundary consumers must import from declared public API/export surfaces only.
+    fail_condition: consumer_imports_private_surface
+  - rule_id: IMPORT-PUBLIC-003
+    rule: Public API files may re-export stable contracts and adapters intentionally exposed to consumers, but must not expose
+      internal orchestration details.
+    fail_condition: public_api_exports_internal_orchestration
+  barrel_export_rules:
+  - rule_id: IMPORT-MODULE-005
+    rule: Index/barrel exports must not expose private implementation artifacts.
+    fail_condition: barrel_exports_private_artifact
+  - rule_id: IMPORT-BARREL-002
+    rule: Barrel exports must preserve ownership boundaries and must not flatten unrelated feature internals into one public
+      surface.
+    fail_condition: barrel_export_collapses_unrelated_boundaries
+  - rule_id: IMPORT-BARREL-003
+    rule: Index exports must be explicit enough for dependency validation to identify consumer-facing contracts.
+    fail_condition: ambiguous_index_export_surface
+  relative_import_rules:
+  - rule_id: IMPORT-RELATIVE-001
+    rule: Relative imports are allowed inside the same local artifact group or feature boundary when they do not bypass public
+      API rules.
+    fail_condition: relative_import_bypasses_public_api
+  - rule_id: IMPORT-RELATIVE-002
+    rule: Deep relative imports across feature or module boundaries are forbidden unless the target is explicitly public and
+      no alias exists.
+    fail_condition: cross_boundary_deep_relative_import
+  - rule_id: IMPORT-RELATIVE-003
+    rule: Excessively deep relative paths should be replaced by configured aliases or local index surfaces when they reduce
+      clarity.
+    fail_condition: excessive_relative_path_depth
+  index_export_rules:
+  - rule_id: IMPORT-INDEX-001
+    rule: Index files must expose a deliberate API surface, not every file in a folder by default.
+    fail_condition: index_exports_everything_by_default
+  - rule_id: IMPORT-INDEX-002
+    rule: Index exports must not create circular imports with implementation files.
+    fail_condition: index_export_creates_cycle
+  external_package_import_rules:
+  - rule_id: IMPORT-EXTERNAL-001
+    rule: External package imports must be isolated according to layer rules and should not leak into domain policy unless
+      explicitly allowed as stable type-only dependency.
+    fail_condition: external_package_leaks_into_domain_policy
+  - rule_id: IMPORT-EXTERNAL-002
+    rule: Framework imports belong in framework-facing roles, adapters, modules, providers, controllers, gateways, or infrastructure—not
+      pure domain logic.
+    fail_condition: framework_import_inside_domain_logic
+  runtime_import_hygiene_rules:
+  - rule_id: IMPORT-RUNTIME-001
+    rule: Provider binding must map compatible abstraction/token/port to implementation.
+    fail_condition: provider_binding_incompatible_with_port
+  - rule_id: IMPORT-RUNTIME-002
+    rule: Runtime entrypoints must be registered exactly once unless multiple registrations are explicitly valid.
+    fail_condition: missing_or_duplicate_runtime_registration
+  - rule_id: IMPORT-RUNTIME-003
+    rule: Dynamic imports must have documented load condition and fallback/error behavior.
+    fail_condition: undocumented_dynamic_import
+  - rule_id: IMPORT-RUNTIME-004
+    rule: Callback/hook registration must define lifecycle and ordering requirements when order affects behavior.
+    fail_condition: callback_lifecycle_or_order_undefined
+  import_rule_validation_algorithm:
+  - step_id: LOAD_IMPORT_GRAPH
+    action: read static import graph
+  - step_id: CHECK_PUBLIC_API_IMPORTS
+    action: validate cross-boundary imports use public surfaces
+  - step_id: CHECK_BARREL_AND_INDEX_EXPORTS
+    action: validate export surfaces and prevent private leakage
+  - step_id: CHECK_RELATIVE_IMPORTS
+    action: validate relative import depth and boundary bypasses
+  - step_id: CHECK_EXTERNAL_PACKAGE_IMPORTS
+    action: validate layer-appropriate external dependencies
+  - step_id: CHECK_RUNTIME_IMPORT_HYGIENE
+    action: validate dynamic imports, provider registrations, callbacks, and hook registration imports
+  - step_id: EMIT_IMPORT_RULE_RESULT
+    action: produce import rule validation result consumed by dependency-validation
 validation:
+  required_checks:
+  - id: IMPORT-RULES-CHECK-001
+    check: cross_boundary_imports_use_public_api
+    applies_when:
+      cross_boundary_import_detected: true
+  - id: IMPORT-RULES-CHECK-002
+    check: barrel_exports_do_not_expose_private_artifacts
+    applies_when:
+      barrel_exports_detected: true
+  - id: IMPORT-RULES-CHECK-003
+    check: runtime_import_hygiene_rules_pass
+    applies_when:
+      runtime_imports_detected: true
   fail_conditions:
-  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-001
-    condition: forbidden_dependency_direction
-    message: Forbidden dependency direction.
+  - id: IMPORT-RULES-001
+    condition: cross_module_private_import
+    message: Cross-module imports must target public API, not private/internal paths.
     severity: error
-    owner: dependencies/conventions.import-rules.yaml
-  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-002
-    condition: conditional_dependency_without_required_followup
-    message: Conditional dependency without required followup.
+  - id: IMPORT-RULES-002
+    condition: barrel_exports_private_artifact
+    message: Barrel export exposes private implementation artifact.
     severity: error
-    owner: dependencies/conventions.import-rules.yaml
-  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-003
-    condition: dependency_cycle_detected
-    message: Dependency cycle detected.
+  - id: IMPORT-RULES-003
+    condition: runtime_import_used_for_type_only_dependency
+    message: Type-only dependency imported as runtime dependency.
+    severity: warning
+  - id: IMPORT-RULES-004
+    condition: external_package_leaks_into_domain_policy
+    message: External package dependency leaked into domain policy.
     severity: error
-    owner: dependencies/conventions.import-rules.yaml
-  - id: DEPENDENCIES-CONVENTIONS-IMPORT-RULES-YAML-FC-004
-    condition: test_only_dependency_leaks_to_production
-    message: Test only dependency leaks to production.
-    severity: error
-    owner: dependencies/conventions.import-rules.yaml
-  required_checks: []
