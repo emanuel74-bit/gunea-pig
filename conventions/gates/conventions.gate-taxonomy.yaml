@@ -4,20 +4,33 @@ file:
   path: gates/conventions.gate-taxonomy.yaml
   role: gate_vocabulary_contract
   executability: vocabulary
-purpose: Define gate vocabulary, statuses, severities, and gate record shape.
+purpose: Define strict gate vocabulary, status semantics, severity semantics, gate record schema, check result schema, and
+  gate result schema.
 ownership:
   owns:
   - gate_type_enum
+  - gate_type_definitions
   - gate_status_enum
+  - gate_status_definitions
   - gate_severity_enum
+  - gate_severity_definitions
+  - gate_blocking_semantics
   - gate_record_schema
+  - gate_check_result_schema
+  - gate_result_schema
+  - gate_id_format
   does_not_own:
   - gate_templates
   - gate_validation_algorithm
+  - phase_contracts
+  - mission_profile_selection
+  - agent_permissions
 activation:
   mode: reference_only
   activates_when:
   - gate_values_are_referenced
+  - gate_record_is_validated
+  - gate_result_is_written
   skips_when: []
 inputs:
   required: []
@@ -40,6 +53,159 @@ sections:
     - pre_implementation_gate
     - post_implementation_gate
     - final_gate
+  gate_type_definitions:
+    entry_gate:
+      definition: Validates that a phase may start. It checks phase activation, owner agent, required inputs, agent prompt,
+        permissions, and non-invalidated input state before any phase agent is invoked.
+      positive_signals:
+      - Alpha is about to invoke a phase agent
+      - phase status is pending or scheduled
+      - phase requires input bundle validation
+      negative_signals:
+      - phase already completed
+      - gate is validating produced outputs rather than start conditions
+      choose_when:
+      - the transition is from not-started to phase execution
+      reject_when:
+      - the transition is from phase execution to downstream consumption
+      blocks_when:
+      - required input missing
+      - owner agent missing
+      - input invalidated
+      - agent cannot read input
+    output_gate:
+      definition: Validates that a phase produced all required output files, followed its phase contract, respected permissions,
+        emitted required triggers, and wrote machine-readable reports before the phase can be marked executed.
+      positive_signals:
+      - phase agent returned
+      - required report files should exist
+      - phase status is executing or pending output validation
+      negative_signals:
+      - phase has not run
+      - transition is only preparing a handoff
+      choose_when:
+      - the transition is from phase execution to phase completion
+      reject_when:
+      - required outputs are not relevant to the transition
+      blocks_when:
+      - required report missing
+      - schema invalid
+      - agent wrote forbidden file
+      - phase must_not rule violated
+    handoff_gate:
+      definition: Validates that outputs from a completed source phase are safe and declared inputs for a target phase before
+        downstream consumption occurs.
+      positive_signals:
+      - target phase wants to consume source output
+      - source and target phase relation exists
+      - handoff record is expected
+      negative_signals:
+      - no downstream phase is consuming output
+      - source output is being validated by its own phase
+      choose_when:
+      - the transition moves data from source phase to target phase
+      reject_when:
+      - there is no declared source-target consumption
+      blocks_when:
+      - source output gate failed
+      - source output invalidated
+      - target phase does not declare input
+      - target agent cannot read input
+    skip_gate:
+      definition: Validates whether a phase may be skipped under the active mission profile, trigger state, and dependency
+        graph. Skipping is forbidden unless explicitly allowed and downstream risks are recorded.
+      positive_signals:
+      - phase status requested as skipped
+      - mission profile marks phase conditional or forbidden
+      - phase output may be unnecessary for current profile
+      negative_signals:
+      - phase is required and has no blocker
+      - downstream required phase consumes skipped output
+      choose_when:
+      - Alpha wants to mark a phase skipped
+      reject_when:
+      - phase should execute or block instead of skip
+      blocks_when:
+      - skip not allowed
+      - skip reason missing
+      - downstream dependency requires skipped output
+    trigger_gate:
+      definition: Validates emitted triggers before they affect the active phase plan. It ensures every trigger type is known,
+        registered, routable, and either scheduled, resolved, blocked, or invalidated.
+      positive_signals:
+      - phase output contains triggers_emitted
+      - mission state has active triggers
+      - trigger review is scheduled
+      negative_signals:
+      - no triggers exist
+      - gate is validating report schema only
+      choose_when:
+      - trigger state changes or emitted triggers must be registered
+      reject_when:
+      - there are no trigger records to validate
+      blocks_when:
+      - unknown trigger type
+      - trigger missing resolution path
+      - active blocking trigger remains before implementation
+    pre_implementation_gate:
+      definition: The strict go/no-go gate before code edits. It verifies required phases, reports, triggers, test plan, implementation
+        sequence, checkpoint plan, write scope, and implementation agent permissions.
+      positive_signals:
+      - implementation phase is next
+      - pre_implementation_gate phase is active
+      - implementation_allowed is about to become true
+      negative_signals:
+      - planning phases are still missing
+      - no implementation is requested
+      choose_when:
+      - Alpha is deciding if implementation may start
+      reject_when:
+      - current transition is not into implementation
+      blocks_when:
+      - active trigger exists
+      - required report missing
+      - test plan missing
+      - implementation sequence missing
+      - write scope undefined
+      - blocked phase exists
+    post_implementation_gate:
+      definition: Validates implementation results after code edits. It verifies changed files, scope, sequence adherence,
+        validation command results, and recorded failures before final validation or repair classification.
+      positive_signals:
+      - implementation result exists
+      - changed file manifest exists
+      - post implementation validation is active
+      negative_signals:
+      - no implementation was performed
+      - only planning outputs exist
+      choose_when:
+      - transition follows implementation
+      reject_when:
+      - implementation did not run
+      blocks_when:
+      - forbidden file changed
+      - manifest missing
+      - sequence deviation unrecorded
+      - blocking test failure hidden
+    final_gate:
+      definition: The mission completion gate. It verifies complete phase accounting, required reports, report artifact validation,
+        trigger resolution, no consumed invalidated outputs, and final validation summary before mission success is allowed.
+      positive_signals:
+      - final_validation phase is active
+      - mission is about to be marked complete
+      - validation summary should be final
+      negative_signals:
+      - implementation or planning is still ongoing
+      choose_when:
+      - Alpha wants to mark mission complete
+      reject_when:
+      - mission still has pending required phases
+      blocks_when:
+      - unresolved trigger
+      - missing report
+      - failed report validation
+      - invalidated output consumed
+      - blocked item unresolved
   gate_status_enum:
     allowed:
     - pending
@@ -47,12 +213,109 @@ sections:
     - failed
     - blocked
     - skipped
+  gate_status_definitions:
+    pending:
+      definition: Gate is declared but has not yet run. Pending gates cannot be treated as passed.
+      choose_when:
+      - gate result has not been calculated
+      reject_when:
+      - any required check has completed
+      allowed_next:
+      - run_gate
+    passed:
+      definition: All required checks passed and no fail_when condition matched. A passed gate may allow the guarded transition
+        if no other blocking state exists.
+      choose_when:
+      - all required checks pass
+      - no blocking failures exist
+      reject_when:
+      - any blocking fail condition exists
+      allowed_next:
+      - continue_transition
+      - write_gate_result
+    failed:
+      definition: One or more required checks failed. A failed blocking gate stops the transition and requires remediation,
+        rerun, revision, or explicit mission block.
+      choose_when:
+      - required check failed
+      - fail_when condition matched
+      reject_when:
+      - failure is intentionally represented as blocked by unresolved external condition
+      allowed_next:
+      - record_failure
+      - block_transition
+      - request_remediation
+    blocked:
+      definition: Gate cannot pass because prerequisite state or external decision is missing. Blocked differs from failed
+        because the target phase may be valid after required resolution.
+      choose_when:
+      - approval missing
+      - required prior phase blocked
+      - trigger unresolved
+      - revision pending
+      reject_when:
+      - checks ran and found direct invalid output
+      allowed_next:
+      - record_blocker
+      - schedule_required_resolution
+    skipped:
+      definition: Gate was not required because the guarded phase or transition was explicitly skipped through a passed skip
+        gate. Skipped cannot be used for required gates unless profile or condition allows it.
+      choose_when:
+      - skip gate passed
+      - phase is profile-forbidden or conditionally not applicable
+      reject_when:
+      - phase is required and executable
+      allowed_next:
+      - record_skip
+      - validate_downstream_risk
   gate_severity_enum:
     allowed:
     - info
     - warning
     - error
     - blocking
+  gate_severity_definitions:
+    info:
+      definition: Non-blocking informational result. It may be recorded but cannot stop execution.
+      blocking: false
+      use_when:
+      - recording context-only gate note
+      must_not_use_when:
+      - transition safety is affected
+    warning:
+      definition: Non-blocking issue that must be recorded. It may require final validation visibility but does not stop the
+        current transition.
+      blocking: false
+      use_when:
+      - risk is low and downstream validation can continue
+      must_not_use_when:
+      - missing required report or failed required check
+    error:
+      definition: A validation failure that normally blocks unless an explicit policy downgrades it. Error results must include
+        remediation.
+      blocking: conditional
+      use_when:
+      - contract violation occurred but transition policy decides blocking separately
+      must_not_use_when:
+      - hard runtime safety law is violated
+    blocking:
+      definition: A hard stop. Alpha must not continue the guarded transition while a blocking result remains unresolved.
+      blocking: true
+      use_when:
+      - phase input/output/report/permission/trigger/state validity is required for safe continuation
+      must_not_use_when:
+      - issue is informational only
+  gate_blocking_semantics:
+    blocking_true:
+    - Alpha must stop the guarded transition
+    - mission state must record blocker
+    - remediation or revision must be scheduled before retry
+    blocking_false:
+    - Alpha may continue only if downstream phase contract allows warning state
+    - warning must remain visible to final validation
+    default: All gate failures are blocking unless the gate record explicitly declares non_blocking and the failure condition
+      is not safety-critical.
   gate_record_schema:
     required_fields:
     - gate_id
@@ -62,264 +325,74 @@ sections:
     - pass_when
     - fail_when
     - severity
-  gate_type_definitions:
-    entry_gate:
-      definition: entry gate gate_type vocabulary value.
-      meaning: Represents the entry gate case within the gate_type taxonomy.
-      detection_signals:
-      - entry gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches entry gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using entry_gate must include reason and evidence
-    output_gate:
-      definition: output gate gate_type vocabulary value.
-      meaning: Represents the output gate case within the gate_type taxonomy.
-      detection_signals:
-      - output gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches output gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using output_gate must include reason and evidence
-    handoff_gate:
-      definition: handoff gate gate_type vocabulary value.
-      meaning: Represents the handoff gate case within the gate_type taxonomy.
-      detection_signals:
-      - handoff gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches handoff gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using handoff_gate must include reason and evidence
-    skip_gate:
-      definition: skip gate gate_type vocabulary value.
-      meaning: Represents the skip gate case within the gate_type taxonomy.
-      detection_signals:
-      - skip gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches skip gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using skip_gate must include reason and evidence
-    trigger_gate:
-      definition: trigger gate gate_type vocabulary value.
-      meaning: Represents the trigger gate case within the gate_type taxonomy.
-      detection_signals:
-      - trigger gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches trigger gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using trigger_gate must include reason and evidence
-    pre_implementation_gate:
-      definition: pre implementation gate gate_type vocabulary value.
-      meaning: Represents the pre implementation gate case within the gate_type taxonomy.
-      detection_signals:
-      - pre implementation gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pre implementation gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using pre_implementation_gate must include reason and evidence
-    post_implementation_gate:
-      definition: post implementation gate gate_type vocabulary value.
-      meaning: Represents the post implementation gate case within the gate_type taxonomy.
-      detection_signals:
-      - post implementation gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches post implementation gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using post_implementation_gate must include reason and evidence
-    final_gate:
-      definition: final gate gate_type vocabulary value.
-      meaning: Represents the final gate case within the gate_type taxonomy.
-      detection_signals:
-      - final gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches final gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_type decisions using final_gate must include reason and evidence
-  gate_status_definitions:
-    pending:
-      definition: pending gate_status vocabulary value.
-      meaning: Represents the pending case within the gate_status taxonomy.
-      detection_signals:
-      - pending signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pending
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_status decisions using pending must include reason and evidence
-    passed:
-      definition: passed gate_status vocabulary value.
-      meaning: Represents the passed case within the gate_status taxonomy.
-      detection_signals:
-      - passed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches passed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_status decisions using passed must include reason and evidence
-    failed:
-      definition: failed gate_status vocabulary value.
-      meaning: Represents the failed case within the gate_status taxonomy.
-      detection_signals:
-      - failed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches failed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_status decisions using failed must include reason and evidence
-    blocked:
-      definition: blocked gate_status vocabulary value.
-      meaning: Represents the blocked case within the gate_status taxonomy.
-      detection_signals:
-      - blocked signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches blocked
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_status decisions using blocked must include reason and evidence
-    skipped:
-      definition: skipped gate_status vocabulary value.
-      meaning: Represents the skipped case within the gate_status taxonomy.
-      detection_signals:
-      - skipped signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches skipped
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_status decisions using skipped must include reason and evidence
-  gate_severity_definitions:
-    info:
-      definition: info gate_severity vocabulary value.
-      meaning: Represents the info case within the gate_severity taxonomy.
-      detection_signals:
-      - info signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches info
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_severity decisions using info must include reason and evidence
-    warning:
-      definition: warning gate_severity vocabulary value.
-      meaning: Represents the warning case within the gate_severity taxonomy.
-      detection_signals:
-      - warning signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches warning
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_severity decisions using warning must include reason and evidence
-    error:
-      definition: error gate_severity vocabulary value.
-      meaning: Represents the error case within the gate_severity taxonomy.
-      detection_signals:
-      - error signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches error
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_severity decisions using error must include reason and evidence
-    blocking:
-      definition: blocking gate_severity vocabulary value.
-      meaning: Represents the blocking case within the gate_severity taxonomy.
-      detection_signals:
-      - blocking signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches blocking
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_severity decisions using blocking must include reason and evidence
+    optional_fields:
+    - blocking
+    - blocks_transition
+    - remediation
+    - rerun_policy
+    - skip_policy
+    - result_schema_ref
+    - strictness
+    - consumes
+    - produces
+  gate_check_result_schema:
+    required_fields:
+    - check_id
+    - check_name
+    - status
+    - evidence_refs
+    - failure_condition
+    optional_fields:
+    - actual_value
+    - expected_value
+    - message
+    - remediation
+    - severity
+  gate_result_schema:
+    required_fields:
+    - gate_id
+    - gate_type
+    - phase_id
+    - status
+    - blocking
+    - checks
+    - failures
+    - remediation
+    - evidence_refs
+    optional_fields:
+    - blocked_transition
+    - resolved_by
+    - written_to
+    - timestamp_or_sequence_id
+  gate_id_format:
+    entry_gate: gate.{phase_id}.entry
+    output_gate: gate.{phase_id}.output
+    handoff_gate: gate.{source_phase_id}.{target_phase_id}.handoff
+    skip_gate: gate.{phase_id}.skip
+    trigger_gate: gate.{phase_id}.trigger
+    pre_implementation_gate: gate.pre_implementation_gate.output
+    post_implementation_gate: gate.post_implementation_validation.output
+    final_gate: gate.final_validation.output
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: GATE-TAXONOMY-CHECK-001
+    check: all_gate_records_use_known_gate_types
+    applies_when:
+      gate_records_exist: true
+  - id: GATE-TAXONOMY-CHECK-002
+    check: all_gate_results_use_known_statuses
+    applies_when:
+      gate_results_exist: true
+  fail_conditions:
+  - id: GATE-TAXONOMY-001
+    condition: unknown_gate_type
+    message: Gate type must exist in gate_type_enum.
+    severity: error
+  - id: GATE-TAXONOMY-002
+    condition: unknown_gate_status
+    message: Gate status must exist in gate_status_enum.
+    severity: error
+  - id: GATE-TAXONOMY-003
+    condition: gate_result_missing_required_field
+    message: Gate result must satisfy gate_result_schema.
+    severity: error

@@ -4,23 +4,35 @@ file:
   path: gates/conventions.gate-templates.yaml
   role: gate_template_contract
   executability: template_registry
-purpose: Define reusable standard and special gate templates.
+purpose: Define strict reusable gate templates and special gate records used to validate phase execution, handoffs, skipping,
+  triggers, implementation, post-implementation, and final completion.
 ownership:
   owns:
+  - gate_registry_policy
+  - gate_sequence_policy
+  - template_inheritance_rules
   - standard_gate_templates
   - special_gate_records
   does_not_own:
   - gate_type_enum
   - gate_validation_algorithm
+  - phase_contracts
+  - agent_permissions
+  - mission_profile_selection
 activation:
   mode: conditional
   activates_when:
   - gate_templates_required
+  - phase_contract_gate_refs_validated
+  - alpha_runtime_transition_requested
   skips_when: []
 inputs:
   required:
   - gate_taxonomy
-  optional: []
+  optional:
+  - phase_contract_registry
+  - report_registry
+  - mission_state
 outputs:
   produces:
   - gate_template_registry
@@ -28,97 +40,406 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - gates/conventions.gate-taxonomy.yaml
-  optional_files: []
+  optional_files:
+  - phases/conventions.phase-contracts.yaml
+  - reports/conventions.report-artifacts.yaml
+  - missions/conventions.mission-state.yaml
 sections:
   gate_registry_policy:
     absolute_rules:
     - id: GATE-REGISTRY-ABS-001
       rule: Every executable phase must have entry, output, and handoff gates.
       fail_condition: phase_missing_required_gate
+      severity: error
+    - id: GATE-REGISTRY-ABS-002
+      rule: Gate records may be generated from gate templates only when phase_contract.gate_refs references the generated
+        gate IDs.
+      fail_condition: generated_gate_not_referenced_by_phase_contract
+      severity: error
+    - id: GATE-REGISTRY-ABS-003
+      rule: Special gates may tighten template gates but must not weaken them.
+      fail_condition: special_gate_weakens_template_gate
+      severity: error
+    - id: GATE-REGISTRY-ABS-004
+      rule: A blocking gate must declare remediation and blocks_transition.
+      fail_condition: blocking_gate_missing_remediation_or_transition
+      severity: error
+  gate_sequence_policy:
+    entry_gate: before_phase_agent_invocation
+    output_gate: after_phase_agent_returns_before_phase_completion
+    trigger_gate: after_output_gate_when_triggers_emitted_or_active
+    handoff_gate: before_target_phase_consumes_source_output
+    skip_gate: before_phase_status_becomes_skipped
+    pre_implementation_gate: immediately_before_implementation_phase
+    post_implementation_gate: immediately_after_implementation_validation
+    final_gate: immediately_before_mission_completion
+  template_inheritance_rules:
+    standard_phase_gates:
+    - standard_entry_gate_template
+    - standard_output_gate_template
+    - standard_handoff_gate_template
+    special_gate_records:
+    - pre_implementation_gate_record
+    - post_implementation_gate_record
+    - final_gate_record
+    tightening_allowed:
+    - add_required_checks
+    - add_fail_when_conditions
+    - increase_severity
+    - add_blocks_before
+    - narrow_pass_when
+    weakening_forbidden:
+    - remove_required_checks
+    - remove_fail_when_conditions
+    - downgrade_blocking_failure
+    - allow_missing_required_output
+    - allow_missing_required_input
   templates:
     standard_entry_gate_template:
+      template_id: standard_entry_gate_template
       gate_type: entry_gate
       applies_to: all_executable_phases
       required_checks:
       - phase_exists_in_phase_taxonomy
+      - phase_is_active_or_conditionally_scheduled
+      - phase_not_forbidden_by_mission_profile
+      - phase_has_exactly_one_owner_agent
+      - owner_agent_contract_exists
+      - owner_agent_prompt_exists
+      - owner_agent_permission_profile_exists
+      - phase_contract_exists
+      - phase_input_bundle_exists
       - required_inputs_exist
-      - agent_permission_profile_exists
+      - required_input_reports_not_invalidated
+      - agent_may_read_required_inputs
+      - allowed_conventions_exist
+      - no_blocking_revision_targets_phase_input
+      - no_unresolved_trigger_blocks_phase_start
       pass_when:
       - all_required_checks_pass
+      - no_fail_when_condition_matched
+      - no_blocking_state_exists
       fail_when:
+      - unknown_phase
+      - phase_not_active
+      - phase_forbidden_by_profile
+      - owner_agent_missing
+      - agent_prompt_missing
+      - permission_profile_missing
+      - phase_contract_missing
+      - phase_input_bundle_missing
       - required_input_missing
-      - agent_permission_missing
+      - required_input_invalidated
+      - agent_read_not_allowed
+      - blocking_revision_exists
+      - active_trigger_blocks_phase_start
       severity: blocking
       blocking: true
+      blocks_transition: true
+      remediation:
+      - schedule_missing_input_producer_phase
+      - regenerate_phase_input_bundle
+      - request_revision_for_invalidated_input
+      - block_phase_until_required_inputs_exist
+      - resolve_blocking_trigger
+      result_schema_ref: gate_result_schema
     standard_output_gate_template:
+      template_id: standard_output_gate_template
       gate_type: output_gate
       applies_to: all_executable_phases
       required_checks:
       - required_outputs_exist
+      - required_outputs_written_to_declared_paths
       - required_outputs_match_report_schema
+      - phase_output_contains_required_fields
+      - console_only_output_not_used
+      - decisions_have_evidence_or_no_evidence_marker
       - phase_must_do_items_satisfied
+      - phase_must_not_do_items_not_violated
       - agent_writes_within_allowed_scope
+      - no_forbidden_write_scope_violation
+      - emitted_triggers_declared_or_allowed
+      - revision_requests_valid_if_emitted
+      - output_lifecycle_state_valid
       pass_when:
       - all_required_checks_pass
+      - no_fail_when_condition_matched
+      - no_blocking_state_exists
       fail_when:
       - required_output_missing
       - output_schema_invalid
+      - required_report_only_printed_to_console
+      - decision_missing_evidence_reference
+      - phase_scope_requirement_unmet
+      - phase_forbidden_behavior_detected
       - agent_wrote_unallowed_file
+      - agent_wrote_forbidden_file
+      - trigger_not_registered
+      - revision_request_invalid
       severity: blocking
       blocking: true
+      blocks_transition: true
+      remediation:
+      - rerun_phase_with_missing_output
+      - request_revision_if_output_cannot_be_produced
+      - block_downstream_consumption
+      - classify_permission_violation
+      - schedule_trigger_review
+      result_schema_ref: gate_result_schema
     standard_handoff_gate_template:
+      template_id: standard_handoff_gate_template
       gate_type: handoff_gate
       applies_to: all_phase_handoffs
       required_checks:
       - source_phase_output_gate_passed
       - source_output_not_invalidated
+      - source_report_lifecycle_valid
       - target_phase_declares_input
       - target_agent_may_read_input
+      - handoff_record_created
+      - handoff_lifecycle_state_valid
+      - trigger_outputs_registered
+      - revision_requests_registered
       pass_when:
       - all_required_checks_pass
+      - no_fail_when_condition_matched
+      - no_blocking_state_exists
       fail_when:
       - source_output_gate_failed
       - source_output_invalidated
+      - source_report_invalid
       - target_phase_does_not_declare_input
+      - target_agent_read_not_allowed
+      - handoff_record_missing
+      - handoff_lifecycle_state_invalid
+      - emitted_trigger_unregistered
+      - revision_request_unregistered
       severity: blocking
       blocking: true
+      blocks_transition: true
+      remediation:
+      - block_target_phase
+      - schedule_trigger_review
+      - request_revision_or_rerun
+      - mark_handoff_blocked
+      result_schema_ref: gate_result_schema
+    skip_gate_template:
+      template_id: skip_gate_template
+      gate_type: skip_gate
+      applies_to: skipped_phases
+      required_checks:
+      - phase_skip_allowed_by_profile_or_condition
+      - skip_reason_exists
+      - skip_evidence_exists
+      - downstream_risk_review_exists
+      - skipped_phase_outputs_not_required_by_active_downstream_phase
+      - skip_record_written
+      pass_when:
+      - all_required_checks_pass
+      - no_fail_when_condition_matched
+      - no_blocking_state_exists
+      fail_when:
+      - required_phase_skipped_without_blocker
+      - skip_reason_missing
+      - skip_evidence_missing
+      - downstream_dependency_requires_skipped_phase_output
+      - skip_record_missing
+      severity: blocking
+      blocking: true
+      blocks_transition: true
+      remediation:
+      - execute_skipped_phase
+      - block_mission
+      - record_explicit_block_reason
+      - add_missing_downstream_risk_review
+      result_schema_ref: gate_result_schema
+    trigger_gate_template:
+      template_id: trigger_gate_template
+      gate_type: trigger_gate
+      applies_to: phases_that_emit_or_modify_triggers
+      required_checks:
+      - all_emitted_triggers_registered
+      - trigger_type_known
+      - trigger_status_valid
+      - trigger_has_required_phase_or_action
+      - trigger_has_resolution_path
+      - trigger_blocking_before_rules_respected
+      - trigger_review_scheduled_when_required
+      pass_when:
+      - all_required_checks_pass
+      - no_fail_when_condition_matched
+      - no_blocking_state_exists
+      fail_when:
+      - unknown_trigger_type
+      - emitted_trigger_unregistered
+      - trigger_missing_resolution_path
+      - trigger_status_invalid
+      - trigger_blocks_next_phase
+      - trigger_review_required_but_missing
+      severity: blocking
+      blocking: true
+      blocks_transition: true
+      remediation:
+      - schedule_trigger_review
+      - mark_trigger_blocked_with_reason
+      - request_revision
+      - resolve_or_schedule_trigger
+      result_schema_ref: gate_result_schema
     pre_implementation_gate_record:
       gate_id: gate.pre_implementation_gate.output
       gate_type: pre_implementation_gate
       phase_id: pre_implementation_gate
+      strictness: maximum
       required_checks:
       - mission_state_exists
+      - active_phase_plan_valid
+      - all_required_phases_accounted_for_before_implementation
+      - required_phase_outputs_exist
       - required_reports_exist
+      - report_artifact_validation_not_failed
+      - behavior_contract_exists
       - test_plan_exists
       - implementation_sequence_exists
       - checkpoint_validation_plan_exists
       - no_active_unresolved_triggers
+      - no_blocking_phase_statuses
+      - no_unresolved_revision_affects_pre_implementation_inputs
+      - implementation_agent_permission_profile_exists
+      - allowed_code_edit_scope_defined
+      - changed_file_scope_policy_defined
+      - forbidden_file_scope_defined
       pass_when:
       - implementation_allowed_true
       - all_required_checks_pass
+      - gate_result_written
       fail_when:
+      - mission_state_missing
+      - active_phase_plan_invalid
+      - required_phase_output_missing
       - required_report_file_missing
+      - report_artifact_validation_failed
+      - test_plan_missing
+      - implementation_sequence_missing
+      - checkpoint_validation_plan_missing
       - active_trigger_exists
+      - blocking_phase_exists
+      - unresolved_revision_affects_implementation
+      - allowed_code_edit_scope_missing
+      - implementation_permission_missing
       severity: blocking
       blocking: true
+      blocks_transition: true
+      remediation:
+      - execute_missing_required_phase
+      - run_trigger_review
+      - run_report_artifact_validation
+      - resolve_revision
+      - define_write_scope
+      - block_implementation
+      result_schema_ref: gate_result_schema
+    post_implementation_gate_record:
+      gate_id: gate.post_implementation_validation.output
+      gate_type: post_implementation_gate
+      phase_id: post_implementation_validation
+      strictness: maximum
+      required_checks:
+      - changed_file_manifest_exists
+      - implementation_result_exists
+      - checkpoint_results_recorded_when_required
+      - changed_files_within_allowed_scope
+      - forbidden_files_not_changed
+      - implementation_sequence_followed_or_deviations_recorded
+      - validation_commands_recorded_when_available
+      - test_results_recorded_when_available
+      - failures_recorded_if_present
+      - unexpected_changes_classified
+      - repair_or_failure_classification_scheduled_when_needed
+      pass_when:
+      - validation_status_is_passed_or_passed_with_recorded_warnings
+      - no_blocking_failures
+      - all_required_checks_pass
+      fail_when:
+      - changed_file_manifest_missing
+      - implementation_result_missing
+      - forbidden_file_changed
+      - changed_file_outside_scope
+      - implementation_sequence_deviation_unrecorded
+      - blocking_test_failure
+      - validation_failure_hidden
+      - unexpected_change_unclassified
+      severity: blocking
+      blocking: true
+      blocks_transition: true
+      remediation:
+      - schedule_failure_classification
+      - schedule_feedback_repair_if_repairable
+      - request_revision_if_design_or_sequence_invalid
+      - block_final_validation
+      result_schema_ref: gate_result_schema
     final_gate_record:
       gate_id: gate.final_validation.output
       gate_type: final_gate
       phase_id: final_validation
+      strictness: maximum
       required_checks:
+      - mission_state_exists
+      - selected_profile_valid
       - all_required_phases_accounted_for
+      - no_pending_required_phase
       - no_unresolved_active_triggers
+      - no_unresolved_blocked_items
       - required_reports_exist
       - report_artifact_validation_passed
+      - invalidated_outputs_not_consumed
+      - revision_history_resolved
+      - implementation_gate_sequence_valid
+      - final_validation_summary_written
+      - final_unresolved_items_written_when_needed
       pass_when:
       - final_status_is_passed
       - all_required_checks_pass
+      - mission_complete_trigger_emitted_or_recorded
       fail_when:
       - phase_missing_accounting_status
+      - pending_required_phase_exists
       - unresolved_active_trigger_exists
+      - blocked_item_unresolved
       - required_report_file_missing
+      - report_artifact_validation_failed
+      - invalidated_output_consumed
+      - revision_unresolved
+      - implementation_gate_sequence_invalid
+      - final_validation_summary_missing
       severity: blocking
       blocking: true
+      blocks_transition: true
+      remediation:
+      - block_mission_completion
+      - produce_final_unresolved_items
+      - schedule_rerun_or_revision
+      - run_report_artifact_validation
+      - resolve_triggers
+      result_schema_ref: gate_result_schema
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: GATE-TEMPLATE-CHECK-001
+    check: all_templates_reference_known_gate_types
+    applies_when:
+      gate_templates_loaded: true
+  - id: GATE-TEMPLATE-CHECK-002
+    check: all_blocking_gates_have_fail_when_and_remediation
+    applies_when:
+      gate_templates_loaded: true
+  fail_conditions:
+  - id: GATE-TEMPLATE-001
+    condition: special_gate_weakens_template_gate
+    message: Special gate may tighten but must not weaken template gate.
+    severity: error
+  - id: GATE-TEMPLATE-002
+    condition: gate_template_references_unknown_gate_type
+    message: Gate template references unknown gate type.
+    severity: error
+  - id: GATE-TEMPLATE-003
+    condition: blocking_gate_missing_remediation_or_transition
+    message: Blocking gate must declare remediation and blocked transition behavior.
+    severity: error

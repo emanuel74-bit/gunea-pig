@@ -4,22 +4,35 @@ file:
   path: gates/conventions.gates.yaml
   role: gates_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for gate taxonomy, templates, and validation.
+purpose: Provide the strict runtime gate subsystem entrypoint, file index, local execution order, and authority boundaries
+  for gate taxonomy, templates, and validation.
 ownership:
   owns:
   - gates_file_index
+  - gates_local_execution_order
   - gates_subsystem_contract
+  - subsystem_authority_boundaries
   does_not_own:
-  - phase_contracts
+  - phase_contract_definitions
   - mission_profile_selection
+  - agent_permissions
+  - report_artifact_registry
+  - runtime_phase_scheduling
+  - phase_agent_work
 activation:
   mode: entrypoint
   activates_when:
   - gate_validation_required
+  - multi_agent_execution_enabled
+  - alpha_runtime_transition_requested
   skips_when: []
 inputs:
   required: []
-  optional: []
+  optional:
+  - active_phase
+  - mission_state
+  - phase_contract
+  - phase_output
 outputs:
   produces:
   - gates_subsystem_result
@@ -29,12 +42,84 @@ dependencies:
   - gates/conventions.gate-taxonomy.yaml
   - gates/conventions.gate-templates.yaml
   - gates/conventions.gate-validation.yaml
-  optional_files: []
+  optional_files:
+  - phases/conventions.phase-contracts.yaml
+  - missions/conventions.mission-state.yaml
 sections:
   gates_file_index:
     taxonomy: gates/conventions.gate-taxonomy.yaml
     templates: gates/conventions.gate-templates.yaml
     validation: gates/conventions.gate-validation.yaml
+  gates_local_execution_order:
+  - load gate taxonomy
+  - resolve gate template or special gate record
+  - bind active phase contract and mission state
+  - run required checks
+  - calculate gate status
+  - write gate result
+  - block, remediate, or allow continuation
+  gates_subsystem_contract:
+    absolute_rules:
+    - id: GATES-SYSTEM-ABS-001
+      rule: Gates validate runtime transitions; they do not perform phase work.
+      fail_condition: gate_subsystem_performed_phase_work
+      severity: error
+    - id: GATES-SYSTEM-ABS-002
+      rule: Every executable phase must reference entry, output, and handoff gates.
+      fail_condition: phase_missing_required_gate
+      severity: error
+    - id: GATES-SYSTEM-ABS-003
+      rule: A failed blocking gate must stop the target transition until remediated, rerun, or explicitly blocked.
+      fail_condition: blocking_gate_failure_ignored
+      severity: error
+    - id: GATES-SYSTEM-ABS-004
+      rule: Gate definitions may tighten phase contracts but must never weaken phase contracts, agent permissions, report
+        schemas, or mission profile requirements.
+      fail_condition: gate_weakened_authoritative_contract
+      severity: error
+    - id: GATES-SYSTEM-ABS-005
+      rule: Gate output must be machine-readable and written into mission state or the declared gate-result report.
+      fail_condition: gate_result_not_persisted
+      severity: error
+  subsystem_authority_boundaries:
+    gates_own:
+    - transition validation
+    - gate status calculation
+    - blocking behavior
+    - gate remediation suggestions
+    - gate result schema
+    alpha_controller_owns:
+    - runtime scheduling
+    - invoking phase agents
+    - updating mission state after gate results
+    - deciding next phase from valid gate result
+    phase_contracts_own:
+    - declared phase inputs
+    - declared phase outputs
+    - phase must_do and must_not_do
+    - gate references
+    reports_own:
+    - report artifact schemas and required fields
+    triggers_own:
+    - trigger taxonomy and trigger resolution policy
+    handoffs_own:
+    - handoff schema and handoff validation semantics
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: GATES-ENTRY-CHECK-001
+    check: gates_file_index_targets_exist
+    applies_when:
+      gates_subsystem_loaded: true
+  - id: GATES-ENTRY-CHECK-002
+    check: gates_authority_boundaries_not_duplicated
+    applies_when:
+      gates_subsystem_loaded: true
+  fail_conditions:
+  - id: GATES-ENTRY-001
+    condition: gate_subsystem_performed_phase_work
+    message: Gate subsystem must not perform phase work.
+    severity: error
+  - id: GATES-ENTRY-002
+    condition: gate_result_not_persisted
+    message: Gate results must be persisted before Alpha continues.
+    severity: error

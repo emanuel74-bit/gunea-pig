@@ -4,26 +4,41 @@ file:
   path: gates/conventions.gate-validation.yaml
   role: gate_validation_contract
   executability: validator
-purpose: Define gate validation rules and algorithms.
+purpose: Define strict gate validation checks, status calculation, validation rules, algorithms, result schema, and Alpha
+  enforcement requirements.
 ownership:
   owns:
+  - gate_check_catalog
+  - gate_status_calculation
   - gate_validation_rules
   - gate_validation_algorithm
+  - gate_validation_result_schema
+  - alpha_gate_enforcement_contract
   does_not_own:
   - gate_vocabulary
   - gate_templates
-  - phase_contracts
+  - phase_contract_definitions
+  - agent_permissions
+  - implementation_content
+  - trigger_resolution_policy
 activation:
   mode: conditional
   activates_when:
   - gate_validation_required
+  - alpha_runtime_transition_requested
+  - phase_gate_result_required
   skips_when: []
 inputs:
   required:
   - gate_template_registry
   - phase_contract
   - mission_state
-  optional: []
+  optional:
+  - phase_output
+  - report_registry
+  - agent_permission_profile
+  - handoff_record
+  - trigger_records
 outputs:
   produces:
   - gate_validation_result
@@ -33,26 +48,512 @@ dependencies:
   - gates/conventions.gate-taxonomy.yaml
   - gates/conventions.gate-templates.yaml
   - missions/conventions.mission-state.yaml
-  optional_files: []
+  optional_files:
+  - reports/conventions.report-artifacts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - phases/conventions.phase-contracts.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.invalidation-policy.yaml
 sections:
+  gate_check_catalog:
+    phase_exists_in_phase_taxonomy:
+      applies_to:
+      - entry_gate
+      pass_when:
+      - phase_id exists in phases/conventions.phase-taxonomy.yaml
+      fail_when:
+      - phase_id unknown
+      fail_condition: unknown_phase
+    phase_is_active_or_conditionally_scheduled:
+      applies_to:
+      - entry_gate
+      pass_when:
+      - phase_id appears in active_phase_plan.ordered_phases or is valid conditionally scheduled phase
+      fail_when:
+      - phase not active and not scheduled
+      fail_condition: phase_not_active
+    phase_not_forbidden_by_mission_profile:
+      applies_to:
+      - entry_gate
+      - skip_gate
+      pass_when:
+      - phase_id not in selected_profile.forbidden_phases unless validating explicit forbidden skip
+      fail_when:
+      - phase forbidden but scheduled for execution
+      fail_condition: forbidden_phase_scheduled
+    phase_has_exactly_one_owner_agent:
+      applies_to:
+      - entry_gate
+      pass_when:
+      - phase has exactly one owner_agent and owner exists in agent taxonomy
+      fail_when:
+      - missing owner or multiple owners
+      fail_condition: phase_missing_or_multiple_owner_agents
+    owner_agent_prompt_exists:
+      applies_to:
+      - entry_gate
+      pass_when:
+      - agent prompt registry has exactly one prompt for owner_agent
+      fail_when:
+      - prompt missing or multiple prompts
+      fail_condition: agent_prompt_missing
+    owner_agent_permission_profile_exists:
+      applies_to:
+      - entry_gate
+      - pre_implementation_gate
+      pass_when:
+      - permission profile exists for owner_agent
+      fail_when:
+      - permission profile missing
+      fail_condition: agent_permission_missing
+    phase_input_bundle_exists:
+      applies_to:
+      - entry_gate
+      pass_when:
+      - phase input bundle exists or bundle generation is not required for runtime mode
+      fail_when:
+      - required phase input bundle missing
+      fail_condition: phase_input_bundle_missing
+    required_inputs_exist:
+      applies_to:
+      - entry_gate
+      pass_when:
+      - all required input reports/files declared by phase contract exist
+      fail_when:
+      - any required input missing
+      fail_condition: required_input_missing
+    required_input_reports_not_invalidated:
+      applies_to:
+      - entry_gate
+      - handoff_gate
+      pass_when:
+      - no required input is listed in mission_state.invalidated_outputs
+      fail_when:
+      - required input invalidated
+      fail_condition: required_input_invalidated
+    agent_may_read_required_inputs:
+      applies_to:
+      - entry_gate
+      - handoff_gate
+      pass_when:
+      - agent permission profile permits every required input
+      fail_when:
+      - agent may_read does not include input
+      fail_condition: agent_read_not_allowed
+    required_outputs_exist:
+      applies_to:
+      - output_gate
+      pass_when:
+      - all phase required_outputs exist at declared paths
+      fail_when:
+      - required output missing
+      fail_condition: required_output_missing
+    required_outputs_match_report_schema:
+      applies_to:
+      - output_gate
+      pass_when:
+      - produced reports satisfy report artifact required_fields
+      fail_when:
+      - schema invalid or fields missing
+      fail_condition: output_schema_invalid
+    required_outputs_written_to_declared_paths:
+      applies_to:
+      - output_gate
+      pass_when:
+      - output files exist at declared report registry paths
+      fail_when:
+      - output written to undeclared path or only chat
+      fail_condition: required_report_only_printed_to_console
+    decisions_have_evidence_or_no_evidence_marker:
+      applies_to:
+      - output_gate
+      pass_when:
+      - every decision has evidence_refs or explicit no_evidence_available
+      fail_when:
+      - decision lacks evidence marker
+      fail_condition: decision_missing_evidence_reference
+    phase_must_do_items_satisfied:
+      applies_to:
+      - output_gate
+      pass_when:
+      - phase output demonstrates all must_do items
+      fail_when:
+      - must_do not satisfied or not recorded
+      fail_condition: phase_scope_requirement_unmet
+    phase_must_not_do_items_not_violated:
+      applies_to:
+      - output_gate
+      pass_when:
+      - no output/action violates phase must_not_do
+      fail_when:
+      - forbidden phase behavior detected
+      fail_condition: phase_forbidden_behavior_detected
+    agent_writes_within_allowed_scope:
+      applies_to:
+      - output_gate
+      - post_implementation_gate
+      pass_when:
+      - all written files allowed by both agent permissions and phase contract
+      fail_when:
+      - write outside allowed scope
+      fail_condition: agent_wrote_unallowed_file
+    source_phase_output_gate_passed:
+      applies_to:
+      - handoff_gate
+      pass_when:
+      - source phase output gate status is passed
+      fail_when:
+      - source output gate failed, blocked, pending, or missing
+      fail_condition: source_output_gate_failed
+    target_phase_declares_input:
+      applies_to:
+      - handoff_gate
+      pass_when:
+      - target phase required_inputs or optional_inputs declares consumed output
+      fail_when:
+      - target consumes undeclared input
+      fail_condition: target_phase_consumed_undeclared_input
+    all_emitted_triggers_registered:
+      applies_to:
+      - trigger_gate
+      - output_gate
+      pass_when:
+      - every emitted trigger appears in mission_state.active_triggers or resolved trigger history
+      fail_when:
+      - emitted trigger missing from mission state
+      fail_condition: emitted_trigger_unregistered
+    trigger_has_resolution_path:
+      applies_to:
+      - trigger_gate
+      pass_when:
+      - trigger_resolution_matrix has action for trigger_type or explicit block/noop rule
+      fail_when:
+      - no trigger resolution path
+      fail_condition: trigger_missing_resolution_path
+    no_active_unresolved_triggers:
+      applies_to:
+      - pre_implementation_gate
+      - final_gate
+      pass_when:
+      - no active trigger blocks target phase
+      fail_when:
+      - active trigger exists and blocks target phase
+      fail_condition: active_trigger_exists
+    required_reports_exist:
+      applies_to:
+      - pre_implementation_gate
+      - final_gate
+      pass_when:
+      - all reports required by selected profile and active phase plan exist
+      fail_when:
+      - required report missing
+      fail_condition: required_report_file_missing
+    implementation_sequence_exists:
+      applies_to:
+      - pre_implementation_gate
+      pass_when:
+      - implementation-sequence report exists and is valid
+      fail_when:
+      - implementation sequence missing or invalid
+      fail_condition: implementation_sequence_missing
+    checkpoint_validation_plan_exists:
+      applies_to:
+      - pre_implementation_gate
+      pass_when:
+      - checkpoint-validation-plan report exists and is valid
+      fail_when:
+      - checkpoint validation plan missing
+      fail_condition: checkpoint_validation_plan_missing
+    test_plan_exists:
+      applies_to:
+      - pre_implementation_gate
+      pass_when:
+      - test-plan report exists and declares validation commands or test gaps
+      fail_when:
+      - test plan missing
+      fail_condition: test_plan_missing
+    changed_file_manifest_exists:
+      applies_to:
+      - post_implementation_gate
+      pass_when:
+      - changed-file-manifest report exists
+      fail_when:
+      - changed-file-manifest missing
+      fail_condition: changed_file_manifest_missing
+    changed_files_within_allowed_scope:
+      applies_to:
+      - post_implementation_gate
+      pass_when:
+      - every changed file is within allowed code edit scope
+      fail_when:
+      - changed file outside allowed scope
+      fail_condition: changed_file_outside_scope
+    forbidden_files_not_changed:
+      applies_to:
+      - post_implementation_gate
+      pass_when:
+      - no forbidden file paths changed
+      fail_when:
+      - forbidden file changed
+      fail_condition: forbidden_file_changed
+    implementation_sequence_followed_or_deviations_recorded:
+      applies_to:
+      - post_implementation_gate
+      pass_when:
+      - implementation result maps changes to sequence steps or records deviations
+      fail_when:
+      - unrecorded sequence deviation
+      fail_condition: implementation_sequence_deviation_unrecorded
+    all_required_phases_accounted_for:
+      applies_to:
+      - final_gate
+      pass_when:
+      - every required phase has exactly one terminal status
+      fail_when:
+      - phase status missing or non-terminal
+      fail_condition: phase_missing_accounting_status
+    report_artifact_validation_passed:
+      applies_to:
+      - final_gate
+      pass_when:
+      - report-artifact-validation status is passed
+      fail_when:
+      - report validation missing or failed
+      fail_condition: report_artifact_validation_failed
+    invalidated_outputs_not_consumed:
+      applies_to:
+      - entry_gate
+      - handoff_gate
+      - final_gate
+      pass_when:
+      - no current report/phase consumes invalidated output
+      fail_when:
+      - invalidated output consumed
+      fail_condition: invalidated_output_consumed
+    final_validation_summary_written:
+      applies_to:
+      - final_gate
+      pass_when:
+      - 99-validation-summary exists and includes final_status
+      fail_when:
+      - final validation summary missing
+      fail_condition: final_validation_summary_missing
+  gate_status_calculation:
+    status_priority_order:
+    - failed
+    - blocked
+    - skipped
+    - passed
+    - pending
+    rules:
+    - when: any required check returns failed with severity blocking
+      status: failed
+      blocking: true
+    - when: required prerequisite is unavailable but valid resolution exists
+      status: blocked
+      blocking: true
+    - when: skip gate validates an allowed skip
+      status: skipped
+      blocking: false
+    - when: all required checks pass and no fail_when matches
+      status: passed
+      blocking: false
+    - when: gate has not run
+      status: pending
+      blocking: true
   gate_validation_rules:
     absolute_rules:
     - id: GATE-VALIDATION-ABS-001
-      rule: No phase can start before entry gate passes.
-      fail_condition: phase_started_before_entry_gate_passed
+      rule: Alpha must run an entry gate before invoking a phase agent.
+      applies_when: []
+      pass_when: []
+      fail_when: []
+      fail_condition: alpha_invoked_phase_without_entry_gate
+      severity: blocking
+      blocking: true
+      blocks_before: []
+      remediation:
+      - run_entry_gate
+      - block_phase_invocation
     - id: GATE-VALIDATION-ABS-002
-      rule: No phase can be marked executed before output gate passes.
-      fail_condition: phase_marked_executed_without_output_gate
+      rule: Alpha must run an output gate before marking a phase executed.
+      applies_when: []
+      pass_when: []
+      fail_when: []
+      fail_condition: alpha_marked_phase_executed_without_output_gate
+      severity: blocking
+      blocking: true
+      blocks_before: []
+      remediation:
+      - run_output_gate
+      - restore_phase_status_to_pending_validation
+    - id: GATE-VALIDATION-ABS-003
+      rule: Alpha must run a handoff gate before downstream consumption.
+      applies_when: []
+      pass_when: []
+      fail_when: []
+      fail_condition: alpha_allowed_handoff_without_handoff_gate
+      severity: blocking
+      blocking: true
+      blocks_before: []
+      remediation:
+      - block_target_phase
+      - create_handoff_record
+      - run_handoff_gate
+    - id: GATE-VALIDATION-ABS-004
+      rule: Implementation cannot start unless pre-implementation gate passes.
+      applies_when: []
+      pass_when: []
+      fail_when: []
+      fail_condition: implementation_started_without_pre_implementation_gate
+      severity: blocking
+      blocking: true
+      blocks_before: []
+      remediation:
+      - block_implementation
+      - run_pre_implementation_gate
+    - id: GATE-VALIDATION-ABS-005
+      rule: Final validation cannot pass unless final gate passes.
+      applies_when: []
+      pass_when: []
+      fail_when: []
+      fail_condition: mission_completed_without_final_gate
+      severity: blocking
+      blocking: true
+      blocks_before: []
+      remediation:
+      - block_mission_completion
+      - run_final_gate
+    - id: GATE-VALIDATION-ABS-006
+      rule: A blocking gate failure cannot be downgraded by agent judgment.
+      applies_when: []
+      pass_when: []
+      fail_when: []
+      fail_condition: agent_overrode_blocking_gate_failure
+      severity: blocking
+      blocking: true
+      blocks_before: []
+      remediation:
+      - restore_gate_failure
+      - request_revision_if_rule_conflict
   gate_validation_algorithm:
     steps:
-    - load_phase_contract
-    - load_gate_ref
-    - load_gate_template_or_record
-    - load_mission_state
-    - run_required_checks
-    - evaluate_pass_fail
-    - write_gate_result
-    - block_or_continue
+    - step_id: LOAD_ACTIVE_PHASE_AND_GATE
+      action: read
+      inputs:
+      - active_phase
+      - gate_id
+      - gate_type
+    - step_id: LOAD_PHASE_CONTRACT
+      action: read
+      inputs:
+      - phases/conventions.phase-contracts.yaml
+      - active_phase.phase_id
+    - step_id: RESOLVE_GATE_TEMPLATE_OR_RECORD
+      action: resolve
+      inputs:
+      - gates/conventions.gate-templates.yaml
+      - gate_id
+      - gate_type
+    - step_id: LOAD_RUNTIME_STATE
+      action: read
+      inputs:
+      - .ai/mission-state.yaml
+      - .ai/reports/report-registry.yaml
+    - step_id: LOAD_AGENT_AND_PERMISSION_CONTEXT
+      action: read
+      inputs:
+      - owner_agent
+      - agent_contract
+      - agent_permission_profile
+      - agent_prompt_ref
+    - step_id: RUN_REQUIRED_CHECKS
+      action: for_each
+      target: gate.required_checks
+      assertion: check_result.status in [passed, failed, blocked, skipped]
+    - step_id: EVALUATE_FAIL_WHEN
+      action: evaluate
+      input: gate.fail_when
+      output: matched_fail_conditions
+    - step_id: CALCULATE_GATE_STATUS
+      action: apply_status_calculation
+      input:
+      - check_results
+      - matched_fail_conditions
+      - blocking_state
+    - step_id: WRITE_GATE_RESULT
+      action: write
+      output: mission_state.phase_statuses[].gate_results[]
+    - step_id: EMIT_BLOCKERS_OR_REMEDIATION
+      action: branch
+      branches:
+        passed: allow_guarded_transition
+        failed: block_transition_and_record_failures
+        blocked: block_transition_and_record_resolution_path
+        skipped: record_skip_and_validate_downstream_risk
+    - step_id: RETURN_MACHINE_READABLE_RESULT
+      action: emit
+      output: gate_validation_result
+  gate_validation_result_schema:
+    required_fields:
+    - gate_id
+    - gate_type
+    - phase_id
+    - status
+    - blocking
+    - check_results
+    - failures
+    - remediation
+    - allowed_transition
+    optional_fields:
+    - blocked_transition
+    - trigger_refs
+    - revision_refs
+    - written_report_refs
+    - evidence_refs
+  alpha_gate_enforcement_contract:
+    alpha_must:
+    - run entry gate before phase agent invocation
+    - run output gate before phase completion
+    - run trigger gate when triggers exist
+    - run handoff gate before downstream consumption
+    - run pre-implementation gate before code editing
+    - run post-implementation gate after implementation
+    - run final gate before mission completion
+    alpha_must_not:
+    - treat missing gate result as pass
+    - override blocking gate result by prose judgment
+    - allow downstream consumption of invalidated output
+    - allow implementation with active blocking triggers
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: GATE-VALIDATION-CHECK-001
+    check: gate_validation_result_emitted
+    applies_when:
+      gate_validation_required: true
+  - id: GATE-VALIDATION-CHECK-002
+    check: blocking_gate_failure_blocks_transition
+    applies_when:
+      blocking_gate_failed: true
+  fail_conditions:
+  - id: GATE-VALIDATION-001
+    condition: phase_started_before_entry_gate_passed
+    message: Phase cannot start before entry gate passes.
+    severity: error
+  - id: GATE-VALIDATION-002
+    condition: phase_marked_executed_without_output_gate
+    message: Phase cannot be marked executed before output gate passes.
+    severity: error
+  - id: GATE-VALIDATION-003
+    condition: handoff_allowed_without_handoff_gate
+    message: Downstream consumption requires passed handoff gate.
+    severity: error
+  - id: GATE-VALIDATION-004
+    condition: blocking_gate_failure_ignored
+    message: Blocking gate failure must stop guarded transition.
+    severity: error
+  - id: GATE-VALIDATION-005
+    condition: agent_overrode_blocking_gate_failure
+    message: Agent judgment cannot override blocking mechanical gate failure.
+    severity: error
