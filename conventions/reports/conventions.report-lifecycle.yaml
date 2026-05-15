@@ -1,0 +1,125 @@
+version: '1.0'
+file:
+  name: conventions.report-lifecycle.yaml
+  path: reports/conventions.report-lifecycle.yaml
+  role: report_lifecycle_policy
+  executability: policy
+purpose: Define report lifecycle transitions, invalidation, replacement, revalidation,
+  and status update rules for durable report outputs.
+ownership:
+  owns:
+  - report_lifecycle_transitions
+  - report_invalidation_rules
+  - report_replacement_rules
+  - report_revalidation_rules
+  - lifecycle_update_algorithm
+  does_not_own:
+  - report_registry
+  - revision_policy
+  - handoff_consumption_policy
+activation:
+  mode: conditional
+  activates_when:
+  - report_lifecycle_update_required
+  - revision_or_rerun_occurred
+  - report_validation_completed
+  skips_when: []
+inputs:
+  required:
+  - report_artifact_registry
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - report_lifecycle_update
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-taxonomy.yaml
+  - reports/conventions.report-registry.yaml
+  optional_files:
+  - revisions/conventions.invalidation-policy.yaml
+  - handoffs/conventions.handoff-consumption-policy.yaml
+sections:
+  report_lifecycle_transitions:
+  - from: expected
+    to: produced
+    allowed_when:
+    - report_file_created_at_declared_path
+    forbidden_when:
+    - report_schema_invalid_at_creation
+  - from: produced
+    to: validated
+    allowed_when:
+    - required_fields_present
+    - schema_valid
+    - evidence_requirements_satisfied
+    forbidden_when:
+    - missing_required_field
+    - decision_missing_evidence_reference
+  - from: validated
+    to: invalidated
+    allowed_when:
+    - upstream_output_invalidated
+    - source_phase_rerun
+    - revision_invalidates_report
+    forbidden_when:
+    - no_invalidation_reason
+  - from: invalidated
+    to: replaced
+    allowed_when:
+    - replacement_report_exists
+    - replacement_references_invalidated_report
+    forbidden_when:
+    - replacement_missing_reference
+  - from: validated
+    to: pending_revalidation
+    allowed_when:
+    - dependent_upstream_changed_without_direct_invalidating_evidence
+    forbidden_when:
+    - direct_invalidation_required
+  - from: pending_revalidation
+    to: validated
+    allowed_when:
+    - revalidation_checks_pass
+    forbidden_when:
+    - revalidation_not_run
+  report_invalidation_rules:
+    absolute_rules:
+    - id: REPORT-LIFECYCLE-INVALIDATE-001
+      rule: Invalidated reports must not be consumed downstream.
+      fail_condition: downstream_consumed_invalidated_report
+    - id: REPORT-LIFECYCLE-INVALIDATE-002
+      rule: Invalidation must record invalidating phase, reason, affected report,
+        and replacement requirement.
+      fail_condition: report_invalidation_missing_metadata
+  report_replacement_rules:
+    absolute_rules:
+    - id: REPORT-LIFECYCLE-REPLACE-001
+      rule: Replacement report must reference the report it replaces.
+      fail_condition: replacement_report_missing_replaced_report_ref
+  report_revalidation_rules:
+    absolute_rules:
+    - id: REPORT-LIFECYCLE-REVALIDATE-001
+      rule: Reports pending revalidation must block consumption until revalidation
+        passes.
+      fail_condition: pending_revalidation_report_consumed
+  lifecycle_update_algorithm:
+    steps:
+    - load_current_report_lifecycle
+    - classify_event
+    - validate_transition_allowed
+    - write_lifecycle_update
+    - block_consumption_when_invalidated_or_pending_revalidation
+    - emit_failures
+validation:
+  required_checks:
+  - id: REPORT-LIFECYCLE-CHECK-001
+    check: lifecycle_transitions_are_known_and_allowed
+    applies_when:
+      report_lifecycle_update_required: true
+  fail_conditions:
+  - id: REPORT-LIFECYCLE-001
+    condition: illegal_report_lifecycle_transition
+    message: Report lifecycle transition is not allowed.
+    severity: error

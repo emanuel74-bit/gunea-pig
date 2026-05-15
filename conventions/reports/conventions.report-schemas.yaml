@@ -1,0 +1,199 @@
+version: '1.0'
+file:
+  name: conventions.report-schemas.yaml
+  path: reports/conventions.report-schemas.yaml
+  role: report_schema_contract
+  executability: schema
+purpose: Define common report schemas, compact report shape, evidence references,
+  decision records, registry records, template records, and validation result records.
+ownership:
+  owns:
+  - compact_report_schema
+  - decision_record_schema
+  - evidence_reference_schema
+  - gate_result_reference_schema
+  - report_artifact_record_schema
+  - report_registry_schema
+  - report_template_schema
+  - report_validation_result_schema
+  does_not_own:
+  - report_artifact_registry
+  - validation_algorithms
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - report_schema_validation_required
+  - report_templates_generated
+  - report_registry_loaded
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - report_schema_registry
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-taxonomy.yaml
+  optional_files: []
+sections:
+  compact_report_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    optional_fields:
+    - blocked_items
+    - unresolved_items
+    - produced_outputs
+    - invalidated_outputs
+    - replacement_for
+    - schema_version
+    - notes
+    record_shape:
+      report_id: ''
+      phase_id: ''
+      status: draft
+      summary: ''
+      inputs_consumed: []
+      decisions: []
+      evidence_refs: []
+      triggers_emitted: []
+      gate_result:
+        gate_id: ''
+        status: pending
+        failures: []
+  decision_record_schema:
+    required_fields:
+    - decision_id
+    - decision_type
+    - selected_value
+    - reason_summary
+    - evidence_refs
+    optional_fields:
+    - rejected_values
+    - confidence
+    - rule_refs
+    - trigger_refs
+    record_shape:
+      decision_id: ''
+      decision_type: selection
+      selected_value: ''
+      reason_summary: ''
+      rejected_values: []
+      confidence: medium
+      evidence_refs: []
+      rule_refs: []
+  evidence_reference_schema:
+    required_fields:
+    - evidence_ref_id
+    - source_file
+    - source_record_id
+    - supports
+    optional_fields:
+    - source_path
+    - source_lines
+    - confidence
+    - notes
+    record_shape:
+      evidence_ref_id: ''
+      source_file: ''
+      source_record_id: ''
+      source_path: ''
+      source_lines:
+        start: null
+        end: null
+      supports: ''
+      confidence: medium
+      notes: ''
+  gate_result_reference_schema:
+    required_fields:
+    - gate_id
+    - gate_type
+    - status
+    - checked_at_phase
+    - failures
+    optional_fields:
+    - warnings
+    - blocking
+    - remediation_refs
+  report_artifact_record_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - path
+    - format
+    - owner_agent
+    - required_fields
+    - consumed_by_phases
+    - lifecycle_state
+    optional_fields:
+    - category
+    - optional_fields
+    - schema_reference
+    - template_reference
+    - evidence_required
+    - compact_required
+    - full_evidence_allowed
+    - console_output_satisfies_report
+    - invalidates_when
+    - may_be_replaced_by_revision
+  report_registry_schema:
+    required_fields:
+    - mission_id
+    - report_dir
+    - required_reports
+    - expected_reports
+    - produced_reports
+    - missing_reports
+    - invalid_reports
+    - invalidated_reports
+    optional_fields:
+    - replaced_reports
+    - superseded_reports
+    - report_validation_runs
+  report_template_schema:
+    required_fields:
+    - template_id
+    - report_id
+    - path
+    - target_report_path
+    - required_fields
+    - field_instructions
+    optional_fields:
+    - example_values
+    - allowed_values
+    - evidence_requirements
+    - completion_rules
+  report_validation_result_schema:
+    required_fields:
+    - validation_id
+    - report_id
+    - path
+    - status
+    - checks
+    - failures
+    - blocking
+    optional_fields:
+    - warnings
+    - remediation
+    - lifecycle_update
+validation:
+  required_checks:
+  - id: REPORT-SCHEMA-CHECK-001
+    check: all_report_schemas_have_required_fields
+    applies_when:
+      report_schemas_loaded: true
+  fail_conditions:
+  - id: REPORT-SCHEMA-001
+    condition: report_schema_missing_required_fields
+    message: Report schema must declare required fields.
+    severity: error

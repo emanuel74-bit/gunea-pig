@@ -1,0 +1,107 @@
+version: '1.0'
+file:
+  name: conventions.report-templates.yaml
+  path: reports/conventions.report-templates.yaml
+  role: report_template_generation_contract
+  executability: template_registry
+purpose: Define report template generation rules so every required report has a concrete
+  file template with required fields, field instructions, and completion rules.
+ownership:
+  owns:
+  - report_template_generation_policy
+  - report_template_record_schema
+  - template_field_instruction_policy
+  - template_completion_rules
+  - template_generation_algorithm
+  does_not_own:
+  - report_artifact_registry
+  - report_validation_algorithm
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - report_templates_required
+  - phase_bundle_generation_requested
+  skips_when: []
+inputs:
+  required:
+  - report_artifact_registry
+  optional: []
+outputs:
+  produces:
+  - report_template_registry
+  - .ai/templates/reports/*.template.yaml
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-registry.yaml
+  - reports/conventions.report-schemas.yaml
+  optional_files: []
+sections:
+  report_template_generation_policy:
+    absolute_rules:
+    - id: REPORT-TEMPLATE-ABS-001
+      rule: Every report registry record must have a template reference.
+      fail_condition: report_registry_record_missing_template_reference
+    - id: REPORT-TEMPLATE-ABS-002
+      rule: Templates must include all required fields from the report registry record.
+      fail_condition: report_template_missing_required_field
+    - id: REPORT-TEMPLATE-ABS-003
+      rule: Templates must instruct agents to write files and not satisfy output through
+        chat.
+      fail_condition: report_template_allows_console_only_output
+  report_template_record_schema:
+    required_fields:
+    - template_id
+    - report_id
+    - path
+    - target_report_path
+    - required_fields
+    - field_instructions
+    - completion_rules
+    optional_fields:
+    - example_values
+    - allowed_values
+    - evidence_requirements
+  template_field_instruction_policy:
+    required_instruction_types:
+    - purpose
+    - expected_value_type
+    - allowed_empty_when
+    - evidence_requirement
+    - common_failure_modes
+  template_completion_rules:
+    must_include:
+    - report_id
+    - phase_id
+    - status
+    - summary
+    - inputs_consumed
+    - decisions
+    - evidence_refs
+    - triggers_emitted
+    - gate_result
+    must_not_include:
+    - restoration_notes
+    - chat_only_summary
+    - undefined_schema_keys
+  template_generation_algorithm:
+    steps:
+    - load_report_artifact_registry
+    - for_each_report_build_template_record
+    - copy_required_fields
+    - attach_field_instructions
+    - attach_evidence_requirements
+    - write_template_files
+    - validate_templates
+validation:
+  required_checks:
+  - id: REPORT-TEMPLATE-CHECK-001
+    check: every_registry_report_has_template
+    applies_when:
+      report_templates_required: true
+  fail_conditions:
+  - id: REPORT-TEMPLATE-001
+    condition: report_template_missing_required_field
+    message: Report template must include every required field.
+    severity: error

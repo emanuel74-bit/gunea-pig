@@ -1,0 +1,119 @@
+version: '1.0'
+file:
+  name: conventions.report-consumption-policy.yaml
+  path: reports/conventions.report-consumption-policy.yaml
+  role: report_consumption_policy
+  executability: policy
+purpose: Define strict rules for when downstream phases, agents, gates, handoffs,
+  or validators may consume report outputs.
+ownership:
+  owns:
+  - report_consumption_policy
+  - consumable_report_rules
+  - blocked_report_consumption_rules
+  - report_consumer_permission_rules
+  - consumption_decision_algorithm
+  does_not_own:
+  - report_schema_definitions
+  - report_registry
+  - gate_validation
+  - handoff_consumption_policy
+activation:
+  mode: conditional
+  activates_when:
+  - downstream_report_consumption_requested
+  - phase_input_bundle_generation_requested
+  skips_when: []
+inputs:
+  required:
+  - report_artifact_registry
+  - mission_state
+  - target_phase_contract
+  optional: []
+outputs:
+  produces:
+  - report_consumption_decision
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-taxonomy.yaml
+  - reports/conventions.report-registry.yaml
+  - phases/conventions.phase-contracts.yaml
+  optional_files:
+  - handoffs/conventions.handoff-consumption-policy.yaml
+  - agents/conventions.agent-permissions.yaml
+sections:
+  report_consumption_policy:
+    absolute_rules:
+    - id: REPORT-CONSUME-ABS-001
+      rule: A report may be consumed only when it exists at the declared path and
+        lifecycle_state is validated or consumable.
+      fail_condition: consumer_read_report_not_validated_or_consumable
+    - id: REPORT-CONSUME-ABS-002
+      rule: A report may not be consumed when missing, invalid, invalidated, superseded,
+        replaced without following replacement, or pending revalidation.
+      fail_condition: consumer_read_blocked_report_lifecycle_state
+    - id: REPORT-CONSUME-ABS-003
+      rule: The target phase must declare the consumed report as required or optional
+        input, or receive it through a valid phase bundle.
+      fail_condition: target_phase_consumed_undeclared_report
+    - id: REPORT-CONSUME-ABS-004
+      rule: The consuming agent must have permission to read the report path.
+      fail_condition: agent_read_report_not_allowed
+    - id: REPORT-CONSUME-ABS-005
+      rule: Report consumption through a handoff also requires handoff consumption
+        policy to pass.
+      fail_condition: handoff_consumption_policy_failed
+  consumable_report_rules:
+  - status: validated
+    consume_when:
+    - schema_valid
+    - required_evidence_present
+    - not_invalidated
+    - not_superseded
+  - status: consumable
+    consume_when:
+    - explicitly_marked_consumable_by_gate_or_validation
+  blocked_report_consumption_rules:
+  - lifecycle_state: missing
+    blocking: true
+    reason: required report file does not exist
+  - lifecycle_state: invalid
+    blocking: true
+    reason: schema or evidence validation failed
+  - lifecycle_state: invalidated
+    blocking: true
+    reason: upstream revision invalidated report
+  - lifecycle_state: pending_revalidation
+    blocking: true
+    reason: report must be revalidated before use
+  - lifecycle_state: superseded
+    blocking: true
+    reason: newer replacement must be consumed instead
+  report_consumer_permission_rules:
+    required_checks:
+    - target_phase_declares_report_input
+    - target_agent_has_read_permission
+    - report_path_allowed_by_phase_bundle
+    - handoff_policy_passed_when_handoff_present
+  consumption_decision_algorithm:
+    steps:
+    - load_report_record
+    - load_lifecycle_state
+    - validate_report_exists
+    - validate_consumable_lifecycle
+    - validate_target_phase_declares_input
+    - validate_agent_read_permission
+    - validate_handoff_policy_if_applicable
+    - emit_allow_or_block_decision
+validation:
+  required_checks:
+  - id: REPORT-CONSUMPTION-CHECK-001
+    check: blocked_lifecycle_states_cannot_be_consumed
+    applies_when:
+      downstream_report_consumption_requested: true
+  fail_conditions:
+  - id: REPORT-CONSUMPTION-001
+    condition: consumer_read_blocked_report_lifecycle_state
+    message: A report in blocked lifecycle state cannot be consumed downstream.
+    severity: error

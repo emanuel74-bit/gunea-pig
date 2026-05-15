@@ -1,0 +1,190 @@
+version: '1.0'
+file:
+  name: conventions.report-taxonomy.yaml
+  path: reports/conventions.report-taxonomy.yaml
+  role: report_vocabulary_contract
+  executability: vocabulary
+purpose: Define report vocabulary, categories, formats, lifecycle values, status values,
+  decision record types, evidence confidence values, and validation severities.
+ownership:
+  owns:
+  - report_format_enum
+  - report_category_enum
+  - report_status_enum
+  - report_lifecycle_state_enum
+  - report_decision_type_enum
+  - evidence_confidence_enum
+  - report_validation_severity_enum
+  - report_category_definitions
+  - report_lifecycle_state_definitions
+  does_not_own:
+  - report_artifact_registry
+  - report_schema_shapes
+  - report_validation_algorithm
+  - phase_contracts
+activation:
+  mode: reference_only
+  activates_when:
+  - report_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - report_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  report_format_enum:
+    allowed:
+    - yaml
+    - json
+    - markdown
+  report_category_enum:
+    allowed:
+    - mission_control
+    - planning
+    - reconnaissance
+    - classification
+    - design
+    - refactoring
+    - impact
+    - testing
+    - execution_planning
+    - gate
+    - implementation
+    - repair_validation
+    - validation
+    - phase_output
+  report_status_enum:
+    allowed:
+    - draft
+    - complete
+    - blocked
+    - invalid
+    - superseded
+    - not_applicable
+  report_lifecycle_state_enum:
+    allowed:
+    - expected
+    - produced
+    - validated
+    - missing
+    - invalid
+    - invalidated
+    - replaced
+    - superseded
+    - pending_revalidation
+    - consumable
+    - blocked_from_consumption
+  report_decision_type_enum:
+    allowed:
+    - selection
+    - classification
+    - resolution
+    - validation
+    - gate_result
+    - trigger_emission
+    - revision_request
+    - no_op
+    - blocked
+  evidence_confidence_enum:
+    allowed:
+    - none
+    - low
+    - medium
+    - high
+    - direct
+  report_validation_severity_enum:
+    allowed:
+    - info
+    - warning
+    - error
+    - blocking
+  report_category_definitions:
+    mission_control:
+      definition: Reports that initialize, track, or finalize mission execution state.
+    planning:
+      definition: Reports that formalize requested behavior, assumptions, and acceptance
+        criteria.
+    reconnaissance:
+      definition: Reports that summarize existing codebase evidence and local conventions.
+    classification:
+      definition: Reports that classify risk, boundaries, contracts, dependencies,
+        or compatibility.
+    design:
+      definition: Reports that record architecture, roles, patterns, actions, and
+        structure decisions.
+    refactoring:
+      definition: Reports that preserve behavior while changing internal structure.
+    impact:
+      definition: Reports that capture call-site, consumer, and total change impact.
+    testing:
+      definition: Reports that define test expectations and validation commands.
+    execution_planning:
+      definition: Reports that define implementation sequence and checkpoints.
+    gate:
+      definition: Reports that decide whether implementation or phase progression
+        is allowed.
+    implementation:
+      definition: Reports produced from actual code edits, changed files, and checkpoint
+        results.
+    repair_validation:
+      definition: Reports that classify failures and record repairs.
+    validation:
+      definition: Reports that validate implementation, reports, triggers, and final
+        mission state.
+    phase_output:
+      definition: Generic phase output report when no narrower category applies.
+  report_lifecycle_state_definitions:
+    expected:
+      definition: Report is required or scheduled but not yet produced.
+      consumable_by_default: false
+    produced:
+      definition: Report file exists but has not passed validation.
+      consumable_by_default: false
+    validated:
+      definition: Report exists, schema passed, required evidence is present, and
+        output gate may consume it.
+      consumable_by_default: true
+    missing:
+      definition: Required report does not exist at declared path.
+      consumable_by_default: false
+    invalid:
+      definition: Report exists but failed schema, evidence, ownership, or lifecycle
+        validation.
+      consumable_by_default: false
+    invalidated:
+      definition: Report was previously produced but can no longer be consumed because
+        upstream evidence or decision changed.
+      consumable_by_default: false
+    replaced:
+      definition: Report was superseded by an explicit replacement report.
+      consumable_by_default: false
+    superseded:
+      definition: Report is older than a valid replacement and must not be consumed.
+      consumable_by_default: false
+    pending_revalidation:
+      definition: Report may still be valid but must be rechecked after a revision
+        or invalidation event.
+      consumable_by_default: false
+    consumable:
+      definition: Report is explicitly allowed for downstream consumption.
+      consumable_by_default: true
+    blocked_from_consumption:
+      definition: Report exists but cannot be consumed by downstream phases.
+      consumable_by_default: false
+validation:
+  required_checks:
+  - id: REPORT-TAXONOMY-CHECK-001
+    check: all_report_values_are_known
+    applies_when:
+      report_values_are_referenced: true
+  fail_conditions:
+  - id: REPORT-TAXONOMY-001
+    condition: unknown_report_lifecycle_state
+    message: Report lifecycle value must be defined in report taxonomy.
+    severity: error

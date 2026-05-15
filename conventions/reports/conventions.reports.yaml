@@ -4,18 +4,27 @@ file:
   path: reports/conventions.reports.yaml
   role: reports_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for persistent report artifacts and report validation.
+purpose: Provide the report subsystem entrypoint, file index, local execution order,
+  and authority boundaries for durable phase outputs.
 ownership:
   owns:
   - reports_file_index
+  - reports_local_execution_order
   - reports_subsystem_contract
+  - report_integration_contracts
   does_not_own:
-  - phase_order
+  - phase_contracts
+  - agent_permissions
+  - gate_pass_fail_internals
+  - trigger_resolution
   - mission_profile_selection
+  - source_code_implementation
 activation:
   mode: entrypoint
   activates_when:
   - persistent_reports_required
+  - phase_output_contracts_loaded
+  - report_validation_required
   skips_when: []
 inputs:
   required: []
@@ -26,11 +35,68 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
-  - reports/conventions.report-artifacts.yaml
+  - reports/conventions.report-taxonomy.yaml
+  - reports/conventions.report-schemas.yaml
+  - reports/conventions.report-registry.yaml
+  - reports/conventions.report-lifecycle.yaml
+  - reports/conventions.report-consumption-policy.yaml
+  - reports/conventions.report-templates.yaml
+  - reports/conventions.report-validation.yaml
   optional_files: []
 sections:
   reports_file_index:
-    report_artifacts: reports/conventions.report-artifacts.yaml
+    taxonomy: reports/conventions.report-taxonomy.yaml
+    schemas: reports/conventions.report-schemas.yaml
+    registry: reports/conventions.report-registry.yaml
+    lifecycle: reports/conventions.report-lifecycle.yaml
+    consumption_policy: reports/conventions.report-consumption-policy.yaml
+    templates: reports/conventions.report-templates.yaml
+    validation: reports/conventions.report-validation.yaml
+    legacy_artifacts_entrypoint: reports/conventions.report-artifacts.yaml
+  reports_local_execution_order:
+  - load_report_taxonomy
+  - load_report_schemas
+  - load_report_registry
+  - apply_lifecycle_policy
+  - apply_consumption_policy
+  - generate_or_load_templates
+  - validate_reports
+  reports_subsystem_contract:
+    absolute_rules:
+    - id: REPORTS-SYSTEM-ABS-001
+      rule: Reports are durable phase outputs and must be written as files at declared
+        paths.
+      fail_condition: required_report_only_printed_to_console
+    - id: REPORTS-SYSTEM-ABS-002
+      rule: Report subsystem defines report contracts and validation but does not
+        decide phase scheduling.
+      fail_condition: report_subsystem_performed_phase_scheduling
+    - id: REPORTS-SYSTEM-ABS-003
+      rule: Every required phase output report must be declared in the report registry.
+      fail_condition: phase_output_report_missing_from_registry
+    - id: REPORTS-SYSTEM-ABS-004
+      rule: Downstream phases may consume reports only through report consumption
+        policy and handoff policy.
+      fail_condition: downstream_consumed_report_without_policy_pass
+  report_integration_contracts:
+    phases: phase contracts declare required output paths; report registry binds those
+      paths to schemas, owners, lifecycle, and templates.
+    agents: agents write only reports allowed by their phase contract and permission
+      profile.
+    gates: output gates require report existence and schema validity before phase
+      completion.
+    handoffs: handoffs validate whether target phases may consume source reports.
+    revisions: revisions may invalidate, replace, or require rerun of report outputs.
+    missions: mission profiles choose required reports through selected phase plan
+      and explicit profile requirements.
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: REPORTS-SYSTEM-CHECK-001
+    check: reports_subsystem_files_follow_file_contract
+    applies_when:
+      reports_subsystem_loaded: true
+  fail_conditions:
+  - id: REPORTS-SYSTEM-001
+    condition: required_report_only_printed_to_console
+    message: Required reports must be persisted to files.
+    severity: error

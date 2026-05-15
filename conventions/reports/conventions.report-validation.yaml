@@ -1,0 +1,197 @@
+version: '1.0'
+file:
+  name: conventions.report-validation.yaml
+  path: reports/conventions.report-validation.yaml
+  role: report_validation_contract
+  executability: validator
+purpose: Define strict report validation checks, validation algorithms, fail-closed
+  behavior, and validation result schemas for durable report outputs.
+ownership:
+  owns:
+  - report_validation_policy
+  - report_validation_check_catalog
+  - report_schema_validation_algorithm
+  - report_registry_validation_algorithm
+  - report_artifact_validation_algorithm
+  - report_validation_output_schema
+  - report_validation_remediation_mapping
+  does_not_own:
+  - report_taxonomy
+  - report_schemas
+  - report_registry
+  - report_templates
+activation:
+  mode: conditional
+  activates_when:
+  - report_validation_required
+  - output_gate_runs
+  - report_artifact_validation_phase_runs
+  - final_validation_runs
+  skips_when: []
+inputs:
+  required:
+  - report_artifact_registry
+  - report_files
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - report_validation_result
+  - report_artifact_validation_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-taxonomy.yaml
+  - reports/conventions.report-schemas.yaml
+  - reports/conventions.report-registry.yaml
+  - reports/conventions.report-lifecycle.yaml
+  - reports/conventions.report-consumption-policy.yaml
+  - reports/conventions.report-templates.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+  - revisions/conventions.invalidation-policy.yaml
+sections:
+  report_validation_policy:
+    absolute_rules:
+    - id: REPORT-VALIDATION-ABS-001
+      rule: Every required report must exist at its declared path.
+      fail_condition: required_report_file_missing
+    - id: REPORT-VALIDATION-ABS-002
+      rule: Every produced report must satisfy its required_fields list.
+      fail_condition: report_missing_required_field
+    - id: REPORT-VALIDATION-ABS-003
+      rule: Console-only output cannot satisfy any required report.
+      fail_condition: required_report_only_printed_to_console
+    - id: REPORT-VALIDATION-ABS-004
+      rule: Every decision must have evidence_refs or explicit no_evidence_available
+        marker.
+      fail_condition: decision_missing_evidence_reference
+    - id: REPORT-VALIDATION-ABS-005
+      rule: Invalidated reports must not be consumed by downstream phases.
+      fail_condition: downstream_consumed_invalidated_report
+    - id: REPORT-VALIDATION-ABS-006
+      rule: Report artifact validation must pass before final validation can pass.
+      fail_condition: final_validation_without_report_artifact_validation
+  report_validation_check_catalog:
+  - check_id: report_file_exists
+    applies_when:
+    - report_required_or_produced
+    pass_when:
+    - file_exists_at_declared_path
+    fail_when:
+    - file_missing_at_declared_path
+    severity: blocking
+    fail_condition: required_report_file_missing
+  - check_id: required_fields_present
+    applies_when:
+    - report_file_exists
+    pass_when:
+    - all_required_fields_present
+    fail_when:
+    - any_required_field_missing
+    severity: blocking
+    fail_condition: report_missing_required_field
+  - check_id: report_identity_matches_registry
+    applies_when:
+    - report_file_exists
+    pass_when:
+    - report_id_phase_id_owner_match_registry
+    fail_when:
+    - identity_mismatch
+    severity: blocking
+    fail_condition: report_identity_mismatch
+  - check_id: decisions_have_evidence
+    applies_when:
+    - report_contains_decisions
+    pass_when:
+    - each_decision_has_evidence_or_no_evidence_marker
+    fail_when:
+    - decision_missing_evidence_reference
+    severity: blocking
+    fail_condition: decision_missing_evidence_reference
+  - check_id: triggers_are_structured
+    applies_when:
+    - report_emits_triggers
+    pass_when:
+    - trigger_records_include_type_reason_evidence
+    fail_when:
+    - trigger_record_missing_required_field
+    severity: blocking
+    fail_condition: report_trigger_record_invalid
+  - check_id: lifecycle_consumability
+    applies_when:
+    - report_consumed_downstream
+    pass_when:
+    - lifecycle_state_consumable
+    fail_when:
+    - blocked_lifecycle_state_consumed
+    severity: blocking
+    fail_condition: downstream_consumed_non_consumable_report
+  report_schema_validation_algorithm:
+    steps:
+    - load_report_record
+    - load_report_file
+    - assert_report_yaml_parse
+    - assert_required_fields_present
+    - assert_identity_matches_registry
+    - assert_decision_evidence
+    - assert_trigger_shape
+    - write_validation_result
+  report_registry_validation_algorithm:
+    steps:
+    - load_phase_contracts
+    - load_report_registry
+    - assert_every_phase_output_report_registered
+    - assert_registry_paths_unique
+    - assert_owners_match_phase_contracts
+    - assert_template_refs_present
+    - emit_failures
+  report_artifact_validation_algorithm:
+    steps:
+    - load_mission_required_reports
+    - load_report_artifact_registry
+    - for_each_required_report_validate_file_exists
+    - for_each_produced_report_validate_schema
+    - validate_no_console_only_output
+    - validate_invalidated_reports_not_consumed
+    - write_report_artifact_validation_report
+  report_validation_output_schema:
+    required_fields:
+    - validation_id
+    - status
+    - checked_reports
+    - missing_reports
+    - invalid_reports
+    - invalidated_consumed_reports
+    - blocking_failures
+    optional_fields:
+    - warnings
+    - remediation
+    - lifecycle_updates
+  report_validation_remediation_mapping:
+  - fail_condition: required_report_file_missing
+    remediation:
+    - rerun_producing_phase
+    - block_downstream_consumption
+  - fail_condition: report_missing_required_field
+    remediation:
+    - rerun_phase_or_repair_report_with_required_fields
+  - fail_condition: decision_missing_evidence_reference
+    remediation:
+    - amend_report_with_evidence_or_explicit_no_evidence_marker
+  - fail_condition: downstream_consumed_invalidated_report
+    remediation:
+    - invalidate_downstream_outputs
+    - rerun_or_revalidate_consumers
+validation:
+  required_checks:
+  - id: REPORT-VALIDATION-CHECK-001
+    check: report_validation_policy_is_fail_closed
+    applies_when:
+      report_validation_required: true
+  fail_conditions:
+  - id: REPORT-VALIDATION-001
+    condition: report_validation_policy_not_fail_closed
+    message: Report validation must block on missing, invalid, or non-consumable required
+      reports.
+    severity: error
