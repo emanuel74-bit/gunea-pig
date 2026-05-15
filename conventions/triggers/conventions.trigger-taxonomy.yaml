@@ -4,14 +4,20 @@ file:
   path: triggers/conventions.trigger-taxonomy.yaml
   role: trigger_vocabulary_contract
   executability: vocabulary
-purpose: Define trigger types, statuses, and trigger record schema.
+purpose: Define trigger categories, statuses, trigger types, status semantics, trigger record schema, and per-trigger emission meaning.
 ownership:
   owns:
-  - trigger_type_enum
+  - trigger_category_enum
   - trigger_status_enum
+  - trigger_status_definitions
+  - trigger_type_enum
+  - trigger_type_definitions
   - trigger_record_schema
+  - trigger_identity_rules
   does_not_own:
   - trigger_resolution_matrix
+  - trigger_emission_policy
+  - trigger_validation_algorithm
   - mission_state_storage
 activation:
   mode: reference_only
@@ -29,6 +35,28 @@ dependencies:
   - core/conventions.file-contract.yaml
   optional_files: []
 sections:
+  trigger_category_enum:
+    allowed:
+    - action
+    - approval
+    - behavior_scope
+    - boundary
+    - contract
+    - dependency
+    - execution
+    - failure
+    - impact
+    - implementation
+    - mission
+    - pattern
+    - reconnaissance
+    - refactor
+    - repair
+    - report
+    - revision
+    - risk
+    - role
+    - validation
   trigger_status_enum:
     allowed:
     - active
@@ -36,6 +64,28 @@ sections:
     - resolved
     - blocked
     - invalidated
+  trigger_status_definitions:
+    active:
+      definition: A trigger has been emitted but has not yet been routed to a required action, blocking decision, scheduled phase, required report, or explicit block
+        record.
+      terminal: false
+      blocks_downstream: true
+    scheduled:
+      definition: The trigger has an assigned resolution path and the required phase, report, approval, or action has been added to the active execution plan.
+      terminal: false
+      blocks_downstream: false
+    resolved:
+      definition: The required trigger action has completed and the trigger no longer blocks downstream execution.
+      terminal: true
+      blocks_downstream: false
+    blocked:
+      definition: The trigger cannot be resolved under the current mission state and must block the target phase or mission completion with an explicit reason.
+      terminal: true
+      blocks_downstream: true
+    invalidated:
+      definition: The trigger was superseded by a revision, rerun, replacement report, or newer trigger record and must not drive new scheduling.
+      terminal: true
+      blocks_downstream: false
   trigger_type_enum:
     allowed:
     - behavior_change_requested
@@ -79,707 +129,1068 @@ sections:
     - mission_complete
     - mission_blocked
     - rerun_required
+  trigger_type_definitions:
+    behavior_change_requested:
+      definition: A requested or discovered change alters observable behavior and therefore requires behavior contract review before implementation.
+      category: behavior_scope
+      allowed_emitters:
+      - behavior_agent
+      - validation_agent
+      - failure_analysis_agent
+      positive_signals:
+      - changed acceptance criterion
+      - new expected behavior
+      - preserved behavior no longer preserved
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - architecture_decomposition
+      - test_derivation
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    public_contract_change_possible:
+      definition: Evidence suggests a public contract may change, but compatibility has not yet been classified.
+      category: contract
+      allowed_emitters:
+      - classification_agent
+      - artifact_action_agent
+      - impact_agent
+      positive_signals:
+      - public API, DTO, event, export, or consumer-visible artifact is modified
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - artifact_action_resolution
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    public_contract_change_confirmed:
+      definition: A public contract change has been classified as present and must be handled before implementation or final validation.
+      category: contract
+      allowed_emitters:
+      - classification_agent
+      positive_signals:
+      - boundary-contract-classification confirms public surface change
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_report
+      default_blocking_before:
+      - pre_implementation_gate
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    security_sensitive_behavior_possible:
+      definition: A change touches authentication, authorization, secrets, user data, tenant boundaries, or other security-sensitive behavior.
+      category: risk
+      allowed_emitters:
+      - classification_agent
+      - risk_agent
+      - validation_agent
+      positive_signals:
+      - security-sensitive file, boundary, permission, or data flow involved
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: tighten_gate_strictness
+      default_blocking_before:
+      - pre_implementation_gate
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    existing_artifact_found:
+      definition: An existing artifact can satisfy or partially satisfy the requested behavior and must be considered before creating a new artifact.
+      category: reconnaissance
+      allowed_emitters:
+      - reconnaissance_agent
+      - artifact_action_agent
+      positive_signals:
+      - source path and matching responsibility evidence
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_phase
+      default_blocking_before:
+      - artifact_action_resolution
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    dependency_wiring_changed:
+      definition: The change affects dependency direction, provider wiring, module exports, imports, injection, runtime dependency setup, or integration wiring.
+      category: dependency
+      allowed_emitters:
+      - classification_agent
+      - implementation_agent
+      - impact_agent
+      positive_signals:
+      - import/provider/module/runtime dependency evidence
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - structure_rendering
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    mixed_responsibility_possible:
+      definition: An artifact may contain more than one responsibility and requires draft role review or action resolution.
+      category: role
+      allowed_emitters:
+      - role_agent
+      - architecture_agent
+      positive_signals:
+      - artifact signals more than one role category
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - artifact_action_resolution
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    mixed_responsibility_detected:
+      definition: An artifact has confirmed mixed responsibility and requires action resolution to consider split, extract, move, or refactor actions.
+      category: role
+      allowed_emitters:
+      - role_agent
+      positive_signals:
+      - draft role signals confirm multiple competing responsibilities
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_phase
+      default_blocking_before:
+      - final_role_assignment
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    likely_extract_target_detected:
+      definition: A portion of an artifact is likely independently meaningful and may need extraction.
+      category: action
+      allowed_emitters:
+      - role_agent
+      - artifact_action_agent
+      positive_signals:
+      - cohesive subset has distinct responsibility, inputs, and consumers
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_phase
+      default_blocking_before:
+      - final_role_assignment
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    likely_split_target_detected:
+      definition: An artifact likely needs to be split into multiple artifacts because responsibilities or flows conflict.
+      category: action
+      allowed_emitters:
+      - role_agent
+      - artifact_action_agent
+      positive_signals:
+      - separate responsibilities cannot remain in one artifact without boundary confusion
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_phase
+      default_blocking_before:
+      - final_role_assignment
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    role_collision_possible:
+      definition: Two or more roles may apply to the same artifact and role collision handling must run before final role assignment.
+      category: role
+      allowed_emitters:
+      - role_agent
+      positive_signals:
+      - multiple candidate roles with unresolved priority
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - structure_rendering
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    pattern_pressure_possible:
+      definition: Evidence may indicate design-pattern pressure but not enough to select a pattern yet.
+      category: pattern
+      allowed_emitters:
+      - architecture_agent
+      - pattern_agent
+      positive_signals:
+      - creation, variation, workflow, adapter, event, or composition pressure signal
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - pattern_selection
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    pattern_pressure_detected:
+      definition: Pattern pressure is confirmed and pattern selection must decide between no-pattern and valid candidates before structure rendering.
+      category: pattern
+      allowed_emitters:
+      - pattern_agent
+      positive_signals:
+      - pattern-pressure report has confirmed pressure type
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - structure_rendering
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    pattern_selection_required:
+      definition: A downstream decision requires a binding pattern decision or explicit no-pattern decision.
+      category: pattern
+      allowed_emitters:
+      - pattern_agent
+      - structure_agent
+      positive_signals:
+      - structure or role arrangement depends on pattern decision
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - structure_rendering
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    refactor_like_action_selected:
+      definition: An action such as split, extract, move, rename, replace, merge, inline, or deprecate was selected and behavior preservation strategy is required.
+      category: refactor
+      allowed_emitters:
+      - artifact_action_agent
+      positive_signals:
+      - artifact-actions report contains refactor-like action
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - change_impact_analysis
+      - implementation_sequence
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    behavior_lock_required:
+      definition: Behavior must be explicitly locked before refactor or cleanup implementation can proceed.
+      category: refactor
+      allowed_emitters:
+      - refactor_strategy_agent
+      - testing_agent
+      positive_signals:
+      - behavior-preservation report required for selected actions
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_report
+      default_blocking_before:
+      - test_derivation
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    checkpointed_sequence_required:
+      definition: The implementation must be divided into checkpoints because the change has risk, multiple steps, or expected temporary failures.
+      category: execution
+      allowed_emitters:
+      - execution_planning_agent
+      - risk_agent
+      positive_signals:
+      - multi-step sequence or high-risk change detected
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    compatibility_decision_required:
+      definition: A compatibility decision report is required before implementation or final validation.
+      category: contract
+      allowed_emitters:
+      - classification_agent
+      - impact_agent
+      positive_signals:
+      - contract change or consumer impact requires compatibility classification
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_report
+      default_blocking_before:
+      - pre_implementation_gate
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    boundary_validation_required:
+      definition: Boundary validation must run because a crossing, leak risk, public surface, integration surface, or ownership change was detected.
+      category: boundary
+      allowed_emitters:
+      - classification_agent
+      - boundary_agent
+      - structure_agent
+      positive_signals:
+      - boundary classification or crossing rule evidence
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    dependency_validation_required:
+      definition: Dependency validation must run because dependency direction, imports, runtime wiring, or test exceptions changed.
+      category: dependency
+      allowed_emitters:
+      - classification_agent
+      - dependency_agent
+      - implementation_agent
+      positive_signals:
+      - dependency-classification or import graph evidence
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_report
+      default_blocking_before:
+      - pre_implementation_gate
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    high_risk_detected:
+      definition: Risk classification reached high or critical and stricter gates, reports, and validation must apply.
+      category: risk
+      allowed_emitters:
+      - risk_agent
+      - classification_agent
+      positive_signals:
+      - risk-classification report level high or critical
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: tighten_gate_strictness
+      default_blocking_before:
+      - pre_implementation_gate
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    dynamic_reference_risk_detected:
+      definition: A dynamic reference may be affected and static analysis cannot prove safety.
+      category: risk
+      allowed_emitters:
+      - reconnaissance_agent
+      - impact_agent
+      positive_signals:
+      - reflection, dynamic import, string-based lookup, event name, queue key, or runtime binding evidence
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: tighten_gate_strictness
+      default_blocking_before:
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    consumer_impact_detected:
+      definition: Known or possible consumers are affected and consumer impact reporting is required.
+      category: impact
+      allowed_emitters:
+      - impact_agent
+      - classification_agent
+      positive_signals:
+      - call sites, public exports, events, API contracts, or downstream consumers affected
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: require_report
+      default_blocking_before:
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    call_site_update_required:
+      definition: Call sites must be reviewed or updated before implementation can be considered complete.
+      category: impact
+      allowed_emitters:
+      - impact_agent
+      - implementation_agent
+      positive_signals:
+      - call-site-impact report indicates affected invocations
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - implementation_sequence
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    additional_contract_review_required:
+      definition: Existing contract evidence is insufficient and another contract review pass is required.
+      category: contract
+      allowed_emitters:
+      - classification_agent
+      - validation_agent
+      positive_signals:
+      - unknown consumer, unknown compatibility, or ambiguous contract surface
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    risk_reclassification_required:
+      definition: New evidence invalidates previous risk classification and risk classification must rerun.
+      category: risk
+      allowed_emitters:
+      - validation_agent
+      - alpha_controller
+      positive_signals:
+      - new high-risk evidence after prior classification
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - pre_implementation_gate
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    phase_revision_required:
+      definition: A prior phase output is incomplete, contradicted, invalid, or unsafe and must be revised before downstream execution continues.
+      category: revision
+      allowed_emitters:
+      - any_phase_agent
+      - validation_agent
+      - failure_analysis_agent
+      positive_signals:
+      - invalid input report, contradiction, missing field, or failed gate evidence
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: create_revision_request
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    approval_before_implementation_required:
+      definition: Implementation requires explicit approval because risk, compatibility, security, or scope policy demands it.
+      category: approval
+      allowed_emitters:
+      - pre_implementation_gate_agent
+      - risk_agent
+      positive_signals:
+      - approval policy or high-risk classification requires approval
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: block_until_approval
+      default_blocking_before:
+      - implementation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    implementation_blocked:
+      definition: Implementation cannot start or continue because a required gate, report, trigger, approval, or input is unresolved.
+      category: implementation
+      allowed_emitters:
+      - pre_implementation_gate_agent
+      - alpha_controller
+      positive_signals:
+      - pre-implementation gate blocking item
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: block_phase
+      default_blocking_before:
+      - implementation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    implementation_allowed:
+      definition: Pre-implementation gate passed and implementation may start under the declared scope.
+      category: implementation
+      allowed_emitters:
+      - pre_implementation_gate_agent
+      positive_signals:
+      - implementation_allowed true in pre-implementation gate report
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: allow_phase
+      default_blocking_before: []
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    implementation_failure_detected:
+      definition: Implementation or checkpoint validation failed and failure classification must run.
+      category: failure
+      allowed_emitters:
+      - implementation_agent
+      - validation_agent
+      positive_signals:
+      - test, build, lint, runtime, or checkpoint failure
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    validation_required:
+      definition: A validation pass is required before downstream completion because implementation, repair, report revision, or high-risk change occurred.
+      category: validation
+      allowed_emitters:
+      - implementation_agent
+      - repair_agent
+      - alpha_controller
+      positive_signals:
+      - changed files or repair result require validation
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    unexpected_file_changed:
+      definition: A file outside allowed scope changed and strict scope validation must run.
+      category: implementation
+      allowed_emitters:
+      - implementation_agent
+      - validation_agent
+      positive_signals:
+      - changed-file manifest contains unexpected path
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    post_validation_failed:
+      definition: Post-implementation validation failed and failure classification is required.
+      category: failure
+      allowed_emitters:
+      - validation_agent
+      positive_signals:
+      - post-implementation-validation report has blocking failures
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    repair_required:
+      definition: Failure classification allows repair and repair phase must be scheduled before final validation.
+      category: repair
+      allowed_emitters:
+      - failure_analysis_agent
+      positive_signals:
+      - repair_allowed true and unresolved failure exists
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    final_validation_ready:
+      definition: All required phases, reports, gates, handoffs, triggers, and revisions are ready for final validation.
+      category: validation
+      allowed_emitters:
+      - alpha_controller
+      positive_signals:
+      - no unresolved blockers and final validation prerequisites satisfied
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: schedule_phase
+      default_blocking_before: []
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    required_report_missing:
+      definition: A required report is missing and report artifact validation must block downstream execution.
+      category: report
+      allowed_emitters:
+      - alpha_controller
+      - report_validation
+      positive_signals:
+      - report registry marks required report missing
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: block_until_report_exists
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    report_schema_invalid:
+      definition: A report exists but fails its required schema or required-field checks.
+      category: report
+      allowed_emitters:
+      - report_validation
+      positive_signals:
+      - report validation failure
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: block_until_report_valid
+      default_blocking_before:
+      - final_validation
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    mission_complete:
+      definition: Final validation passed and mission can be marked complete.
+      category: mission
+      allowed_emitters:
+      - validation_agent
+      - alpha_controller
+      positive_signals:
+      - final validation summary status passed
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: mark_mission_complete
+      default_blocking_before: []
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    mission_blocked:
+      definition: Mission cannot proceed or complete because blocking items remain unresolved.
+      category: mission
+      allowed_emitters:
+      - alpha_controller
+      - validation_agent
+      positive_signals:
+      - unresolved trigger, missing report, failed gate, or blocked phase
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: mark_mission_blocked
+      default_blocking_before:
+      - mission_complete
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
+    rerun_required:
+      definition: A phase or dependent output must rerun because previous output was invalidated or revalidation failed.
+      category: revision
+      allowed_emitters:
+      - alpha_controller
+      - failure_analysis_agent
+      positive_signals:
+      - revision policy selects rerun action
+      negative_signals:
+      - same condition already resolved by newer trigger record
+      - evidence belongs only to informational note and does not require runtime followup
+      - evidence contradicts trigger category or target action
+      required_evidence:
+        min_evidence_refs: 1
+        allow_no_evidence_marker: false
+        evidence_must_identify_source_phase: true
+      default_resolution_action: create_revision_request
+      default_blocking_before:
+      - mission_complete
+      status_on_emit: active
+      must_not_emit_when:
+      - required action already completed after the evidence timestamp
+      - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+      - trigger type is being used to bypass a failed gate or required report
   trigger_record_schema:
     required_fields:
     - trigger_id
     - trigger_type
+    - category
     - emitted_by_phase
+    - emitted_by_agent
     - status
-    - required_phase_or_action
     - reason
     - evidence_refs
-  trigger_status_definitions:
-    active:
-      definition: active trigger_status vocabulary value.
-      meaning: Represents the active case within the trigger_status taxonomy.
-      detection_signals:
-      - active signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches active
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_status decisions using active must include reason and evidence
-    scheduled:
-      definition: scheduled trigger_status vocabulary value.
-      meaning: Represents the scheduled case within the trigger_status taxonomy.
-      detection_signals:
-      - scheduled signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches scheduled
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_status decisions using scheduled must include reason and evidence
-    resolved:
-      definition: resolved trigger_status vocabulary value.
-      meaning: Represents the resolved case within the trigger_status taxonomy.
-      detection_signals:
-      - resolved signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches resolved
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_status decisions using resolved must include reason and evidence
-    blocked:
-      definition: blocked trigger_status vocabulary value.
-      meaning: Represents the blocked case within the trigger_status taxonomy.
-      detection_signals:
-      - blocked signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches blocked
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_status decisions using blocked must include reason and evidence
-    invalidated:
-      definition: invalidated trigger_status vocabulary value.
-      meaning: Represents the invalidated case within the trigger_status taxonomy.
-      detection_signals:
-      - invalidated signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches invalidated
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_status decisions using invalidated must include reason and evidence
-  trigger_type_definitions:
-    behavior_change_requested:
-      definition: behavior change requested trigger_type vocabulary value.
-      meaning: Represents the behavior change requested case within the trigger_type taxonomy.
-      detection_signals:
-      - behavior change requested signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches behavior change requested
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using behavior_change_requested must include reason and evidence
-    public_contract_change_possible:
-      definition: public contract change possible trigger_type vocabulary value.
-      meaning: Represents the public contract change possible case within the trigger_type taxonomy.
-      detection_signals:
-      - public contract change possible signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches public contract change possible
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using public_contract_change_possible must include reason and evidence
-    public_contract_change_confirmed:
-      definition: public contract change confirmed trigger_type vocabulary value.
-      meaning: Represents the public contract change confirmed case within the trigger_type taxonomy.
-      detection_signals:
-      - public contract change confirmed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches public contract change confirmed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using public_contract_change_confirmed must include reason and evidence
-    security_sensitive_behavior_possible:
-      definition: security sensitive behavior possible trigger_type vocabulary value.
-      meaning: Represents the security sensitive behavior possible case within the trigger_type taxonomy.
-      detection_signals:
-      - security sensitive behavior possible signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches security sensitive behavior possible
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using security_sensitive_behavior_possible must include reason and evidence
-    existing_artifact_found:
-      definition: existing artifact found trigger_type vocabulary value.
-      meaning: Represents the existing artifact found case within the trigger_type taxonomy.
-      detection_signals:
-      - existing artifact found signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches existing artifact found
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using existing_artifact_found must include reason and evidence
-    dependency_wiring_changed:
-      definition: dependency wiring changed trigger_type vocabulary value.
-      meaning: Represents the dependency wiring changed case within the trigger_type taxonomy.
-      detection_signals:
-      - dependency wiring changed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches dependency wiring changed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using dependency_wiring_changed must include reason and evidence
-    mixed_responsibility_possible:
-      definition: mixed responsibility possible trigger_type vocabulary value.
-      meaning: Represents the mixed responsibility possible case within the trigger_type taxonomy.
-      detection_signals:
-      - mixed responsibility possible signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mixed responsibility possible
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using mixed_responsibility_possible must include reason and evidence
-    mixed_responsibility_detected:
-      definition: mixed responsibility detected trigger_type vocabulary value.
-      meaning: Represents the mixed responsibility detected case within the trigger_type taxonomy.
-      detection_signals:
-      - mixed responsibility detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mixed responsibility detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using mixed_responsibility_detected must include reason and evidence
-    likely_extract_target_detected:
-      definition: likely extract target detected trigger_type vocabulary value.
-      meaning: Represents the likely extract target detected case within the trigger_type taxonomy.
-      detection_signals:
-      - likely extract target detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches likely extract target detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using likely_extract_target_detected must include reason and evidence
-    likely_split_target_detected:
-      definition: likely split target detected trigger_type vocabulary value.
-      meaning: Represents the likely split target detected case within the trigger_type taxonomy.
-      detection_signals:
-      - likely split target detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches likely split target detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using likely_split_target_detected must include reason and evidence
-    role_collision_possible:
-      definition: role collision possible trigger_type vocabulary value.
-      meaning: Represents the role collision possible case within the trigger_type taxonomy.
-      detection_signals:
-      - role collision possible signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches role collision possible
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using role_collision_possible must include reason and evidence
-    pattern_pressure_possible:
-      definition: pattern pressure possible trigger_type vocabulary value.
-      meaning: Represents the pattern pressure possible case within the trigger_type taxonomy.
-      detection_signals:
-      - pattern pressure possible signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pattern pressure possible
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using pattern_pressure_possible must include reason and evidence
-    pattern_pressure_detected:
-      definition: pattern pressure detected trigger_type vocabulary value.
-      meaning: Represents the pattern pressure detected case within the trigger_type taxonomy.
-      detection_signals:
-      - pattern pressure detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pattern pressure detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using pattern_pressure_detected must include reason and evidence
-    pattern_selection_required:
-      definition: pattern selection required trigger_type vocabulary value.
-      meaning: Represents the pattern selection required case within the trigger_type taxonomy.
-      detection_signals:
-      - pattern selection required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches pattern selection required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using pattern_selection_required must include reason and evidence
-    refactor_like_action_selected:
-      definition: refactor like action selected trigger_type vocabulary value.
-      meaning: Represents the refactor like action selected case within the trigger_type taxonomy.
-      detection_signals:
-      - refactor like action selected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches refactor like action selected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using refactor_like_action_selected must include reason and evidence
-    behavior_lock_required:
-      definition: behavior lock required trigger_type vocabulary value.
-      meaning: Represents the behavior lock required case within the trigger_type taxonomy.
-      detection_signals:
-      - behavior lock required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches behavior lock required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using behavior_lock_required must include reason and evidence
-    checkpointed_sequence_required:
-      definition: checkpointed sequence required trigger_type vocabulary value.
-      meaning: Represents the checkpointed sequence required case within the trigger_type taxonomy.
-      detection_signals:
-      - checkpointed sequence required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches checkpointed sequence required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using checkpointed_sequence_required must include reason and evidence
-    compatibility_decision_required:
-      definition: compatibility decision required trigger_type vocabulary value.
-      meaning: Represents the compatibility decision required case within the trigger_type taxonomy.
-      detection_signals:
-      - compatibility decision required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches compatibility decision required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using compatibility_decision_required must include reason and evidence
-    boundary_validation_required:
-      definition: boundary validation required trigger_type vocabulary value.
-      meaning: Represents the boundary validation required case within the trigger_type taxonomy.
-      detection_signals:
-      - boundary validation required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches boundary validation required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using boundary_validation_required must include reason and evidence
-    dependency_validation_required:
-      definition: dependency validation required trigger_type vocabulary value.
-      meaning: Represents the dependency validation required case within the trigger_type taxonomy.
-      detection_signals:
-      - dependency validation required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches dependency validation required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using dependency_validation_required must include reason and evidence
-    high_risk_detected:
-      definition: high risk detected trigger_type vocabulary value.
-      meaning: Represents the high risk detected case within the trigger_type taxonomy.
-      detection_signals:
-      - high risk detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches high risk detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using high_risk_detected must include reason and evidence
-    dynamic_reference_risk_detected:
-      definition: dynamic reference risk detected trigger_type vocabulary value.
-      meaning: Represents the dynamic reference risk detected case within the trigger_type taxonomy.
-      detection_signals:
-      - dynamic reference risk detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches dynamic reference risk detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using dynamic_reference_risk_detected must include reason and evidence
-    consumer_impact_detected:
-      definition: consumer impact detected trigger_type vocabulary value.
-      meaning: Represents the consumer impact detected case within the trigger_type taxonomy.
-      detection_signals:
-      - consumer impact detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches consumer impact detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using consumer_impact_detected must include reason and evidence
-    call_site_update_required:
-      definition: call site update required trigger_type vocabulary value.
-      meaning: Represents the call site update required case within the trigger_type taxonomy.
-      detection_signals:
-      - call site update required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches call site update required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using call_site_update_required must include reason and evidence
-    additional_contract_review_required:
-      definition: additional contract review required trigger_type vocabulary value.
-      meaning: Represents the additional contract review required case within the trigger_type taxonomy.
-      detection_signals:
-      - additional contract review required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches additional contract review required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using additional_contract_review_required must include reason and evidence
-    risk_reclassification_required:
-      definition: risk reclassification required trigger_type vocabulary value.
-      meaning: Represents the risk reclassification required case within the trigger_type taxonomy.
-      detection_signals:
-      - risk reclassification required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches risk reclassification required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using risk_reclassification_required must include reason and evidence
-    phase_revision_required:
-      definition: phase revision required trigger_type vocabulary value.
-      meaning: Represents the phase revision required case within the trigger_type taxonomy.
-      detection_signals:
-      - phase revision required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches phase revision required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using phase_revision_required must include reason and evidence
-    approval_before_implementation_required:
-      definition: approval before implementation required trigger_type vocabulary value.
-      meaning: Represents the approval before implementation required case within the trigger_type taxonomy.
-      detection_signals:
-      - approval before implementation required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches approval before implementation required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using approval_before_implementation_required must include reason and evidence
-    implementation_blocked:
-      definition: implementation blocked trigger_type vocabulary value.
-      meaning: Represents the implementation blocked case within the trigger_type taxonomy.
-      detection_signals:
-      - implementation blocked signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation blocked
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using implementation_blocked must include reason and evidence
-    implementation_allowed:
-      definition: implementation allowed trigger_type vocabulary value.
-      meaning: Represents the implementation allowed case within the trigger_type taxonomy.
-      detection_signals:
-      - implementation allowed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation allowed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using implementation_allowed must include reason and evidence
-    implementation_failure_detected:
-      definition: implementation failure detected trigger_type vocabulary value.
-      meaning: Represents the implementation failure detected case within the trigger_type taxonomy.
-      detection_signals:
-      - implementation failure detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation failure detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using implementation_failure_detected must include reason and evidence
-    validation_required:
-      definition: validation required trigger_type vocabulary value.
-      meaning: Represents the validation required case within the trigger_type taxonomy.
-      detection_signals:
-      - validation required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches validation required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using validation_required must include reason and evidence
-    unexpected_file_changed:
-      definition: unexpected file changed trigger_type vocabulary value.
-      meaning: Represents the unexpected file changed case within the trigger_type taxonomy.
-      detection_signals:
-      - unexpected file changed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches unexpected file changed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using unexpected_file_changed must include reason and evidence
-    post_validation_failed:
-      definition: post validation failed trigger_type vocabulary value.
-      meaning: Represents the post validation failed case within the trigger_type taxonomy.
-      detection_signals:
-      - post validation failed signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches post validation failed
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using post_validation_failed must include reason and evidence
-    repair_required:
-      definition: repair required trigger_type vocabulary value.
-      meaning: Represents the repair required case within the trigger_type taxonomy.
-      detection_signals:
-      - repair required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches repair required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using repair_required must include reason and evidence
-    final_validation_ready:
-      definition: final validation ready trigger_type vocabulary value.
-      meaning: Represents the final validation ready case within the trigger_type taxonomy.
-      detection_signals:
-      - final validation ready signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches final validation ready
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using final_validation_ready must include reason and evidence
-    required_report_missing:
-      definition: required report missing trigger_type vocabulary value.
-      meaning: Represents the required report missing case within the trigger_type taxonomy.
-      detection_signals:
-      - required report missing signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches required report missing
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using required_report_missing must include reason and evidence
-    report_schema_invalid:
-      definition: report schema invalid trigger_type vocabulary value.
-      meaning: Represents the report schema invalid case within the trigger_type taxonomy.
-      detection_signals:
-      - report schema invalid signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches report schema invalid
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using report_schema_invalid must include reason and evidence
-    mission_complete:
-      definition: mission complete trigger_type vocabulary value.
-      meaning: Represents the mission complete case within the trigger_type taxonomy.
-      detection_signals:
-      - mission complete signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mission complete
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using mission_complete must include reason and evidence
-    mission_blocked:
-      definition: mission blocked trigger_type vocabulary value.
-      meaning: Represents the mission blocked case within the trigger_type taxonomy.
-      detection_signals:
-      - mission blocked signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches mission blocked
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using mission_blocked must include reason and evidence
-    rerun_required:
-      definition: rerun required trigger_type vocabulary value.
-      meaning: Represents the rerun required case within the trigger_type taxonomy.
-      detection_signals:
-      - rerun required signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches rerun required
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - trigger_type decisions using rerun_required must include reason and evidence
+    - required_phase_or_action
+    - blocking_before
+    - created_sequence
+    optional_fields:
+    - scheduled_phase
+    - required_report
+    - target_gate
+    - target_approval
+    - resolved_by_phase
+    - blocked_reason
+    - revision_request_ref
+    - superseded_by_trigger
+    - invalidated_by_revision
+  trigger_record_shape:
+    trigger_id: ''
+    trigger_type: ''
+    category: ''
+    emitted_by_phase: ''
+    emitted_by_agent: ''
+    status: active
+    reason: ''
+    evidence_refs: []
+    required_phase_or_action: ''
+    blocking_before: []
+    created_sequence: 0
+    scheduled_phase: ''
+    required_report: ''
+    target_gate: ''
+    target_approval: ''
+    resolved_by_phase: ''
+    blocked_reason: ''
+    revision_request_ref: ''
+    superseded_by_trigger: ''
+    invalidated_by_revision: ''
+  trigger_identity_rules:
+    dedupe_key_fields:
+    - trigger_type
+    - required_phase_or_action
+    - required_report
+    - target_gate
+    - target_approval
+    duplicate_policy: merge_evidence_when_equivalent_active_trigger_exists
+    supersession_policy: newer_trigger_may_supersede_older_trigger_only_when resolution_target_changes_or_prior_trigger_invalidated
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: TRIGGER-TAXONOMY-CHECK-001
+    check: every_trigger_type_has_definition
+    applies_when:
+      trigger_taxonomy_loaded: true
+  - id: TRIGGER-TAXONOMY-CHECK-002
+    check: every_trigger_status_has_terminal_and_blocking_semantics
+    applies_when:
+      trigger_status_referenced: true
+  fail_conditions:
+  - id: TRIGGER-TAXONOMY-001
+    condition: unknown_trigger_type
+    message: Trigger type must be defined in trigger_type_enum.allowed.
+    severity: error
+  - id: TRIGGER-TAXONOMY-002
+    condition: trigger_type_missing_definition
+    message: Every trigger type must have a definition, category, evidence requirement, allowed emitters, and default resolution action.
+    severity: error

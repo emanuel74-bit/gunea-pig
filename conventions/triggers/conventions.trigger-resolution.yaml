@@ -4,84 +4,485 @@ file:
   path: triggers/conventions.trigger-resolution.yaml
   role: trigger_resolution_decision_engine
   executability: decision_engine
-purpose: Define trigger resolution policy, trigger-to-action mapping, and trigger handling algorithm.
+purpose: Define the trigger resolution matrix, resolution actions, mission-state effects, and fail-closed trigger handling algorithm.
 ownership:
   owns:
   - trigger_resolution_policy
+  - trigger_resolution_action_enum
   - trigger_resolution_matrix
+  - resolution_action_handlers
   - trigger_handling_algorithm
   does_not_own:
   - trigger_type_enum
-  - mission_state_storage
+  - trigger_emission_policy
+  - mission_state_schema
+  - phase_contracts
+  - report_registry
 activation:
   mode: conditional
   activates_when:
+  - trigger_resolution_required
   - triggers_are_emitted
   skips_when: []
 inputs:
   required:
   - trigger_taxonomy
-  - emitted_triggers
+  - validated_trigger_candidates
   - mission_state
-  optional: []
+  optional:
+  - active_phase_plan
+  - report_registry
+  - mission_profile
 outputs:
   produces:
   - trigger_resolution_result
+  - trigger_review_report
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - triggers/conventions.trigger-taxonomy.yaml
+  - triggers/conventions.trigger-emission-policy.yaml
   - missions/conventions.mission-state.yaml
-  optional_files: []
+  optional_files:
+  - phases/conventions.phase-contracts.yaml
+  - reports/conventions.report-registry.yaml
 sections:
   trigger_resolution_policy:
     absolute_rules:
     - id: TRIGGER-RESOLUTION-ABS-001
-      rule: Every emitted trigger must be registered in mission_state.active_triggers.
+      rule: Every validated emitted trigger must be registered in mission_state.active_triggers before downstream scheduling.
       fail_condition: emitted_trigger_unregistered
+    - id: TRIGGER-RESOLUTION-ABS-002
+      rule: Every trigger must resolve to scheduled, resolved, blocked, or invalidated before implementation can start.
+      fail_condition: trigger_left_active_before_implementation
+    - id: TRIGGER-RESOLUTION-ABS-003
+      rule: Unknown trigger types fail closed and block the next phase.
+      fail_condition: unknown_trigger_type
+    - id: TRIGGER-RESOLUTION-ABS-004
+      rule: A trigger resolution may tighten gates or add required phases/reports, but may not weaken phase contracts, gate rules, or report schemas.
+      fail_condition: trigger_resolution_weakened_contract
+    - id: TRIGGER-RESOLUTION-ABS-005
+      rule: A required trigger action must be visible in mission state as scheduled phase, required report, blocked item, approval requirement, or revision request.
+      fail_condition: trigger_resolution_not_reflected_in_mission_state
+  trigger_resolution_action_enum:
+    allowed:
+    - allow_phase
+    - block_phase
+    - block_until_approval
+    - block_until_report_exists
+    - block_until_report_valid
+    - create_revision_request
+    - mark_mission_blocked
+    - mark_mission_complete
+    - require_phase
+    - require_report
+    - schedule_phase
+    - tighten_gate_strictness
   trigger_resolution_matrix:
-  - trigger_type: pattern_selection_required
+  - trigger_type: behavior_change_requested
+    category: behavior_scope
     default_action: schedule_phase
-    target_phase: pattern_selection
+    blocking_before:
+    - architecture_decomposition
+    - test_derivation
+    - pre_implementation_gate
+    resolution_required: true
+    target_phase: behavior_contract
+  - trigger_type: public_contract_change_possible
+    category: contract
+    default_action: schedule_phase
+    blocking_before:
+    - artifact_action_resolution
+    - pre_implementation_gate
+    resolution_required: true
+    target_phase: boundary_contract_classification
+  - trigger_type: public_contract_change_confirmed
+    category: contract
+    default_action: require_report
+    blocking_before:
+    - pre_implementation_gate
+    - final_validation
+    resolution_required: true
+    target_report: compatibility-decision
+  - trigger_type: security_sensitive_behavior_possible
+    category: risk
+    default_action: tighten_gate_strictness
+    blocking_before:
+    - pre_implementation_gate
+    - final_validation
+    resolution_required: true
+    target_setting: gate_strictness
+    target_value: strict
+  - trigger_type: existing_artifact_found
+    category: reconnaissance
+    default_action: require_phase
+    blocking_before:
+    - artifact_action_resolution
+    resolution_required: true
+    target_phase: artifact_reuse_analysis
+  - trigger_type: dependency_wiring_changed
+    category: dependency
+    default_action: schedule_phase
     blocking_before:
     - structure_rendering
-  - trigger_type: refactor_like_action_selected
+    - pre_implementation_gate
+    resolution_required: true
+    target_phase: dependency_classification
+  - trigger_type: mixed_responsibility_possible
+    category: role
     default_action: schedule_phase
-    target_phase: refactor_strategy_selection
+    blocking_before:
+    - artifact_action_resolution
+    resolution_required: true
+    target_phase: draft_role_pass
+  - trigger_type: mixed_responsibility_detected
+    category: role
+    default_action: require_phase
+    blocking_before:
+    - final_role_assignment
+    resolution_required: true
+    target_phase: artifact_action_resolution
+  - trigger_type: likely_extract_target_detected
+    category: action
+    default_action: require_phase
+    blocking_before:
+    - final_role_assignment
+    resolution_required: true
+    target_phase: artifact_action_resolution
+  - trigger_type: likely_split_target_detected
+    category: action
+    default_action: require_phase
+    blocking_before:
+    - final_role_assignment
+    resolution_required: true
+    target_phase: artifact_action_resolution
+  - trigger_type: role_collision_possible
+    category: role
+    default_action: schedule_phase
+    blocking_before:
+    - structure_rendering
+    resolution_required: true
+    target_phase: final_role_assignment
+  - trigger_type: pattern_pressure_possible
+    category: pattern
+    default_action: schedule_phase
+    blocking_before:
+    - pattern_selection
+    resolution_required: true
+    target_phase: pattern_pressure_detection
+  - trigger_type: pattern_pressure_detected
+    category: pattern
+    default_action: schedule_phase
+    blocking_before:
+    - structure_rendering
+    resolution_required: true
+    target_phase: pattern_selection
+  - trigger_type: pattern_selection_required
+    category: pattern
+    default_action: schedule_phase
+    blocking_before:
+    - structure_rendering
+    resolution_required: true
+    target_phase: pattern_selection
+  - trigger_type: refactor_like_action_selected
+    category: refactor
+    default_action: schedule_phase
     blocking_before:
     - change_impact_analysis
     - implementation_sequence
+    resolution_required: true
+    target_phase: refactor_strategy_selection
+  - trigger_type: behavior_lock_required
+    category: refactor
+    default_action: require_report
+    blocking_before:
+    - test_derivation
+    - pre_implementation_gate
+    resolution_required: true
+    target_report: behavior-preservation-requirements
+  - trigger_type: checkpointed_sequence_required
+    category: execution
+    default_action: schedule_phase
+    blocking_before:
+    - pre_implementation_gate
+    resolution_required: true
+    target_phase: checkpoint_validation_plan
   - trigger_type: compatibility_decision_required
+    category: contract
     default_action: require_report
+    blocking_before:
+    - pre_implementation_gate
+    - final_validation
+    resolution_required: true
     target_report: compatibility-decision
+  - trigger_type: boundary_validation_required
+    category: boundary
+    default_action: schedule_phase
     blocking_before:
     - pre_implementation_gate
-    - final_validation
+    resolution_required: true
+    target_phase: boundary_contract_classification
   - trigger_type: dependency_validation_required
+    category: dependency
     default_action: require_report
-    target_report: dependency-validation
     blocking_before:
     - pre_implementation_gate
     - final_validation
+    resolution_required: true
+    target_report: dependency-validation
+  - trigger_type: high_risk_detected
+    category: risk
+    default_action: tighten_gate_strictness
+    blocking_before:
+    - pre_implementation_gate
+    - final_validation
+    resolution_required: true
+    target_setting: gate_strictness
+    target_value: strict
+  - trigger_type: dynamic_reference_risk_detected
+    category: risk
+    default_action: tighten_gate_strictness
+    blocking_before:
+    - pre_implementation_gate
+    resolution_required: true
+    target_setting: gate_strictness
+    target_value: strict
+  - trigger_type: consumer_impact_detected
+    category: impact
+    default_action: require_report
+    blocking_before:
+    - pre_implementation_gate
+    resolution_required: true
+    target_report: consumer-impact
+  - trigger_type: call_site_update_required
+    category: impact
+    default_action: schedule_phase
+    blocking_before:
+    - implementation_sequence
+    resolution_required: true
+    target_phase: change_impact_analysis
+  - trigger_type: additional_contract_review_required
+    category: contract
+    default_action: schedule_phase
+    blocking_before:
+    - pre_implementation_gate
+    resolution_required: true
+    target_phase: boundary_contract_classification
+  - trigger_type: risk_reclassification_required
+    category: risk
+    default_action: schedule_phase
+    blocking_before:
+    - pre_implementation_gate
+    resolution_required: true
+    target_phase: risk_classification
+  - trigger_type: phase_revision_required
+    category: revision
+    default_action: create_revision_request
+    blocking_before:
+    - final_validation
+    resolution_required: true
+    target_report: revision-request
+  - trigger_type: approval_before_implementation_required
+    category: approval
+    default_action: block_until_approval
+    blocking_before:
+    - implementation
+    resolution_required: true
+    target_approval: implementation_approval
+  - trigger_type: implementation_blocked
+    category: implementation
+    default_action: block_phase
+    blocking_before:
+    - implementation
+    resolution_required: true
+    target_phase: implementation
+  - trigger_type: implementation_allowed
+    category: implementation
+    default_action: allow_phase
+    blocking_before: []
+    resolution_required: false
+    target_phase: implementation
+    terminal_status_after_action: resolved
   - trigger_type: implementation_failure_detected
+    category: failure
     default_action: schedule_phase
+    blocking_before:
+    - final_validation
+    resolution_required: true
     target_phase: failure_classification
-    blocking_before:
-    - final_validation
-  - trigger_type: repair_required
+  - trigger_type: validation_required
+    category: validation
     default_action: schedule_phase
-    target_phase: feedback_repair
     blocking_before:
     - final_validation
+    resolution_required: true
+    target_phase: post_implementation_validation
+  - trigger_type: unexpected_file_changed
+    category: implementation
+    default_action: schedule_phase
+    blocking_before:
+    - final_validation
+    resolution_required: true
+    target_phase: post_implementation_validation
+  - trigger_type: post_validation_failed
+    category: failure
+    default_action: schedule_phase
+    blocking_before:
+    - final_validation
+    resolution_required: true
+    target_phase: failure_classification
+  - trigger_type: repair_required
+    category: repair
+    default_action: schedule_phase
+    blocking_before:
+    - final_validation
+    resolution_required: true
+    target_phase: feedback_repair
+  - trigger_type: final_validation_ready
+    category: validation
+    default_action: schedule_phase
+    blocking_before: []
+    resolution_required: true
+    target_phase: final_validation
+  - trigger_type: required_report_missing
+    category: report
+    default_action: block_until_report_exists
+    blocking_before:
+    - final_validation
+    resolution_required: true
+    target_phase: report_artifact_validation
+  - trigger_type: report_schema_invalid
+    category: report
+    default_action: block_until_report_valid
+    blocking_before:
+    - final_validation
+    resolution_required: true
+    target_phase: report_artifact_validation
+  - trigger_type: mission_complete
+    category: mission
+    default_action: mark_mission_complete
+    blocking_before: []
+    resolution_required: false
+    terminal_status_after_action: resolved
+  - trigger_type: mission_blocked
+    category: mission
+    default_action: mark_mission_blocked
+    blocking_before:
+    - mission_complete
+    resolution_required: false
+    terminal_status_after_action: blocked
+  - trigger_type: rerun_required
+    category: revision
+    default_action: create_revision_request
+    blocking_before:
+    - mission_complete
+    resolution_required: true
+    target_report: revision-request
+  resolution_action_handlers:
+    schedule_phase:
+      mission_state_update: add target_phase to active_phase_plan when not already completed
+      status_after_action: scheduled
+      fail_when:
+      - target_phase_missing
+      - target_phase_forbidden_by_profile_without_block_record
+    require_phase:
+      mission_state_update: mark target_phase required or block if mission profile forbids it
+      status_after_action: scheduled
+      fail_when:
+      - target_phase_missing
+      - target_phase_forbidden_by_profile_without_block_record
+    require_report:
+      mission_state_update: add target_report to required_reports and block listed downstream phases until report validates
+      status_after_action: scheduled
+      fail_when:
+      - target_report_missing_from_report_registry
+    tighten_gate_strictness:
+      mission_state_update: set active gate strictness to target_value or stricter
+      status_after_action: resolved
+      fail_when:
+      - attempted_gate_strictness_decrease
+    block_until_approval:
+      mission_state_update: add approval blocked item
+      status_after_action: scheduled
+      fail_when:
+      - target_approval_missing
+    create_revision_request:
+      mission_state_update: write revision request and invalidate unsafe dependent outputs
+      status_after_action: scheduled
+      fail_when:
+      - revision_request_missing_required_fields
+    block_phase:
+      mission_state_update: mark target phase blocked
+      status_after_action: blocked
+      fail_when:
+      - target_phase_missing
+    allow_phase:
+      mission_state_update: record permission signal without bypassing gates
+      status_after_action: resolved
+      fail_when:
+      - allow_signal_attempts_to_skip_gate
+    block_until_report_exists:
+      mission_state_update: block target phases until required report file exists
+      status_after_action: scheduled
+      fail_when:
+      - report_registry_missing
+    block_until_report_valid:
+      mission_state_update: block target phases until report schema validation passes
+      status_after_action: scheduled
+      fail_when:
+      - report_validation_missing
+    mark_mission_complete:
+      mission_state_update: mark mission complete only after final gate passes
+      status_after_action: resolved
+      fail_when:
+      - final_gate_not_passed
+    mark_mission_blocked:
+      mission_state_update: mark mission blocked with blocking reason
+      status_after_action: blocked
+      fail_when:
+      - blocked_reason_missing
   trigger_handling_algorithm:
     steps:
-    - load_emitted_triggers
-    - validate_trigger_types
-    - register_triggers
-    - resolve_trigger_action
-    - apply_trigger_action
-    - update_trigger_status
-    - block_if_unresolved
+    - step_id: LOAD_VALIDATED_TRIGGERS
+      action: read
+      input: validated_trigger_candidates
+    - step_id: REGISTER_TRIGGER_RECORDS
+      action: write
+      output: mission_state.active_triggers
+    - step_id: LOOKUP_RESOLUTION_MATRIX
+      action: for_each
+      assertion: each trigger_type has exactly one resolution record
+    - step_id: APPLY_RESOLUTION_ACTION
+      action: branch
+      input: default_action
+    - step_id: UPDATE_ACTIVE_PHASE_PLAN_OR_REQUIRED_REPORTS
+      action: write
+      output: mission_state
+    - step_id: UPDATE_TRIGGER_STATUS
+      action: write
+      output: mission_state.active_triggers.status
+    - step_id: EMIT_BLOCKERS_FOR_UNRESOLVED_TRIGGERS
+      action: assert
+      assertion: no trigger remains active before blocked phase boundary
+    - step_id: WRITE_TRIGGER_REVIEW_REPORT
+      action: write
+      output: .ai/reports/trigger-review.yaml
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: TRIGGER-RESOLUTION-CHECK-001
+    check: every_trigger_type_has_resolution_record
+    applies_when:
+      trigger_resolution_loaded: true
+  - id: TRIGGER-RESOLUTION-CHECK-002
+    check: resolution_action_reflected_in_mission_state
+    applies_when:
+      trigger_resolved: true
+  fail_conditions:
+  - id: TRIGGER-RESOLUTION-001
+    condition: trigger_type_missing_resolution_record
+    message: Every trigger type must have exactly one resolution matrix record.
+    severity: error
+  - id: TRIGGER-RESOLUTION-002
+    condition: trigger_resolution_not_reflected_in_mission_state
+    message: Resolved trigger action must update active phase plan, required reports, blocked items, or revision history.
+    severity: error

@@ -1,0 +1,201 @@
+version: '1.0'
+file:
+  name: conventions.trigger-validation.yaml
+  path: triggers/conventions.trigger-validation.yaml
+  role: trigger_validation_contract
+  executability: validator
+purpose: Define strict trigger validation checks, status transition validation, policy coverage validation, and machine-readable validation result schema.
+ownership:
+  owns:
+  - trigger_validation_policy
+  - trigger_validation_check_catalog
+  - trigger_status_transition_rules
+  - trigger_validation_algorithm
+  - trigger_validation_result_schema
+  does_not_own:
+  - trigger_taxonomy
+  - trigger_emission_policy
+  - trigger_resolution_matrix
+  - trigger_blocking_policy
+  - mission_state_storage
+activation:
+  mode: conditional
+  activates_when:
+  - trigger_validation_required
+  - phase_transition_requested
+  - pre_implementation_gate_requested
+  - final_validation_requested
+  skips_when: []
+inputs:
+  required:
+  - trigger_taxonomy
+  - trigger_resolution_matrix
+  - mission_state
+  optional:
+  - phase_transition_request
+  - report_registry
+outputs:
+  produces:
+  - trigger_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - triggers/conventions.trigger-emission-policy.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - triggers/conventions.trigger-blocking-policy.yaml
+  optional_files:
+  - missions/conventions.mission-state.yaml
+  - reports/conventions.report-registry.yaml
+sections:
+  trigger_validation_policy:
+    absolute_rules:
+    - id: TRIGGER-VALIDATION-ABS-001
+      rule: Trigger taxonomy, emission, resolution, and blocking policies must agree on every trigger type.
+      fail_condition: trigger_policy_coverage_mismatch
+    - id: TRIGGER-VALIDATION-ABS-002
+      rule: Every active trigger must have a resolution matrix record.
+      fail_condition: active_trigger_missing_resolution_record
+    - id: TRIGGER-VALIDATION-ABS-003
+      rule: Every scheduled trigger must reference an existing required phase, report, approval, gate setting, or revision request.
+      fail_condition: scheduled_trigger_references_missing_target
+    - id: TRIGGER-VALIDATION-ABS-004
+      rule: No trigger may weaken gate, phase, report, handoff, revision, risk, contract, dependency, or boundary constraints.
+      fail_condition: trigger_weakened_external_constraint
+  trigger_validation_check_catalog:
+  - check_id: TRIGGER-CHECK-TAXONOMY-COVERAGE
+    applies_when:
+    - trigger subsystem loaded
+    pass_when:
+    - every trigger type appears in taxonomy, emission rules, resolution matrix, and blocking matrix
+    fail_when:
+    - trigger type missing from any required policy file
+    severity: blocking
+    fail_condition: trigger_policy_coverage_mismatch
+  - check_id: TRIGGER-CHECK-PAYLOAD
+    applies_when:
+    - trigger emitted
+    pass_when:
+    - record has trigger_id, type, status, reason, evidence_refs, required target, created_sequence
+    fail_when:
+    - required trigger field missing
+    severity: blocking
+    fail_condition: trigger_record_schema_invalid
+  - check_id: TRIGGER-CHECK-STATUS
+    applies_when:
+    - trigger status changed
+    pass_when:
+    - status transition is valid and required metadata exists
+    fail_when:
+    - status transition invalid or metadata missing
+    severity: blocking
+    fail_condition: trigger_status_transition_invalid
+  - check_id: TRIGGER-CHECK-MISSION-STATE
+    applies_when:
+    - trigger resolved or scheduled
+    pass_when:
+    - mission state records corresponding phase/report/block/revision/approval update
+    fail_when:
+    - trigger status changed without mission state update
+    severity: blocking
+    fail_condition: trigger_resolution_not_reflected_in_mission_state
+  - check_id: TRIGGER-CHECK-BLOCKING
+    applies_when:
+    - phase transition requested
+    pass_when:
+    - no active or incomplete scheduled trigger blocks target phase
+    fail_when:
+    - target phase is in blocking_before of unresolved trigger
+    severity: blocking
+    fail_condition: trigger_blocks_target_phase
+  trigger_status_transition_rules:
+  - from: active
+    to:
+    - scheduled
+    - resolved
+    - blocked
+    - invalidated
+    requires:
+    - resolution_matrix_record
+    - evidence_refs
+  - from: scheduled
+    to:
+    - resolved
+    - blocked
+    - invalidated
+    requires:
+    - scheduled_target_ref
+    - completion_or_block_evidence
+  - from: blocked
+    to:
+    - scheduled
+    - resolved
+    - invalidated
+    requires:
+    - blocked_reason
+    - resolution_or_replacement_ref
+  - from: resolved
+    to: []
+    requires:
+    - resolved_by_phase_or_action
+  - from: invalidated
+    to: []
+    requires:
+    - invalidated_by_revision_or_superseded_by_trigger
+  trigger_validation_algorithm:
+    steps:
+    - step_id: LOAD_TRIGGER_POLICIES
+      action: read
+      input:
+      - trigger-taxonomy
+      - trigger-emission-policy
+      - trigger-resolution
+      - trigger-blocking-policy
+    - step_id: ASSERT_POLICY_COVERAGE
+      action: compare_sets
+      assertion: all trigger type sets are equal
+    - step_id: LOAD_MISSION_TRIGGERS
+      action: read
+      input: mission_state.active_triggers
+    - step_id: VALIDATE_TRIGGER_RECORDS
+      action: for_each
+      target: active_triggers
+      assertion: record matches trigger_record_schema
+    - step_id: VALIDATE_STATUS_TRANSITIONS
+      action: for_each
+      target: active_triggers
+      assertion: current and prior status transition is allowed
+    - step_id: VALIDATE_RESOLUTION_EFFECTS
+      action: for_each
+      target: scheduled_or_resolved_triggers
+      assertion: mission state contains required target update
+    - step_id: VALIDATE_BLOCKING_BOUNDARY
+      action: assert
+      assertion: no unresolved trigger blocks requested phase
+    - step_id: EMIT_TRIGGER_VALIDATION_RESULT
+      action: write
+      output: trigger_validation_result
+  trigger_validation_result_schema:
+    required_fields:
+    - status
+    - checked_triggers
+    - policy_coverage_status
+    - blocking_failures
+    - missing_resolution_targets
+    - invalid_status_transitions
+    - remediation_actions
+validation:
+  required_checks:
+  - id: TRIGGER-VALIDATION-CHECK-001
+    check: trigger_policy_coverage_complete
+    applies_when:
+      trigger_validation_required: true
+  fail_conditions:
+  - id: TRIGGER-VALIDATION-001
+    condition: trigger_policy_coverage_mismatch
+    message: Every trigger type must be covered by taxonomy, emission policy, resolution matrix, and blocking policy.
+    severity: error
+  - id: TRIGGER-VALIDATION-002
+    condition: trigger_record_schema_invalid
+    message: Trigger record must satisfy trigger_record_schema.
+    severity: error

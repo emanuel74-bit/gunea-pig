@@ -4,17 +4,25 @@ file:
   path: triggers/conventions.triggers.yaml
   role: triggers_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for trigger vocabulary and trigger resolution.
+purpose: Provide the trigger subsystem entrypoint, file index, local execution order, ownership boundaries, and fail-closed trigger execution contract.
 ownership:
   owns:
   - triggers_file_index
+  - triggers_local_execution_order
+  - triggers_subsystem_contract
   does_not_own:
   - mission_state_storage
-  - phase_contracts
+  - phase_execution
+  - gate_validation
+  - report_validation
+  - handoff_consumption
+  - revision_execution
 activation:
   mode: entrypoint
   activates_when:
   - triggers_are_emitted
+  - trigger_resolution_required
+  - trigger_validation_required
   skips_when: []
 inputs:
   required: []
@@ -26,12 +34,53 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - triggers/conventions.trigger-taxonomy.yaml
+  - triggers/conventions.trigger-emission-policy.yaml
   - triggers/conventions.trigger-resolution.yaml
-  optional_files: []
+  - triggers/conventions.trigger-blocking-policy.yaml
+  - triggers/conventions.trigger-validation.yaml
+  optional_files:
+  - missions/conventions.mission-state.yaml
 sections:
   triggers_file_index:
     taxonomy: triggers/conventions.trigger-taxonomy.yaml
+    emission_policy: triggers/conventions.trigger-emission-policy.yaml
     resolution: triggers/conventions.trigger-resolution.yaml
+    blocking_policy: triggers/conventions.trigger-blocking-policy.yaml
+    validation: triggers/conventions.trigger-validation.yaml
+  triggers_local_execution_order:
+  - load_trigger_taxonomy
+  - validate_emitted_trigger_payloads
+  - register_triggers
+  - resolve_triggers
+  - apply_blocking_policy
+  - validate_trigger_state
+  triggers_subsystem_contract:
+    absolute_rules:
+    - id: TRIGGERS-SYSTEM-ABS-001
+      rule: Triggers request followup work; they do not perform phase work directly.
+      fail_condition: trigger_subsystem_performed_phase_work
+    - id: TRIGGERS-SYSTEM-ABS-002
+      rule: Trigger policies may add requirements or block progress but must not weaken phase, gate, report, handoff, revision, risk, contract, boundary, dependency,
+        or agent rules.
+      fail_condition: trigger_policy_weakened_external_authority
+    - id: TRIGGERS-SYSTEM-ABS-003
+      rule: Mission state stores trigger instances; trigger subsystem defines vocabulary, emission, resolution, blocking, and validation semantics.
+      fail_condition: trigger_subsystem_owns_mission_state_storage
+    - id: TRIGGERS-SYSTEM-ABS-004
+      rule: Unresolved triggers fail closed before implementation and final validation.
+      fail_condition: unresolved_trigger_allowed_to_pass_hard_boundary
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: TRIGGERS-SYSTEM-CHECK-001
+    check: trigger_subsystem_files_follow_contract
+    applies_when:
+      triggers_subsystem_loaded: true
+  fail_conditions:
+  - id: TRIGGERS-SYSTEM-001
+    condition: trigger_policy_weakened_external_authority
+    message: Trigger subsystem must not weaken other subsystem constraints.
+    severity: error
+  - id: TRIGGERS-SYSTEM-002
+    condition: unresolved_trigger_allowed_to_pass_hard_boundary
+    message: Unresolved triggers must fail closed before implementation or final validation.
+    severity: error

@@ -1,0 +1,966 @@
+version: '1.0'
+file:
+  name: conventions.trigger-emission-policy.yaml
+  path: triggers/conventions.trigger-emission-policy.yaml
+  role: trigger_emission_contract
+  executability: policy
+purpose: Define which subsystems may emit triggers, required payloads, dedupe behavior, and evidence requirements before Alpha registers triggers.
+ownership:
+  owns:
+  - trigger_emission_policy
+  - trigger_emission_rules
+  - trigger_payload_schema
+  - emission_algorithm
+  does_not_own:
+  - trigger_resolution_matrix
+  - mission_state_storage
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - phase_output_contains_triggers
+  - gate_or_report_validation_emits_trigger
+  skips_when: []
+inputs:
+  required:
+  - trigger_taxonomy
+  - phase_output
+  optional:
+  - mission_state
+  - report_validation_result
+  - gate_validation_result
+outputs:
+  produces:
+  - validated_trigger_candidates
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  optional_files:
+  - reports/conventions.report-validation.yaml
+  - gates/conventions.gate-validation.yaml
+sections:
+  trigger_emission_policy:
+    absolute_rules:
+    - id: TRIGGER-EMIT-ABS-001
+      rule: Only phase outputs, gate validation, report validation, or Alpha runtime checks may emit triggers.
+      fail_condition: trigger_emitted_from_unowned_context
+    - id: TRIGGER-EMIT-ABS-002
+      rule: Every emitted trigger must include evidence_refs and a reason.
+      fail_condition: trigger_missing_reason_or_evidence
+    - id: TRIGGER-EMIT-ABS-003
+      rule: A trigger must not be used as a substitute for a required report or failed gate result.
+      fail_condition: trigger_used_to_bypass_report_or_gate
+    - id: TRIGGER-EMIT-ABS-004
+      rule: Equivalent active triggers must be merged instead of duplicated.
+      fail_condition: duplicate_active_trigger_not_merged
+  trigger_emission_rules:
+  - trigger_type: behavior_change_requested
+    may_be_emitted_by:
+    - behavior_agent
+    - validation_agent
+    - failure_analysis_agent
+    emit_when:
+    - changed acceptance criterion
+    - new expected behavior
+    - preserved behavior no longer preserved
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: behavior_change_requested_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: public_contract_change_possible
+    may_be_emitted_by:
+    - classification_agent
+    - artifact_action_agent
+    - impact_agent
+    emit_when:
+    - public API, DTO, event, export, or consumer-visible artifact is modified
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: public_contract_change_possible_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: public_contract_change_confirmed
+    may_be_emitted_by:
+    - classification_agent
+    emit_when:
+    - boundary-contract-classification confirms public surface change
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: public_contract_change_confirmed_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: security_sensitive_behavior_possible
+    may_be_emitted_by:
+    - classification_agent
+    - risk_agent
+    - validation_agent
+    emit_when:
+    - security-sensitive file, boundary, permission, or data flow involved
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: security_sensitive_behavior_possible_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: existing_artifact_found
+    may_be_emitted_by:
+    - reconnaissance_agent
+    - artifact_action_agent
+    emit_when:
+    - source path and matching responsibility evidence
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: existing_artifact_found_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: dependency_wiring_changed
+    may_be_emitted_by:
+    - classification_agent
+    - implementation_agent
+    - impact_agent
+    emit_when:
+    - import/provider/module/runtime dependency evidence
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: dependency_wiring_changed_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: mixed_responsibility_possible
+    may_be_emitted_by:
+    - role_agent
+    - architecture_agent
+    emit_when:
+    - artifact signals more than one role category
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: mixed_responsibility_possible_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: mixed_responsibility_detected
+    may_be_emitted_by:
+    - role_agent
+    emit_when:
+    - draft role signals confirm multiple competing responsibilities
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: mixed_responsibility_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: likely_extract_target_detected
+    may_be_emitted_by:
+    - role_agent
+    - artifact_action_agent
+    emit_when:
+    - cohesive subset has distinct responsibility, inputs, and consumers
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: likely_extract_target_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: likely_split_target_detected
+    may_be_emitted_by:
+    - role_agent
+    - artifact_action_agent
+    emit_when:
+    - separate responsibilities cannot remain in one artifact without boundary confusion
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: likely_split_target_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: role_collision_possible
+    may_be_emitted_by:
+    - role_agent
+    emit_when:
+    - multiple candidate roles with unresolved priority
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: role_collision_possible_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: pattern_pressure_possible
+    may_be_emitted_by:
+    - architecture_agent
+    - pattern_agent
+    emit_when:
+    - creation, variation, workflow, adapter, event, or composition pressure signal
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: pattern_pressure_possible_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: pattern_pressure_detected
+    may_be_emitted_by:
+    - pattern_agent
+    emit_when:
+    - pattern-pressure report has confirmed pressure type
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: pattern_pressure_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: pattern_selection_required
+    may_be_emitted_by:
+    - pattern_agent
+    - structure_agent
+    emit_when:
+    - structure or role arrangement depends on pattern decision
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: pattern_selection_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: refactor_like_action_selected
+    may_be_emitted_by:
+    - artifact_action_agent
+    emit_when:
+    - artifact-actions report contains refactor-like action
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: refactor_like_action_selected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: behavior_lock_required
+    may_be_emitted_by:
+    - refactor_strategy_agent
+    - testing_agent
+    emit_when:
+    - behavior-preservation report required for selected actions
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: behavior_lock_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: checkpointed_sequence_required
+    may_be_emitted_by:
+    - execution_planning_agent
+    - risk_agent
+    emit_when:
+    - multi-step sequence or high-risk change detected
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: checkpointed_sequence_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: compatibility_decision_required
+    may_be_emitted_by:
+    - classification_agent
+    - impact_agent
+    emit_when:
+    - contract change or consumer impact requires compatibility classification
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: compatibility_decision_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: boundary_validation_required
+    may_be_emitted_by:
+    - classification_agent
+    - boundary_agent
+    - structure_agent
+    emit_when:
+    - boundary classification or crossing rule evidence
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: boundary_validation_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: dependency_validation_required
+    may_be_emitted_by:
+    - classification_agent
+    - dependency_agent
+    - implementation_agent
+    emit_when:
+    - dependency-classification or import graph evidence
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: dependency_validation_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: high_risk_detected
+    may_be_emitted_by:
+    - risk_agent
+    - classification_agent
+    emit_when:
+    - risk-classification report level high or critical
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: high_risk_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: dynamic_reference_risk_detected
+    may_be_emitted_by:
+    - reconnaissance_agent
+    - impact_agent
+    emit_when:
+    - reflection, dynamic import, string-based lookup, event name, queue key, or runtime binding evidence
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: dynamic_reference_risk_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: consumer_impact_detected
+    may_be_emitted_by:
+    - impact_agent
+    - classification_agent
+    emit_when:
+    - call sites, public exports, events, API contracts, or downstream consumers affected
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: consumer_impact_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: call_site_update_required
+    may_be_emitted_by:
+    - impact_agent
+    - implementation_agent
+    emit_when:
+    - call-site-impact report indicates affected invocations
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: call_site_update_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: additional_contract_review_required
+    may_be_emitted_by:
+    - classification_agent
+    - validation_agent
+    emit_when:
+    - unknown consumer, unknown compatibility, or ambiguous contract surface
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: additional_contract_review_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: risk_reclassification_required
+    may_be_emitted_by:
+    - validation_agent
+    - alpha_controller
+    emit_when:
+    - new high-risk evidence after prior classification
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: risk_reclassification_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: phase_revision_required
+    may_be_emitted_by:
+    - any_phase_agent
+    - validation_agent
+    - failure_analysis_agent
+    emit_when:
+    - invalid input report, contradiction, missing field, or failed gate evidence
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: phase_revision_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: approval_before_implementation_required
+    may_be_emitted_by:
+    - pre_implementation_gate_agent
+    - risk_agent
+    emit_when:
+    - approval policy or high-risk classification requires approval
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: approval_before_implementation_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: implementation_blocked
+    may_be_emitted_by:
+    - pre_implementation_gate_agent
+    - alpha_controller
+    emit_when:
+    - pre-implementation gate blocking item
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: implementation_blocked_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: implementation_allowed
+    may_be_emitted_by:
+    - pre_implementation_gate_agent
+    emit_when:
+    - implementation_allowed true in pre-implementation gate report
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: implementation_allowed_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: implementation_failure_detected
+    may_be_emitted_by:
+    - implementation_agent
+    - validation_agent
+    emit_when:
+    - test, build, lint, runtime, or checkpoint failure
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: implementation_failure_detected_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: validation_required
+    may_be_emitted_by:
+    - implementation_agent
+    - repair_agent
+    - alpha_controller
+    emit_when:
+    - changed files or repair result require validation
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: validation_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: unexpected_file_changed
+    may_be_emitted_by:
+    - implementation_agent
+    - validation_agent
+    emit_when:
+    - changed-file manifest contains unexpected path
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: unexpected_file_changed_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: post_validation_failed
+    may_be_emitted_by:
+    - validation_agent
+    emit_when:
+    - post-implementation-validation report has blocking failures
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: post_validation_failed_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: repair_required
+    may_be_emitted_by:
+    - failure_analysis_agent
+    emit_when:
+    - repair_allowed true and unresolved failure exists
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: repair_required_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: final_validation_ready
+    may_be_emitted_by:
+    - alpha_controller
+    emit_when:
+    - no unresolved blockers and final validation prerequisites satisfied
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: final_validation_ready_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: required_report_missing
+    may_be_emitted_by:
+    - alpha_controller
+    - report_validation
+    emit_when:
+    - report registry marks required report missing
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: required_report_missing_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: report_schema_invalid
+    may_be_emitted_by:
+    - report_validation
+    emit_when:
+    - report validation failure
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: report_schema_invalid_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: mission_complete
+    may_be_emitted_by:
+    - validation_agent
+    - alpha_controller
+    emit_when:
+    - final validation summary status passed
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: mission_complete_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: mission_blocked
+    may_be_emitted_by:
+    - alpha_controller
+    - validation_agent
+    emit_when:
+    - unresolved trigger, missing report, failed gate, or blocked phase
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: mission_blocked_emitted_without_required_evidence_or_allowed_emitter
+  - trigger_type: rerun_required
+    may_be_emitted_by:
+    - alpha_controller
+    - failure_analysis_agent
+    emit_when:
+    - revision policy selects rerun action
+    do_not_emit_when:
+    - required action already completed after the evidence timestamp
+    - trigger would duplicate an unresolved equivalent trigger without adding new evidence
+    - trigger type is being used to bypass a failed gate or required report
+    required_payload_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    evidence_requirement:
+      min_evidence_refs: 1
+      allow_no_evidence_marker: false
+      evidence_must_identify_source_phase: true
+    dedupe_policy: merge_with_equivalent_active_trigger_or_emit_superseding_trigger_when_target_differs
+    fail_condition: rerun_required_emitted_without_required_evidence_or_allowed_emitter
+  trigger_payload_schema:
+    required_fields:
+    - trigger_type
+    - reason
+    - evidence_refs
+    - required_phase_or_action
+    optional_fields:
+    - required_report
+    - blocking_before
+    - target_gate
+    - target_approval
+    - severity_hint
+    - dedupe_key
+  emission_algorithm:
+    steps:
+    - step_id: COLLECT_TRIGGER_CANDIDATES
+      action: read
+      input: phase_output.triggers_emitted
+    - step_id: VALIDATE_TRIGGER_TYPE
+      action: assert
+      assertion: trigger_type exists in trigger taxonomy
+    - step_id: VALIDATE_EMITTER
+      action: assert
+      assertion: emitting phase or agent is allowed for trigger_type
+    - step_id: VALIDATE_PAYLOAD
+      action: assert
+      assertion: required payload fields and evidence_refs exist
+    - step_id: APPLY_DEDUPE_POLICY
+      action: merge_or_emit
+      assertion: equivalent active triggers are not duplicated
+    - step_id: RETURN_VALIDATED_TRIGGERS
+      action: emit
+      output: validated_trigger_candidates
+validation:
+  required_checks:
+  - id: TRIGGER-EMISSION-CHECK-001
+    check: emitted_triggers_have_valid_payload
+    applies_when:
+      triggers_are_emitted: true
+  fail_conditions:
+  - id: TRIGGER-EMISSION-001
+    condition: trigger_missing_reason_or_evidence
+    message: Emitted trigger must include reason and evidence references.
+    severity: error
+  - id: TRIGGER-EMISSION-002
+    condition: trigger_emitted_from_unowned_context
+    message: Trigger emitted by an owner not allowed for that trigger type.
+    severity: error

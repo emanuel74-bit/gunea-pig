@@ -1,0 +1,320 @@
+version: '1.0'
+file:
+  name: conventions.trigger-blocking-policy.yaml
+  path: triggers/conventions.trigger-blocking-policy.yaml
+  role: trigger_blocking_policy
+  executability: policy
+purpose: Define when unresolved, scheduled, blocked, resolved, or invalidated triggers block phase execution, implementation, and final validation.
+ownership:
+  owns:
+  - trigger_blocking_policy
+  - blocking_severity_by_category
+  - blocking_decision_rules
+  - pre_implementation_blocking_matrix
+  does_not_own:
+  - trigger_type_definitions
+  - trigger_resolution_matrix
+  - mission_state_storage
+  - gate_validation
+activation:
+  mode: conditional
+  activates_when:
+  - phase_transition_requested
+  - pre_implementation_gate_requested
+  - final_validation_requested
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - active_triggers
+  - trigger_resolution_matrix
+  optional:
+  - next_phase
+  - gate_validation_result
+outputs:
+  produces:
+  - trigger_blocking_decision
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+sections:
+  trigger_blocking_policy:
+    absolute_rules:
+    - id: TRIGGER-BLOCK-ABS-001
+      rule: Implementation must not start while any trigger with blocking_before containing implementation or pre_implementation_gate is active or scheduled but incomplete.
+      fail_condition: implementation_started_with_unresolved_blocking_trigger
+    - id: TRIGGER-BLOCK-ABS-002
+      rule: Final validation must not pass while any active, scheduled incomplete, or blocked trigger remains unless final validation is explicitly the target resolution
+        phase.
+      fail_condition: final_validation_passed_with_unresolved_trigger
+    - id: TRIGGER-BLOCK-ABS-003
+      rule: A blocked trigger must include blocked_reason, blocking phase, and required resolution path.
+      fail_condition: blocked_trigger_missing_required_resolution_metadata
+    - id: TRIGGER-BLOCK-ABS-004
+      rule: Invalidated triggers must not continue to block downstream phases after the replacement trigger or revision is registered.
+      fail_condition: invalidated_trigger_still_blocks_downstream
+  blocking_severity_by_category:
+    action:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    approval:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    behavior_scope:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    boundary:
+      default_severity: blocking
+      blocks_before_default:
+      - pre_implementation_gate
+      - final_validation
+    contract:
+      default_severity: blocking
+      blocks_before_default:
+      - pre_implementation_gate
+      - final_validation
+    dependency:
+      default_severity: blocking
+      blocks_before_default:
+      - pre_implementation_gate
+      - final_validation
+    execution:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    failure:
+      default_severity: blocking
+      blocks_before_default:
+      - final_validation
+    impact:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    implementation:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    mission:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    pattern:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    reconnaissance:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    refactor:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    repair:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    report:
+      default_severity: blocking
+      blocks_before_default:
+      - pre_implementation_gate
+      - final_validation
+    revision:
+      default_severity: blocking
+      blocks_before_default:
+      - pre_implementation_gate
+      - final_validation
+    risk:
+      default_severity: blocking
+      blocks_before_default:
+      - pre_implementation_gate
+      - final_validation
+    role:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+    validation:
+      default_severity: error
+      blocks_before_default:
+      - final_validation
+  blocking_decision_rules:
+  - id: TRIGGER-BLOCK-001
+    applies_when:
+    - trigger.status == active
+    - next_phase in trigger.blocking_before
+    decision: block_next_phase
+    required_record: blocked_item
+    fail_condition: active_trigger_allowed_past_blocking_phase
+  - id: TRIGGER-BLOCK-002
+    applies_when:
+    - trigger.status == scheduled
+    - required_phase_or_report_incomplete
+    - next_phase in trigger.blocking_before
+    decision: block_next_phase
+    required_record: blocked_item
+    fail_condition: scheduled_trigger_allowed_before_resolution_completion
+  - id: TRIGGER-BLOCK-003
+    applies_when:
+    - trigger.status == blocked
+    decision: block_mission_or_target_phase
+    required_record: blocked_item
+    fail_condition: blocked_trigger_not_reflected_as_blocked_item
+  - id: TRIGGER-BLOCK-004
+    applies_when:
+    - trigger.status == resolved
+    decision: allow_downstream_unless_other_blockers_exist
+    required_record: trigger_resolution_evidence
+    fail_condition: resolved_trigger_missing_resolution_evidence
+  - id: TRIGGER-BLOCK-005
+    applies_when:
+    - trigger.status == invalidated
+    decision: ignore_for_blocking_and_require_replacement_or_revision_ref
+    required_record: invalidated_by_revision_or_superseded_by_trigger
+    fail_condition: invalidated_trigger_missing_replacement_reference
+  pre_implementation_blocking_matrix:
+  - trigger_type: behavior_change_requested
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: public_contract_change_possible
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: public_contract_change_confirmed
+    blocks_pre_implementation: true
+    blocks_final_validation: true
+  - trigger_type: security_sensitive_behavior_possible
+    blocks_pre_implementation: true
+    blocks_final_validation: true
+  - trigger_type: existing_artifact_found
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: dependency_wiring_changed
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: mixed_responsibility_possible
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: mixed_responsibility_detected
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: likely_extract_target_detected
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: likely_split_target_detected
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: role_collision_possible
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: pattern_pressure_possible
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: pattern_pressure_detected
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: pattern_selection_required
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: refactor_like_action_selected
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: behavior_lock_required
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: checkpointed_sequence_required
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: compatibility_decision_required
+    blocks_pre_implementation: true
+    blocks_final_validation: true
+  - trigger_type: boundary_validation_required
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: dependency_validation_required
+    blocks_pre_implementation: true
+    blocks_final_validation: true
+  - trigger_type: high_risk_detected
+    blocks_pre_implementation: true
+    blocks_final_validation: true
+  - trigger_type: dynamic_reference_risk_detected
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: consumer_impact_detected
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: call_site_update_required
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: additional_contract_review_required
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: risk_reclassification_required
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: phase_revision_required
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: approval_before_implementation_required
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: implementation_blocked
+    blocks_pre_implementation: true
+    blocks_final_validation: false
+  - trigger_type: implementation_allowed
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: implementation_failure_detected
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: validation_required
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: unexpected_file_changed
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: post_validation_failed
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: repair_required
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: final_validation_ready
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: required_report_missing
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: report_schema_invalid
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: mission_complete
+    blocks_pre_implementation: false
+    blocks_final_validation: false
+  - trigger_type: mission_blocked
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+  - trigger_type: rerun_required
+    blocks_pre_implementation: false
+    blocks_final_validation: true
+validation:
+  required_checks:
+  - id: TRIGGER-BLOCK-CHECK-001
+    check: no_blocking_trigger_crosses_block_boundary
+    applies_when:
+      phase_transition_requested: true
+  fail_conditions:
+  - id: TRIGGER-BLOCK-001
+    condition: active_trigger_allowed_past_blocking_phase
+    message: Active trigger cannot pass a phase listed in blocking_before.
+    severity: error
+  - id: TRIGGER-BLOCK-002
+    condition: final_validation_passed_with_unresolved_trigger
+    message: Final validation cannot pass with unresolved triggers.
+    severity: error
