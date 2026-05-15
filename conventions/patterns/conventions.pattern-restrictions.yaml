@@ -2,8 +2,9 @@ version: '1.0'
 file:
   name: conventions.pattern-restrictions.yaml
   path: patterns/conventions.pattern-restrictions.yaml
-  role: pattern_restriction_and_anti_overengineering_contract
-purpose: Control restricted, conditional, disallowed, and deferred patterns.
+  role: pattern_restriction_contract
+  executability: policy
+purpose: Define disallowed, restricted, conditional, deferred, and anti-overengineering rules for pattern use.
 ownership:
   owns:
   - restricted_patterns
@@ -11,314 +12,110 @@ ownership:
   - disallowed_patterns
   - deferred_patterns
   - pattern_anti_overengineering_rules
+  - pattern_restriction_rules
   does_not_own:
-  - pattern_catalog_definitions
-  - role_pattern_compatibility
-  - role_definitions
-  - architecture_layer_rules
+  - pattern_catalog
+  - pattern_selection_process
 activation:
-  mode: conditional
-  activates_when:
-  - candidate_patterns_exist
-  - restricted_or_conditional_pattern_candidate_exists
+  mode: always
+  activates_when: []
   skips_when: []
 inputs:
-  required:
-  - candidate_patterns
-  - pattern_catalog
+  required: []
   optional: []
 outputs:
   produces:
-  - pattern_restriction_report
-  - rejected_patterns
-  - approved_pattern_candidates
+  - pattern_restriction_result
 dependencies:
   required_files:
   - patterns/conventions.pattern-catalog.yaml
-  - patterns/conventions.pattern-selection.yaml
   optional_files: []
 sections:
   restricted_patterns:
-  - Singleton
-  - Bridge
-  - Flyweight
-  - TemplateMethod
-  - Visitor
-  - EventSourcing
-  - Saga
-  - RetryWithBackoff
-  - CircuitBreaker
+    Singleton:
+      reason: Hidden global dependency and testability risk.
+      allowed_when:
+      - framework/provider lifecycle requires a single shared instance and dependency is injected explicitly
+      must_not:
+      - use for convenience access
+      - store mutable business state
+    Bridge:
+      reason: Often adds two abstraction hierarchies before variation is proven.
+      allowed_when:
+      - two independent variation axes already exist and class explosion is visible
+    Flyweight:
+      reason: Memory optimization pattern with complexity cost.
+      allowed_when:
+      - large number of similar objects and measured memory pressure exist
+    TemplateMethod:
+      reason: Inheritance-based variation can hide responsibilities.
+      allowed_when:
+      - framework requires template hooks or stable algorithm skeleton already exists
+    Visitor:
+      reason: Adds double-dispatch complexity.
+      allowed_when:
+      - object structure is stable and operations change frequently
+    EventSourcing:
+      reason: High operational and modeling complexity.
+      allowed_when:
+      - event history is the source of truth and replay/projection requirements are explicit
+    Saga:
+      reason: Distributed workflow complexity.
+      allowed_when:
+      - cross-service long-running transaction with compensation is required
+    RetryWithBackoff:
+      reason: Can hide failures or duplicate side effects.
+      allowed_when:
+      - operation is idempotent or safely retryable and retry policy is bounded
+    CircuitBreaker:
+      reason: Operational resilience complexity.
+      allowed_when:
+      - external dependency failure cascade risk is proven and fallback/recovery policy exists
   conditional_patterns:
-  - CQRS
-  - Outbox
-  - Inbox
-  - AntiCorruptionLayer
+    CQRS: Allowed only when read/write model divergence is real, not speculative.
+    Outbox: Allowed only when durable state change and async publication consistency must be preserved.
+    Inbox: Allowed only when duplicate inbound messages can produce duplicate side effects.
+    AntiCorruptionLayer: Allowed only when external/legacy model would corrupt internal model or terminology.
   disallowed_patterns:
-  - ServiceLocator
+    ServiceLocator: Disallowed by default because it hides dependencies; use dependency injection or explicit ports/adapters
+      instead.
   deferred_patterns:
-  - Result
-  - ContractVersioning
+    Result: Requires explicit project-wide error-handling convention before adoption.
+    ContractVersioning: Requires compatibility decision and consumer migration plan.
   pattern_anti_overengineering_rules:
   - Prefer role decomposition before pattern introduction.
   - Prefer mapper before Adapter when only data shape changes.
-  - Prefer DI provider before Singleton.
-  - Prefer simple constructor before Factory.
-  - Restricted patterns require explicit justification.
-  canonical_source_full:
-    version: '1.0'
-    system:
-      name: design-pattern-selector
-      purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
-        rules derived from the Refactoring.Guru catalog.
-
-        '
-      philosophy:
-      - Pattern follows problem, not preference
-      - Classify intent before selecting pattern
-      - Avoid over-engineering
-      - Prefer simplest valid pattern
-    classification:
-      categories:
-        creational:
-          description: 'Focused on object creation mechanisms that increase flexibility and reuse.
-
-            '
-          triggers:
-          - object creation is complex
-          - object type decided at runtime
-          - avoid direct constructor usage
-          - control instance lifecycle
-          - reduce coupling to concrete classes
-        structural:
-          description: 'Focused on composing classes and objects into larger structures.
-
-            '
-          triggers:
-          - combine multiple components
-          - wrap or adapt existing code
-          - simplify complex subsystem
-          - optimize memory usage
-          - control access to object
-        behavioral:
-          description: 'Focused on communication and responsibility between objects.
-
-            '
-          triggers:
-          - multiple objects interact
-          - behavior changes at runtime
-          - decouple sender and receiver
-          - define workflows or chains
-          - encapsulate algorithms
-    patterns:
-      Singleton:
-        category: creational
-        use_when:
-        - exactly one instance is required
-        - global shared resource
-        avoid_when:
-        - testability is critical
-        - hidden dependencies are undesirable
-      FactoryMethod:
-        category: creational
-        use_when:
-        - subclasses decide object type
-        - object creation varies by context
-        signals:
-        - switch/if on type
-        - constructor logic branching
-      AbstractFactory:
-        category: creational
-        use_when:
-        - families of related objects
-        - must enforce compatibility between objects
-        signals:
-        - multiple related product types
-      Builder:
-        category: creational
-        use_when:
-        - complex object construction
-        - step-by-step creation
-        signals:
-        - many optional parameters
-        - telescoping constructor
-      Prototype:
-        category: creational
-        use_when:
-        - clone existing objects
-        - object creation is expensive
-        signals:
-        - copying objects frequently
-      Adapter:
-        category: structural
-        use_when:
-        - incompatible interfaces
-        - reuse legacy/external code
-        signals:
-        - interface mismatch
-      Bridge:
-        category: structural
-        use_when:
-        - separate abstraction from implementation
-        - avoid class explosion
-        signals:
-        - multiple dimensions of variation
-      Composite:
-        category: structural
-        use_when:
-        - tree structure
-        - treat individual and group uniformly
-        signals:
-        - recursive composition
-      Decorator:
-        category: structural
-        use_when:
-        - add behavior dynamically
-        - avoid subclass explosion
-        signals:
-        - stackable responsibilities
-      Facade:
-        category: structural
-        use_when:
-        - simplify complex subsystem
-        - provide unified interface
-        signals:
-        - many dependencies hidden behind one API
-      Flyweight:
-        category: structural
-        use_when:
-        - large number of similar objects
-        - memory optimization needed
-        signals:
-        - shared intrinsic state
-      Proxy:
-        category: structural
-        use_when:
-        - control access to object
-        - lazy loading / remote access
-        signals:
-        - intercept calls
-      ChainOfResponsibility:
-        category: behavioral
-        use_when:
-        - multiple handlers for request
-        - decouple sender from receiver
-        signals:
-        - pass request along chain
-      Command:
-        category: behavioral
-        use_when:
-        - encapsulate actions as objects
-        - support undo/redo
-        signals:
-        - queue, log, or execute commands
-      Iterator:
-        category: behavioral
-        use_when:
-        - traverse collection without exposing structure
-        signals:
-        - custom traversal logic
-      Mediator:
-        category: behavioral
-        use_when:
-        - reduce direct dependencies between components
-        signals:
-        - many-to-many communication chaos
-      Memento:
-        category: behavioral
-        use_when:
-        - save/restore object state
-        signals:
-        - undo history
-      Observer:
-        category: behavioral
-        use_when:
-        - event-driven updates
-        - publish/subscribe
-        signals:
-        - state change notifications
-      State:
-        category: behavioral
-        use_when:
-        - object behavior depends on state
-        signals:
-        - large conditional state machine
-      Strategy:
-        category: behavioral
-        use_when:
-        - multiple interchangeable algorithms
-        signals:
-        - if/else selecting behavior
-      TemplateMethod:
-        category: behavioral
-        use_when:
-        - algorithm skeleton with overridable steps
-        signals:
-        - shared workflow with variations
-      Visitor:
-        category: behavioral
-        use_when:
-        - add operations without modifying classes
-        signals:
-        - stable structure, changing behavior
-    decision_flow:
-    - step: detect_primary_intent
-      action: 'Match feature description against category triggers (creational / structural / behavioral)
-
-        '
-    - step: detect_problem_signals
-      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
-        \  - structure composition issues\n"
-    - step: candidate_patterns
-      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
-    - step: eliminate_conflicts
-      action: 'Remove patterns where avoid_when conditions are triggered
-
-        '
-    - step: rank_patterns
-      criteria:
-      - simplicity
-      - minimal abstraction
-      - alignment with problem
-      - scalability
-    - step: output
-      format:
-        primary_pattern: string
-        alternatives:
-        - string
-        reasoning: text explanation
-        confidence: low|medium|high
-    heuristics:
-    - rule: avoid_pattern_if_simple_solution_exists
-    - rule: do_not_use_singleton_for_convenience
-    - rule: prefer_strategy_over_conditionals
-    - rule: prefer_composition_over_inheritance
-    - rule: avoid_overengineering_for_small_features
-    input_schema:
-      feature_description: string
-      constraints:
-        scalability: low|medium|high
-        flexibility: low|medium|high
-        performance: low|medium|high
-      signals:
-        dynamic_behavior: boolean
-        complex_creation: boolean
-        many_dependencies: boolean
-        conditional_logic: boolean
-    output_schema:
-      primary_pattern: string
-      category: creational|structural|behavioral
-      alternatives:
-      - string
-      reasoning: string
-      tradeoffs:
-        pros:
-        - string
-        cons:
-        - string
-      confidence: low|medium|high
+  - Prefer dependency injection/provider before Singleton.
+  - Prefer simple constructor before FactoryMethod/Builder.
+  - Prefer direct method call before Command when no queue/log/undo/deferred execution exists.
+  - Prefer no pattern when variation is speculative.
+  - Restricted patterns require explicit evidence and rejection of simpler alternatives.
+  pattern_restriction_rules:
+  - rule_id: PATTERN-RESTRICT-001
+    applies_when: selected_pattern.status == restricted
+    must_have:
+    - explicit_justification
+    - simpler_alternatives_rejected
+    - operational_or_structural_need
+    fail_condition: restricted_pattern_selected_without_justification
+  - rule_id: PATTERN-RESTRICT-002
+    applies_when: selected_pattern.status == disallowed
+    must_have:
+    - allowed_exception_recorded
+    fail_condition: disallowed_pattern_selected
+  - rule_id: PATTERN-RESTRICT-003
+    applies_when: selected_pattern.status == conditional
+    must_have:
+    - condition_specific_evidence
+    fail_condition: conditional_pattern_selected_without_condition
 validation:
+  required_checks:
+  - restricted_patterns_have_reasons
+  - conditional_patterns_have_conditions
+  - disallowed_patterns_have_replacement_guidance
+  - anti_overengineering_rules_applied
   fail_conditions:
+  - restricted_pattern_selected_without_justification
   - disallowed_pattern_selected
-  - restricted_pattern_without_explicit_justification
-  - conditional_pattern_without_activation_signal
-  - pattern_creates_more_complexity_than_it_removes
+  - conditional_pattern_selected_without_condition
+  - pattern_selected_when_no_pattern_sufficient

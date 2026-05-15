@@ -3,31 +3,28 @@ file:
   name: conventions.role-pattern-compatibility.yaml
   path: patterns/conventions.role-pattern-compatibility.yaml
   role: role_pattern_compatibility_contract
-purpose: Ensure selected patterns only introduce compatible roles.
+  executability: validator
+purpose: Ensure selected patterns only introduce roles compatible with the role taxonomy, final role assignments, dependency
+  direction, and layer boundaries.
 ownership:
   owns:
   - role_pattern_compatibility_policy
-  - pattern_compatibility_by_role_family
   - pattern_introduced_roles_matrix
   - role_pattern_rejection_matrix
   - pattern_simpler_alternative_matrix
   - pattern_role_disambiguation
+  - compatibility_validation_rules
   does_not_own:
   - role_taxonomy
   - pattern_catalog
   - pattern_activation_gates
   - final_structure
 activation:
-  mode: conditional
-  activates_when:
-  - candidate_patterns_exist
-  - selected_patterns_exist
+  mode: always
+  activates_when: []
   skips_when: []
 inputs:
-  required:
-  - role_assignment_table
-  - candidate_patterns
-  - pattern_catalog
+  required: []
   optional: []
 outputs:
   produces:
@@ -43,12 +40,20 @@ dependencies:
   optional_files: []
 sections:
   role_pattern_compatibility_policy:
-    default: no_pattern
+    default: NoPattern
     principles:
     - Roles do not automatically imply patterns.
     - Patterns may introduce roles only through compatibility rules.
     - Patterns must preserve layer and dependency rules.
+    - Introduced roles must have valid placement and ownership after pattern selection.
   pattern_introduced_roles_matrix:
+    Strategy:
+      may_introduce:
+      - strategy
+      - selector
+      - interface
+      - registry
+      status: active
     FactoryMethod:
       may_introduce:
       - factory
@@ -64,22 +69,168 @@ sections:
       may_introduce:
       - builder
       status: active
-    Prototype:
-      may_introduce:
-      - factory
-      - builder
-      status: active
-    Singleton:
-      may_introduce:
-      - provider
-      - config
-      status: restricted
     Adapter:
       may_introduce:
       - adapter
       - port
       - client
       - mapper
+      status: active
+    Facade:
+      may_introduce:
+      - service
+      - adapter
+      - orchestrator
+      status: active
+    Proxy:
+      may_introduce:
+      - adapter
+      - guard
+      - service
+      - provider
+      status: active
+    Decorator:
+      may_introduce:
+      - interface
+      - adapter
+      - service
+      status: active
+    Command:
+      may_introduce:
+      - command
+      - handler
+      - result
+      status: active
+    ChainOfResponsibility:
+      may_introduce:
+      - handler
+      - registry
+      - processor
+      status: active
+    Observer:
+      may_introduce:
+      - domain_event
+      - integration_event
+      - publisher
+      - listener
+      - subscriber
+      status: active
+    Mediator:
+      may_introduce:
+      - orchestrator
+      - handler
+      - publisher
+      - listener
+      status: active
+    TemplateMethod:
+      may_introduce:
+      - service
+      - strategy
+      status: restricted
+    State:
+      may_introduce:
+      - state
+      - strategy
+      - entity
+      - invariant
+      status: active
+    Specification:
+      may_introduce:
+      - specification
+      status: active
+    Policy:
+      may_introduce:
+      - policy
+      status: active
+    Repository:
+      may_introduce:
+      - repository
+      - mapper
+      status: active
+    UnitOfWork:
+      may_introduce:
+      - unit_of_work
+      - repository
+      - transaction
+      status: active
+    CQRS:
+      may_introduce:
+      - command
+      - query
+      - handler
+      - read_model
+      - projection
+      status: conditional
+    Outbox:
+      may_introduce:
+      - integration_event
+      - repository
+      - transaction
+      - producer
+      - processor
+      - job
+      - record
+      status: conditional
+    Saga:
+      may_introduce:
+      - workflow
+      - command
+      - handler
+      - domain_event
+      - integration_event
+      - policy
+      - repository
+      - state
+      status: restricted
+    Pipeline:
+      may_introduce:
+      - processor
+      - handler
+      - task
+      - validator
+      - mapper
+      - parser
+      - normalizer
+      status: active
+    DomainEvent:
+      may_introduce:
+      - domain_event
+      - publisher
+      - listener
+      status: active
+    AntiCorruptionLayer:
+      may_introduce:
+      - adapter
+      - mapper
+      - port
+      - client
+      - policy
+      status: conditional
+    Result:
+      may_introduce:
+      - result
+      - error
+      status: deferred
+    ContractVersioning:
+      may_introduce:
+      - versioned_contract
+      - mapper
+      - adapter
+      status: deferred
+    ServiceLocator:
+      may_introduce:
+      - provider
+      - registry
+      status: disallowed
+    Singleton:
+      may_introduce:
+      - provider
+      - config
+      status: restricted
+    Prototype:
+      may_introduce:
+      - factory
+      - builder
       status: active
     Bridge:
       may_introduce:
@@ -93,54 +244,16 @@ sections:
       - entity
       - value_object
       status: active
-    Decorator:
-      may_introduce:
-      - interface
-      - adapter
-      - service
-      status: active
-    Facade:
-      may_introduce:
-      - service
-      - adapter
-      - orchestrator
-      status: active
     Flyweight:
       may_introduce:
       - factory
       - registry
       - value_object
       status: restricted
-    Proxy:
-      may_introduce:
-      - adapter
-      - guard
-      - service
-      - provider
-      status: active
-    ChainOfResponsibility:
-      may_introduce:
-      - handler
-      - registry
-      - processor
-      status: active
-    Command:
-      may_introduce:
-      - command
-      - handler
-      - result
-      status: active
     Iterator:
       may_introduce:
       - processor
       - interface
-      status: active
-    Mediator:
-      may_introduce:
-      - orchestrator
-      - handler
-      - publisher
-      - listener
       status: active
     Memento:
       may_introduce:
@@ -148,33 +261,6 @@ sections:
       - record
       - repository
       status: active
-    Observer:
-      may_introduce:
-      - domain_event
-      - integration_event
-      - publisher
-      - listener
-      - subscriber
-      status: active
-    State:
-      may_introduce:
-      - state
-      - strategy
-      - entity
-      - invariant
-      status: active
-    Strategy:
-      may_introduce:
-      - strategy
-      - selector
-      - interface
-      - registry
-      status: active
-    TemplateMethod:
-      may_introduce:
-      - service
-      - strategy
-      status: restricted
     Visitor:
       may_introduce:
       - interface
@@ -192,29 +278,6 @@ sections:
       - client
       - mapper
       status: active
-    CQRS:
-      may_introduce:
-      - command
-      - query
-      - handler
-      - read_model
-      - projection
-      status: conditional
-    Specification:
-      may_introduce:
-      - specification
-      status: active
-    DomainEvent:
-      may_introduce:
-      - domain_event
-      - publisher
-      - listener
-      status: active
-    Repository:
-      may_introduce:
-      - repository
-      - mapper
-      status: active
     DataMapper:
       may_introduce:
       - mapper
@@ -222,12 +285,6 @@ sections:
       - model
       - entity
       - value_object
-      status: active
-    UnitOfWork:
-      may_introduce:
-      - unit_of_work
-      - repository
-      - transaction
       status: active
     Projection:
       may_introduce:
@@ -250,16 +307,6 @@ sections:
       - processor
       - integration_event
       status: restricted
-    Outbox:
-      may_introduce:
-      - integration_event
-      - repository
-      - transaction
-      - producer
-      - processor
-      - job
-      - record
-      status: conditional
     Inbox:
       may_introduce:
       - consumer
@@ -268,25 +315,6 @@ sections:
       - handler
       - guard
       status: conditional
-    AntiCorruptionLayer:
-      may_introduce:
-      - adapter
-      - mapper
-      - port
-      - client
-      - policy
-      status: conditional
-    Saga:
-      may_introduce:
-      - workflow
-      - command
-      - handler
-      - domain_event
-      - integration_event
-      - policy
-      - repository
-      - state
-      status: restricted
     IdempotencyKey:
       may_introduce:
       - guard
@@ -311,410 +339,190 @@ sections:
       - config
       - state
       status: restricted
-    Pipeline:
-      may_introduce:
-      - processor
-      - handler
-      - task
-      - validator
-      - mapper
-      - parser
-      - normalizer
-      status: active
   role_pattern_rejection_matrix:
     service:
     - pattern turns service into god facade
+    - service begins owning persistence details
+    - service becomes strategy registry without explicit variation
     repository:
-    - pattern introduces business policy
+    - pattern introduces business policy into repository
+    - repository becomes integration workflow coordinator
     strategy:
     - only one implementation exists
+    - strategy selection is speculative
+    - strategy owns persistence or transport
     factory:
     - simple constructor is enough
+    - factory hides dependency lookup
+    - factory performs business workflow
+    adapter:
+    - adapter contains domain rules
+    - adapter directly controls application workflow
+    orchestrator:
+    - orchestrator owns core business invariants
+    - orchestrator is used as facade for unrelated responsibilities
+    handler:
+    - handler performs unrelated validation/mapping/persistence without delegated roles
   pattern_simpler_alternative_matrix:
+    NoPattern: []
+    Strategy:
+    - NoPattern
+    - role_decomposition
     FactoryMethod:
-    - no_pattern
+    - NoPattern
     - role_decomposition
     AbstractFactory:
-    - no_pattern
+    - NoPattern
     - role_decomposition
     Builder:
-    - no_pattern
-    - role_decomposition
-    Prototype:
-    - no_pattern
-    - role_decomposition
-    Singleton:
-    - no_pattern
+    - NoPattern
     - role_decomposition
     Adapter:
-    - no_pattern
-    - role_decomposition
-    Bridge:
-    - no_pattern
-    - role_decomposition
-    Composite:
-    - no_pattern
-    - role_decomposition
-    Decorator:
-    - no_pattern
+    - NoPattern
     - role_decomposition
     Facade:
-    - no_pattern
-    - role_decomposition
-    Flyweight:
-    - no_pattern
+    - NoPattern
     - role_decomposition
     Proxy:
-    - no_pattern
+    - NoPattern
     - role_decomposition
-    ChainOfResponsibility:
-    - no_pattern
+    Decorator:
+    - NoPattern
     - role_decomposition
     Command:
-    - no_pattern
+    - NoPattern
     - role_decomposition
-    Iterator:
-    - no_pattern
-    - role_decomposition
-    Mediator:
-    - no_pattern
-    - role_decomposition
-    Memento:
-    - no_pattern
+    ChainOfResponsibility:
+    - NoPattern
     - role_decomposition
     Observer:
-    - no_pattern
+    - NoPattern
     - role_decomposition
-    State:
-    - no_pattern
-    - role_decomposition
-    Strategy:
-    - no_pattern
+    Mediator:
+    - NoPattern
     - role_decomposition
     TemplateMethod:
-    - no_pattern
+    - NoPattern
     - role_decomposition
-    Visitor:
-    - no_pattern
-    - role_decomposition
-    DependencyInjection:
-    - no_pattern
-    - role_decomposition
-    PortsAndAdapters:
-    - no_pattern
-    - role_decomposition
-    CQRS:
-    - no_pattern
+    State:
+    - NoPattern
     - role_decomposition
     Specification:
-    - no_pattern
-    - role_decomposition
-    DomainEvent:
-    - no_pattern
-    - role_decomposition
+    - inline_condition
+    - policy
+    - validator
+    Policy:
+    - inline_condition
+    - validator
     Repository:
-    - no_pattern
-    - role_decomposition
-    DataMapper:
-    - no_pattern
-    - role_decomposition
+    - direct_adapter_for_external_read
+    - query_object
     UnitOfWork:
-    - no_pattern
-    - role_decomposition
-    Projection:
-    - no_pattern
-    - role_decomposition
-    ReadModel:
-    - no_pattern
-    - role_decomposition
-    EventSourcing:
-    - no_pattern
-    - role_decomposition
+    - single_repository_operation
+    CQRS:
+    - separate_query_service
+    - repository_query_method
     Outbox:
-    - no_pattern
-    - role_decomposition
-    Inbox:
-    - no_pattern
-    - role_decomposition
-    AntiCorruptionLayer:
-    - no_pattern
-    - role_decomposition
+    - direct_event_publish
+    - domain_event_only
     Saga:
-    - no_pattern
-    - role_decomposition
-    IdempotencyKey:
-    - no_pattern
-    - role_decomposition
-    RetryWithBackoff:
-    - no_pattern
-    - role_decomposition
-    CircuitBreaker:
-    - no_pattern
-    - role_decomposition
+    - pipeline
+    - orchestrator
+    - transaction_script
     Pipeline:
-    - no_pattern
+    - single_use_case
+    - orchestrator
+    DomainEvent:
+    - direct_method_call
+    AntiCorruptionLayer:
+    - adapter
+    - mapper
+    Result:
+    - explicit_error_return
+    - exception
+    ContractVersioning:
+    - additive_contract_change
+    - compatibility_mapper
+    ServiceLocator:
+    - dependency_injection
+    - constructor_injection
+    Singleton:
+    - NoPattern
     - role_decomposition
+    Prototype:
+    - NoPattern
+    - role_decomposition
+    Bridge:
+    - NoPattern
+    - role_decomposition
+    Composite:
+    - NoPattern
+    - role_decomposition
+    Flyweight:
+    - NoPattern
+    - role_decomposition
+    Iterator:
+    - NoPattern
+    - role_decomposition
+    Memento:
+    - NoPattern
+    - role_decomposition
+    Visitor:
+    - NoPattern
+    - role_decomposition
+    DependencyInjection:
+    - direct_constructor_for_value_object
+    PortsAndAdapters:
+    - adapter
+    - dependency_injection
+    DataMapper:
+    - inline_mapping
+    - dto_transformer
+    Projection:
+    - query_handler
+    - repository_query
+    ReadModel:
+    - dto
+    - query_response
+    EventSourcing:
+    - audit_log
+    - domain_events_with_state_storage
+    Inbox:
+    - idempotent_handler_guard
+    IdempotencyKey:
+    - natural_idempotency_check
+    RetryWithBackoff:
+    - single_attempt_with_error
+    CircuitBreaker:
+    - timeout
+    - retry_with_backoff
   pattern_role_disambiguation:
-    Strategy: strategy role does not automatically activate Strategy pattern
-    Command: command role does not automatically activate Command pattern
-    Repository: repository role does not automatically require Repository pattern
-    Adapter: adapter role requires interface mismatch to imply Adapter pattern
-    CQRS: command/query roles do not automatically imply CQRS
-  canonical_source_full:
-    version: '1.0'
-    system:
-      name: design-pattern-selector
-      purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
-        rules derived from the Refactoring.Guru catalog.
-
-        '
-      philosophy:
-      - Pattern follows problem, not preference
-      - Classify intent before selecting pattern
-      - Avoid over-engineering
-      - Prefer simplest valid pattern
-    classification:
-      categories:
-        creational:
-          description: 'Focused on object creation mechanisms that increase flexibility and reuse.
-
-            '
-          triggers:
-          - object creation is complex
-          - object type decided at runtime
-          - avoid direct constructor usage
-          - control instance lifecycle
-          - reduce coupling to concrete classes
-        structural:
-          description: 'Focused on composing classes and objects into larger structures.
-
-            '
-          triggers:
-          - combine multiple components
-          - wrap or adapt existing code
-          - simplify complex subsystem
-          - optimize memory usage
-          - control access to object
-        behavioral:
-          description: 'Focused on communication and responsibility between objects.
-
-            '
-          triggers:
-          - multiple objects interact
-          - behavior changes at runtime
-          - decouple sender and receiver
-          - define workflows or chains
-          - encapsulate algorithms
-    patterns:
-      Singleton:
-        category: creational
-        use_when:
-        - exactly one instance is required
-        - global shared resource
-        avoid_when:
-        - testability is critical
-        - hidden dependencies are undesirable
-      FactoryMethod:
-        category: creational
-        use_when:
-        - subclasses decide object type
-        - object creation varies by context
-        signals:
-        - switch/if on type
-        - constructor logic branching
-      AbstractFactory:
-        category: creational
-        use_when:
-        - families of related objects
-        - must enforce compatibility between objects
-        signals:
-        - multiple related product types
-      Builder:
-        category: creational
-        use_when:
-        - complex object construction
-        - step-by-step creation
-        signals:
-        - many optional parameters
-        - telescoping constructor
-      Prototype:
-        category: creational
-        use_when:
-        - clone existing objects
-        - object creation is expensive
-        signals:
-        - copying objects frequently
-      Adapter:
-        category: structural
-        use_when:
-        - incompatible interfaces
-        - reuse legacy/external code
-        signals:
-        - interface mismatch
-      Bridge:
-        category: structural
-        use_when:
-        - separate abstraction from implementation
-        - avoid class explosion
-        signals:
-        - multiple dimensions of variation
-      Composite:
-        category: structural
-        use_when:
-        - tree structure
-        - treat individual and group uniformly
-        signals:
-        - recursive composition
-      Decorator:
-        category: structural
-        use_when:
-        - add behavior dynamically
-        - avoid subclass explosion
-        signals:
-        - stackable responsibilities
-      Facade:
-        category: structural
-        use_when:
-        - simplify complex subsystem
-        - provide unified interface
-        signals:
-        - many dependencies hidden behind one API
-      Flyweight:
-        category: structural
-        use_when:
-        - large number of similar objects
-        - memory optimization needed
-        signals:
-        - shared intrinsic state
-      Proxy:
-        category: structural
-        use_when:
-        - control access to object
-        - lazy loading / remote access
-        signals:
-        - intercept calls
-      ChainOfResponsibility:
-        category: behavioral
-        use_when:
-        - multiple handlers for request
-        - decouple sender from receiver
-        signals:
-        - pass request along chain
-      Command:
-        category: behavioral
-        use_when:
-        - encapsulate actions as objects
-        - support undo/redo
-        signals:
-        - queue, log, or execute commands
-      Iterator:
-        category: behavioral
-        use_when:
-        - traverse collection without exposing structure
-        signals:
-        - custom traversal logic
-      Mediator:
-        category: behavioral
-        use_when:
-        - reduce direct dependencies between components
-        signals:
-        - many-to-many communication chaos
-      Memento:
-        category: behavioral
-        use_when:
-        - save/restore object state
-        signals:
-        - undo history
-      Observer:
-        category: behavioral
-        use_when:
-        - event-driven updates
-        - publish/subscribe
-        signals:
-        - state change notifications
-      State:
-        category: behavioral
-        use_when:
-        - object behavior depends on state
-        signals:
-        - large conditional state machine
-      Strategy:
-        category: behavioral
-        use_when:
-        - multiple interchangeable algorithms
-        signals:
-        - if/else selecting behavior
-      TemplateMethod:
-        category: behavioral
-        use_when:
-        - algorithm skeleton with overridable steps
-        signals:
-        - shared workflow with variations
-      Visitor:
-        category: behavioral
-        use_when:
-        - add operations without modifying classes
-        signals:
-        - stable structure, changing behavior
-    decision_flow:
-    - step: detect_primary_intent
-      action: 'Match feature description against category triggers (creational / structural / behavioral)
-
-        '
-    - step: detect_problem_signals
-      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
-        \  - structure composition issues\n"
-    - step: candidate_patterns
-      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
-    - step: eliminate_conflicts
-      action: 'Remove patterns where avoid_when conditions are triggered
-
-        '
-    - step: rank_patterns
-      criteria:
-      - simplicity
-      - minimal abstraction
-      - alignment with problem
-      - scalability
-    - step: output
-      format:
-        primary_pattern: string
-        alternatives:
-        - string
-        reasoning: text explanation
-        confidence: low|medium|high
-    heuristics:
-    - rule: avoid_pattern_if_simple_solution_exists
-    - rule: do_not_use_singleton_for_convenience
-    - rule: prefer_strategy_over_conditionals
-    - rule: prefer_composition_over_inheritance
-    - rule: avoid_overengineering_for_small_features
-    input_schema:
-      feature_description: string
-      constraints:
-        scalability: low|medium|high
-        flexibility: low|medium|high
-        performance: low|medium|high
-      signals:
-        dynamic_behavior: boolean
-        complex_creation: boolean
-        many_dependencies: boolean
-        conditional_logic: boolean
-    output_schema:
-      primary_pattern: string
-      category: creational|structural|behavioral
-      alternatives:
-      - string
-      reasoning: string
-      tradeoffs:
-        pros:
-        - string
-        cons:
-        - string
-      confidence: low|medium|high
+    Adapter_vs_DataMapper: Use DataMapper when only data shape changes; use Adapter when interface/protocol behavior differs.
+    Strategy_vs_Policy: Use Strategy for interchangeable algorithms; use Policy for named business decision rule.
+    Facade_vs_Service: Use service for application orchestration; use Facade only to simplify a complex subsystem boundary
+      without owning business rules.
+    Pipeline_vs_ChainOfResponsibility: Use Pipeline for ordered transformation stages; use ChainOfResponsibility when handlers
+      may choose to handle/pass a request.
+    DomainEvent_vs_Observer: Use DomainEvent for domain facts; Observer is broader publish/subscribe behavior and must not
+      replace domain vocabulary.
+  compatibility_validation_rules:
+  - rule_id: ROLE-PATTERN-001
+    rule: Every introduced role must exist in role taxonomy or be explicitly mapped to a known role.
+    fail_condition: pattern_introduces_unknown_role
+  - rule_id: ROLE-PATTERN-002
+    rule: Pattern must not introduce roles that violate dependency direction or layer ownership.
+    fail_condition: pattern_introduces_forbidden_dependency
+  - rule_id: ROLE-PATTERN-003
+    rule: Pattern selection must record a simpler alternative and why it was rejected.
+    fail_condition: pattern_missing_simpler_alternative_review
 validation:
+  required_checks:
+  - introduced_roles_exist
+  - introduced_roles_compatible
+  - simpler_alternatives_considered
+  - role_pattern_rejection_matrix_applied
   fail_conditions:
-  - pattern_introduces_incompatible_role
-  - pattern_selected_because_role_name_matches
-  - pattern_violates_layer_or_dependency_rules
-  - pattern_creates_structure_bloat
+  - pattern_introduces_unknown_role
+  - pattern_introduces_forbidden_dependency
+  - pattern_selected_without_role_compatibility
+  - pattern_missing_simpler_alternative_review

@@ -2,427 +2,967 @@ version: '1.0'
 file:
   name: conventions.pattern-selection.yaml
   path: patterns/conventions.pattern-selection.yaml
-  role: pattern_selection_engine
+  role: pattern_selection_contract
   executability: decision_engine
-purpose: Select patterns only when pattern pressure exists and simpler alternatives fail.
+purpose: Define the executable pattern-selection decision engine used to select exactly
+  one design pattern or NoPattern from evidenced pattern pressure, final roles, artifact
+  actions, restrictions, and role-pattern compatibility.
 ownership:
   owns:
+  - selection_policy
+  - required_input_contract
+  - no_pattern_decision
+  - pattern_pressure_taxonomy
+  - candidate_differentiation_rules
+  - selection_algorithm
   - pattern_activation_gates
-  - no_pattern_default
-  - pattern_decision_log
+  - pattern_selection_order
+  - pattern_decision_rules
+  - ranking_criteria
+  - decision_result_rules
+  - pattern_decision_output_schema
   does_not_own:
-  - pattern_catalog
+  - pattern definitions
+  - pattern restrictions authority
+  - role taxonomy
+  - artifact role assignment
+  - artifact action resolution
+  - structure rendering
+  - implementation content
 activation:
   mode: always
   activates_when: []
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - pattern_pressure_report
+  - final_role_assignment
+  - artifact_action_table
+  - artifact_candidates
+  - pattern_catalog
+  - pattern_restrictions
+  - role_pattern_compatibility
+  optional:
+  - architecture_blueprint
+  - change_impact_report
+  - boundary_contract_classification
+  - dependency_classification
+  - structure_constraints
 outputs:
   produces:
-  - pattern_selection_decision_report
+  - pattern_decision_log
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - patterns/conventions.pattern-catalog.yaml
+  - patterns/conventions.pattern-restrictions.yaml
+  - patterns/conventions.role-pattern-compatibility.yaml
   - roles/conventions.role-taxonomy.yaml
-  optional_files: []
+  optional_files:
+  - architecture/conventions.architecture.yaml
+  - planning/conventions.change-impact.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
 sections:
-  default: NoPattern
-  selection_pipeline:
-  - detect_pattern_pressure
-  - evaluate_simpler_alternative
-  - select_pattern_if_justified
-  - record_rejected_patterns
-  canonical_decision_flow:
-  - step: detect_primary_intent
-    action: 'Match feature description against category triggers (creational / structural / behavioral)
-
-      '
-  - step: detect_problem_signals
-    action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
-      \  - structure composition issues\n"
-  - step: candidate_patterns
-    action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
-  - step: eliminate_conflicts
-    action: 'Remove patterns where avoid_when conditions are triggered
-
-      '
-  - step: rank_patterns
-    criteria:
-    - simplicity
-    - minimal abstraction
-    - alignment with problem
-    - scalability
-  - step: output
-    format:
-      primary_pattern: string
-      alternatives:
-      - string
-      reasoning: text explanation
-      confidence: low|medium|high
-  canonical_heuristics:
-  - rule: avoid_pattern_if_simple_solution_exists
-  - rule: do_not_use_singleton_for_convenience
-  - rule: prefer_strategy_over_conditionals
-  - rule: prefer_composition_over_inheritance
-  - rule: avoid_overengineering_for_small_features
-  canonical_input_schema:
-    feature_description: string
-    constraints:
-      scalability: low|medium|high
-      flexibility: low|medium|high
-      performance: low|medium|high
-    signals:
-      dynamic_behavior: boolean
-      complex_creation: boolean
-      many_dependencies: boolean
-      conditional_logic: boolean
-  canonical_output_schema:
-    primary_pattern: string
-    category: creational|structural|behavioral
-    alternatives:
-    - string
-    reasoning: string
-    tradeoffs:
-      pros:
-      - string
-      cons:
-      - string
-    confidence: low|medium|high
-  semantic_depth_restoration:
-    restored_from: conventions.pattern.yaml
-    restoration_scope:
-    - decision_flow
-    - heuristics
-    - input_schema
-    - output_schema
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
-  canonical_restored_source:
-    decision_flow:
-    - step: detect_primary_intent
-      action: 'Match feature description against category triggers (creational / structural / behavioral)
-
-        '
-    - step: detect_problem_signals
-      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
-        \  - structure composition issues\n"
-    - step: candidate_patterns
-      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
-    - step: eliminate_conflicts
-      action: 'Remove patterns where avoid_when conditions are triggered
-
-        '
-    - step: rank_patterns
-      criteria:
-      - simplicity
-      - minimal abstraction
-      - alignment with problem
-      - scalability
-    - step: output
-      format:
-        primary_pattern: string
-        alternatives:
-        - string
-        reasoning: text explanation
-        confidence: low|medium|high
-    heuristics:
-    - rule: avoid_pattern_if_simple_solution_exists
-    - rule: do_not_use_singleton_for_convenience
-    - rule: prefer_strategy_over_conditionals
-    - rule: prefer_composition_over_inheritance
-    - rule: avoid_overengineering_for_small_features
-    input_schema:
-      feature_description: string
-      constraints:
-        scalability: low|medium|high
-        flexibility: low|medium|high
-        performance: low|medium|high
-      signals:
-        dynamic_behavior: boolean
-        complex_creation: boolean
-        many_dependencies: boolean
-        conditional_logic: boolean
-    output_schema:
-      primary_pattern: string
-      category: creational|structural|behavioral
-      alternatives:
-      - string
-      reasoning: string
-      tradeoffs:
-        pros:
-        - string
-        cons:
-        - string
-      confidence: low|medium|high
-  canonical_source_full:
-    version: '1.0'
-    system:
-      name: design-pattern-selector
-      purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
-        rules derived from the Refactoring.Guru catalog.
-
-        '
-      philosophy:
-      - Pattern follows problem, not preference
-      - Classify intent before selecting pattern
-      - Avoid over-engineering
-      - Prefer simplest valid pattern
-    classification:
-      categories:
-        creational:
-          description: 'Focused on object creation mechanisms that increase flexibility and reuse.
-
-            '
-          triggers:
-          - object creation is complex
-          - object type decided at runtime
-          - avoid direct constructor usage
-          - control instance lifecycle
-          - reduce coupling to concrete classes
-        structural:
-          description: 'Focused on composing classes and objects into larger structures.
-
-            '
-          triggers:
-          - combine multiple components
-          - wrap or adapt existing code
-          - simplify complex subsystem
-          - optimize memory usage
-          - control access to object
-        behavioral:
-          description: 'Focused on communication and responsibility between objects.
-
-            '
-          triggers:
-          - multiple objects interact
-          - behavior changes at runtime
-          - decouple sender and receiver
-          - define workflows or chains
-          - encapsulate algorithms
-    patterns:
-      Singleton:
-        category: creational
-        use_when:
-        - exactly one instance is required
-        - global shared resource
-        avoid_when:
-        - testability is critical
-        - hidden dependencies are undesirable
-      FactoryMethod:
-        category: creational
-        use_when:
-        - subclasses decide object type
-        - object creation varies by context
-        signals:
-        - switch/if on type
-        - constructor logic branching
-      AbstractFactory:
-        category: creational
-        use_when:
-        - families of related objects
-        - must enforce compatibility between objects
-        signals:
-        - multiple related product types
-      Builder:
-        category: creational
-        use_when:
-        - complex object construction
-        - step-by-step creation
-        signals:
-        - many optional parameters
-        - telescoping constructor
-      Prototype:
-        category: creational
-        use_when:
-        - clone existing objects
-        - object creation is expensive
-        signals:
-        - copying objects frequently
-      Adapter:
-        category: structural
-        use_when:
-        - incompatible interfaces
-        - reuse legacy/external code
-        signals:
-        - interface mismatch
-      Bridge:
-        category: structural
-        use_when:
-        - separate abstraction from implementation
-        - avoid class explosion
-        signals:
-        - multiple dimensions of variation
-      Composite:
-        category: structural
-        use_when:
-        - tree structure
-        - treat individual and group uniformly
-        signals:
-        - recursive composition
-      Decorator:
-        category: structural
-        use_when:
-        - add behavior dynamically
-        - avoid subclass explosion
-        signals:
-        - stackable responsibilities
-      Facade:
-        category: structural
-        use_when:
-        - simplify complex subsystem
-        - provide unified interface
-        signals:
-        - many dependencies hidden behind one API
-      Flyweight:
-        category: structural
-        use_when:
-        - large number of similar objects
-        - memory optimization needed
-        signals:
-        - shared intrinsic state
-      Proxy:
-        category: structural
-        use_when:
-        - control access to object
-        - lazy loading / remote access
-        signals:
-        - intercept calls
-      ChainOfResponsibility:
-        category: behavioral
-        use_when:
-        - multiple handlers for request
-        - decouple sender from receiver
-        signals:
-        - pass request along chain
-      Command:
-        category: behavioral
-        use_when:
-        - encapsulate actions as objects
-        - support undo/redo
-        signals:
-        - queue, log, or execute commands
-      Iterator:
-        category: behavioral
-        use_when:
-        - traverse collection without exposing structure
-        signals:
-        - custom traversal logic
-      Mediator:
-        category: behavioral
-        use_when:
-        - reduce direct dependencies between components
-        signals:
-        - many-to-many communication chaos
-      Memento:
-        category: behavioral
-        use_when:
-        - save/restore object state
-        signals:
-        - undo history
-      Observer:
-        category: behavioral
-        use_when:
-        - event-driven updates
-        - publish/subscribe
-        signals:
-        - state change notifications
-      State:
-        category: behavioral
-        use_when:
-        - object behavior depends on state
-        signals:
-        - large conditional state machine
-      Strategy:
-        category: behavioral
-        use_when:
-        - multiple interchangeable algorithms
-        signals:
-        - if/else selecting behavior
-      TemplateMethod:
-        category: behavioral
-        use_when:
-        - algorithm skeleton with overridable steps
-        signals:
-        - shared workflow with variations
-      Visitor:
-        category: behavioral
-        use_when:
-        - add operations without modifying classes
-        signals:
-        - stable structure, changing behavior
-    decision_flow:
-    - step: detect_primary_intent
-      action: 'Match feature description against category triggers (creational / structural / behavioral)
-
-        '
-    - step: detect_problem_signals
-      action: "Extract signals such as:\n  - conditionals on type\n  - object creation complexity\n  - communication patterns\n\
-        \  - structure composition issues\n"
-    - step: candidate_patterns
-      action: "Filter patterns by:\n  - matching category\n  - matching signals\n  - matching use_when rules\n"
-    - step: eliminate_conflicts
-      action: 'Remove patterns where avoid_when conditions are triggered
-
-        '
-    - step: rank_patterns
-      criteria:
-      - simplicity
-      - minimal abstraction
-      - alignment with problem
-      - scalability
-    - step: output
-      format:
-        primary_pattern: string
-        alternatives:
-        - string
-        reasoning: text explanation
-        confidence: low|medium|high
-    heuristics:
-    - rule: avoid_pattern_if_simple_solution_exists
-    - rule: do_not_use_singleton_for_convenience
-    - rule: prefer_strategy_over_conditionals
-    - rule: prefer_composition_over_inheritance
-    - rule: avoid_overengineering_for_small_features
-    input_schema:
-      feature_description: string
-      constraints:
-        scalability: low|medium|high
-        flexibility: low|medium|high
-        performance: low|medium|high
-      signals:
-        dynamic_behavior: boolean
-        complex_creation: boolean
-        many_dependencies: boolean
-        conditional_logic: boolean
-    output_schema:
-      primary_pattern: string
-      category: creational|structural|behavioral
-      alternatives:
-      - string
-      reasoning: string
-      tradeoffs:
-        pros:
-        - string
-        cons:
-        - string
-      confidence: low|medium|high
+  selection_policy:
+    default_decision: NoPattern
+    authority: binding_decision_only_during_pattern_selection_phase
+    principles:
+    - NoPattern is the default unless a concrete pattern pressure is detected and
+      evidenced.
+    - Pattern selection must solve a named pressure, not satisfy stylistic preference.
+    - Role decomposition, clear boundaries, and direct composition must be considered
+      before adding a pattern.
+    - A selected pattern must be compatible with final artifact roles and artifact
+      actions.
+    - A selected pattern must not weaken dependency direction, boundary rules, or
+      report/phase contracts.
+    - Restricted, conditional, deferred, and disallowed pattern statuses are enforced
+      by pattern restrictions before final selection.
+    - When multiple patterns fit, choose the simplest pattern that fully resolves
+      the primary pressure and adds the fewest new artifacts.
+    - If all candidates are weak, ambiguous, or over-engineered, select NoPattern
+      and record why.
+    must_do:
+    - load_pattern_pressure_report
+    - load_final_role_assignment
+    - load_artifact_action_table
+    - load_pattern_catalog
+    - load_pattern_restrictions
+    - load_role_pattern_compatibility
+    - filter_candidates_by_status_and_restrictions
+    - differentiate_candidates_using_choose_and_reject_rules
+    - rank_surviving_candidates
+    - select_one_pattern_or_no_pattern
+    - record_rejected_patterns_with_reason_and_evidence
+    must_not_do:
+    - select_pattern_without_pressure
+    - select_pattern_because_it_is_common_or_preferred
+    - select_pattern_to_justify_preexisting_structure
+    - select_disallowed_pattern_without_allowed_exception
+    - select_restricted_pattern_without_explicit_justification
+    - select_pattern_that_requires_roles_not_allowed_by_role_pattern_compatibility
+    - replace_role_assignment
+    - render_structure
+    - edit_code
+  required_input_contract:
+    required_inputs:
+    - .ai/reports/pattern-pressure.yaml
+    - .ai/reports/08-final-role-assignment.yaml
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/artifact-candidates.yaml
+    optional_inputs:
+    - .ai/reports/architecture-blueprint.yaml
+    - .ai/reports/07-change-impact.yaml
+    - .ai/reports/boundary-contract-classification.yaml
+    - .ai/reports/dependency-classification.yaml
+    - .ai/reports/structure-plan.yaml
+    required_conventions:
+    - patterns/conventions.pattern-catalog.yaml
+    - patterns/conventions.pattern-restrictions.yaml
+    - patterns/conventions.role-pattern-compatibility.yaml
+    - roles/conventions.role-taxonomy.yaml
+    input_fail_conditions:
+    - pattern_pressure_report_missing
+    - final_role_assignment_missing
+    - artifact_action_table_missing
+    - pattern_catalog_missing
+    - pattern_restrictions_missing
+    - role_pattern_compatibility_missing
+  no_pattern_decision:
+    definition: Explicit decision that no design pattern should be introduced because
+      existing roles, direct composition, or simple extraction are sufficient.
+    choose_when:
+    - no concrete pattern pressure is detected
+    - pressure can be resolved by assigning clearer roles without new pattern structure
+    - a simple helper, mapper, policy, or direct dependency is sufficient
+    - candidate patterns introduce more concepts than the behavior requires
+    - candidate patterns require roles or files that would violate structure or dependency
+      rules
+    - the selected mission profile forbids or discourages extra abstraction
+    - the evidence for pattern need is speculative or not tied to current behavior
+    reject_when:
+    - pattern_pressure_report marks selection_required_later as true and candidate
+      pressure is supported by evidence
+    - multiple interchangeable algorithms, providers, or behaviors are required now
+    - an external boundary requires adaptation and direct mapping would leak external
+      concerns inward
+    - a multi-step distributed workflow requires durable compensation or idempotency
+    - event publication or consumption is a first-class behavior boundary
+    - construction complexity would duplicate across multiple call sites
+    required_record:
+      no_pattern_selected: true
+      reason: why roles/direct composition are enough
+      rejected_patterns: candidate patterns considered and why rejected
+      evidence_refs: evidence supporting the no-pattern decision
+  pattern_pressure_taxonomy:
+    creation_pressure:
+      definition: Pressure caused by repeated, variable, or multi-step object creation
+        that should be centralized or abstracted.
+      positive_signals:
+      - multiple construction branches create related artifacts
+      - construction requires ordered validation/defaulting/composition steps
+      - call sites duplicate construction logic
+      - caller should not know concrete class or provider details
+      - family of related objects must be created consistently
+      negative_signals:
+      - single straightforward constructor or factory function is enough
+      - object shape is static and local to one call site
+      - framework dependency injection already solves creation
+      - creation logic is only DTO or literal data assembly
+      candidate_patterns:
+      - FactoryMethod
+      - AbstractFactory
+      - Builder
+      - DependencyInjection
+      evidence_required:
+      - duplicated_creation_site
+      - variant_family_or_complex_creation_steps
+    strategy_variation_pressure:
+      definition: Pressure caused by interchangeable behavior variants selected by
+        input, policy, configuration, tenant, source type, or runtime context.
+      positive_signals:
+      - same intent has multiple algorithms
+      - branching selects between interchangeable behaviors
+      - new variants are expected without changing orchestration
+      - behavior choice depends on policy/configuration/context
+      - tests need to validate variants independently
+      negative_signals:
+      - branching is simple validation or error handling
+      - only one behavior exists and no extension pressure exists
+      - variation is data mapping rather than behavior
+      - using a strategy would create one-method classes with no actual variation
+      candidate_patterns:
+      - Strategy
+      - Policy
+      - Specification
+      - State
+      evidence_required:
+      - variant_list
+      - selection_condition
+      - shared_intent
+    adapter_boundary_pressure:
+      definition: Pressure caused by needing to isolate an external interface, incompatible
+        API, legacy shape, protocol, package, or boundary from internal roles.
+      positive_signals:
+      - external API shape differs from internal contract
+      - third-party or infrastructure type would leak into domain/application code
+      - legacy interface must be consumed without changing internal contract
+      - cross-module boundary needs translation
+      - anti-corruption is needed between models or bounded contexts
+      negative_signals:
+      - only field names differ and a mapper is sufficient
+      - external package is already isolated behind a client
+      - there is no actual interface mismatch
+      - the object is already an internal DTO boundary
+      candidate_patterns:
+      - Adapter
+      - AntiCorruptionLayer
+      - Facade
+      - DataMapper
+      - PortsAndAdapters
+      evidence_required:
+      - external_or_legacy_boundary
+      - mismatch_description
+      - leakage_risk
+    workflow_pressure:
+      definition: Pressure caused by ordered, conditional, or multi-step process flow
+        that needs explicit sequencing or handler boundaries.
+      positive_signals:
+      - multiple ordered steps transform or validate the same request
+      - handlers may accept, reject, enrich, or pass responsibility
+      - workflow needs checkpointing or partial failure handling
+      - distributed process needs compensation
+      - steps need independent testing and replacement
+      negative_signals:
+      - simple service orchestration is enough
+      - all steps are local implementation details of one use case
+      - there is no branching or handler variation
+      - workflow is only a list of imperative statements with no extension pressure
+      candidate_patterns:
+      - Pipeline
+      - ChainOfResponsibility
+      - Command
+      - Saga
+      - TemplateMethod
+      evidence_required:
+      - ordered_steps_or_handlers
+      - failure_or_branching_semantics
+    event_pressure:
+      definition: Pressure caused by asynchronous publication, subscription, state
+        change notification, or durable event processing.
+      positive_signals:
+      - domain or integration events must notify multiple consumers
+      - event publication should be decoupled from producers
+      - message delivery must be durable or idempotent
+      - consumer side must prevent duplicate processing
+      - read model or projection must be updated from events
+      negative_signals:
+      - synchronous direct call is sufficient and required
+      - there is exactly one local consumer and no decoupling need
+      - event language is used informally for callbacks only
+      - durability/idempotency is not required
+      candidate_patterns:
+      - Observer
+      - DomainEvent
+      - Outbox
+      - Inbox
+      - Projection
+      - ReadModel
+      - EventSourcing
+      evidence_required:
+      - producer_consumer_boundary
+      - delivery_or_decoupling_need
+    state_lifecycle_pressure:
+      definition: Pressure caused by behavior changing according to lifecycle state,
+        transitions, or valid state-dependent operations.
+      positive_signals:
+      - same operation behaves differently by current state
+      - valid transitions must be constrained
+      - state-specific behavior is growing through conditional branches
+      - state changes must be explicit and testable
+      negative_signals:
+      - state is only a stored enum with no behavior variation
+      - validation can be handled by a simple guard or policy
+      - there are fewer than two meaningful states
+      - state transitions are not part of current feature behavior
+      candidate_patterns:
+      - State
+      - Policy
+      - Specification
+      evidence_required:
+      - state_list
+      - state_dependent_behavior_or_transitions
+    data_access_pressure:
+      definition: Pressure caused by persistence abstraction, transaction coordination,
+        query/read separation, data mapping, or read model projection needs.
+      positive_signals:
+      - application logic should not depend directly on persistence implementation
+      - multiple operations must share a transaction boundary
+      - read and write models have different shape or scale
+      - domain/application object differs from persistence model
+      - projections or read models are maintained separately
+      negative_signals:
+      - simple direct repository already exists and fits role rules
+      - no persistence boundary is touched
+      - query/read separation would duplicate trivial behavior
+      - transaction boundary is single operation and framework-managed
+      candidate_patterns:
+      - Repository
+      - UnitOfWork
+      - CQRS
+      - DataMapper
+      - Projection
+      - ReadModel
+      evidence_required:
+      - persistence_boundary
+      - mapping_or_transaction_or_read_model_need
+    resilience_pressure:
+      definition: Pressure caused by external failure modes requiring repeatability,
+        retry, circuit breaking, idempotency, or compensation.
+      positive_signals:
+      - external call can fail transiently
+      - operation may be retried and must remain safe
+      - duplicate messages or requests can arrive
+      - downstream system outage must be isolated
+      - distributed step must be compensated or resumed
+      negative_signals:
+      - operation is local and deterministic
+      - framework or infrastructure already provides the exact guarantee
+      - retry would be unsafe without idempotency
+      - failure mode is not in current scope
+      candidate_patterns:
+      - RetryWithBackoff
+      - CircuitBreaker
+      - IdempotencyKey
+      - Saga
+      - Outbox
+      - Inbox
+      evidence_required:
+      - external_failure_mode
+      - retry_or_idempotency_or_compensation_need
+  candidate_differentiation_rules:
+  - pattern: Strategy
+    choose_when:
+    - multiple interchangeable algorithms share one intent
+    - caller should select or receive a behavior implementation through configuration/context
+    reject_when:
+    - variation is only data shape
+    - only one algorithm exists
+    - selection is a simple validation guard
+    prefer_over:
+      Policy: when behavior is algorithmic rather than rule/permission decision
+      State: when behavior does not depend on object lifecycle state
+  - pattern: Policy
+    choose_when:
+    - decision rule determines allowed/denied/eligible/outcome
+    - business rule must be isolated and reusable
+    reject_when:
+    - behavior is a full algorithm with multiple steps
+    - rule is trivial and used once
+    prefer_over:
+      Strategy: when object only makes a decision rather than performs behavior
+  - pattern: Specification
+    choose_when:
+    - composable predicates define eligibility/filtering/selection
+    - rules need AND/OR/NOT composition or query translation
+    reject_when:
+    - single non-composed condition is enough
+    - rule has side effects or orchestration
+    prefer_over:
+      Policy: when composition and query-like matching are primary
+  - pattern: State
+    choose_when:
+    - object behavior changes by lifecycle state
+    - state transitions and valid operations are core behavior
+    reject_when:
+    - state is passive data only
+    - state-dependent rule is simple and does not justify separate state objects
+    prefer_over:
+      Strategy: when variants are controlled by object state rather than caller/context
+  - pattern: FactoryMethod
+    choose_when:
+    - subclass/provider or creator method chooses concrete product
+    - creation varies but product family is not broad
+    reject_when:
+    - construction is multi-step fluent assembly
+    - families of related products must be created together
+    prefer_over:
+      Builder: when construction is simple selection rather than step assembly
+      AbstractFactory: when there is one product type
+  - pattern: AbstractFactory
+    choose_when:
+    - families of related products must be created consistently
+    - runtime context selects compatible object family
+    reject_when:
+    - only one product type exists
+    - simple dependency injection provider is enough
+    prefer_over:
+      FactoryMethod: when multiple related products must stay compatible
+  - pattern: Builder
+    choose_when:
+    - construction has many optional or ordered steps
+    - object must be assembled with validation/defaulting before use
+    reject_when:
+    - constructor or simple factory can express creation clearly
+    - builder would only set plain fields
+    prefer_over:
+      FactoryMethod: when assembly complexity matters more than subtype selection
+  - pattern: DependencyInjection
+    choose_when:
+    - dependencies should be provided by container/framework and not manually constructed
+    - lifetime/configuration belongs outside consumer
+    reject_when:
+    - dependency is a value object or local helper with no external lifetime
+    - DI would obscure simple pure computation
+    prefer_over:
+      Singleton: when shared access is needed but global state should be avoided
+  - pattern: Adapter
+    choose_when:
+    - one incompatible interface must be converted to an expected internal interface
+    - external/legacy details must be hidden from internal consumers
+    reject_when:
+    - only field mapping is required
+    - a broader subsystem boundary is needed
+    prefer_over:
+      DataMapper: when behavior/interface adaptation is primary
+      Facade: when mismatch is interface-level rather than subsystem simplification
+  - pattern: DataMapper
+    choose_when:
+    - mapping between persistence/external DTO and domain/application shape is primary
+    - conversion should be isolated from business roles
+    reject_when:
+    - behavioral interface adaptation is needed
+    - mapping is trivial and local
+    prefer_over:
+      Adapter: when only data representation changes
+  - pattern: Facade
+    choose_when:
+    - a complex subsystem needs simplified entry interface
+    - multiple lower-level collaborators must be hidden behind one use-facing API
+    reject_when:
+    - only one dependency is wrapped
+    - facade would hide important domain decisions
+    prefer_over:
+      Adapter: when simplification of several operations is primary
+  - pattern: AntiCorruptionLayer
+    choose_when:
+    - external bounded context or legacy model must not leak into internal model
+    - translation requires semantic protection not just field mapping
+    reject_when:
+    - simple adapter or mapper fully isolates the concern
+    - no external model conflict exists
+    prefer_over:
+      Adapter: when semantic model mismatch and boundary protection are primary
+  - pattern: PortsAndAdapters
+    choose_when:
+    - domain/application core must be isolated from multiple infrastructure adapters
+    - dependency direction must point inward through ports
+    reject_when:
+    - only a single simple client wrapper is needed
+    - project architecture does not support ports and adapters boundary
+    prefer_over:
+      Adapter: when the whole boundary model needs ports, not one adapter
+  - pattern: Pipeline
+    choose_when:
+    - ordered stages all run in a known sequence
+    - each stage transforms/validates/enriches same input/output flow
+    reject_when:
+    - handlers decide dynamically whether to handle/pass
+    - workflow requires compensation across distributed services
+    prefer_over:
+      ChainOfResponsibility: when stages are fixed and all usually run
+      Saga: when no distributed compensation exists
+  - pattern: ChainOfResponsibility
+    choose_when:
+    - ordered handlers may handle, reject, or pass request
+    - handler set/order may vary without changing caller
+    reject_when:
+    - all stages must always run
+    - there is no handler variation
+    prefer_over:
+      Pipeline: when dynamic responsibility selection is primary
+  - pattern: Command
+    choose_when:
+    - operation must be represented as an object/message for queueing, logging, retrying,
+      undo, or dispatch
+    - invoker should be decoupled from operation execution
+    reject_when:
+    - a direct method call is clearer and no dispatch/retry/logging boundary exists
+    prefer_over:
+      Strategy: when operation identity and dispatch are primary, not algorithm family
+  - pattern: Saga
+    choose_when:
+    - distributed multi-step process needs compensation, retry, or durable progress
+      tracking
+    - transaction spans multiple services/resources without single ACID boundary
+    reject_when:
+    - workflow is local/in-process
+    - simple transaction or pipeline is enough
+    prefer_over:
+      Pipeline: when compensation/durability across boundaries is required
+  - pattern: Observer
+    choose_when:
+    - multiple in-process observers react to a state change
+    - producer should not know every local listener
+    reject_when:
+    - durable domain/integration event is required
+    - only one direct consumer exists
+    prefer_over:
+      DomainEvent: when reaction is local/in-memory and not domain event persistence
+  - pattern: DomainEvent
+    choose_when:
+    - a meaningful domain fact occurred and other parts of the system should react
+    - event is part of domain language
+    reject_when:
+    - event is only infrastructure notification
+    - synchronous direct call is required and sufficient
+    prefer_over:
+      Observer: when event is domain semantic fact
+  - pattern: Outbox
+    choose_when:
+    - state change and message publication must be atomic or reliably coordinated
+    - events/messages must survive process failure
+    reject_when:
+    - no durable message publication is required
+    - transactional boundary does not include persistence
+    prefer_over:
+      DomainEvent: when delivery reliability is the primary concern
+  - pattern: Inbox
+    choose_when:
+    - incoming messages may be duplicated and need idempotent consumption tracking
+    - consumer must record processed message IDs
+    reject_when:
+    - source guarantees exactly-once semantics and no duplicate risk exists
+    prefer_over:
+      IdempotencyKey: when dedupe is message-consumer centric
+  - pattern: Repository
+    choose_when:
+    - application/domain logic needs collection-like persistence abstraction
+    - persistence implementation must be hidden
+    reject_when:
+    - repository would merely wrap one ORM call without abstraction value
+    - query belongs to read model/projection
+    prefer_over:
+      DataMapper: when data access boundary is primary, not just mapping
+  - pattern: UnitOfWork
+    choose_when:
+    - multiple repository operations must share one transaction/commit boundary
+    - changes must be coordinated as one logical unit
+    reject_when:
+    - single operation or framework transaction already handles the boundary
+    prefer_over:
+      Repository: when coordination across repositories is primary
+  - pattern: CQRS
+    choose_when:
+    - read and write models differ in shape, scale, lifecycle, or performance needs
+    - commands and queries need distinct models/paths
+    reject_when:
+    - read/write split would duplicate simple CRUD
+    - same model satisfies both safely
+    prefer_over:
+      Repository: when separate read model is required
+  - pattern: Projection
+    choose_when:
+    - read model is derived from events or source state
+    - derived view must be maintained separately
+    reject_when:
+    - query can be computed directly without separate model
+    prefer_over:
+      ReadModel: when transformation/maintenance process is primary
+  - pattern: ReadModel
+    choose_when:
+    - optimized query model has its own structure and lifecycle
+    - read path must not expose write/domain model directly
+    reject_when:
+    - simple DTO returned by query is enough
+    prefer_over:
+      Projection: when stored/queryable model is primary
+  - pattern: RetryWithBackoff
+    choose_when:
+    - transient external failures are expected and retry is safe
+    - backoff prevents overload or rate limit amplification
+    reject_when:
+    - operation is not idempotent or retry-safe
+    - failure is permanent/validation-related
+    prefer_over:
+      CircuitBreaker: when transient retry is primary and outage isolation is not
+  - pattern: CircuitBreaker
+    choose_when:
+    - external dependency outage should be detected and calls temporarily stopped
+    - failure amplification must be prevented
+    reject_when:
+    - simple retry is enough
+    - no external dependency or outage mode exists
+    prefer_over:
+      RetryWithBackoff: when outage isolation is primary
+  - pattern: IdempotencyKey
+    choose_when:
+    - same request may be submitted more than once and must produce one effect
+    - client/request-level dedupe is required
+    reject_when:
+    - operation is naturally idempotent
+    - message consumer inbox is the correct boundary
+    prefer_over:
+      Inbox: when dedupe is request/API centric rather than message-consumer centric
+  - pattern: Proxy
+    choose_when:
+    - access to another object must be controlled for lazy loading, remote call, caching,
+      authorization, or instrumentation
+    reject_when:
+    - wrapper adds behavior that changes the object contract
+    - simple decorator or middleware fits better
+    prefer_over:
+      Decorator: when access mediation rather than behavior extension is primary
+  - pattern: Decorator
+    choose_when:
+    - behavior must be added around an existing object without changing its interface
+    - multiple optional wrappers may compose
+    reject_when:
+    - subsystem simplification or external adaptation is primary
+    prefer_over:
+      Proxy: when additive behavior around same interface is primary
+  selection_algorithm:
+  - step_id: LOAD_REQUIRED_INPUTS
+    action: read
+    must_have:
+    - pattern_pressure_report
+    - final_role_assignment
+    - artifact_action_table
+    - pattern_catalog
+    - pattern_restrictions
+    - role_pattern_compatibility
+  - step_id: CHECK_NO_PATTERN_DEFAULT
+    action: initialize_decision
+    decision: NoPattern remains selected until a candidate passes all gates
+  - step_id: READ_PRESSURE_TYPES
+    action: extract
+    input: pattern_pressure_report.pressure_types
+  - step_id: BUILD_CANDIDATE_SET
+    action: map_pressure_to_candidate_patterns
+    source: pattern_pressure_taxonomy
+  - step_id: REMOVE_UNSUPPORTED_CANDIDATES
+    action: filter
+    fail_when:
+    - candidate_has_no_matching_positive_signal
+    - candidate_matches_reject_when
+  - step_id: APPLY_RESTRICTIONS
+    action: filter_or_require_justification
+    source: patterns/conventions.pattern-restrictions.yaml
+  - step_id: VALIDATE_ROLE_COMPATIBILITY
+    action: validate
+    source: patterns/conventions.role-pattern-compatibility.yaml
+  - step_id: CHECK_SIMPLER_ALTERNATIVES
+    action: compare
+    requirement: reject simpler role-based or direct solution before selecting heavier
+      pattern
+  - step_id: RANK_SURVIVORS
+    action: score
+    source: ranking_criteria
+  - step_id: SELECT_FINAL_DECISION
+    action: select
+    allowed_results:
+    - one_selected_pattern
+    - NoPattern
+  - step_id: WRITE_DECISION_LOG
+    action: write
+    output: .ai/reports/pattern-decision-log.yaml
+  pattern_activation_gates:
+  - gate_id: PATTERN-ACTIVATION-001
+    name: pressure_gate
+    pass_when:
+    - primary_pressure_type_detected
+    - pressure_has_evidence_ref
+    fail_when:
+    - no_pressure_detected
+    - pressure_is_speculative
+  - gate_id: PATTERN-ACTIVATION-002
+    name: necessity_gate
+    pass_when:
+    - roles_or_direct_solution_are_insufficient
+    fail_when:
+    - simple_role_decomposition_is_enough
+    - direct_dependency_is_clearer
+  - gate_id: PATTERN-ACTIVATION-003
+    name: restriction_gate
+    pass_when:
+    - candidate_not_disallowed
+    - restricted_candidate_has_required_justification
+    fail_when:
+    - candidate_disallowed_without_exception
+    - restricted_candidate_without_justification
+  - gate_id: PATTERN-ACTIVATION-004
+    name: compatibility_gate
+    pass_when:
+    - candidate_introduces_allowed_roles
+    - candidate_does_not_conflict_with_final_roles
+    fail_when:
+    - role_pattern_conflict_detected
+    - introduced_role_has_no_valid_owner
+  - gate_id: PATTERN-ACTIVATION-005
+    name: cost_gate
+    pass_when:
+    - candidate_adds_minimum_required_abstraction
+    fail_when:
+    - candidate_creates_folder_bloat
+    - candidate_adds_unneeded_roles_or_indirection
+  pattern_selection_order:
+  - NoPattern baseline
+  - detect concrete pressure
+  - map pressure to candidate families
+  - differentiate candidates with choose_when/reject_when
+  - apply restrictions
+  - validate role-pattern compatibility
+  - reject simpler alternatives only with evidence
+  - rank candidates
+  - select one pattern or NoPattern
+  - write decision log
+  pattern_decision_rules:
+  - rule_id: PATTERN-SELECT-001
+    match:
+      pressure: none
+    decision:
+      selected_pattern: NoPattern
+    fail_condition: pattern_selected_without_pressure
+  - rule_id: PATTERN-SELECT-002
+    match:
+      candidate_status: disallowed
+    decision:
+      reject_candidate: true
+    fail_condition: disallowed_pattern_selected
+  - rule_id: PATTERN-SELECT-003
+    match:
+      candidate_status: restricted
+    decision:
+      require:
+      - explicit_justification
+      - simpler_alternatives_rejected
+      - risk_or_structure_need
+    fail_condition: restricted_pattern_selected_without_justification
+  - rule_id: PATTERN-SELECT-004
+    match:
+      candidate_status: conditional
+    decision:
+      require:
+      - condition_specific_evidence
+    fail_condition: conditional_pattern_selected_without_condition
+  - rule_id: PATTERN-SELECT-005
+    match:
+      role_pattern_compatibility: conflict
+    decision:
+      reject_candidate: true
+      emit_trigger: role_pattern_conflict_detected
+    fail_condition: pattern_selected_with_role_conflict
+  - rule_id: PATTERN-SELECT-006
+    match:
+      simpler_alternative: valid
+    decision:
+      selected_pattern: NoPattern
+      record_rejected_candidate: true
+    fail_condition: heavier_pattern_selected_over_valid_simpler_alternative
+  - rule_id: PATTERN-SELECT-007
+    match:
+      multiple_candidates: true
+    decision:
+      rank_by:
+      - direct_pressure_match
+      - minimal_abstraction
+      - role_compatibility
+      - testability
+      - dependency_safety
+    fail_condition: multiple_candidates_without_ranking
+  - rule_id: PATTERN-SELECT-008
+    match:
+      candidate_requires_new_roles: true
+    decision:
+      require:
+      - introduced_roles_declared
+      - role_owner_validated
+    fail_condition: pattern_introduced_roles_without_role_validation
+  - rule_id: PATTERN-SELECT-009
+    match:
+      selected_pattern: NoPattern
+    decision:
+      require:
+      - no_pattern_reason
+      - rejected_candidates_recorded_if_any
+    fail_condition: no_pattern_decision_without_reason
+  - rule_id: PATTERN-SELECT-010
+    match:
+      selected_pattern: not_NoPattern
+    decision:
+      require:
+      - pressure_type
+      - activation_signals
+      - rejected_patterns
+      - compatibility_result
+      - evidence_refs
+    fail_condition: pattern_decision_missing_required_evidence
+  ranking_criteria:
+  - criterion: direct_pressure_match
+    weight: 5
+    pass_when: candidate directly resolves the primary detected pressure
+    fail_when: candidate only indirectly relates to pressure
+  - criterion: minimal_abstraction
+    weight: 5
+    pass_when: candidate adds the fewest new concepts/files while resolving pressure
+    fail_when: candidate creates unnecessary indirection or folder bloat
+  - criterion: role_compatibility
+    weight: 4
+    pass_when: candidate-introduced roles are allowed and match final role assignment
+    fail_when: candidate conflicts with role taxonomy or role placement
+  - criterion: dependency_safety
+    weight: 4
+    pass_when: candidate preserves dependency direction and boundary rules
+    fail_when: candidate introduces reverse/circular/forbidden dependencies
+  - criterion: testability
+    weight: 3
+    pass_when: candidate makes variants or boundaries easier to test independently
+    fail_when: candidate hides behavior behind hard-to-test indirection
+  - criterion: future_extension_evidence
+    weight: 2
+    pass_when: extension pressure is concrete and evidenced
+    fail_when: future extension is speculative
+  - criterion: operational_need
+    weight: 3
+    pass_when: candidate is needed for durability/retry/idempotency/compensation
+    fail_when: operational pattern is selected without failure mode evidence
+  decision_result_rules:
+    selection_threshold:
+      minimum_total_score_for_pattern: 12
+      required_non_score_gates:
+      - pressure_gate
+      - necessity_gate
+      - restriction_gate
+      - compatibility_gate
+      below_threshold_decision: NoPattern
+    tie_breakers:
+    - prefer pattern with fewer introduced roles
+    - prefer pattern with fewer new files
+    - prefer pattern already aligned with local project conventions
+    - prefer NoPattern when tie remains
+    must_record:
+    - selected_pattern_or_NoPattern
+    - primary_pressure_type
+    - ranking_result
+    - activation_gate_results
+    - rejected_patterns
+    - simpler_alternatives_considered
+    - role_pattern_compatibility_result
+  pattern_decision_output_schema:
+    required_fields:
+    - report_id
+    - phase_id
+    - selected_pattern
+    - no_pattern_selected
+    - primary_pressure_type
+    - activation_gate_results
+    - ranking_result
+    - rejected_patterns
+    - introduced_roles
+    - compatibility_result
+    - evidence_refs
+    record_shape:
+      report_id: pattern-decision-log
+      phase_id: pattern_selection
+      selected_pattern: ''
+      selected_pattern_status: ''
+      no_pattern_selected: false
+      primary_pressure_type: ''
+      matched_pressure_signals: []
+      activation_gate_results:
+      - gate_id: ''
+        status: ''
+        reason: ''
+        evidence_refs: []
+      ranking_result:
+      - candidate_pattern: ''
+        score: 0
+        passed_gates: []
+        failed_gates: []
+        reason: ''
+      rejected_patterns:
+      - pattern: ''
+        reason: ''
+        matched_reject_when: []
+        simpler_alternative: ''
+        evidence_refs: []
+      simpler_alternatives_considered:
+      - alternative: ''
+        accepted_or_rejected: ''
+        reason: ''
+      introduced_roles: []
+      compatibility_result:
+        status: ''
+        checked_against: patterns/conventions.role-pattern-compatibility.yaml
+        conflicts: []
+      triggers_emitted: []
+      evidence_refs: []
 validation:
+  required_checks:
+  - id: PATTERN-SELECTION-CHECK-001
+    check: required_inputs_present
+    applies_when:
+      phase: pattern_selection
+  - id: PATTERN-SELECTION-CHECK-002
+    check: pressure_gate_evaluated
+    applies_when:
+      phase: pattern_selection
+  - id: PATTERN-SELECTION-CHECK-003
+    check: restrictions_applied_before_final_decision
+    applies_when:
+      candidate_patterns_present: true
+  - id: PATTERN-SELECTION-CHECK-004
+    check: role_pattern_compatibility_validated
+    applies_when:
+      selected_pattern_not_NoPattern: true
+  - id: PATTERN-SELECTION-CHECK-005
+    check: NoPattern_reason_recorded_when_selected
+    applies_when:
+      selected_pattern: NoPattern
+  - id: PATTERN-SELECTION-CHECK-006
+    check: rejected_patterns_recorded
+    applies_when:
+      candidate_patterns_present: true
   fail_conditions:
-  - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-001
+  - id: PATTERN-SELECTION-001
     condition: pattern_selected_without_pressure
-    message: Pattern selected without pressure.
+    message: A pattern cannot be selected without evidenced pattern pressure.
     severity: error
-    owner: patterns/conventions.pattern-selection.yaml
-  - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-002
-    condition: pattern_selected_before_roles
-    message: Pattern selected before roles.
+  - id: PATTERN-SELECTION-002
+    condition: pattern_decision_missing_required_input
+    message: Pattern selection requires pressure, roles, actions, catalog, restrictions,
+      and compatibility inputs.
     severity: error
-    owner: patterns/conventions.pattern-selection.yaml
-  - id: PATTERNS-CONVENTIONS-PATTERN-SELECTION-YAML-FC-003
-    condition: simpler_alternative_not_considered
-    message: Simpler alternative not considered.
+  - id: PATTERN-SELECTION-003
+    condition: disallowed_pattern_selected
+    message: A disallowed pattern cannot be selected unless a declared exception allows
+      it.
     severity: error
-    owner: patterns/conventions.pattern-selection.yaml
-  required_checks: []
+  - id: PATTERN-SELECTION-004
+    condition: restricted_pattern_selected_without_justification
+    message: Restricted patterns require explicit justification and simpler-alternative
+      rejection.
+    severity: error
+  - id: PATTERN-SELECTION-005
+    condition: pattern_selected_with_role_conflict
+    message: Selected pattern conflicts with role-pattern compatibility rules.
+    severity: error
+  - id: PATTERN-SELECTION-006
+    condition: heavier_pattern_selected_over_valid_simpler_alternative
+    message: A heavier pattern was selected while a valid simpler alternative existed.
+    severity: error
+  - id: PATTERN-SELECTION-007
+    condition: multiple_candidates_without_ranking
+    message: Multiple candidate patterns require explicit ranking.
+    severity: error
+  - id: PATTERN-SELECTION-008
+    condition: pattern_decision_missing_required_evidence
+    message: Pattern decision must include pressure, ranking, compatibility, rejected
+      candidates, and evidence.
+    severity: error
+  - id: PATTERN-SELECTION-009
+    condition: no_pattern_decision_without_reason
+    message: NoPattern decision must include reason and rejected candidates when candidates
+      existed.
+    severity: error

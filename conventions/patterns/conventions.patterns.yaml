@@ -4,15 +4,18 @@ file:
   path: patterns/conventions.patterns.yaml
   role: pattern_system_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint and execution order for pattern subsystem.
+purpose: Entrypoint and local execution contract for the pattern subsystem.
 ownership:
   owns:
   - pattern_system_metadata
   - pattern_file_index
   - pattern_system_execution_order
+  - pattern_system_contract
   does_not_own:
   - pattern_definitions
-  - selection_details
+  - pattern_selection_details
+  - role_taxonomy
+  - final_structure
 activation:
   mode: always
   activates_when: []
@@ -27,6 +30,15 @@ dependencies:
   required_files: []
   optional_files: []
 sections:
+  pattern_system_metadata:
+    mode: strict
+    default_decision: NoPattern
+    selection_authority: pattern_selection_phase
+    principles:
+    - Pattern follows problem, not preference.
+    - NoPattern is the default until pattern pressure is proven.
+    - Pattern choice must preserve role and dependency boundaries.
+    - Classic and enterprise patterns are allowed only through explicit activation signals.
   pattern_file_index:
     catalog: patterns/conventions.pattern-catalog.yaml
     selection: patterns/conventions.pattern-selection.yaml
@@ -35,62 +47,25 @@ sections:
   pattern_system_execution_order:
   - load_pattern_catalog
   - detect_pattern_pressure
-  - select_patterns
-  - validate_restrictions
+  - consider_no_pattern
+  - select_candidate_patterns
+  - apply_pattern_restrictions
   - validate_role_pattern_compatibility
-  canonical_system: &id001
-    name: design-pattern-selector
-    purpose: 'Given a feature or code requirement, determine the most appropriate design pattern using structured decision
-      rules derived from the Refactoring.Guru catalog.
-
-      '
-    philosophy:
-    - Pattern follows problem, not preference
-    - Classify intent before selecting pattern
-    - Avoid over-engineering
-    - Prefer simplest valid pattern
-  canonical_classification: &id002
-    categories:
-      creational:
-        description: 'Focused on object creation mechanisms that increase flexibility and reuse.
-
-          '
-        triggers:
-        - object creation is complex
-        - object type decided at runtime
-        - avoid direct constructor usage
-        - control instance lifecycle
-        - reduce coupling to concrete classes
-      structural:
-        description: 'Focused on composing classes and objects into larger structures.
-
-          '
-        triggers:
-        - combine multiple components
-        - wrap or adapt existing code
-        - simplify complex subsystem
-        - optimize memory usage
-        - control access to object
-      behavioral:
-        description: 'Focused on communication and responsibility between objects.
-
-          '
-        triggers:
-        - multiple objects interact
-        - behavior changes at runtime
-        - decouple sender and receiver
-        - define workflows or chains
-        - encapsulate algorithms
-  semantic_depth_restoration:
-    restored_from: conventions.pattern.yaml
-    restoration_scope:
-    - system
-    - classification
-    restoration_policy: canonical_source_preserved_under_standard_file_contract
-    do_not_replace_with_summary: true
-  canonical_restored_source:
-    system: *id001
-    classification: *id002
+  - emit_pattern_decision_log
+  pattern_system_contract:
+    must_output: pattern_decision_log
+    must_not:
+    - select pattern before pressure detection
+    - use pattern to repair unclear roles
+    - introduce pattern roles not allowed by compatibility matrix
+    default_behavior: select NoPattern when no explicit pattern pressure exists
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - pattern_catalog_loaded
+  - pattern_selection_policy_loaded
+  - pattern_restrictions_loaded
+  - role_pattern_compatibility_loaded
+  fail_conditions:
+  - pattern_selected_without_catalog
+  - pattern_selected_without_pressure_detection
+  - pattern_selected_without_role_compatibility
