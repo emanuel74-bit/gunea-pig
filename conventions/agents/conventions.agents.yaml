@@ -4,14 +4,22 @@ file:
   path: agents/conventions.agents.yaml
   role: agents_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for fixed agent roster, contracts, permissions, and prompts.
+purpose: Entrypoint for the fixed-agent subsystem. Defines the subsystem index, execution order, authority boundaries, and integration contract
+  for Alpha and phase agents.
 ownership:
   owns:
   - agents_file_index
+  - local_execution_order
   - agents_subsystem_contract
+  - integration_contract
   does_not_own:
   - phase_vocabulary
-  - runtime_phase_scheduling
+  - phase_contracts
+  - mission_profile_selection
+  - gate_pass_fail_logic
+  - report_schemas
+  - trigger_resolution
+  - source_code_implementation
 activation:
   mode: entrypoint
   activates_when:
@@ -26,17 +34,90 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  - core/conventions.index.yaml
   - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-capabilities.yaml
   - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-phase-ownership.yaml
   - agents/conventions.agent-permissions.yaml
   - agents/conventions.agent-prompts.yaml
+  - agents/conventions.agent-activation-policy.yaml
+  - agents/conventions.agent-validation.yaml
   optional_files: []
 sections:
   agents_file_index:
     taxonomy: agents/conventions.agent-taxonomy.yaml
+    capabilities: agents/conventions.agent-capabilities.yaml
     contracts: agents/conventions.agent-contracts.yaml
+    phase_ownership: agents/conventions.agent-phase-ownership.yaml
     permissions: agents/conventions.agent-permissions.yaml
     prompts: agents/conventions.agent-prompts.yaml
+    activation_policy: agents/conventions.agent-activation-policy.yaml
+    validation: agents/conventions.agent-validation.yaml
+  local_execution_order:
+  - agent-taxonomy
+  - agent-capabilities
+  - agent-contracts
+  - agent-phase-ownership
+  - agent-permissions
+  - agent-prompts
+  - agent-activation-policy
+  - agent-validation
+  agents_subsystem_contract:
+    absolute_rules:
+    - id: AGENTS-ABS-001
+      rule: Every executable phase must resolve to exactly one fixed owner agent.
+      fail_condition: phase_missing_or_multiple_owner_agents
+    - id: AGENTS-ABS-002
+      rule: Phase agents must execute only generated phase execution bundles and must not load the entire system when a bundle exists.
+      fail_condition: phase_agent_bypassed_phase_bundle
+    - id: AGENTS-ABS-003
+      rule: Agent outputs must be written to declared report files; chat summaries cannot satisfy phase output requirements.
+      fail_condition: agent_output_console_only
+    - id: AGENTS-ABS-004
+      rule: Only Alpha may update mission state, schedule phases, resolve triggers, approve revisions, or mark gates passed.
+      fail_condition: non_alpha_runtime_authority_used
+    - id: AGENTS-ABS-005
+      rule: Non-implementation agents must not edit source code; repair may edit only after authorized failure classification.
+      fail_condition: agent_edited_code_without_permission
+  integration_contract:
+    consumes_from:
+    - phases
+    - missions
+    - reports
+    - gates
+    - triggers
+    - handoffs
+    - revisions
+    - risk
+    - planning
+    - architecture
+    - roles
+    - patterns
+    - actions
+    - contracts
+    - boundaries
+    - dependencies
+    - testing
+    - refactoring
+    - execution
+    provides_to:
+    - multi-agent
+    - phases
+    - missions
+    - gates
+    - reports
+    - phase-bundles
+    - claude-code-subagents
+    authority_boundary: Agents perform phase work; Alpha controls runtime; validators/gates decide mechanical pass/fail.
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: AGENTS-SYSTEM-CHECK-001
+    check: agents_subsystem_files_exist
+    applies_when:
+      agents_subsystem_loaded: true
+  fail_conditions:
+  - id: AGENTS-SYSTEM-001
+    condition: agents_subsystem_missing_required_file
+    message: All agent subsystem files must exist and follow the file contract.
+    severity: error

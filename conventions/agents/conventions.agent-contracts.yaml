@@ -3,16 +3,19 @@ file:
   name: conventions.agent-contracts.yaml
   path: agents/conventions.agent-contracts.yaml
   role: agent_responsibility_contract
-  executability: validator
-purpose: Define responsibility boundaries and phase ownership for every fixed agent.
+  executability: contract_registry
+purpose: Define strict responsibility boundaries, allowed decisions, forbidden decisions, must-do/must-not-do rules, and subsystem usage for every
+  fixed agent.
 ownership:
   owns:
   - agent_contract_schema
   - agent_contract_registry
-  - phase_ownership_mapping
+  - agent_responsibility_invariants
   does_not_own:
   - agent_vocabulary
   - permission_profiles
+  - prompt_text
+  - phase_contract_definitions
 activation:
   mode: conditional
   activates_when:
@@ -30,6 +33,7 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-capabilities.yaml
   - phases/conventions.phase-taxonomy.yaml
   optional_files: []
 sections:
@@ -44,12 +48,21 @@ sections:
     - must_do
     - must_not_do
     - escalation_rules
+    - subsystems_may_consume
+    - report_outputs
+  agent_responsibility_invariants:
+    absolute_rules:
+    - id: AGENT-CONTRACT-ABS-001
+      rule: Agent may not perform unowned phase work even if it detects the work is needed.
+      fail_condition: agent_performed_unowned_phase_work
+    - id: AGENT-CONTRACT-ABS-002
+      rule: Agent must emit trigger, blocker, or revision request for work outside its authority.
+      fail_condition: agent_silently_absorbed_external_work
   agent_contract_registry:
   - agent_id: alpha_controller
-    category: controller
-    responsibility: 'Own and execute phases: mission_profile_selection, mission_initialization, active_context_manifest, phase_accounting,
-      trigger_review, report_artifact_validation.'
-    owned_phases: &id001
+    category: runtime_controller
+    responsibility: Runtime controller that drives the mission through validated phase execution without performing phase-agent work itself.
+    owned_phases:
     - mission_profile_selection
     - mission_initialization
     - active_context_manifest
@@ -57,481 +70,1098 @@ sections:
     - trigger_review
     - report_artifact_validation
     allowed_decisions:
-    - produce_outputs_for_mission_profile_selection
-    - produce_outputs_for_mission_initialization
-    - produce_outputs_for_active_context_manifest
-    - produce_outputs_for_phase_accounting
-    - produce_outputs_for_trigger_review
-    - produce_outputs_for_report_artifact_validation
+    - produce_phase_outputs_for_mission_profile_selection
+    - produce_phase_outputs_for_mission_initialization
+    - produce_phase_outputs_for_active_context_manifest
+    - produce_phase_outputs_for_phase_accounting
+    - produce_phase_outputs_for_trigger_review
+    - produce_phase_outputs_for_report_artifact_validation
+    - update_mission_state
+    - invoke_phase_agents
+    - run_gates_through_gate_subsystem
+    - register_triggers
+    - process_revision_requests
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - select next phase from active plan
+    - build phase execution bundle
+    - invoke the owning phase agent
+    - run/record gates through gate subsystem
+    - register triggers and revision requests
+    - update mission state
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - produce design/code work for phase agents
+    - bypass gates
+    - weaken phase contracts
+    - edit source code
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - core
+    - missions
+    - phases
+    - agents
+    - gates
+    - triggers
+    - handoffs
+    - revisions
+    - reports
+    report_outputs:
+    - .ai/reports/00-mission-profile.yaml
+    - .ai/reports/report-registry.yaml
+    - .ai/reports/01-active-context-manifest.yaml
+    - .ai/reports/phase-accounting.yaml
+    - .ai/reports/trigger-review.yaml
+    - .ai/reports/report-artifact-validation.yaml
   - agent_id: behavior_agent
-    category: understanding
-    responsibility: 'Own and execute phases: behavior_contract.'
-    owned_phases: &id002
+    category: planning_understanding
+    responsibility: Planning agent that turns the user request into a strict behavior contract, scope basis, acceptance criteria, ambiguities,
+      and preservation expectations.
+    owned_phases:
     - behavior_contract
     allowed_decisions:
-    - produce_outputs_for_behavior_contract
+    - produce_phase_outputs_for_behavior_contract
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - classify request intent
+    - extract behavior and non-goals
+    - define acceptance criteria
+    - record blocking ambiguities
+    - emit behavior/scope triggers
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - design structure
+    - select roles/patterns/actions
+    - inspect broad codebase without phase bundle
+    - edit code
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - planning
+    - reports
+    - risk
+    - triggers
+    - testing
+    report_outputs:
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
   - agent_id: reconnaissance_agent
-    category: understanding
-    responsibility: 'Own and execute phases: codebase_reconnaissance, local_alignment.'
-    owned_phases: &id003
+    category: planning_evidence
+    responsibility: Evidence agent that discovers relevant existing code, local conventions, call sites, unknowns, and alignment constraints.
+    owned_phases:
     - codebase_reconnaissance
     - local_alignment
     allowed_decisions:
-    - produce_outputs_for_codebase_reconnaissance
-    - produce_outputs_for_local_alignment
+    - produce_phase_outputs_for_codebase_reconnaissance
+    - produce_phase_outputs_for_local_alignment
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - inspect allowed source scope
+    - record found/not_found/unknown evidence
+    - identify local convention candidates
+    - classify global/local alignment
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - make architecture decisions
+    - select artifact actions
+    - edit code
+    - mark validation passed
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - planning
+    - reports
+    - dependencies
+    - boundaries
+    - risk
+    report_outputs:
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    - .ai/reports/local-alignment.yaml
   - agent_id: classification_agent
     category: classification
-    responsibility: 'Own and execute phases: risk_classification, boundary_contract_classification, dependency_classification.'
-    owned_phases: &id004
+    responsibility: Classification agent that assigns risk, boundary, contract, and dependency classifications using global vocabularies.
+    owned_phases:
     - risk_classification
     - boundary_contract_classification
     - dependency_classification
     allowed_decisions:
-    - produce_outputs_for_risk_classification
-    - produce_outputs_for_boundary_contract_classification
-    - produce_outputs_for_dependency_classification
+    - produce_phase_outputs_for_risk_classification
+    - produce_phase_outputs_for_boundary_contract_classification
+    - produce_phase_outputs_for_dependency_classification
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - classify risk using risk subsystem
+    - classify boundaries/contracts/dependencies
+    - emit required followup triggers
+    - record uncertainty fail-closed
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - invent local vocabulary
+    - select design structure
+    - implement code
+    - weaken classification because of convenience
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - risk
+    - boundaries
+    - contracts
+    - dependencies
+    - triggers
+    - reports
+    report_outputs:
+    - .ai/reports/risk-classification.yaml
+    - .ai/reports/boundary-contract-classification.yaml
+    - .ai/reports/compatibility-decision.yaml
+    - .ai/reports/dependency-classification.yaml
+    - .ai/reports/dependency-validation.yaml
   - agent_id: architecture_agent
     category: design
-    responsibility: 'Own and execute phases: architecture_decomposition.'
-    owned_phases: &id005
+    responsibility: Design agent that decomposes behavior into capabilities, intents, layers, atomic units, and artifact candidates.
+    owned_phases:
     - architecture_decomposition
     allowed_decisions:
-    - produce_outputs_for_architecture_decomposition
+    - produce_phase_outputs_for_architecture_decomposition
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - decompose before structure
+    - produce architecture blueprint
+    - generate artifact candidates
+    - enforce dependency/boundary intent
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - render final file tree
+    - assign final roles
+    - select final patterns
+    - edit code
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - architecture
+    - planning
+    - risk
+    - boundaries
+    - dependencies
+    - reports
+    report_outputs:
+    - .ai/reports/architecture-blueprint.yaml
+    - .ai/reports/artifact-candidates.yaml
   - agent_id: role_agent
     category: design
-    responsibility: 'Own and execute phases: draft_role_pass, final_role_assignment.'
-    owned_phases: &id006
+    responsibility: Role agent that assigns draft and final artifact responsibilities using the role taxonomy and collision rules.
+    owned_phases:
     - draft_role_pass
     - final_role_assignment
     allowed_decisions:
-    - produce_outputs_for_draft_role_pass
-    - produce_outputs_for_final_role_assignment
+    - produce_phase_outputs_for_draft_role_pass
+    - produce_phase_outputs_for_final_role_assignment
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - classify artifact roles
+    - detect mixed responsibilities
+    - resolve role collisions
+    - produce final role assignment
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - select artifact actions
+    - select patterns
+    - render final structure
+    - edit code
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - roles
+    - architecture
+    - actions
+    - patterns
+    - reports
+    report_outputs:
+    - .ai/reports/04-draft-role-signals.yaml
+    - .ai/reports/08-final-role-assignment.yaml
+    - .ai/reports/role-collision-resolution.yaml
   - agent_id: pattern_agent
     category: design
-    responsibility: 'Own and execute phases: pattern_pressure_detection, pattern_selection.'
-    owned_phases: &id007
+    responsibility: Pattern agent that detects pattern pressure and chooses or rejects patterns with evidence, defaulting to no_pattern.
+    owned_phases:
     - pattern_pressure_detection
     - pattern_selection
     allowed_decisions:
-    - produce_outputs_for_pattern_pressure_detection
-    - produce_outputs_for_pattern_selection
+    - produce_phase_outputs_for_pattern_pressure_detection
+    - produce_phase_outputs_for_pattern_selection
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - detect pattern pressure
+    - evaluate NoPattern first
+    - select/reject patterns through restrictions and compatibility
+    - write pattern decision log
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - force patterns from preference
+    - define role taxonomy
+    - render structure
+    - edit code
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - patterns
+    - roles
+    - architecture
+    - actions
+    - reports
+    report_outputs:
+    - .ai/reports/pattern-pressure.yaml
+    - .ai/reports/pattern-decision-log.yaml
   - agent_id: artifact_action_agent
     category: design
-    responsibility: 'Own and execute phases: artifact_reuse_analysis, artifact_action_resolution.'
-    owned_phases: &id008
+    responsibility: Action agent that determines whether artifacts should be reused, modified, split, extracted, moved, renamed, deprecated, deleted,
+      or created.
+    owned_phases:
     - artifact_reuse_analysis
     - artifact_action_resolution
     allowed_decisions:
-    - produce_outputs_for_artifact_reuse_analysis
-    - produce_outputs_for_artifact_action_resolution
+    - produce_phase_outputs_for_artifact_reuse_analysis
+    - produce_phase_outputs_for_artifact_action_resolution
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - analyze reuse before create_new
+    - select artifact actions
+    - resolve action collisions
+    - emit action followups
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - assign final roles
+    - select final patterns
+    - implement changes
+    - ignore existing artifacts
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - actions
+    - roles
+    - patterns
+    - architecture
+    - risk
+    - triggers
+    - reports
+    report_outputs:
+    - .ai/reports/artifact-reuse-analysis.yaml
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/post-action-artifact-candidates.yaml
   - agent_id: refactor_strategy_agent
-    category: design
-    responsibility: 'Own and execute phases: refactor_strategy_selection.'
-    owned_phases: &id009
+    category: refactoring
+    responsibility: Refactoring agent that selects behavior-preserving refactor strategy and locks required behavior before implementation.
+    owned_phases:
     - refactor_strategy_selection
     allowed_decisions:
-    - produce_outputs_for_refactor_strategy_selection
+    - produce_phase_outputs_for_refactor_strategy_selection
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - classify refactor need
+    - select strategy
+    - define preservation locks
+    - block unsafe refactors
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - change requested behavior
+    - implement refactor
+    - approve unsafe strategy
+    - skip characterization needs
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - refactoring
+    - actions
+    - planning
+    - testing
+    - risk
+    - triggers
+    - reports
+    report_outputs:
+    - .ai/reports/06-refactor-strategy.yaml
+    - .ai/reports/behavior-preservation-requirements.yaml
+    - .ai/reports/refactor-required-followups.yaml
   - agent_id: impact_agent
-    category: design
-    responsibility: 'Own and execute phases: call_site_impact_analysis, change_impact_analysis.'
-    owned_phases: &id010
+    category: impact_analysis
+    responsibility: Impact agent that finds call-site, consumer, contract, dependency, test, and change impacts before sequencing.
+    owned_phases:
     - call_site_impact_analysis
     - change_impact_analysis
     allowed_decisions:
-    - produce_outputs_for_call_site_impact_analysis
-    - produce_outputs_for_change_impact_analysis
+    - produce_phase_outputs_for_call_site_impact_analysis
+    - produce_phase_outputs_for_change_impact_analysis
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - identify call sites
+    - classify direct/indirect impact
+    - map consumers and tests
+    - emit impact followups
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - edit code
+    - change selected actions
+    - approve implementation
+    - ignore unknown dynamic references
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - planning
+    - contracts
+    - dependencies
+    - boundaries
+    - risk
+    - testing
+    - reports
+    report_outputs:
+    - .ai/reports/call-site-impact.yaml
+    - .ai/reports/07-change-impact.yaml
+    - .ai/reports/consumer-impact.yaml
   - agent_id: structure_agent
-    category: design
-    responsibility: 'Own and execute phases: structure_rendering.'
-    owned_phases: &id011
+    category: structure_design
+    responsibility: Structure agent that renders final folder/file structure from architecture, roles, actions, patterns, boundaries, and local
+      alignment.
+    owned_phases:
     - structure_rendering
     allowed_decisions:
-    - produce_outputs_for_structure_rendering
+    - produce_phase_outputs_for_structure_rendering
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - select structure density
+    - place files with evidence
+    - avoid bloat
+    - produce final file tree
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - decompose behavior anew
+    - change actions/roles/patterns
+    - implement files
+    - create speculative shared code
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - architecture
+    - roles
+    - patterns
+    - actions
+    - boundaries
+    - dependencies
+    - reports
+    report_outputs:
+    - .ai/reports/structure-plan.yaml
+    - .ai/reports/final-file-tree.yaml
   - agent_id: testing_agent
     category: verification_planning
-    responsibility: 'Own and execute phases: test_derivation.'
-    owned_phases: &id012
+    responsibility: Verification planning agent that derives test obligations, gaps, regression, and characterization needs.
+    owned_phases:
     - test_derivation
     allowed_decisions:
-    - produce_outputs_for_test_derivation
+    - produce_phase_outputs_for_test_derivation
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - map acceptance criteria to tests
+    - derive obligations from risk/contracts/boundaries/dependencies/actions
+    - record blocking gaps
+    - write test plans
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - pretend tests passed
+    - edit production code
+    - weaken high-risk test obligations
+    - skip preservation tests
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - testing
+    - planning
+    - risk
+    - contracts
+    - boundaries
+    - dependencies
+    - actions
+    - refactoring
+    - reports
+    report_outputs:
+    - .ai/reports/09-test-plan.yaml
+    - .ai/reports/regression-test-plan.yaml
+    - .ai/reports/characterization-test-plan.yaml
   - agent_id: execution_planning_agent
     category: execution_planning
-    responsibility: 'Own and execute phases: implementation_sequence, checkpoint_validation_plan.'
-    owned_phases: &id013
+    responsibility: Execution planning agent that creates implementation sequence and checkpoint validation plan without editing code.
+    owned_phases:
     - implementation_sequence
     - checkpoint_validation_plan
     allowed_decisions:
-    - produce_outputs_for_implementation_sequence
-    - produce_outputs_for_checkpoint_validation_plan
+    - produce_phase_outputs_for_implementation_sequence
+    - produce_phase_outputs_for_checkpoint_validation_plan
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - order implementation steps
+    - group checkpoints
+    - declare temporary failures
+    - define validation cadence
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - edit code
+    - approve implementation
+    - ignore blockers
+    - change upstream decisions
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - execution
+    - testing
+    - risk
+    - reports
+    - gates
+    report_outputs:
+    - .ai/reports/10-implementation-sequence.yaml
+    - .ai/reports/checkpoint-groups.yaml
+    - .ai/reports/checkpoint-validation-plan.yaml
   - agent_id: pre_implementation_gate_agent
-    category: execution_planning
-    responsibility: 'Own and execute phases: pre_implementation_gate.'
-    owned_phases: &id014
+    category: gatekeeper
+    responsibility: Gatekeeper agent that decides whether implementation may begin based on required reports, triggers, blockers, sequence, and
+      scope.
+    owned_phases:
     - pre_implementation_gate
     allowed_decisions:
-    - produce_outputs_for_pre_implementation_gate
+    - produce_phase_outputs_for_pre_implementation_gate
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - validate preconditions
+    - block missing/invalid prerequisites
+    - write pre-implementation gate result
+    - require unresolved trigger resolution
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - create sequence
+    - edit code
+    - override validators
+    - approve with active blockers
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - gates
+    - missions
+    - reports
+    - triggers
+    - handoffs
+    - revisions
+    - execution
+    report_outputs:
+    - .ai/reports/pre-implementation-gate.yaml
   - agent_id: implementation_agent
-    category: execution
-    responsibility: 'Own and execute phases: implementation.'
-    owned_phases: &id015
+    category: implementation
+    responsibility: Implementation agent that performs only approved code changes within allowed scope after pre-implementation gate passes.
+    owned_phases:
     - implementation
     allowed_decisions:
-    - produce_outputs_for_implementation
+    - produce_phase_outputs_for_implementation
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - follow sequence
+    - edit allowed files only
+    - record changed-file manifest
+    - record validation commands run
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - change scope
+    - rewrite prior reports
+    - edit forbidden files
+    - mark final validation passed
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - execution
+    - reports
+    - testing
+    report_outputs:
+    - .ai/reports/changed-file-manifest.yaml
+    - .ai/reports/implementation-result.yaml
+    - .ai/reports/checkpoint-results.yaml
   - agent_id: validation_agent
-    category: repair_validation
-    responsibility: 'Own and execute phases: post_implementation_validation, final_validation.'
-    owned_phases: &id016
+    category: validation
+    responsibility: Validation agent that verifies implementation, reports, gates, state, triggers, and final mission completion without repairing.
+    owned_phases:
     - post_implementation_validation
     - final_validation
     allowed_decisions:
-    - produce_outputs_for_post_implementation_validation
-    - produce_outputs_for_final_validation
+    - produce_phase_outputs_for_post_implementation_validation
+    - produce_phase_outputs_for_final_validation
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - validate changed scope
+    - validate reports/gates/triggers
+    - produce post/final validation
+    - fail honestly
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - repair code
+    - hide failures
+    - change mission profile
+    - approve unresolved blockers
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - execution
+    - reports
+    - gates
+    - triggers
+    - handoffs
+    - revisions
+    - missions
+    - testing
+    report_outputs:
+    - .ai/reports/post-implementation-validation.yaml
+    - .ai/reports/failure-report.yaml
+    - .ai/reports/99-validation-summary.yaml
+    - .ai/reports/final-unresolved-items.yaml
   - agent_id: failure_analysis_agent
-    category: repair_validation
-    responsibility: 'Own and execute phases: failure_classification.'
-    owned_phases: &id017
+    category: failure_analysis
+    responsibility: Failure analysis agent that classifies failures and decides repair/rerun/revision/block path before any repair.
+    owned_phases:
     - failure_classification
     allowed_decisions:
-    - produce_outputs_for_failure_classification
+    - produce_phase_outputs_for_failure_classification
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - classify failure type
+    - assign owner phase
+    - select next action
+    - request revision when needed
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - repair code
+    - override validation
+    - ignore evidence
+    - mark mission passed
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - execution
+    - reports
+    - revisions
+    - triggers
+    - risk
+    report_outputs:
+    - .ai/reports/failure-classification.yaml
   - agent_id: repair_agent
-    category: repair_validation
-    responsibility: 'Own and execute phases: feedback_repair.'
-    owned_phases: &id018
+    category: repair
+    responsibility: Repair agent that applies bounded repairs only when failure classification authorizes repair and scope permits it.
+    owned_phases:
     - feedback_repair
     allowed_decisions:
-    - produce_outputs_for_feedback_repair
+    - produce_phase_outputs_for_feedback_repair
+    - emit_semantic_triggers
+    - request_revision_when_inputs_invalid
     forbidden_decisions:
     - perform_unowned_phase_work
     - bypass_gates
     - weaken_contracts
+    - mark_unvalidated_output_valid
+    - consume_invalidated_input
+    - update_mission_state
+    - schedule_phase_directly
+    - resolve_trigger_directly
+    - approve_revision_directly
     must_do:
-    - follow_phase_contract
-    - write_required_reports
-    - record_evidence
+    - produce repair plan
+    - repair only allowed failures
+    - write repair result
+    - request revalidation
+    - read generated phase bundle
+    - write required reports
+    - record evidence refs
+    - respect allowed write scope
+    - emit blockers instead of guessing
     must_not_do:
-    - silently_skip_required_work
-    - write_unallowed_files
+    - repair without classification
+    - expand scope
+    - change design decisions silently
+    - mark final validation passed
+    - ignore missing required inputs
+    - satisfy required outputs in chat only
+    - invent unknown enum values
+    - override script/validator/gate results
     escalation_rules:
-      escalate_when:
-      - required_input_missing
-      - output_gate_failed
-      - permission_violation_detected
-      escalation_target: alpha_controller
-  phase_ownership:
-    alpha_controller: *id001
-    behavior_agent: *id002
-    reconnaissance_agent: *id003
-    classification_agent: *id004
-    architecture_agent: *id005
-    role_agent: *id006
-    pattern_agent: *id007
-    artifact_action_agent: *id008
-    refactor_strategy_agent: *id009
-    impact_agent: *id010
-    structure_agent: *id011
-    testing_agent: *id012
-    execution_planning_agent: *id013
-    pre_implementation_gate_agent: *id014
-    implementation_agent: *id015
-    validation_agent: *id016
-    failure_analysis_agent: *id017
-    repair_agent: *id018
-  agent_contract_validation_algorithm:
-    steps:
-    - load_agent_taxonomy
-    - load_agent_contracts
-    - assert_one_contract_per_agent
-    - assert_owned_phases_exist
-    - assert_every_phase_has_one_owner
+    - condition: required_input_missing_or_invalid
+      action: request_revision_or_block_phase
+      emit_trigger: phase_revision_required
+    - condition: detected_unowned_work_needed
+      action: emit_trigger_or_revision_request
+      must_not: perform_work_directly
+    - condition: mechanical_validation_failure
+      action: defer_to_validator_result
+      must_not: override_pass_fail_in_chat
+    subsystems_may_consume:
+    - execution
+    - revisions
+    - reports
+    - testing
+    report_outputs:
+    - .ai/reports/repair-plan.yaml
+    - .ai/reports/feedback-repair-result.yaml
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: AGENT-CONTRACT-CHECK-001
+    check: agent_contract_coverage
+    applies_when:
+      agent_contracts_loaded: true
+  fail_conditions:
+  - id: AGENT-CONTRACT-001
+    condition: agent_contract_missing
+    message: Every fixed agent must have exactly one contract record.
+    severity: error

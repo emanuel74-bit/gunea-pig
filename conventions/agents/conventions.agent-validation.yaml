@@ -1,0 +1,183 @@
+version: '1.0'
+file:
+  name: conventions.agent-validation.yaml
+  path: agents/conventions.agent-validation.yaml
+  role: agent_subsystem_validation_contract
+  executability: validator
+purpose: Validate agent taxonomy, contracts, ownership, permissions, prompts, activation rules, and integration boundaries.
+ownership:
+  owns:
+  - agent_validation_policy
+  - agent_validation_checks
+  - agent_validation_algorithm
+  - validation_output_schema
+  does_not_own:
+  - agent_vocabulary
+  - agent_permissions
+  - agent_prompts
+  - phase_contracts
+activation:
+  mode: conditional
+  activates_when:
+  - agent_validation_required
+  skips_when: []
+inputs:
+  required:
+  - agent_taxonomy
+  - agent_contracts
+  - phase_ownership
+  - agent_permissions
+  - agent_prompts
+  optional:
+  - phase_contracts
+  - report_registry
+outputs:
+  produces:
+  - agent_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-phase-ownership.yaml
+  - agents/conventions.agent-permissions.yaml
+  - agents/conventions.agent-prompts.yaml
+  - agents/conventions.agent-activation-policy.yaml
+  - phases/conventions.phase-contracts.yaml
+  - reports/conventions.report-registry.yaml
+  optional_files: []
+sections:
+  agent_validation_policy:
+    absolute_rules:
+    - id: AGENT-VALIDATION-ABS-001
+      rule: Every agent enum value must have definition, contract, permission profile, prompt, and validation coverage.
+      fail_condition: agent_record_incomplete
+    - id: AGENT-VALIDATION-ABS-002
+      rule: Every phase must have exactly one owner agent and every owner must be in the fixed roster.
+      fail_condition: phase_owner_invalid
+    - id: AGENT-VALIDATION-ABS-003
+      rule: Agent write scope must be a subset of reports required by owned phases unless explicitly Alpha runtime output.
+      fail_condition: agent_write_scope_exceeds_owned_outputs
+    - id: AGENT-VALIDATION-ABS-004
+      rule: Only implementation_agent and authorized repair_agent may edit source code.
+      fail_condition: source_edit_permission_violation
+    - id: AGENT-VALIDATION-ABS-005
+      rule: Prompts must include file-output, phase-bundle, no-unowned-work, and fail-closed constraints.
+      fail_condition: agent_prompt_missing_hard_constraint
+    - id: AGENT-VALIDATION-ABS-006
+      rule: Agent activation must run entry gate before invocation and output gate before state update.
+      fail_condition: agent_activation_gate_sequence_invalid
+  agent_validation_checks:
+  - check_id: AGENT-CHECK-001
+    description: All agent taxonomy entries have contract records.
+    applies_when:
+    - agent_taxonomy_loaded
+    pass_when:
+    - agent_id_in_contract_registry
+    fail_when:
+    - agent_contract_missing
+    severity: blocking
+  - check_id: AGENT-CHECK-002
+    description: All contract agents have permission profiles.
+    applies_when:
+    - agent_contract_registry_loaded
+    pass_when:
+    - permission_profile_exists
+    fail_when:
+    - permission_profile_missing
+    severity: blocking
+  - check_id: AGENT-CHECK-003
+    description: All agents have exactly one always-injected prompt.
+    applies_when:
+    - prompt_registry_loaded
+    pass_when:
+    - one_prompt_per_agent
+    fail_when:
+    - missing_prompt
+    - duplicate_prompt
+    severity: blocking
+  - check_id: AGENT-CHECK-004
+    description: Owned phases match phase contracts and phase ownership map.
+    applies_when:
+    - phase_contracts_loaded
+    pass_when:
+    - phase_owner_consistent
+    fail_when:
+    - phase_owner_mismatch
+    severity: blocking
+  - check_id: AGENT-CHECK-005
+    description: Permissions do not allow forbidden source edits.
+    applies_when:
+    - permissions_loaded
+    pass_when:
+    - source_edit_permissions_limited
+    fail_when:
+    - non_implementation_agent_may_edit_code
+    severity: blocking
+  - check_id: AGENT-CHECK-006
+    description: Agent output files are declared in report registry or Alpha runtime outputs.
+    applies_when:
+    - permissions_loaded
+    - reports_registry_loaded
+    pass_when:
+    - all_may_write_paths_registered_or_runtime_allowed
+    fail_when:
+    - unregistered_write_path
+    severity: blocking
+  agent_validation_algorithm:
+  - step_id: LOAD_AGENT_TAXONOMY
+    action: read
+    input: agents/conventions.agent-taxonomy.yaml
+    output: agent_enum
+  - step_id: LOAD_AGENT_CONTRACTS
+    action: read
+    input: agents/conventions.agent-contracts.yaml
+    output: contract_registry
+  - step_id: LOAD_PHASE_OWNERSHIP
+    action: read
+    input: agents/conventions.agent-phase-ownership.yaml
+    output: phase_ownership_map
+  - step_id: LOAD_PERMISSIONS_AND_PROMPTS
+    action: read
+    input:
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-prompts.yaml
+    output: runtime_agent_records
+  - step_id: ASSERT_COVERAGE
+    action: for_each_agent
+    assertion: definition_contract_permission_prompt_exist
+  - step_id: ASSERT_PHASE_OWNERSHIP
+    action: for_each_phase
+    assertion: exactly_one_owner_and_owner_contract_lists_phase
+  - step_id: ASSERT_PERMISSION_SCOPE
+    action: for_each_permission_profile
+    assertion: write_and_edit_scope_is_allowed
+  - step_id: ASSERT_PROMPT_HARD_CONSTRAINTS
+    action: for_each_prompt
+    assertion: prompt_contains_required_hard_constraints
+  - step_id: EMIT_VALIDATION_RESULT
+    action: write
+    output: agent_validation_result
+  validation_output_schema:
+    required_fields:
+    - validation_status
+    - checked_agents
+    - checked_phases
+    - failures
+    - warnings
+    - blocking_status
+validation:
+  required_checks:
+  - id: AGENT-VALIDATION-CHECK-001
+    check: agent_validation_result_emitted
+    applies_when:
+      agent_validation_required: true
+  fail_conditions:
+  - id: AGENT-VALIDATION-001
+    condition: agent_record_incomplete
+    message: Agent record coverage is incomplete.
+    severity: error
+  - id: AGENT-VALIDATION-002
+    condition: phase_owner_invalid
+    message: Phase ownership must resolve to one valid fixed agent.
+    severity: error

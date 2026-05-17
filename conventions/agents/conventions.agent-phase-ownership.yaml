@@ -1,0 +1,408 @@
+version: '1.0'
+file:
+  name: conventions.agent-phase-ownership.yaml
+  path: agents/conventions.agent-phase-ownership.yaml
+  role: agent_phase_ownership_contract
+  executability: mapping
+purpose: Map each canonical phase to exactly one owner agent and declare runtime authority boundaries for phase execution.
+ownership:
+  owns:
+  - phase_ownership_schema
+  - phase_ownership_records
+  - ownership_consistency_rules
+  does_not_own:
+  - phase_taxonomy
+  - phase_contracts
+  - mission_profiles
+  - runtime_scheduling
+activation:
+  mode: conditional
+  activates_when:
+  - phase_owner_resolution_required
+  skips_when: []
+inputs:
+  required:
+  - phase_taxonomy
+  - agent_taxonomy
+  optional: []
+outputs:
+  produces:
+  - phase_ownership_map
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-contracts.yaml
+  optional_files: []
+sections:
+  phase_ownership_schema:
+    required_fields:
+    - phase_id
+    - owner_agent
+    - ownership_type
+    - required_outputs
+    - handoff_authority
+    - gate_authority
+    - runtime_authority
+    - agent_may_schedule_followup_phases
+    - agent_may_emit_triggers
+  ownership_consistency_rules:
+    absolute_rules:
+    - id: AGENT-PHASE-OWNERSHIP-ABS-001
+      rule: Every phase must have exactly one exclusive owner agent.
+      fail_condition: phase_owner_count_not_one
+    - id: AGENT-PHASE-OWNERSHIP-ABS-002
+      rule: Owner agent may produce phase reports but may not update mission state.
+      fail_condition: phase_agent_updated_mission_state
+  phase_ownership_records:
+  - phase_id: mission_profile_selection
+    owner_agent: alpha_controller
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/00-mission-profile.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: false
+  - phase_id: mission_initialization
+    owner_agent: alpha_controller
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/report-registry.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: false
+  - phase_id: active_context_manifest
+    owner_agent: alpha_controller
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/01-active-context-manifest.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: false
+  - phase_id: phase_accounting
+    owner_agent: alpha_controller
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/phase-accounting.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: false
+  - phase_id: behavior_contract
+    owner_agent: behavior_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/02-behavior-contract.yaml
+    - .ai/reports/assumptions.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: codebase_reconnaissance
+    owner_agent: reconnaissance_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/03-codebase-reconnaissance.yaml
+    - .ai/reports/local-convention-candidates.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: local_alignment
+    owner_agent: reconnaissance_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/local-alignment.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: risk_classification
+    owner_agent: classification_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/risk-classification.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: boundary_contract_classification
+    owner_agent: classification_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/boundary-contract-classification.yaml
+    - .ai/reports/compatibility-decision.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: dependency_classification
+    owner_agent: classification_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/dependency-classification.yaml
+    - .ai/reports/dependency-validation.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: architecture_decomposition
+    owner_agent: architecture_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/architecture-blueprint.yaml
+    - .ai/reports/artifact-candidates.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: draft_role_pass
+    owner_agent: role_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/04-draft-role-signals.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: pattern_pressure_detection
+    owner_agent: pattern_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/pattern-pressure.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: artifact_reuse_analysis
+    owner_agent: artifact_action_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/artifact-reuse-analysis.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: artifact_action_resolution
+    owner_agent: artifact_action_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/05-artifact-actions.yaml
+    - .ai/reports/post-action-artifact-candidates.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: refactor_strategy_selection
+    owner_agent: refactor_strategy_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/06-refactor-strategy.yaml
+    - .ai/reports/behavior-preservation-requirements.yaml
+    - .ai/reports/refactor-required-followups.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: call_site_impact_analysis
+    owner_agent: impact_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/call-site-impact.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: change_impact_analysis
+    owner_agent: impact_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/07-change-impact.yaml
+    - .ai/reports/consumer-impact.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: final_role_assignment
+    owner_agent: role_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/08-final-role-assignment.yaml
+    - .ai/reports/role-collision-resolution.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: pattern_selection
+    owner_agent: pattern_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/pattern-decision-log.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: structure_rendering
+    owner_agent: structure_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/structure-plan.yaml
+    - .ai/reports/final-file-tree.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: test_derivation
+    owner_agent: testing_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/09-test-plan.yaml
+    - .ai/reports/regression-test-plan.yaml
+    - .ai/reports/characterization-test-plan.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: implementation_sequence
+    owner_agent: execution_planning_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/10-implementation-sequence.yaml
+    - .ai/reports/checkpoint-groups.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: checkpoint_validation_plan
+    owner_agent: execution_planning_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/checkpoint-validation-plan.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: pre_implementation_gate
+    owner_agent: pre_implementation_gate_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/pre-implementation-gate.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: implementation
+    owner_agent: implementation_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/changed-file-manifest.yaml
+    - .ai/reports/implementation-result.yaml
+    - .ai/reports/checkpoint-results.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: post_implementation_validation
+    owner_agent: validation_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/post-implementation-validation.yaml
+    - .ai/reports/failure-report.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: failure_classification
+    owner_agent: failure_analysis_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/failure-classification.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: feedback_repair
+    owner_agent: repair_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/repair-plan.yaml
+    - .ai/reports/feedback-repair-result.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: trigger_review
+    owner_agent: alpha_controller
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/trigger-review.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+  - phase_id: report_artifact_validation
+    owner_agent: alpha_controller
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/report-artifact-validation.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: false
+  - phase_id: final_validation
+    owner_agent: validation_agent
+    ownership_type: exclusive
+    required_outputs:
+    - .ai/reports/99-validation-summary.yaml
+    - .ai/reports/final-unresolved-items.yaml
+    handoff_authority: handoff_subsystem_validates_consumption
+    gate_authority: gates_subsystem_validates_entry_output_handoff
+    runtime_authority: alpha_controller
+    agent_may_schedule_followup_phases: false
+    agent_may_emit_triggers: true
+validation:
+  required_checks:
+  - id: AGENT-PHASE-CHECK-001
+    check: all_phases_have_one_owner
+    applies_when:
+      phase_ownership_loaded: true
+  fail_conditions:
+  - id: AGENT-PHASE-001
+    condition: phase_owner_missing_or_duplicate
+    message: Each phase must resolve to exactly one owner agent.
+    severity: error

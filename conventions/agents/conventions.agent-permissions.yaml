@@ -3,16 +3,18 @@ file:
   name: conventions.agent-permissions.yaml
   path: agents/conventions.agent-permissions.yaml
   role: agent_tool_and_file_permission_contract
-  executability: validator
-purpose: Define tool, read, write, and code-edit permissions for every fixed agent.
+  executability: permission_registry
+purpose: Define strict read, write, tool, and source-edit permissions for every fixed agent.
 ownership:
   owns:
   - agent_permission_schema
   - agent_tool_enum
   - agent_permission_profiles
+  - permission_invariants
   does_not_own:
   - agent_contracts
   - phase_contracts
+  - tool_runtime_implementation
 activation:
   mode: conditional
   activates_when:
@@ -22,6 +24,7 @@ inputs:
   required:
   - agent_taxonomy
   - agent_contract_registry
+  - report_registry
   optional: []
 outputs:
   produces:
@@ -31,6 +34,7 @@ dependencies:
   - core/conventions.file-contract.yaml
   - agents/conventions.agent-taxonomy.yaml
   - agents/conventions.agent-contracts.yaml
+  - reports/conventions.report-registry.yaml
   optional_files: []
 sections:
   agent_permission_schema:
@@ -42,27 +46,56 @@ sections:
     - allowed_tools
     - forbidden_tools
     - forbidden_actions
+    - requires_before_run
+    - requires_after_run
   agent_tool_enum:
     allowed:
     - read_mission_request
+    - read_phase_bundle
+    - build_phase_bundle
+    - read_runtime_pack
     - read_report
     - write_report
+    - emit_trigger
+    - request_revision
+    - update_mission_state
+    - invoke_phase_agent
+    - run_gate_validator
+    - resolve_triggers
+    - process_revisions
+    - validate_reports
     - read_source
     - edit_source
+    - inspect_git_diff
     - run_tests
     - run_lint
     - run_build
-    - inspect_git_diff
-    - update_mission_state
-    - validate_schema
+    - run_validation_command
     - validate_gate
-    - invoke_phase_agent
+  permission_invariants:
+    absolute_rules:
+    - id: AGENT-PERMISSION-ABS-001
+      rule: Only implementation_agent may edit source during implementation phase after pre-implementation gate passes.
+      fail_condition: implementation_edit_permission_violation
+    - id: AGENT-PERMISSION-ABS-002
+      rule: repair_agent may edit source only after failure classification authorizes repair.
+      fail_condition: unauthorized_repair_edit
+    - id: AGENT-PERMISSION-ABS-003
+      rule: Only alpha_controller may update mission state or invoke phase agents.
+      fail_condition: non_alpha_runtime_tool_used
   agent_permission_profiles:
     alpha_controller:
+      agent_id: alpha_controller
       may_read:
+      - .ai/mission-state.yaml
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
+      - .ai/logs/**
+      - .ai/mission-state.yaml
+      - .ai/phase-bundles/**
       - .ai/reports/00-mission-profile.yaml
       - .ai/reports/01-active-context-manifest.yaml
       - .ai/reports/phase-accounting.yaml
@@ -71,83 +104,124 @@ sections:
       - .ai/reports/trigger-review.yaml
       may_edit_code: false
       allowed_tools:
+      - build_phase_bundle
       - invoke_phase_agent
+      - process_revisions
       - read_mission_request
       - read_report
+      - resolve_triggers
+      - run_gate_validator
       - update_mission_state
-      - validate_gate
-      - validate_schema
+      - validate_reports
       - write_report
-      forbidden_tools:
-      - read_source
-      - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
+      forbidden_tools: []
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     behavior_agent:
+      agent_id: behavior_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/02-behavior-contract.yaml
       - .ai/reports/assumptions.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     reconnaissance_agent:
+      agent_id: reconnaissance_agent
       may_read:
+      - '**/*.config.*'
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
+      - package.json
+      - src/**
+      - test/**
+      - tsconfig.json
       may_write:
       - .ai/reports/03-codebase-reconnaissance.yaml
       - .ai/reports/local-alignment.yaml
       - .ai/reports/local-convention-candidates.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
       - read_source
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     classification_agent:
+      agent_id: classification_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/boundary-contract-classification.yaml
       - .ai/reports/compatibility-decision.yaml
@@ -156,303 +230,447 @@ sections:
       - .ai/reports/risk-classification.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - read_source
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     architecture_agent:
+      agent_id: architecture_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/architecture-blueprint.yaml
       - .ai/reports/artifact-candidates.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - read_source
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     role_agent:
+      agent_id: role_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/04-draft-role-signals.yaml
       - .ai/reports/08-final-role-assignment.yaml
       - .ai/reports/role-collision-resolution.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     pattern_agent:
+      agent_id: pattern_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/pattern-decision-log.yaml
       - .ai/reports/pattern-pressure.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     artifact_action_agent:
+      agent_id: artifact_action_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/05-artifact-actions.yaml
       - .ai/reports/artifact-reuse-analysis.yaml
       - .ai/reports/post-action-artifact-candidates.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     refactor_strategy_agent:
+      agent_id: refactor_strategy_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/06-refactor-strategy.yaml
       - .ai/reports/behavior-preservation-requirements.yaml
       - .ai/reports/refactor-required-followups.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     impact_agent:
+      agent_id: impact_agent
       may_read:
+      - '**/*.config.*'
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
+      - package.json
+      - src/**
+      - test/**
+      - tsconfig.json
       may_write:
       - .ai/reports/07-change-impact.yaml
       - .ai/reports/call-site-impact.yaml
       - .ai/reports/consumer-impact.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
       - read_source
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     structure_agent:
+      agent_id: structure_agent
       may_read:
+      - '**/*.config.*'
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
+      - package.json
+      - src/**
+      - test/**
+      - tsconfig.json
       may_write:
       - .ai/reports/final-file-tree.yaml
       - .ai/reports/structure-plan.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - read_source
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     testing_agent:
+      agent_id: testing_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/09-test-plan.yaml
       - .ai/reports/characterization-test-plan.yaml
       - .ai/reports/regression-test-plan.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     execution_planning_agent:
+      agent_id: execution_planning_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/10-implementation-sequence.yaml
       - .ai/reports/checkpoint-groups.yaml
       - .ai/reports/checkpoint-validation-plan.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - inspect_git_diff
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
+      - run_validation_command
+      - validate_gate
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     pre_implementation_gate_agent:
+      agent_id: pre_implementation_gate_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/pre-implementation-gate.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - inspect_git_diff
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
+      - run_validation_command
+      - validate_gate
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     implementation_agent:
+      agent_id: implementation_agent
       may_read:
+      - '**/*.config.*'
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
+      - package.json
+      - src/**
+      - test/**
+      - tsconfig.json
       may_write:
       - .ai/reports/changed-file-manifest.yaml
       - .ai/reports/checkpoint-results.yaml
@@ -460,27 +678,48 @@ sections:
       may_edit_code: true
       allowed_tools:
       - edit_source
+      - emit_trigger
       - inspect_git_diff
+      - read_phase_bundle
       - read_report
       - read_source
+      - request_revision
       - run_build
       - run_lint
       - run_tests
-      - validate_schema
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     validation_agent:
+      agent_id: validation_agent
       may_read:
+      - '**/*.config.*'
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
+      - package.json
+      - src/**
+      - test/**
+      - tsconfig.json
       may_write:
       - .ai/reports/99-validation-summary.yaml
       - .ai/reports/failure-report.yaml
@@ -488,278 +727,131 @@ sections:
       - .ai/reports/post-implementation-validation.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - inspect_git_diff
+      - read_phase_bundle
       - read_report
       - read_source
-      - validate_schema
+      - request_revision
+      - run_validation_command
+      - validate_gate
       - write_report
       forbidden_tools:
-      - read_mission_request
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     failure_analysis_agent:
+      agent_id: failure_analysis_agent
       may_read:
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
       may_write:
       - .ai/reports/failure-classification.yaml
       may_edit_code: false
       allowed_tools:
+      - emit_trigger
+      - read_phase_bundle
       - read_report
-      - validate_schema
+      - request_revision
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - read_source
       - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
     repair_agent:
+      agent_id: repair_agent
       may_read:
+      - '**/*.config.*'
+      - .ai/phase-bundles/**
       - .ai/reports/**
-      - core/**
+      - .ai/runtime-packs/**
+      - conventions/**
+      - package.json
+      - src/**
+      - test/**
+      - tsconfig.json
       may_write:
       - .ai/reports/feedback-repair-result.yaml
       - .ai/reports/repair-plan.yaml
-      may_edit_code: conditional_repair_only
+      may_edit_code: conditional_after_failure_classification
       allowed_tools:
+      - edit_source
+      - emit_trigger
+      - inspect_git_diff
+      - read_phase_bundle
       - read_report
       - read_source
-      - validate_schema
+      - request_revision
+      - run_tests
       - write_report
       forbidden_tools:
-      - read_mission_request
-      - edit_source
-      - run_tests
-      - run_lint
-      - run_build
-      - inspect_git_diff
-      - update_mission_state
-      - validate_gate
       - invoke_phase_agent
+      - update_mission_state
       forbidden_actions:
-      - violate_phase_contract
-      - write_outside_scope
-      - bypass_gate
-  agent_permission_validation_rules:
-    absolute_rules:
-    - id: AGENT-PERMISSION-001
-      rule: Agent writes must be allowed by profile and active phase contract.
-      fail_condition: agent_write_not_allowed_by_profile_or_phase
-  agent_tool_definitions:
-    read_mission_request:
-      definition: read mission request agent_tool vocabulary value.
-      meaning: Represents the read mission request case within the agent_tool taxonomy.
-      detection_signals:
-      - read mission request signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches read mission request
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using read_mission_request must include reason and evidence
-    read_report:
-      definition: read report agent_tool vocabulary value.
-      meaning: Represents the read report case within the agent_tool taxonomy.
-      detection_signals:
-      - read report signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches read report
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using read_report must include reason and evidence
-    write_report:
-      definition: write report agent_tool vocabulary value.
-      meaning: Represents the write report case within the agent_tool taxonomy.
-      detection_signals:
-      - write report signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches write report
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using write_report must include reason and evidence
-    read_source:
-      definition: read source agent_tool vocabulary value.
-      meaning: Represents the read source case within the agent_tool taxonomy.
-      detection_signals:
-      - read source signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches read source
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using read_source must include reason and evidence
-    edit_source:
-      definition: edit source agent_tool vocabulary value.
-      meaning: Represents the edit source case within the agent_tool taxonomy.
-      detection_signals:
-      - edit source signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches edit source
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using edit_source must include reason and evidence
-    run_tests:
-      definition: run tests agent_tool vocabulary value.
-      meaning: Represents the run tests case within the agent_tool taxonomy.
-      detection_signals:
-      - run tests signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches run tests
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using run_tests must include reason and evidence
-    run_lint:
-      definition: run lint agent_tool vocabulary value.
-      meaning: Represents the run lint case within the agent_tool taxonomy.
-      detection_signals:
-      - run lint signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches run lint
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using run_lint must include reason and evidence
-    run_build:
-      definition: run build agent_tool vocabulary value.
-      meaning: Represents the run build case within the agent_tool taxonomy.
-      detection_signals:
-      - run build signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches run build
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using run_build must include reason and evidence
-    inspect_git_diff:
-      definition: inspect git diff agent_tool vocabulary value.
-      meaning: Represents the inspect git diff case within the agent_tool taxonomy.
-      detection_signals:
-      - inspect git diff signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches inspect git diff
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using inspect_git_diff must include reason and evidence
-    update_mission_state:
-      definition: update mission state agent_tool vocabulary value.
-      meaning: Represents the update mission state case within the agent_tool taxonomy.
-      detection_signals:
-      - update mission state signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches update mission state
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using update_mission_state must include reason and evidence
-    validate_schema:
-      definition: validate schema agent_tool vocabulary value.
-      meaning: Represents the validate schema case within the agent_tool taxonomy.
-      detection_signals:
-      - validate schema signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches validate schema
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using validate_schema must include reason and evidence
-    validate_gate:
-      definition: validate gate agent_tool vocabulary value.
-      meaning: Represents the validate gate case within the agent_tool taxonomy.
-      detection_signals:
-      - validate gate signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches validate gate
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using validate_gate must include reason and evidence
-    invoke_phase_agent:
-      definition: invoke phase agent agent_tool vocabulary value.
-      meaning: Represents the invoke phase agent case within the agent_tool taxonomy.
-      detection_signals:
-      - invoke phase agent signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches invoke phase agent
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - agent_tool decisions using invoke_phase_agent must include reason and evidence
+      - write_unowned_report
+      - modify_prior_phase_report
+      - consume_invalidated_report
+      - skip_required_output
+      - change_phase_contract
+      - weaken_gate
+      - invent_enum_value
+      requires_before_run:
+      - entry_gate_passed
+      - phase_bundle_exists
+      - agent_prompt_injected
+      - permission_profile_valid
+      requires_after_run:
+      - required_reports_written
+      - output_gate_validation_requested
+      - triggers_registered_by_alpha
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: AGENT-PERMISSION-CHECK-001
+    check: permission_profiles_cover_all_agents
+    applies_when:
+      permissions_loaded: true
+  fail_conditions:
+  - id: AGENT-PERMISSION-001
+    condition: permission_profile_missing
+    message: Every fixed agent must have one permission profile.
+    severity: error
+  - id: AGENT-PERMISSION-002
+    condition: agent_source_edit_scope_invalid
+    message: Only implementation and authorized repair may edit source code.
+    severity: error

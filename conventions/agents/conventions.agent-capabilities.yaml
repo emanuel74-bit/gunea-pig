@@ -1,0 +1,314 @@
+version: '1.0'
+file:
+  name: conventions.agent-capabilities.yaml
+  path: agents/conventions.agent-capabilities.yaml
+  role: agent_capability_mapping_contract
+  executability: decision_support
+purpose: Define what capabilities each fixed agent may exercise and which subsystem vocabularies each agent may use during phase execution.
+ownership:
+  owns:
+  - capability_type_enum
+  - capability_records
+  - capability_to_agent_matrix
+  - subsystem_usage_matrix
+  does_not_own:
+  - phase_ownership
+  - agent_prompts
+  - agent_permissions
+  - subsystem_vocabulary_definitions
+activation:
+  mode: reference_only
+  activates_when:
+  - agent_capabilities_are_referenced
+  skips_when: []
+inputs:
+  required:
+  - agent_taxonomy
+  optional: []
+outputs:
+  produces:
+  - agent_capability_matrix
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  optional_files: []
+sections:
+  capability_type_enum:
+    allowed:
+    - runtime_control
+    - planning
+    - evidence_collection
+    - classification
+    - design_decision
+    - strategy_selection
+    - impact_analysis
+    - structure_rendering
+    - verification_planning
+    - gatekeeping
+    - implementation
+    - validation
+    - failure_analysis
+    - repair
+  capability_records:
+  - capability: runtime_control
+    definition: runtime control capability owned by explicitly assigned agents only.
+    agents:
+    - alpha_controller
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: planning
+    definition: planning capability owned by explicitly assigned agents only.
+    agents:
+    - behavior_agent
+    - reconnaissance_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: evidence_collection
+    definition: evidence collection capability owned by explicitly assigned agents only.
+    agents:
+    - reconnaissance_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: classification
+    definition: classification capability owned by explicitly assigned agents only.
+    agents:
+    - classification_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: design_decision
+    definition: design decision capability owned by explicitly assigned agents only.
+    agents:
+    - architecture_agent
+    - role_agent
+    - pattern_agent
+    - artifact_action_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: strategy_selection
+    definition: strategy selection capability owned by explicitly assigned agents only.
+    agents:
+    - pattern_agent
+    - artifact_action_agent
+    - refactor_strategy_agent
+    - execution_planning_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: impact_analysis
+    definition: impact analysis capability owned by explicitly assigned agents only.
+    agents:
+    - impact_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: structure_rendering
+    definition: structure rendering capability owned by explicitly assigned agents only.
+    agents:
+    - structure_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: verification_planning
+    definition: verification planning capability owned by explicitly assigned agents only.
+    agents:
+    - testing_agent
+    - execution_planning_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: gatekeeping
+    definition: gatekeeping capability owned by explicitly assigned agents only.
+    agents:
+    - alpha_controller
+    - pre_implementation_gate_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: implementation
+    definition: implementation capability owned by explicitly assigned agents only.
+    agents:
+    - implementation_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: validation
+    definition: validation capability owned by explicitly assigned agents only.
+    agents:
+    - validation_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: failure_analysis
+    definition: failure analysis capability owned by explicitly assigned agents only.
+    agents:
+    - failure_analysis_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  - capability: repair
+    definition: repair capability owned by explicitly assigned agents only.
+    agents:
+    - repair_agent
+    must_not_be_assumed_by_unlisted_agents: true
+  capability_to_agent_matrix:
+    alpha_controller:
+    - runtime_control
+    - gatekeeping
+    behavior_agent:
+    - planning
+    reconnaissance_agent:
+    - evidence_collection
+    - planning
+    classification_agent:
+    - classification
+    architecture_agent:
+    - design_decision
+    role_agent:
+    - design_decision
+    pattern_agent:
+    - design_decision
+    - strategy_selection
+    artifact_action_agent:
+    - design_decision
+    - strategy_selection
+    refactor_strategy_agent:
+    - strategy_selection
+    impact_agent:
+    - impact_analysis
+    structure_agent:
+    - structure_rendering
+    testing_agent:
+    - verification_planning
+    execution_planning_agent:
+    - verification_planning
+    - strategy_selection
+    pre_implementation_gate_agent:
+    - gatekeeping
+    implementation_agent:
+    - implementation
+    validation_agent:
+    - validation
+    failure_analysis_agent:
+    - failure_analysis
+    repair_agent:
+    - repair
+  subsystem_usage_matrix:
+    alpha_controller:
+    - core
+    - missions
+    - phases
+    - agents
+    - gates
+    - triggers
+    - handoffs
+    - revisions
+    - reports
+    behavior_agent:
+    - planning
+    - reports
+    - risk
+    - triggers
+    - testing
+    reconnaissance_agent:
+    - planning
+    - reports
+    - dependencies
+    - boundaries
+    - risk
+    classification_agent:
+    - risk
+    - boundaries
+    - contracts
+    - dependencies
+    - triggers
+    - reports
+    architecture_agent:
+    - architecture
+    - planning
+    - risk
+    - boundaries
+    - dependencies
+    - reports
+    role_agent:
+    - roles
+    - architecture
+    - actions
+    - patterns
+    - reports
+    pattern_agent:
+    - patterns
+    - roles
+    - architecture
+    - actions
+    - reports
+    artifact_action_agent:
+    - actions
+    - roles
+    - patterns
+    - architecture
+    - risk
+    - triggers
+    - reports
+    refactor_strategy_agent:
+    - refactoring
+    - actions
+    - planning
+    - testing
+    - risk
+    - triggers
+    - reports
+    impact_agent:
+    - planning
+    - contracts
+    - dependencies
+    - boundaries
+    - risk
+    - testing
+    - reports
+    structure_agent:
+    - architecture
+    - roles
+    - patterns
+    - actions
+    - boundaries
+    - dependencies
+    - reports
+    testing_agent:
+    - testing
+    - planning
+    - risk
+    - contracts
+    - boundaries
+    - dependencies
+    - actions
+    - refactoring
+    - reports
+    execution_planning_agent:
+    - execution
+    - testing
+    - risk
+    - reports
+    - gates
+    pre_implementation_gate_agent:
+    - gates
+    - missions
+    - reports
+    - triggers
+    - handoffs
+    - revisions
+    - execution
+    implementation_agent:
+    - execution
+    - reports
+    - testing
+    validation_agent:
+    - execution
+    - reports
+    - gates
+    - triggers
+    - handoffs
+    - revisions
+    - missions
+    - testing
+    failure_analysis_agent:
+    - execution
+    - reports
+    - revisions
+    - triggers
+    - risk
+    repair_agent:
+    - execution
+    - revisions
+    - reports
+    - testing
+validation:
+  required_checks:
+  - id: AGENT-CAPABILITY-CHECK-001
+    check: all_capability_agents_exist
+    applies_when:
+      agent_capabilities_loaded: true
+  fail_conditions:
+  - id: AGENT-CAPABILITY-001
+    condition: capability_references_unknown_agent
+    message: Capability matrix must reference only fixed agents.
+    severity: error

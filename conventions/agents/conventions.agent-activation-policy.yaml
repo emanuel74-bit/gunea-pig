@@ -1,0 +1,198 @@
+version: '1.0'
+file:
+  name: conventions.agent-activation-policy.yaml
+  path: agents/conventions.agent-activation-policy.yaml
+  role: agent_runtime_activation_contract
+  executability: execution_policy
+purpose: Define exactly how Alpha activates phase agents, how phase bundles are consumed, and which authority each runtime participant has.
+ownership:
+  owns:
+  - agent_activation_contract
+  - agent_executor_modes
+  - phase_bundle_consumption_policy
+  - runtime_authority_matrix
+  does_not_own:
+  - agent_taxonomy
+  - phase_contracts
+  - gate_templates
+  - report_schemas
+  - trigger_resolution
+activation:
+  mode: conditional
+  activates_when:
+  - phase_agent_invocation_requested
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - active_phase_plan
+  - phase_contract
+  - owner_agent
+  - agent_prompt
+  - permission_profile
+  optional:
+  - phase_execution_result
+outputs:
+  produces:
+  - agent_activation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - agents/conventions.agent-prompts.yaml
+  - phases/conventions.phase-contracts.yaml
+  - gates/conventions.gate-validation.yaml
+  - reports/conventions.report-registry.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.revision-request-policy.yaml
+  optional_files: []
+sections:
+  agent_activation_contract:
+    required_steps:
+    - step_id: RESOLVE_ACTIVE_PHASE
+      action: alpha_reads_active_phase_plan
+      pass_when:
+      - exactly_one_next_phase_selected
+      fail_when:
+      - no_pending_phase
+      - multiple_next_phases_without_tiebreak
+    - step_id: RESOLVE_OWNER_AGENT
+      action: alpha_reads_phase_contract_owner
+      pass_when:
+      - owner_agent_matches_agent_phase_ownership
+      fail_when:
+      - owner_missing
+      - owner_conflict
+    - step_id: VALIDATE_AGENT_RECORDS
+      action: alpha_validates_agent_taxonomy_contract_permission_prompt
+      pass_when:
+      - agent_has_definition_contract_permission_prompt
+      fail_when:
+      - agent_missing_contract
+      - agent_missing_permission
+      - agent_missing_prompt
+    - step_id: BUILD_PHASE_BUNDLE
+      action: alpha_builds_or_loads_phase_execution_bundle
+      pass_when:
+      - bundle_contains_required_inputs_outputs_scope_and_templates
+      fail_when:
+      - bundle_missing_required_field
+    - step_id: RUN_ENTRY_GATE
+      action: alpha_invokes_gate_validation
+      pass_when:
+      - entry_gate_status_passed
+      fail_when:
+      - entry_gate_failed_or_blocked
+    - step_id: INJECT_PROMPT
+      action: alpha_injects_agent_prompt_matching_owner
+      pass_when:
+      - prompt_agent_id_matches_owner
+      fail_when:
+      - wrong_prompt_injected
+    - step_id: INVOKE_AGENT
+      action: alpha_invokes_phase_agent_executor
+      pass_when:
+      - agent_returns_declared_result_metadata
+      fail_when:
+      - agent_refuses_required_work
+      - executor_missing
+    - step_id: COLLECT_OUTPUTS
+      action: alpha_collects_required_report_files
+      pass_when:
+      - all_required_output_files_exist
+      fail_when:
+      - console_only_output
+      - required_report_missing
+    - step_id: RUN_OUTPUT_GATE
+      action: alpha_invokes_output_gate
+      pass_when:
+      - output_gate_status_passed
+      fail_when:
+      - output_gate_failed_or_blocked
+    - step_id: REGISTER_TRIGGERS_AND_HANDOFFS
+      action: alpha_registers_triggers_and_validates_handoffs
+      pass_when:
+      - emitted_triggers_registered
+      - handoffs_valid_or_blocked
+      fail_when:
+      - trigger_unregistered
+      - invalid_handoff_consumed
+    - step_id: UPDATE_MISSION_STATE
+      action: alpha_updates_state_after_validated_phase
+      pass_when:
+      - phase_status_record_written
+      fail_when:
+      - non_alpha_state_update
+      - state_update_before_gate_pass
+  agent_executor_modes:
+    true_subagent:
+      definition: Runtime invokes a dedicated subagent with independent prompt and context.
+      required_controls:
+      - phase_bundle
+      - prompt_injection
+      - permission_profile
+      - output_gate
+    command_simulated_agent:
+      definition: Runtime invokes a command that prompts the same model to act as one agent.
+      required_controls:
+      - strict_role_prompt
+      - phase_bundle
+      - validator_after_output
+    single_session_fallback:
+      definition: Same model executes one agent role at a time; accepted only for dry-runs or low-risk planning.
+      required_controls:
+      - explicit owner_agent
+      - no_code_edit_without_gate
+      - report_validation
+  phase_bundle_consumption_policy:
+    absolute_rules:
+    - id: AGENT-BUNDLE-ABS-001
+      rule: Agent must treat generated phase bundle as the active task contract.
+      fail_condition: agent_ignored_phase_bundle
+    - id: AGENT-BUNDLE-ABS-002
+      rule: Agent must not load unrelated full-system context when runtime pack exists.
+      fail_condition: agent_loaded_unrelated_context
+    - id: AGENT-BUNDLE-ABS-003
+      rule: Agent may request more context only by declaring missing required evidence or optional lookup need.
+      fail_condition: agent_expanded_context_without_reason
+  runtime_authority_matrix:
+    alpha_controller:
+    - select_next_phase
+    - build_phase_bundle
+    - invoke_agent
+    - update_mission_state
+    - register_triggers
+    - process_revisions
+    - request_gate_validation
+    phase_agents:
+    - read_allowed_inputs
+    - produce_declared_reports
+    - emit_triggers
+    - request_revision
+    - record_blockers
+    gates_subsystem:
+    - mechanical_gate_pass_fail
+    reports_subsystem:
+    - report_schema_and_lifecycle_rules
+    handoffs_subsystem:
+    - downstream_consumption_policy
+    revisions_subsystem:
+    - invalidation_and_rerun_policy
+validation:
+  required_checks:
+  - id: AGENT-ACTIVATION-CHECK-001
+    check: activation_steps_preserve_gate_order
+    applies_when:
+      phase_agent_invoked: true
+  fail_conditions:
+  - id: AGENT-ACTIVATION-001
+    condition: agent_activation_gate_sequence_invalid
+    message: Entry gate must pass before invocation and output gate before mission-state update.
+    severity: error
+  - id: AGENT-ACTIVATION-002
+    condition: agent_ignored_phase_bundle
+    message: Agent must execute generated phase bundle as active contract.
+    severity: error
