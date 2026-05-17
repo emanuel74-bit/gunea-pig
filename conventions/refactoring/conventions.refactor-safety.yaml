@@ -1,0 +1,180 @@
+version: '1.0'
+file:
+  name: conventions.refactor-safety.yaml
+  path: refactoring/conventions.refactor-safety.yaml
+  role: refactor_safety_gate_contract
+  executability: validator
+purpose: Define strict safety blockers, followups, and pre-implementation constraints for refactor strategies before execution planning or implementation.
+ownership:
+  owns:
+  - refactor_safety_policy
+  - safety_blocker_decision_rules
+  - refactor_safety_followup_mapping
+  - refactor_safety_output_schema
+  does_not_own:
+  - gate_validation
+  - trigger_resolution
+  - report_lifecycle
+  - implementation_sequence
+activation:
+  mode: conditional
+  activates_when:
+  - refactor_strategy_decision_exists
+  - pre_implementation_gate_pending
+  - risk_level_medium_or_higher
+  skips_when:
+  - no_refactor_selected_and_no_safety_followup
+inputs:
+  required:
+  - refactor_strategy_decision
+  - behavior_preservation_requirements
+  - risk_classification
+  optional:
+  - compatibility_decision
+  - boundary_validation
+  - dependency_validation
+  - checkpoint_validation_plan
+  - test_plan
+outputs:
+  produces:
+  - refactor_safety_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - refactoring/conventions.refactor-strategy.yaml
+  - refactoring/conventions.behavior-preservation.yaml
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  optional_files:
+  - contracts/conventions.compatibility.yaml
+  - boundaries/conventions.boundary-validation.yaml
+  - dependencies/conventions.dependency-validation.yaml
+  - testing/conventions.test-validation.yaml
+sections:
+  refactor_safety_policy:
+    absolute_rules:
+    - id: REFACTOR-SAFETY-ABS-001
+      rule: Implementation is blocked when safety blockers remain unresolved.
+      fail_condition: implementation_started_with_refactor_safety_blocker
+    - id: REFACTOR-SAFETY-ABS-002
+      rule: Public contract, data, or external integration refactors require compatibility/rollback or explicit block.
+      fail_condition: high_impact_refactor_without_compatibility_or_rollback
+    - id: REFACTOR-SAFETY-ABS-003
+      rule: Refactor must not hide behavior change behind structural change.
+      fail_condition: behavior_change_hidden_as_refactor
+  safety_blocker_decision_rules:
+  - id: SAFETY-BLOCK-BEHAVIOR-LOCK-MISSING
+    applies_when:
+    - behavior_preservation_requirements.behavior_lock_required is true
+    pass_when:
+    - behavior lock report exists
+    - test/characterization obligation exists
+    fail_when:
+    - behavior lock missing or weak
+    blocks_before:
+    - pre_implementation_gate
+    fail_condition: behavior_lock_missing
+  - id: SAFETY-BLOCK-COMPATIBILITY-UNKNOWN
+    applies_when:
+    - public_contract_changed or external_contract scope
+    pass_when:
+    - compatibility-decision exists
+    - consumer-impact exists when consumers known
+    fail_when:
+    - compatibility unknown
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    fail_condition: compatibility_decision_missing
+  - id: SAFETY-BLOCK-DEPENDENCY-UNVALIDATED
+    applies_when:
+    - dependency direction may change
+    pass_when:
+    - dependency-validation passed or no violation remains
+    fail_when:
+    - dependency validation missing or failed
+    blocks_before:
+    - pre_implementation_gate
+    fail_condition: dependency_validation_missing
+  - id: SAFETY-BLOCK-BOUNDARY-LEAK
+    applies_when:
+    - boundary crossing may change
+    pass_when:
+    - boundary validation passed
+    - no blocking leak remains
+    fail_when:
+    - boundary leak unresolved
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    fail_condition: unresolved_boundary_leak
+  - id: SAFETY-BLOCK-DATA-RISK
+    applies_when:
+    - data_or_migration_surface scope
+    pass_when:
+    - migration/rollback plan exists
+    - data safety tests planned
+    fail_when:
+    - rollback/migration plan missing
+    blocks_before:
+    - pre_implementation_gate
+    fail_condition: data_refactor_without_rollback_plan
+  - id: SAFETY-BLOCK-CHECKPOINTS
+    applies_when:
+    - selected_strategy in incremental_migration, branch_by_abstraction, strangler_refactor, split_then_migrate
+    pass_when:
+    - checkpoint_validation_plan exists
+    fail_when:
+    - checkpoint plan missing
+    blocks_before:
+    - implementation
+    fail_condition: checkpoint_plan_missing
+  refactor_safety_followup_mapping:
+  - condition: behavior_lock_missing
+    emit_trigger: validation_required
+    required_report: behavior-preservation-requirements
+    severity: blocking
+  - condition: compatibility_decision_missing
+    emit_trigger: compatibility_decision_required
+    required_report: compatibility-decision
+    severity: blocking
+  - condition: dependency_validation_missing
+    emit_trigger: dependency_validation_required
+    required_report: dependency-validation
+    severity: blocking
+  - condition: unresolved_boundary_leak
+    emit_trigger: boundary_validation_required
+    required_phase: boundary_contract_classification
+    severity: blocking
+  - condition: checkpoint_plan_missing
+    emit_trigger: checkpointed_sequence_required
+    required_report: checkpoint-validation-plan
+    severity: blocking
+  refactor_safety_output_schema:
+    required_fields:
+    - safety_status
+    - blocking_items
+    - resolved_items
+    - required_followups
+    - triggers_emitted
+    - blocks_before
+    - evidence_refs
+validation:
+  required_checks:
+  - id: REFACTOR-SAFETY-CHECK-001
+    check: no_blocking_safety_items_before_implementation
+    applies_when:
+      implementation_phase_pending: true
+  - id: REFACTOR-SAFETY-CHECK-002
+    check: required_followups_registered_as_triggers_or_reports
+    applies_when:
+      required_followups_present: true
+  fail_conditions:
+  - id: REFACTOR-SAFETY-001
+    condition: implementation_started_with_refactor_safety_blocker
+    message: Implementation cannot start with unresolved refactor safety blockers.
+    severity: error
+  - id: REFACTOR-SAFETY-002
+    condition: high_impact_refactor_without_compatibility_or_rollback
+    message: High-impact refactor requires compatibility/rollback safeguards.
+    severity: error

@@ -1,0 +1,207 @@
+version: '1.0'
+file:
+  name: conventions.refactor-validation.yaml
+  path: refactoring/conventions.refactor-validation.yaml
+  role: refactor_strategy_and_preservation_validation_contract
+  executability: validator
+purpose: Validate refactor classification, behavior preservation, strategy, safety, followups, and downstream readiness before execution planning, implementation,
+  and final validation.
+ownership:
+  owns:
+  - refactor_validation_policy
+  - validation_check_catalog
+  - refactor_validation_algorithm
+  - failure_to_remediation_mapping
+  - refactor_validation_output_schema
+  does_not_own:
+  - refactor_taxonomy
+  - strategy_selection
+  - behavior_preservation_requirements
+  - safety_blocker_definitions
+activation:
+  mode: conditional
+  activates_when:
+  - refactor_strategy_decision_exists
+  - pre_implementation_gate_pending
+  - final_validation_pending
+  skips_when:
+  - refactor_classification.refactor_needed is false and no_refactor selected
+inputs:
+  required:
+  - refactor_classification
+  - refactor_strategy_decision
+  optional:
+  - behavior_preservation_requirements
+  - refactor_safety_result
+  - test_plan
+  - compatibility_decision
+  - dependency_validation
+  - boundary_validation
+outputs:
+  produces:
+  - refactor_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - refactoring/conventions.refactor-classification.yaml
+  - refactoring/conventions.refactor-strategy.yaml
+  - refactoring/conventions.behavior-preservation.yaml
+  - refactoring/conventions.refactor-safety.yaml
+  - reports/conventions.report-validation.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-validation.yaml
+  - revisions/conventions.revision-validation.yaml
+sections:
+  refactor_validation_policy:
+    absolute_rules:
+    - id: REFACTOR-VALIDATION-ABS-001
+      rule: Refactor strategy decision is valid only when classification, behavior preservation, safety, and required followups are complete.
+      fail_condition: refactor_decision_validated_with_missing_prerequisite
+    - id: REFACTOR-VALIDATION-ABS-002
+      rule: No refactor output may be consumed downstream if its source evidence was invalidated.
+      fail_condition: downstream_consumed_invalidated_refactor_output
+    - id: REFACTOR-VALIDATION-ABS-003
+      rule: Final validation must fail when behavior preservation remains unproven for a no-behavior-change refactor.
+      fail_condition: final_validation_passed_with_unproven_refactor_preservation
+  validation_check_catalog:
+  - check_id: refactor_classification_exists
+    applies_when:
+    - refactor_like_request true
+    pass_when:
+    - refactor_classification report exists and has refactor_needed/scope/intents
+    fail_when:
+    - classification missing or incomplete
+    severity: blocking
+  - check_id: strategy_decision_exists
+    applies_when:
+    - refactor_classification.refactor_needed true
+    pass_when:
+    - selected_strategy is known and evidence_refs are present
+    fail_when:
+    - strategy missing or unknown
+    severity: blocking
+  - check_id: behavior_preservation_complete
+    applies_when:
+    - behavior_preservation_required true
+    pass_when:
+    - preserved behaviors and locks are recorded
+    - test obligations exist
+    fail_when:
+    - lock/test obligations missing
+    severity: blocking
+  - check_id: safety_result_passed
+    applies_when:
+    - refactor_strategy_decision exists
+    pass_when:
+    - refactor_safety_result.safety_status is passed or passed_with_warnings
+    - no blocking items remain
+    fail_when:
+    - blocking safety item exists
+    severity: blocking
+  - check_id: required_followups_registered
+    applies_when:
+    - refactor_required_followups not empty
+    pass_when:
+    - each followup has trigger/report/phase record
+    fail_when:
+    - followup unregistered
+    severity: blocking
+  - check_id: scope_not_exceeded
+    applies_when:
+    - mission_profile has allowed_code_edit_scope
+    pass_when:
+    - strategy scope within mission profile and allowed edit scope
+    fail_when:
+    - strategy expands beyond allowed scope
+    severity: blocking
+  - check_id: behavior_change_not_hidden
+    applies_when:
+    - changed behavior detected
+    pass_when:
+    - behavior change is listed in allowed_behavior_changes and covered by tests
+    fail_when:
+    - behavior change implicit
+    severity: blocking
+  refactor_validation_algorithm:
+  - step_id: LOAD_REFACTOR_OUTPUTS
+    action: read
+    input:
+    - refactor_classification
+    - behavior_preservation_requirements
+    - refactor_strategy_decision
+    - refactor_safety_result
+    fail_when:
+    - required_output_missing
+  - step_id: RUN_VALIDATION_CHECKS
+    action: for_each
+    target: validation_check_catalog
+    assertion: check_result == passed or nonblocking_warning
+  - step_id: CALCULATE_STATUS
+    action: evaluate
+    rules:
+    - any blocking failure => failed
+    - all required checks pass => passed
+    - warnings only => passed_with_warnings
+  - step_id: EMIT_FOLLOWUPS
+    action: map_failures
+    output:
+    - triggers_emitted
+    - revision_requests
+    - blocked_items
+  - step_id: WRITE_RESULT
+    action: write
+    output: refactor_validation_result
+  failure_to_remediation_mapping:
+  - failure: classification_missing_or_incomplete
+    required_action: rerun_refactor_classification
+    blocks_before:
+    - refactor_strategy_selection
+    - pre_implementation_gate
+  - failure: strategy_missing_or_unknown
+    required_action: rerun_refactor_strategy_selection
+    blocks_before:
+    - implementation_sequence
+  - failure: behavior_lock_missing
+    required_action: run_behavior_preservation_and_test_derivation
+    blocks_before:
+    - pre_implementation_gate
+  - failure: followup_unregistered
+    required_action: trigger_review
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - failure: scope_exceeded
+    required_action: revision_request_to_scope_or_mission_profile
+    blocks_before:
+    - implementation
+  refactor_validation_output_schema:
+    required_fields:
+    - validation_status
+    - checks_run
+    - failures
+    - warnings
+    - blocking_items
+    - required_remediations
+    - triggers_emitted
+    - revision_requests
+    - evidence_refs
+validation:
+  required_checks:
+  - id: REFACTOR-VALIDATION-CHECK-001
+    check: refactor_validation_result_emitted
+    applies_when:
+      refactor_validation_required: true
+  - id: REFACTOR-VALIDATION-CHECK-002
+    check: blocking_failures_block_downstream
+    applies_when:
+      validation_status: failed
+  fail_conditions:
+  - id: REFACTOR-VALIDATION-001
+    condition: refactor_decision_validated_with_missing_prerequisite
+    message: Refactor validation cannot pass with missing prerequisites.
+    severity: error
+  - id: REFACTOR-VALIDATION-002
+    condition: final_validation_passed_with_unproven_refactor_preservation
+    message: Final validation cannot pass when refactor behavior preservation is unproven.
+    severity: error

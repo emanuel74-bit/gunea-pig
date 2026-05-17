@@ -4,14 +4,15 @@ file:
   path: refactoring/conventions.refactor-strategy.yaml
   role: refactor_strategy_resolution_engine
   executability: decision_engine
-purpose: Select the safest refactor strategy using artifact actions, behavior preservation requirements, global risk, and
-  codebase evidence without selecting artifact actions or implementation order.
+purpose: Select the safest refactor strategy using classified refactor need, artifact actions, behavior preservation, and subsystem evidence without selecting artifact
+  actions or implementation order.
 ownership:
   owns:
-  - refactor_strategy_selection
-  - refactor_strategy_decision_rules
-  - refactor_blocking_conditions
-  - refactor_required_followups
+  - strategy_selection_policy
+  - strategy_selection_decision_rules
+  - strategy_priority_order
+  - strategy_tie_breakers
+  - strategy_decision_output_schema
   does_not_own:
   - refactor_strategy_definitions
   - artifact_action_selection
@@ -23,26 +24,26 @@ ownership:
 activation:
   mode: conditional
   activates_when:
-  - request_is_refactor_or_refactor_like
+  - refactor_classification.refactor_needed
   - artifact_action_set_contains_refactor_action
   - design_revision_requires_structural_change
   skips_when:
-  - request_is_new_feature_only_without_existing_artifact_change
+  - refactor_classification.refactor_needed is false
 inputs:
   required:
   - behavior_contract
   - refactor_taxonomy
+  - refactor_classification
   - artifact_action_table
   - risk_classification
-  - draft_role_signals
   optional:
   - behavior_preservation_requirements
   - boundary_classification
   - contract_classification
   - compatibility_decision
   - dependency_classification
-  - codebase_reconnaissance_report
   - change_impact_report
+  - test_inventory
 outputs:
   produces:
   - refactor_strategy_decision
@@ -51,198 +52,251 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - refactoring/conventions.refactor-taxonomy.yaml
-  - actions/conventions.action-taxonomy.yaml
-  - actions/conventions.action-resolution.yaml
-  - risk/conventions.risk-taxonomy.yaml
-  - roles/conventions.role-resolution.yaml
-  optional_files:
+  - refactoring/conventions.refactor-classification.yaml
   - refactoring/conventions.behavior-preservation.yaml
-  - boundaries/conventions.boundary-taxonomy.yaml
+  - actions/conventions.action-resolution.yaml
+  - risk/conventions.risk-classification.yaml
+  optional_files:
   - contracts/conventions.compatibility.yaml
-  - dependencies/conventions.import-rules.yaml
+  - boundaries/conventions.boundary-validation.yaml
+  - dependencies/conventions.dependency-validation.yaml
+  - testing/conventions.testing-matrix.yaml
 sections:
-  strategy_selection_principles:
+  strategy_selection_policy:
     absolute_rules:
     - id: REFACTOR-STRATEGY-ABS-001
-      rule: Refactor strategy coordinates artifact actions but must not replace artifact action resolution.
-      fail_condition: refactor_strategy_replaces_artifact_action_resolution
+      rule: Strategy selection must be based on refactor classification, artifact actions, behavior preservation, risk, contracts, boundaries, dependencies, and testing
+        evidence.
+      fail_condition: strategy_selected_without_required_evidence
     - id: REFACTOR-STRATEGY-ABS-002
-      rule: Refactor strategy must use global risk, action, contract, boundary, dependency, and behavior vocabularies.
-      fail_condition: refactor_strategy_redefines_global_vocabulary
-  refactor_strategy_selection_rules:
+      rule: A restricted/high-risk strategy must include checkpoint and validation followups.
+      fail_condition: high_risk_strategy_without_checkpoints
+    - id: REFACTOR-STRATEGY-ABS-003
+      rule: Strategy must not introduce broader scope than mission profile allows.
+      fail_condition: strategy_exceeds_mission_scope
+  strategy_priority_order:
+  - no_refactor
+  - move_or_rename_only
+  - characterization_first
+  - extract_then_delegate
+  - split_then_migrate
+  - inline_and_remove
+  - merge_duplicates
+  - wrap_with_adapter
+  - replace_with_facade
+  - compatibility_adapter
+  - branch_by_abstraction
+  - parallel_implementation
+  - incremental_migration
+  - strangler_refactor
+  strategy_selection_decision_rules:
     match_decision_rules:
-    - id: REFACTOR-STRATEGY-MOVE-RENAME
+    - id: SELECT-NO-REFACTOR
+      priority: 1
+      match:
+        refactor_classification.refactor_needed: false
+      decision:
+        selected_strategy: no_refactor
+        blocks_implementation: false
+        required_followups:
+        - record_no_refactor_reason
+    - id: SELECT-CHARACTERIZATION-FIRST
+      priority: 2
+      match:
+        behavior_preservation_requirements.behavior_lock_required: true
+        test_inventory.coverage_state:
+          any_of:
+          - weak
+          - unknown
+      decision:
+        selected_strategy: characterization_first
+        blocks_implementation: true
+        required_reports:
+        - characterization-test-plan
+        - behavior-preservation-requirements
+    - id: SELECT-MOVE-RENAME
+      priority: 3
       match:
         artifact_action_table.selected_action:
           any_of:
           - move_existing
           - rename_existing
-        behavior_contract.requested_behavior_change: false
-        contract_classification.stability_level:
-          none_of:
-          - module_public
-          - external_public
-          - durable_versioned
+        refactor_scope:
+          any_of:
+          - single_artifact
+          - single_module
+        public_contract_changed: false
       decision:
         selected_strategy: move_or_rename_only
-        required_behavior_lock: 'no'
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
         - dependency_validation
-        - targeted_validation
-    - id: REFACTOR-STRATEGY-EXTRACT-DELEGATE
+        - call_site_update_required_if_references_exist
+    - id: SELECT-EXTRACT
+      priority: 4
       match:
         artifact_action_table.selected_action: extract_from_existing
         source_artifact_remains_valid_after_delegation: true
       decision:
         selected_strategy: extract_then_delegate
-        required_behavior_lock: 'yes'
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
-        - behavior_preservation_review
         - role_validation
+        - dependency_validation
         - regression_test_review
-    - id: REFACTOR-STRATEGY-SPLIT-MIGRATE
+    - id: SELECT-SPLIT
+      priority: 5
       match:
         artifact_action_table.selected_action: split_existing
       decision:
         selected_strategy: split_then_migrate
-        required_behavior_lock: 'yes'
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
-        - call_site_analysis
-        - contract_compatibility_check_if_public
-        - behavior_preservation_review
-        - implementation_checkpoint_groups
-    - id: REFACTOR-STRATEGY-INLINE
+        - call_site_impact_analysis
+        - change_impact_analysis
+        - checkpoint_validation_plan
+    - id: SELECT-INLINE
+      priority: 6
       match:
         artifact_action_table.selected_action: inline_existing
-        caller_remains_single_responsibility: true
+        consumer_count: 1
+        artifact_is_public_or_boundary_protecting: false
       decision:
         selected_strategy: inline_and_remove
-        required_behavior_lock: 'yes'
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
-        - caller_responsibility_check
-        - regression_test_review
-    - id: REFACTOR-STRATEGY-WRAP
+        - delete_reference_validation
+        - targeted_validation
+    - id: SELECT-MERGE-DUPLICATES
+      priority: 7
       match:
-        artifact_action_table.selected_action: wrap_existing
-        boundary_or_interface_mismatch: true
+        artifact_action_table.selected_action: merge_existing
+        semantic_equivalence_proven: true
+      decision:
+        selected_strategy: merge_duplicates
+        blocks_implementation: false
+        required_followups:
+        - consumer-impact
+        - compatibility-decision-if-public
+        - regression_test_review
+    - id: SELECT-WRAP-ADAPTER
+      priority: 8
+      match:
+        boundary_or_contract_mismatch_detected: true
+        adapter_can_isolate_mismatch: true
       decision:
         selected_strategy: wrap_with_adapter
-        required_behavior_lock: conditional
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
         - boundary_validation
-        - contract_compatibility_check
-        - adapter_tests
-    - id: REFACTOR-STRATEGY-BRANCH-ABSTRACTION
+        - contract_test_review
+    - id: SELECT-COMPATIBILITY-ADAPTER
+      priority: 9
       match:
-        old_and_new_implementations_must_coexist: true
-        consumers_cannot_migrate_atomically: true
+        compatibility_decision.compatibility_state:
+          any_of:
+          - backward_compatibility_required
+          - breaking_change_possible
+      decision:
+        selected_strategy: compatibility_adapter
+        blocks_implementation: false
+        required_followups:
+        - compatibility-decision
+        - consumer-impact
+        - contract_tests
+    - id: SELECT-INCREMENTAL-MIGRATION
+      priority: 10
+      match:
+        refactor_scope:
+          any_of:
+          - cross_module
+          - shared_kernel
+          - external_contract
+        valid_intermediate_states_possible: true
+      decision:
+        selected_strategy: incremental_migration
+        blocks_implementation: false
+        required_followups:
+        - checkpoint_validation_plan
+        - dependency_validation
+    - id: SELECT-BRANCH-BY-ABSTRACTION
+      priority: 11
+      match:
+        large_change_requires_coexistence: true
+        abstraction_seam_can_be_owned: true
       decision:
         selected_strategy: branch_by_abstraction
-        required_behavior_lock: 'yes'
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
-        - contract_compatibility_check
-        - implementation_checkpoint_groups
-        - change_impact_analysis
-    - id: REFACTOR-STRATEGY-STRANGLER
+        - migration_plan
+        - cleanup_followup
+        - compatibility_review
+    - id: SELECT-PARALLEL-IMPLEMENTATION
+      priority: 12
       match:
-        legacy_surface_large: true
-        incremental_routing_possible: true
+        old_and_new_can_run_safely_together: true
+        comparison_oracle_available: true
+      decision:
+        selected_strategy: parallel_implementation
+        blocks_implementation: false
+        required_followups:
+        - characterization-test-plan
+        - cutover_plan
+    - id: SELECT-STRANGLER
+      priority: 13
+      match:
+        legacy_subsystem_replacement: true
+        slice_boundary_defined: true
       decision:
         selected_strategy: strangler_refactor
-        required_behavior_lock: 'yes'
-        implementation_allowed: 'yes'
+        blocks_implementation: false
         required_followups:
-        - routing_plan_required_by_execution
-        - contract_compatibility_check
-        - observability_review_if_available
-    - id: REFACTOR-STRATEGY-NO-REFACTOR
+        - strict_gate_profile
+        - rollback_plan
+        - checkpoint_validation_plan
+    - id: SELECT-BLOCK-UNKNOWN
+      priority: 99
       match:
-        refactor_value_unproven: true
-        risk_classification.risk_level:
-          any_of:
-          - high
-          - critical
+        refactor_scope: unknown
       decision:
-        selected_strategy: no_refactor
-        required_behavior_lock: 'no'
-        implementation_allowed: 'no'
-        blocking_reason: High-risk refactor requires clear value and safety evidence.
-        fail_when:
-        - refactor_continues_without_value_evidence
-  refactor_strategy_decision_schema:
+        selected_strategy: characterization_first
+        blocks_implementation: true
+        required_followups:
+        - additional_reconnaissance
+        - risk_reclassification_required
+  strategy_tie_breakers:
+  - prefer the strategy with the smallest valid scope that satisfies behavior preservation
+  - prefer strategy preserving public contracts without compatibility debt
+  - prefer incremental_migration over strangler_refactor when valid intermediate states are local and bounded
+  - prefer characterization_first before any strategy when preservation evidence is insufficient
+  - reject any strategy requiring unavailable evidence unless mission is blocked or revised
+  strategy_decision_output_schema:
     required_fields:
     - selected_strategy
     - strategy_reason
-    - artifact_actions_referenced
-    - required_behavior_lock
-    - implementation_allowed
-    - required_followups
-    - confidence
-    optional_fields:
     - rejected_strategies
-    - blocking_reason
-    - related_contracts
-    - related_dependencies
-  revision_rules:
-    match_decision_rules:
-    - id: REFACTOR-REVISE-PUBLIC-CONSUMERS
-      match:
-        change_impact_report.public_consumers_found: true
-      decision:
-        revision_required: true
-        required_followups:
-        - contract_compatibility_check
-        - consumer_impact_review
-    - id: REFACTOR-REVISE-DEPENDENCY-CYCLE
-      match:
-        dependency_validation_report.dependency_cycle_detected: true
-      decision:
-        revision_required: true
-        implementation_allowed: 'no'
-        blocking_reason: Refactor strategy introduced or exposed a dependency cycle.
-    - id: REFACTOR-REVISE-NO-BEHAVIOR-LOCK
-      match:
-        behavior_preservation_requirements.behavior_lock_required: 'yes'
-        test_plan.behavior_lock_present: false
-      decision:
-        revision_required: true
-        implementation_allowed: 'no'
-        required_followups:
-        - test_derivation
+    - required_behavior_lock
+    - required_followups
+    - required_reports
+    - triggers_emitted
+    - blocking_items
+    - evidence_refs
 validation:
   required_checks:
   - id: REFACTOR-STRATEGY-CHECK-001
-    check: refactor_strategy_selected_when_refactor_active
+    check: strategy_has_required_evidence
     applies_when:
-      request_is_refactor_or_refactor_like: true
+      refactor_needed: true
   - id: REFACTOR-STRATEGY-CHECK-002
-    check: selected_strategy_defined_in_taxonomy
+    check: rejected_strategies_recorded
     applies_when:
-      refactor_strategy_decision_exists: true
+      multiple_strategy_candidates: true
   fail_conditions:
   - id: REFACTOR-STRATEGY-001
-    condition: selected_refactor_strategy_not_in_taxonomy
-    message: Selected refactor strategy must be defined in refactor taxonomy.
+    condition: strategy_selected_without_required_evidence
+    message: Refactor strategy must cite required evidence.
     severity: error
-    owner: refactoring/conventions.refactor-strategy.yaml
   - id: REFACTOR-STRATEGY-002
-    condition: high_risk_refactor_without_behavior_preservation_requirements
-    message: High-risk refactor requires behavior preservation requirements.
+    condition: strategy_exceeds_mission_scope
+    message: Selected refactor strategy exceeds mission scope.
     severity: error
-    owner: refactoring/conventions.refactor-strategy.yaml
-  - id: REFACTOR-STRATEGY-003
-    condition: refactor_strategy_selected_without_artifact_actions
-    message: Refactor strategy must be grounded in artifact actions.
-    severity: error
-    owner: refactoring/conventions.refactor-strategy.yaml
-  - id: REFACTOR-STRATEGY-004
-    condition: blocked_refactor_continues
-    message: Blocked refactor must not proceed to implementation.
-    severity: error
-    owner: refactoring/conventions.refactor-strategy.yaml

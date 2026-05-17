@@ -2,29 +2,31 @@ version: '1.0'
 file:
   name: conventions.refactoring.yaml
   path: refactoring/conventions.refactoring.yaml
-  role: refactoring_system_entrypoint
+  role: refactoring_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide entrypoint, file index, local phase contract, and subsystem contract for safe behavior-preserving refactoring
-  without owning global orchestration.
+purpose: Provide the bounded entrypoint, file index, execution order, and integration contract for safe behavior-preserving refactoring without owning global orchestration,
+  artifact actions, gates, or implementation.
 ownership:
   owns:
-  - refactoring_system_metadata
   - refactoring_file_index
-  - refactoring_local_phase_contract
-  - refactoring_system_contract
+  - refactoring_local_execution_order
+  - refactoring_subsystem_contract
+  - refactoring_integration_contract
   does_not_own:
-  - global_pipeline_order
   - refactor_strategy_definitions
   - refactor_strategy_selection
-  - behavior_preservation_validation
+  - behavior_preservation_rules
+  - safety_blockers
+  - validation_checks
   - artifact_action_selection
   - implementation_sequence
-  - change_impact_analysis
+  - phase_scheduling
 activation:
   mode: entrypoint
   activates_when:
   - request_is_refactor_or_refactor_like
-  - refactoring_subsystem_requested
+  - artifact_action_set_contains_refactor_action
+  - refactor_strategy_selection_phase_active
   skips_when:
   - request_is_new_feature_only_without_existing_artifact_change
 inputs:
@@ -33,71 +35,99 @@ inputs:
   optional:
   - artifact_action_table
   - risk_classification
-  - codebase_reconnaissance_report
   - change_impact_report
+  - contract_classification
+  - boundary_classification
+  - dependency_classification
 outputs:
   produces:
-  - refactoring_system_result
-  - refactor_strategy_decision
-  - behavior_preservation_requirements
-  - refactor_required_followups
+  - refactoring_subsystem_result
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - refactoring/conventions.refactor-taxonomy.yaml
-  - refactoring/conventions.refactor-strategy.yaml
+  - refactoring/conventions.refactor-classification.yaml
   - refactoring/conventions.behavior-preservation.yaml
+  - refactoring/conventions.refactor-strategy.yaml
+  - refactoring/conventions.refactor-safety.yaml
+  - refactoring/conventions.refactor-validation.yaml
   optional_files:
   - actions/conventions.action-resolution.yaml
-  - risk/conventions.risk-resolution.yaml
+  - planning/conventions.behavior-contract.yaml
   - planning/conventions.change-impact.yaml
+  - risk/conventions.risk-classification.yaml
+  - testing/conventions.test-derivation.yaml
 sections:
   refactoring_file_index:
     taxonomy: refactoring/conventions.refactor-taxonomy.yaml
-    strategy: refactoring/conventions.refactor-strategy.yaml
+    classification: refactoring/conventions.refactor-classification.yaml
     behavior_preservation: refactoring/conventions.behavior-preservation.yaml
-  refactoring_local_phase_contract:
-    local_order:
-    - load_refactor_taxonomy
-    - evaluate_behavior_preservation_requirements
-    - select_refactor_strategy
-    - validate_refactor_strategy_decision
-    global_order_owner: core/conventions.pipeline-contract.yaml
-  refactoring_system_contract:
+    strategy: refactoring/conventions.refactor-strategy.yaml
+    safety: refactoring/conventions.refactor-safety.yaml
+    validation: refactoring/conventions.refactor-validation.yaml
+  refactoring_local_execution_order:
+  - load_refactor_taxonomy
+  - classify_refactor_need_scope_and_intent
+  - derive_behavior_preservation_requirements
+  - select_refactor_strategy
+  - validate_refactor_safety
+  - validate_refactor_outputs
+  refactoring_subsystem_contract:
     absolute_rules:
     - id: REFACTOR-SYSTEM-ABS-001
-      rule: Refactoring must preserve behavior unless behavior change is explicitly accepted.
+      rule: Refactoring must preserve behavior unless behavior change is explicitly accepted by the behavior contract.
       fail_condition: refactor_changes_behavior_without_explicit_acceptance
     - id: REFACTOR-SYSTEM-ABS-002
-      rule: Refactor strategy must coordinate artifact actions, not replace artifact action selection.
+      rule: Refactor strategy coordinates artifact actions but must not replace artifact action resolution.
       fail_condition: refactor_strategy_replaces_artifact_action_resolution
     - id: REFACTOR-SYSTEM-ABS-003
-      rule: Refactor strategy must use global vocabularies rather than redefining risk, contract, boundary, dependency, or
-        action values.
+      rule: Refactoring must use global action, role, risk, contract, boundary, dependency, testing, gate, trigger, report, and revision vocabularies instead of redefining
+        them.
       fail_condition: refactor_redefines_global_vocabulary
+    - id: REFACTOR-SYSTEM-ABS-004
+      rule: Implementation must be blocked when behavior preservation, compatibility, dependency, boundary, or safety prerequisites are unresolved.
+      fail_condition: implementation_allowed_with_unresolved_refactor_prerequisite
+  refactoring_integration_contract:
+    consumes_from:
+    - planning
+    - actions
+    - roles
+    - risk
+    - contracts
+    - boundaries
+    - dependencies
+    - testing
+    - reports
+    emits_to:
+    - triggers
+    - reports
+    - gates
+    - revisions
+    - execution
+    - testing
+    must_not_override:
+    - mission_profiles
+    - phase_order
+    - gate_pass_fail
+    - trigger_resolution
+    - report_lifecycle
+    - implementation_scope
 validation:
   required_checks:
   - id: REFACTOR-SYSTEM-CHECK-001
-    check: refactoring_files_follow_file_contract
+    check: all_refactoring_files_follow_file_contract
     applies_when:
-      refactoring_subsystem_active: true
+      refactoring_subsystem_loaded: true
   - id: REFACTOR-SYSTEM-CHECK-002
-    check: refactor_strategy_decision_exists_when_refactor_active
+    check: refactoring_subsystem_does_not_redefine_external_authority
     applies_when:
-      request_is_refactor_or_refactor_like: true
+      refactoring_subsystem_loaded: true
   fail_conditions:
   - id: REFACTOR-SYSTEM-001
-    condition: refactor_strategy_decision_missing
-    message: Refactor-like requests require a refactor strategy decision.
+    condition: refactor_redefines_global_vocabulary
+    message: Refactoring subsystem must reference external vocabularies instead of redefining them.
     severity: error
-    owner: refactoring/conventions.refactoring.yaml
   - id: REFACTOR-SYSTEM-002
-    condition: refactor_strategy_replaces_artifact_action_resolution
-    message: Refactor strategy must coordinate artifact actions, not replace them.
+    condition: implementation_allowed_with_unresolved_refactor_prerequisite
+    message: Implementation must remain blocked until refactor prerequisites are resolved.
     severity: error
-    owner: refactoring/conventions.refactoring.yaml
-  - id: REFACTOR-SYSTEM-003
-    condition: refactor_changes_behavior_without_explicit_acceptance
-    message: Behavior-changing refactor requires explicit accepted behavior change.
-    severity: error
-    owner: refactoring/conventions.refactoring.yaml

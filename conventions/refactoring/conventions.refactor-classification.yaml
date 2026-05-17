@@ -1,0 +1,298 @@
+version: '1.0'
+file:
+  name: conventions.refactor-classification.yaml
+  path: refactoring/conventions.refactor-classification.yaml
+  role: refactor_need_scope_and_intent_classifier
+  executability: decision_engine
+purpose: Classify whether refactor handling is required, what scope it affects, and which refactor intents apply before strategy selection.
+ownership:
+  owns:
+  - refactor_need_decision_rules
+  - refactor_scope_classification_rules
+  - refactor_intent_classification_rules
+  - refactor_classification_algorithm
+  - refactor_classification_output_schema
+  does_not_own:
+  - refactor_strategy_selection
+  - behavior_preservation_requirements
+  - artifact_action_selection
+  - implementation_sequence
+activation:
+  mode: conditional
+  activates_when:
+  - request_is_refactor_or_refactor_like
+  - artifact_action_set_contains_refactor_action
+  - structural_violation_detected
+  skips_when:
+  - no_refactor_signal_detected_and_action_is_new_feature_only
+inputs:
+  required:
+  - behavior_contract
+  - artifact_action_table
+  optional:
+  - risk_classification
+  - codebase_reconnaissance_report
+  - role_collision_report
+  - boundary_validation
+  - dependency_validation
+outputs:
+  produces:
+  - refactor_classification
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - refactoring/conventions.refactor-taxonomy.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - planning/conventions.behavior-contract.yaml
+  optional_files:
+  - roles/conventions.role-collisions.yaml
+  - boundaries/conventions.boundary-validation.yaml
+  - dependencies/conventions.dependency-validation.yaml
+  - risk/conventions.risk-classification.yaml
+sections:
+  refactor_need_classification_policy:
+    absolute_rules:
+    - id: REFACTOR-CLASSIFY-ABS-001
+      rule: A request is refactor-like when it changes structure, responsibility, boundaries, dependencies, names/locations, or implementation shape of existing artifacts
+        while preserving behavior.
+      fail_condition: refactor_like_request_not_classified
+    - id: REFACTOR-CLASSIFY-ABS-002
+      rule: When requested behavior changes are mixed with structural changes, classify both behavior change and refactor need; do not collapse one into the other.
+      fail_condition: mixed_behavior_and_refactor_not_separated
+    - id: REFACTOR-CLASSIFY-ABS-003
+      rule: Unknown refactor scope defaults to blocking or high risk until reconnaissance resolves it.
+      fail_condition: unknown_refactor_scope_treated_as_low_risk
+  refactor_need_decision_rules:
+    match_decision_rules:
+    - id: REFACTOR-NEED-EXPLICIT-REQUEST
+      priority: 1
+      match:
+        behavior_contract.request_type:
+          any_of:
+          - refactor
+          - cleanup_only
+          - large_refactor
+      decision:
+        refactor_needed: true
+        confidence: high
+        reason: user explicitly requested refactor/cleanup
+        required_followups:
+        - behavior_preservation_review
+        - risk_classification
+    - id: REFACTOR-NEED-ACTION-BASED
+      priority: 2
+      match:
+        artifact_action_table.selected_action:
+          any_of:
+          - move_existing
+          - rename_existing
+          - split_existing
+          - extract_from_existing
+          - inline_existing
+          - merge_existing
+          - replace_existing
+          - wrap_existing
+          - deprecate_existing
+          - delete_existing
+      decision:
+        refactor_needed: true
+        confidence: high
+        reason: artifact action can affect existing structure
+        required_followups:
+        - change_impact_analysis
+        - behavior_preservation_review
+    - id: REFACTOR-NEED-ROLE-BOUNDARY-DEPENDENCY
+      priority: 3
+      match:
+        signals:
+          any_of:
+          - role_collision_detected
+          - boundary_leak_detected
+          - dependency_violation_detected
+          - public_contract_moved_or_wrapped
+      decision:
+        refactor_needed: true
+        confidence: medium
+        reason: structural rule violation requires correction
+        required_followups:
+        - role_validation
+        - boundary_validation
+        - dependency_validation
+    - id: REFACTOR-NEED-NO-STRUCTURAL-SIGNAL
+      priority: 99
+      match:
+        artifact_action_table.selected_action:
+          any_of:
+          - create_new
+          - reuse_existing
+          - modify_existing
+          - no_code_change
+        signals:
+          none_of:
+          - role_collision_detected
+          - boundary_leak_detected
+          - dependency_violation_detected
+      decision:
+        refactor_needed: false
+        confidence: medium
+        reason: no refactor signal is present
+        selected_strategy_candidate: no_refactor
+  refactor_scope_classification_rules:
+  - scope: single_artifact
+    choose_when:
+    - only one artifact has selected refactor-like action
+    - no public/shared consumer is affected
+    reject_when:
+    - call-site impact includes multiple modules
+    - public contract or shared kernel is affected
+    risk_floor: low
+  - scope: single_flow
+    choose_when:
+    - multiple artifacts in one use-case flow change
+    - flow boundary remains internal
+    reject_when:
+    - module public API changes
+    - shared artifact changes
+    risk_floor: medium
+  - scope: single_module
+    choose_when:
+    - multiple artifacts in one module change
+    - module exports remain stable or adapter preserves them
+    reject_when:
+    - consumer outside module must update without compatibility plan
+    risk_floor: medium
+  - scope: cross_module
+    choose_when:
+    - consumers across modules must update
+    - module boundary is crossed
+    reject_when:
+    - impact is limited to one module
+    risk_floor: high
+  - scope: shared_kernel
+    choose_when:
+    - shared library/kernel artifacts change
+    - multiple modules depend on affected artifact
+    reject_when:
+    - artifact is private to one module
+    risk_floor: high
+  - scope: external_contract
+    choose_when:
+    - external API/event/DTO/export/path changes or is wrapped/deprecated
+    reject_when:
+    - contract is private and all consumers are local
+    risk_floor: critical_when_breaking_possible
+  - scope: data_or_migration_surface
+    choose_when:
+    - persistence schema/mapping/projection/backfill behavior changes
+    reject_when:
+    - no data surface is affected
+    risk_floor: critical_when_data_loss_possible
+  - scope: unknown
+    choose_when:
+    - required evidence is unavailable or dynamic references cannot be resolved
+    reject_when:
+    - scope has direct evidence
+    risk_floor: high
+    blocking: true
+  refactor_intent_classification_rules:
+  - intent: improve_role_clarity
+    choose_when:
+    - role collision exists
+    - file/class suffix does not match responsibility
+    - artifact owns more than one stable responsibility
+    reject_when:
+    - artifact responsibility is cohesive and role-valid
+  - intent: protect_boundary
+    choose_when:
+    - transport/persistence/external/framework detail crosses forbidden boundary
+    - adapter/mapper/policy is required
+    reject_when:
+    - crossing is allowed by boundary-crossing rules
+  - intent: reduce_duplication
+    choose_when:
+    - duplication is semantic and reusable abstraction has clear owner
+    reject_when:
+    - duplication is coincidental or domain-specific
+  - intent: reduce_coupling
+    choose_when:
+    - consumer knows internals
+    - dependency direction violation exists
+    - facade/adapter can reduce knowledge
+    reject_when:
+    - dependency is allowed and explicit
+  - intent: preserve_behavior_while_restructuring
+    choose_when:
+    - structural change requested while behavior should remain unchanged
+    reject_when:
+    - behavior change is the primary request
+  - intent: enable_incremental_change
+    choose_when:
+    - large change requires staged migration or compatibility seam
+    reject_when:
+    - small atomic change is safe
+  refactor_classification_algorithm:
+  - step_id: LOAD_INPUTS
+    action: read
+    input:
+    - behavior_contract
+    - artifact_action_table
+    - risk_classification
+    - codebase_reconnaissance_report
+    fail_when:
+    - behavior_contract_missing
+  - step_id: CLASSIFY_REFACTOR_NEED
+    action: apply_decision_rules
+    input: refactor_need_decision_rules
+    output: refactor_needed_decision
+    fail_when:
+    - refactor_like_signal_unclassified
+  - step_id: CLASSIFY_SCOPE
+    action: apply_rules
+    input: refactor_scope_classification_rules
+    output: refactor_scope
+    fail_when:
+    - scope_unknown_without_blocker
+  - step_id: CLASSIFY_INTENTS
+    action: apply_rules
+    input: refactor_intent_classification_rules
+    output: refactor_intents
+    fail_when:
+    - refactor_needed_without_intent
+  - step_id: EMIT_FOLLOWUPS
+    action: map
+    input:
+    - refactor_scope
+    - refactor_intents
+    output:
+    - risk_escalation
+    - required_followups
+    - triggers_emitted
+  refactor_classification_output_schema:
+    required_fields:
+    - refactor_needed
+    - confidence
+    - refactor_scope
+    - refactor_intents
+    - risk_floor
+    - required_followups
+    - evidence_refs
+    - blocking_items
+validation:
+  required_checks:
+  - id: REFACTOR-CLASSIFY-CHECK-001
+    check: refactor_like_signals_classified
+    applies_when:
+      structural_change_possible: true
+  - id: REFACTOR-CLASSIFY-CHECK-002
+    check: unknown_scope_blocks_or_escalates
+    applies_when:
+      refactor_scope: unknown
+  fail_conditions:
+  - id: REFACTOR-CLASSIFY-001
+    condition: refactor_like_signal_unclassified
+    message: Refactor-like signals must be classified before strategy selection.
+    severity: error
+  - id: REFACTOR-CLASSIFY-002
+    condition: unknown_refactor_scope_treated_as_low_risk
+    message: Unknown refactor scope must fail closed or escalate risk.
+    severity: error
