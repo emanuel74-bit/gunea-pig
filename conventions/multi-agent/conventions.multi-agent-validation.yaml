@@ -1,0 +1,180 @@
+version: '1.0'
+file:
+  name: conventions.multi-agent-validation.yaml
+  path: multi-agent/conventions.multi-agent-validation.yaml
+  role: multi_agent_runtime_validation_contract
+  executability: validator
+purpose: Define validation checks for the Alpha runtime, phase execution, phase bundles,
+  state transitions, subsystem authority boundaries, and fail-closed behavior.
+ownership:
+  owns:
+  - multi_agent_validation_policy
+  - validation_check_catalog
+  - runtime_invariant_checks
+  - authority_boundary_checks
+  - validation_algorithm
+  - validation_output_schema
+  does_not_own:
+  - phase_execution
+  - agent_phase_outputs
+  - gate_validation_semantics
+  - trigger_resolution_semantics
+  - handoff_consumption_semantics
+  - revision_policy_semantics
+activation:
+  mode: conditional
+  activates_when:
+  - multi_agent_validation_required
+  skips_when: []
+inputs:
+  required:
+  - multi_agent_runtime_files
+  - mission_state
+  - phase_bundles
+  - phase_execution_results
+  - subsystem_validation_results
+  optional: []
+outputs:
+  produces:
+  - multi_agent_validation_result
+dependencies:
+  required_files:
+  - multi-agent/conventions.alpha-controller.yaml
+  - multi-agent/conventions.alpha-scheduling.yaml
+  - multi-agent/conventions.phase-execution.yaml
+  - multi-agent/conventions.phase-bundle-policy.yaml
+  - multi-agent/conventions.alpha-oversight.yaml
+  - multi-agent/conventions.alpha-state-transitions.yaml
+  - agents/conventions.agent-validation.yaml
+  - phases/conventions.phase-validation.yaml
+  - missions/conventions.mission-validation.yaml
+  - reports/conventions.report-validation.yaml
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-validation.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.revision-validation.yaml
+  optional_files: []
+sections:
+  multi_agent_validation_policy:
+    default: fail_closed
+    pass_requires:
+    - all_blocking_checks_pass
+    - all_phase_invocations_have_bundles
+    - all_state_mutations_are_alpha_only
+    - no_authority_boundary_violations
+    - no_downstream_consumption_without_valid_handoff
+  validation_check_catalog:
+  - check_id: MA-CHECK-001
+    check: all_multi_agent_files_follow_contract
+    applies_when:
+    - multi_agent_loaded
+    fail_condition: multi_agent_file_contract_invalid
+    severity: error
+  - check_id: MA-CHECK-002
+    check: alpha_execution_loop_references_existing_subsystem_files
+    applies_when:
+    - alpha_loaded
+    fail_condition: alpha_references_missing_subsystem_file
+    severity: error
+  - check_id: MA-CHECK-003
+    check: phase_invocation_has_bundle_prompt_permission_and_entry_gate
+    applies_when:
+    - phase_agent_invoked
+    fail_condition: phase_invocation_context_incomplete
+    severity: error
+  - check_id: MA-CHECK-004
+    check: mission_state_mutations_are_alpha_only_and_transactional
+    applies_when:
+    - mission_state_updated
+    fail_condition: invalid_mission_state_mutation
+    severity: error
+  - check_id: MA-CHECK-005
+    check: blocking_subsystem_results_stop_runtime
+    applies_when:
+    - subsystem_result_blocking
+    fail_condition: alpha_continued_after_blocking_result
+    severity: error
+  - check_id: MA-CHECK-006
+    check: implementation_not_allowed_before_clearance
+    applies_when:
+    - implementation_phase_selected
+    fail_condition: implementation_started_before_runtime_clearance
+    severity: error
+  - check_id: MA-CHECK-007
+    check: final_validation_not_allowed_with_unresolved_runtime_state
+    applies_when:
+    - final_validation_selected
+    fail_condition: final_validation_started_with_unresolved_runtime_state
+    severity: error
+  authority_boundary_checks:
+  - boundary: alpha_vs_agents
+    fail_when:
+    - phase_agent_updated_mission_state
+    - alpha_generated_non_alpha_phase_content
+  - boundary: alpha_vs_gates
+    fail_when:
+    - alpha_declared_gate_pass_without_gate_result
+    - alpha_weakened_gate_result
+  - boundary: alpha_vs_triggers
+    fail_when:
+    - alpha_invented_trigger_resolution
+    - alpha_ignored_trigger_blocking_policy
+  - boundary: alpha_vs_handoffs
+    fail_when:
+    - alpha_allowed_consumption_without_handoff_validation
+    - alpha_allowed_invalidated_output_consumption
+  - boundary: alpha_vs_revisions
+    fail_when:
+    - alpha_ignored_revision_invalidation
+    - alpha_ran_downstream_without_required_rerun
+  validation_algorithm:
+  - step_id: LOAD_MULTI_AGENT_FILES
+    action: read
+    fail_when:
+    - required_multi_agent_file_missing
+  - step_id: VALIDATE_FILE_CONTRACTS
+    action: validate
+    fail_when:
+    - multi_agent_file_contract_invalid
+  - step_id: VALIDATE_REFERENCES
+    action: validate
+    fail_when:
+    - alpha_references_missing_subsystem_file
+  - step_id: VALIDATE_RUNTIME_INVARIANTS
+    action: for_each
+    target: runtime_invariant_checks
+    fail_when:
+    - runtime_invariant_failed
+  - step_id: VALIDATE_AUTHORITY_BOUNDARIES
+    action: for_each
+    target: authority_boundary_checks
+    fail_when:
+    - authority_boundary_violation
+  - step_id: VALIDATE_ACTIVE_MISSION_STATE
+    action: validate
+    fail_when:
+    - invalid_mission_state_mutation
+    - unresolved_runtime_blocker
+  - step_id: EMIT_VALIDATION_RESULT
+    action: write
+    output: multi_agent_validation_result
+  validation_output_schema:
+    required_fields:
+    - status
+    - checks_run
+    - failed_checks
+    - blocking_failures
+    - warnings
+    - required_followups
+    - runtime_allowed_to_continue
+validation:
+  required_checks:
+  - id: MA-VALIDATION-CHECK-001
+    check: multi_agent_validation_result_emitted
+    applies_when:
+      multi_agent_validation_required: true
+  fail_conditions:
+  - id: MA-VALIDATION-001
+    condition: alpha_continued_after_blocking_result
+    message: Alpha must stop when a blocking subsystem result exists.
+    severity: error

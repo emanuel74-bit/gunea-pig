@@ -1,0 +1,169 @@
+version: '1.0'
+file:
+  name: conventions.alpha-state-transitions.yaml
+  path: multi-agent/conventions.alpha-state-transitions.yaml
+  role: alpha_mission_state_transition_contract
+  executability: state_machine
+purpose: Define Alpha-only mission-state transitions, transactional commits, phase
+  accounting updates, trigger/revision reflection, and implementation_allowed state
+  changes.
+ownership:
+  owns:
+  - alpha_state_mutation_rules
+  - phase_status_commit_rules
+  - mission_state_transition_algorithm
+  - implementation_allowed_rules
+  - state_consistency_checks
+  does_not_own:
+  - mission_state_schema
+  - trigger_vocabulary
+  - revision_policy
+  - phase_lifecycle_vocabulary
+activation:
+  mode: conditional
+  activates_when:
+  - alpha_updates_mission_state
+  skips_when: []
+inputs:
+  required:
+  - current_mission_state
+  - phase_execution_result
+  - gate_results
+  - trigger_results
+  - handoff_results
+  - revision_results
+  optional: []
+outputs:
+  produces:
+  - updated_mission_state
+  - state_transition_result
+dependencies:
+  required_files:
+  - missions/conventions.mission-state.yaml
+  - missions/conventions.active-phase-plan.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - reports/conventions.report-lifecycle.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  optional_files: []
+sections:
+  alpha_state_mutation_rules:
+  - id: STATE-MUTATION-001
+    rule: Only Alpha may mutate mission state.
+    fail_condition: non_alpha_updates_mission_state
+  - id: STATE-MUTATION-002
+    rule: Mission state mutation must happen only after required gate/validation result
+      exists.
+    fail_condition: state_updated_before_validation_result
+  - id: STATE-MUTATION-003
+    rule: Mission state must preserve previous status history and invalidation/revision
+      history.
+    fail_condition: mission_state_history_lost
+  - id: STATE-MUTATION-004
+    rule: implementation_allowed may become true only from a passed pre_implementation_gate
+      with no active blocking triggers, blockers, or open revisions.
+    fail_condition: implementation_allowed_without_runtime_clearance
+  phase_status_commit_rules:
+  - phase_result: passed
+    commit_when:
+    - output_gate_passed
+    - required_outputs_registered
+    - handoff_valid_or_not_required
+    status: completed
+  - phase_result: failed
+    commit_when:
+    - output_gate_failed_or_agent_failed
+    status: failed
+    required_evidence:
+    - failure_report_or_gate_result
+  - phase_result: blocked
+    commit_when:
+    - entry_gate_blocked
+    - blocking_trigger_or_revision_exists
+    status: blocked
+    required_evidence:
+    - block_reason
+  - phase_result: skipped
+    commit_when:
+    - skip_gate_passed
+    - profile_allows_skip
+    status: skipped
+    required_evidence:
+    - skip_reason
+    - skip_gate_result
+  - phase_result: invalidated
+    commit_when:
+    - revision_or_invalidation_policy_invalidates_output
+    status: invalidated
+    required_evidence:
+    - revision_request_ref
+    - invalidated_outputs
+  mission_state_transition_algorithm:
+  - step_id: LOAD_CURRENT_STATE
+    action: read
+    fail_when:
+    - mission_state_missing
+  - step_id: VALIDATE_TRANSITION_PRECONDITIONS
+    action: assert
+    fail_when:
+    - required_validation_result_missing
+    - transition_not_allowed
+  - step_id: APPLY_PHASE_STATUS_UPDATE
+    action: write
+    target: phase_statuses[]
+    fail_when:
+    - phase_status_duplicate_without_version
+  - step_id: APPLY_REPORT_LIFECYCLE_UPDATES
+    action: write
+    target: completed_reports_or_invalidated_outputs
+    fail_when:
+    - report_lifecycle_update_invalid
+  - step_id: APPLY_TRIGGER_REVISION_REFLECTION
+    action: write
+    target: active_triggers_or_revision_history
+    fail_when:
+    - trigger_or_revision_instance_schema_invalid
+  - step_id: RECALCULATE_IMPLEMENTATION_ALLOWED
+    action: derive
+    fail_when:
+    - implementation_allowed_state_inconsistent
+  - step_id: WRITE_TRANSITION_RESULT
+    action: write
+    output: state_transition_result
+  implementation_allowed_rules:
+    set_true_when:
+    - pre_implementation_gate_passed
+    - no_active_blocking_triggers
+    - no_open_blocking_revisions
+    - required_reports_valid
+    - implementation_sequence_valid
+    - checkpoint_plan_valid
+    set_false_when:
+    - new_blocking_trigger_registered
+    - revision_affects_pre_implementation_input
+    - required_report_invalidated
+    - pre_implementation_gate_invalidated
+    - scope_changed
+    never_true_when:
+    - mission_state_missing
+    - active_phase_plan_invalid
+    - blocking_phase_status_exists
+    - required_output_missing
+  state_consistency_checks:
+  - exactly_one_current_phase_or_mission_complete
+  - all_completed_phases_have_output_gate_result
+  - all_consumed_reports_not_invalidated
+  - all_active_triggers_have_known_type
+  - all_revision_history_records_have_status
+validation:
+  required_checks:
+  - id: STATE-CHECK-001
+    check: mission_state_transition_is_valid
+    applies_when:
+      alpha_updates_mission_state: true
+  fail_conditions:
+  - id: STATE-001
+    condition: state_updated_before_validation_result
+    message: Alpha may not mutate mission state before required validation result
+      exists.
+    severity: error

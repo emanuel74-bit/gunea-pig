@@ -1,0 +1,150 @@
+version: '1.0'
+file:
+  name: conventions.alpha-oversight.yaml
+  path: multi-agent/conventions.alpha-oversight.yaml
+  role: alpha_cross_subsystem_oversight_contract
+  executability: oversight_policy
+purpose: Define how Alpha consumes subsystem outputs and validators without duplicating
+  their authority, and how Alpha applies blocking, tightening, and escalation results
+  across the workflow.
+ownership:
+  owns:
+  - cross_subsystem_usage_matrix
+  - oversight_decision_rules
+  - fail_closed_policy
+  - subsystem_result_consumption_policy
+  - authority_conflict_policy
+  does_not_own:
+  - subsystem_internal_rules
+  - phase_agent_decisions
+  - source_code_changes
+  - report_schema_definitions
+activation:
+  mode: conditional
+  activates_when:
+  - alpha_runtime_oversight_required
+  skips_when: []
+inputs:
+  required:
+  - subsystem_results
+  - mission_state
+  - phase_statuses
+  - gate_results
+  - trigger_results
+  - handoff_results
+  - revision_results
+  - validation_results
+  optional: []
+outputs:
+  produces:
+  - oversight_decision_result
+dependencies:
+  required_files:
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-validation.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.revision-validation.yaml
+  - reports/conventions.report-validation.yaml
+  - risk/conventions.risk-escalation.yaml
+  - testing/conventions.test-validation.yaml
+  - execution/conventions.execution-validation.yaml
+  optional_files: []
+sections:
+  cross_subsystem_usage_matrix:
+    phases: Alpha reads phase contracts, dependencies, lifecycle, and validation results
+      to know what can run.
+    agents: Alpha reads agent ownership, prompts, permissions, and validation results
+      to invoke the right agent safely.
+    missions: Alpha mutates mission state and active phase plan only through mission-state
+      transition rules.
+    reports: Alpha requires report registry compliance and report lifecycle validity
+      before downstream use.
+    gates: Alpha must run gates and obey blocking results before phase start, downstream
+      handoff, implementation, and finalization.
+    triggers: Alpha registers triggers, runs trigger resolution/validation, and blocks
+      when trigger blocking policy says so.
+    handoffs: Alpha requires handoff validation and consumption policy before target
+      phase reads source output.
+    revisions: Alpha processes revision requests and invalidation/rerun outputs before
+      continuing affected phases.
+    risk: Alpha tightens strictness, schedules required checks, or blocks according
+      to risk escalation.
+    testing: Alpha requires test derivation and validation before implementation and
+      final validation.
+    execution: Alpha allows implementation only through execution preconditions, sequence,
+      checkpoint, and validation policies.
+  oversight_decision_rules:
+  - id: OVERSIGHT-001
+    applies_when:
+    - any_subsystem_result_status_failed
+    decision: block_runtime_or_schedule_required_repair
+    severity: blocking
+    fail_condition: alpha_ignored_failed_subsystem_result
+  - id: OVERSIGHT-002
+    applies_when:
+    - subsystem_result_status_warning
+    - risk_level_low_or_medium
+    decision: continue_with_recorded_warning_if_no_blockers
+    severity: warning
+    fail_condition: alpha_failed_to_record_warning
+  - id: OVERSIGHT-003
+    applies_when:
+    - authority_conflict_between_subsystems
+    decision: apply_authority_order_and_block_if_unresolved
+    severity: blocking
+    fail_condition: alpha_resolved_authority_conflict_without_policy
+  - id: OVERSIGHT-004
+    applies_when:
+    - validation_result_requires_followup
+    decision: schedule_required_phase_or_report_before_blocking_point
+    severity: blocking
+    fail_condition: required_followup_not_scheduled
+  authority_order:
+  - user_instruction_and_safety
+  - core_pipeline_laws
+  - phase_contracts_and_gates
+  - agent_permissions
+  - reports_and_mission_state
+  - risk_escalation
+  - subsystem_specific_decision_results
+  - local_project_conventions
+  - agent_judgment
+  fail_closed_policy:
+    block_when:
+    - missing_validator_result
+    - conflicting_subsystem_results
+    - unresolved_authority_conflict
+    - required_followup_unscheduled
+    - subsystem_result_incomplete
+    allow_when:
+    - all_blocking_results_passed
+    - warnings_recorded
+    - no_required_followup_pending
+  subsystem_result_consumption_policy:
+  - source: gates
+    consume: gate_validation_result
+    alpha_may: continue_only_when_gate_passed_or_validly_skipped
+    alpha_must_not: reinterpret_failed_gate_as_passed
+  - source: triggers
+    consume: trigger_resolution_result
+    alpha_may: schedule phases and reports from resolution outputs
+    alpha_must_not: invent trigger routing not in trigger subsystem
+  - source: revisions
+    consume: revision_decision_result
+    alpha_may: invalidate outputs and schedule reruns
+    alpha_must_not: consume invalidated outputs
+  - source: reports
+    consume: report_validation_result
+    alpha_may: allow finalization only when report validation passes
+    alpha_must_not: accept console-only outputs
+validation:
+  required_checks:
+  - id: OVERSIGHT-CHECK-001
+    check: alpha_consumes_subsystem_results_without_redefining_authority
+    applies_when:
+      alpha_runtime_oversight_required: true
+  fail_conditions:
+  - id: OVERSIGHT-001
+    condition: alpha_redefined_subsystem_authority
+    message: Alpha must consume subsystem results, not redefine subsystem authority.
+    severity: error

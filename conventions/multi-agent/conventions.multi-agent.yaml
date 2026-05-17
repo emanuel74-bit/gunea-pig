@@ -4,38 +4,150 @@ file:
   path: multi-agent/conventions.multi-agent.yaml
   role: multi_agent_runtime_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for Alpha-controlled fixed-agent phase-gated execution.
+purpose: Provide the entrypoint, file index, local execution order, authority boundaries,
+  and integration contract for Alpha-controlled fixed-agent execution.
 ownership:
   owns:
   - multi_agent_file_index
-  - multi_agent_subsystem_contract
+  - multi_agent_local_execution_order
+  - multi_agent_authority_boundaries
+  - multi_agent_integration_contract
   does_not_own:
-  - pipeline_laws
-  - phase_vocabulary
-  - agent_vocabulary
+  - phase_taxonomy
+  - agent_taxonomy
+  - gate_validation_internals
+  - trigger_resolution_matrix
+  - handoff_consumption_policy
+  - revision_rerun_policy
+  - report_registry
+  - mission_profile_records
+  - implementation_content
 activation:
-  mode: entrypoint
+  mode: conditional
   activates_when:
   - multi_agent_execution_enabled
   skips_when: []
 inputs:
   required:
   - mission_request
+  - selected_mission_profile
   optional: []
 outputs:
   produces:
-  - multi_agent_system_result
+  - multi_agent_runtime_contract
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - core/conventions.pipeline-contract.yaml
-  - multi-agent/conventions.alpha-controller.yaml
-  - multi-agent/conventions.phase-execution.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-phase-ownership.yaml
+  - phases/conventions.phase-contracts.yaml
+  - missions/conventions.mission-state.yaml
+  - reports/conventions.report-registry.yaml
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.revision-validation.yaml
   optional_files: []
 sections:
   multi_agent_file_index:
     alpha_controller: multi-agent/conventions.alpha-controller.yaml
+    alpha_scheduling: multi-agent/conventions.alpha-scheduling.yaml
     phase_execution: multi-agent/conventions.phase-execution.yaml
+    phase_bundle_policy: multi-agent/conventions.phase-bundle-policy.yaml
+    alpha_oversight: multi-agent/conventions.alpha-oversight.yaml
+    alpha_state_transitions: multi-agent/conventions.alpha-state-transitions.yaml
+    multi_agent_validation: multi-agent/conventions.multi-agent-validation.yaml
+  local_execution_order:
+  - load_multi_agent_entrypoint
+  - load_alpha_controller_contract
+  - load_alpha_scheduling_policy
+  - load_phase_bundle_policy
+  - load_phase_execution_policy
+  - load_alpha_oversight_policy
+  - load_state_transition_policy
+  - load_multi_agent_validation_policy
+  authority_boundaries:
+    alpha_owns:
+    - runtime phase selection
+    - agent invocation orchestration
+    - mission state mutation
+    - gate invocation order
+    - trigger registration handoff to trigger subsystem
+    - revision request processing handoff to revision subsystem
+    - blocking or continuing runtime
+    alpha_does_not_own:
+    - agent phase work content
+    - report schemas
+    - phase definitions
+    - gate pass/fail internals
+    - trigger resolution rules
+    - handoff consumption rules
+    - revision rerun rules
+    - code implementation content
+    phase_agents_own:
+    - assigned phase output generation
+    - evidence recording
+    - required report writing
+    - semantic trigger emission
+    - revision request emission
+    phase_agents_do_not_own:
+    - mission state mutation
+    - phase scheduling
+    - gate pass/fail declaration
+    - downstream consumption approval
+    - final mission completion
+  integration_contract:
+    phases: Alpha reads phase contracts and phase dependencies but may not redefine
+      phases.
+    agents: Alpha resolves owner agents, prompts, contracts, and permissions from
+      the agents subsystem.
+    missions: Alpha mutates mission state according to mission-state rules only.
+    reports: Alpha requires durable report files and validates them through report
+      subsystem contracts.
+    gates: Alpha invokes gates and obeys their pass/fail results; gates own validation
+      semantics.
+    triggers: Alpha registers emitted triggers and applies trigger resolution outputs;
+      triggers own routing semantics.
+    handoffs: Alpha requests handoff validation before downstream consumption; handoffs
+      own consumability.
+    revisions: Alpha processes approved revision/rerun/invalidation actions; revisions
+      own correction policy.
+    risk: Alpha tightens gate strictness and blocks when risk escalation requires
+      it.
+    execution: Alpha allows implementation only after pre-implementation gate and
+      execution preconditions pass.
+  absolute_rules:
+  - id: MULTI-AGENT-ABS-001
+    rule: Alpha is the only runtime controller that may mutate mission state.
+    fail_condition: non_alpha_runtime_control
+  - id: MULTI-AGENT-ABS-002
+    rule: Every phase invocation must resolve exactly one owner agent from agent-phase
+      ownership.
+    fail_condition: phase_owner_missing_or_ambiguous
+  - id: MULTI-AGENT-ABS-003
+    rule: Every phase agent invocation must use a generated phase bundle.
+    fail_condition: phase_invoked_without_phase_bundle
+  - id: MULTI-AGENT-ABS-004
+    rule: No downstream phase may consume outputs until output gate and handoff validation
+      pass.
+    fail_condition: downstream_consumption_without_valid_handoff
+  - id: MULTI-AGENT-ABS-005
+    rule: Implementation must remain blocked until pre-implementation gate passes
+      and no blocking triggers/revisions remain.
+    fail_condition: implementation_started_before_runtime_clearance
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: MULTI-AGENT-CHECK-001
+    check: all_multi_agent_files_exist
+    applies_when:
+      multi_agent_execution_enabled: true
+  fail_conditions:
+  - id: MULTI-AGENT-001
+    condition: phase_invoked_without_phase_bundle
+    message: Phase agent invocation requires a generated phase bundle.
+    severity: error
+  - id: MULTI-AGENT-002
+    condition: non_alpha_runtime_control
+    message: Only Alpha may control runtime scheduling and mission state mutation.
+    severity: error

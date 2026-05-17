@@ -4,16 +4,23 @@ file:
   path: multi-agent/conventions.phase-execution.yaml
   role: phase_agent_execution_loop_contract
   executability: orchestrator
-purpose: Define how Alpha invokes phase agents, builds phase input bundles, restricts context, and collects outputs.
+purpose: Define how Alpha invokes phase agents using phase bundles, prompt injection,
+  permission enforcement, file-output contracts, and phase result collection.
 ownership:
   owns:
-  - phase_execution_loop
-  - phase_input_bundle_schema
+  - phase_execution_request_schema
+  - prompt_injection_policy
+  - agent_invocation_algorithm
   - phase_execution_result_schema
-  - prompt_injection_rules
+  - file_output_enforcement
+  - agent_failure_handling
   does_not_own:
   - phase_contract_definitions
   - agent_contract_definitions
+  - agent_prompt_content
+  - gate_validation_semantics
+  - report_schema_definitions
+  - implementation_content
 activation:
   mode: conditional
   activates_when:
@@ -21,49 +28,141 @@ activation:
   skips_when: []
 inputs:
   required:
-  - mission_state
-  - phase_contract
-  - owner_agent_contract
-  - agent_permission_profile
+  - phase_bundle
+  - owner_agent
+  - entry_gate_result
   optional: []
 outputs:
   produces:
   - phase_execution_result
-  - phase_output_file
-  - phase_gate_result
+  - required_output_files
+  - emitted_triggers
+  - revision_requests
 dependencies:
   required_files:
-  - core/conventions.file-contract.yaml
-  - multi-agent/conventions.alpha-controller.yaml
-  - phases/conventions.phase-contracts.yaml
-  - agents/conventions.agent-permissions.yaml
+  - multi-agent/conventions.phase-bundle-policy.yaml
   - agents/conventions.agent-prompts.yaml
-  - reports/conventions.report-artifacts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - agents/conventions.agent-activation-policy.yaml
+  - reports/conventions.report-validation.yaml
+  - triggers/conventions.trigger-emission-policy.yaml
   optional_files: []
 sections:
-  phase_input_bundle_schema:
+  phase_execution_request_schema:
     required_fields:
     - phase_id
     - owner_agent
+    - phase_bundle_ref
     - injected_prompt_ref
-    - required_input_files
-    - allowed_convention_files
+    - permission_profile_ref
     - required_output_files
     - forbidden_actions
+    - executor_mode
+    - entry_gate_result_ref
+  prompt_injection_policy:
+  - id: PROMPT-INJECT-001
+    rule: Alpha must inject exactly the prompt matching owner_agent.
+    fail_condition: wrong_agent_prompt_injected
+  - id: PROMPT-INJECT-002
+    rule: Injected prompt may constrain behavior but must not weaken phase contract,
+      gate, permission, or report requirements.
+    fail_condition: prompt_weakened_runtime_contract
+  - id: PROMPT-INJECT-003
+    rule: Agent prompt and phase bundle are both required; neither may substitute
+      for the other.
+    fail_condition: agent_invoked_without_prompt_or_bundle
+  agent_invocation_algorithm:
+  - step_id: ASSERT_ENTRY_GATE_PASSED
+    action: assert
+    fail_when:
+    - entry_gate_not_passed
+  - step_id: LOAD_PHASE_BUNDLE
+    action: read
+    fail_when:
+    - phase_bundle_missing
+    - phase_bundle_invalid
+  - step_id: LOAD_AND_INJECT_PROMPT
+    action: read_and_inject
+    fail_when:
+    - agent_prompt_missing
+    - wrong_agent_prompt_injected
+  - step_id: APPLY_PERMISSION_SCOPE
+    action: restrict
+    fail_when:
+    - permission_profile_missing
+    - requested_write_scope_not_allowed
+  - step_id: INVOKE_AGENT_EXECUTOR
+    action: invoke
+    executor_modes:
+    - subagent
+    - command
+    - skill
+    - single_model_simulation
+    - external_runtime
+    fail_when:
+    - runtime_executor_unavailable
+  - step_id: COLLECT_REQUIRED_OUTPUTS
+    action: read_files
+    fail_when:
+    - required_report_missing
+    - required_output_not_written_to_file
+  - step_id: COLLECT_RUNTIME_SIGNALS
+    action: read
+    outputs:
+    - emitted_triggers
+    - revision_requests
+    - blocked_items
+    - validation_notes
+  - step_id: NORMALIZE_PHASE_RESULT
+    action: write
+    output: phase_execution_result
+  file_output_enforcement:
+    absolute_rules:
+    - id: FILE-OUTPUT-001
+      rule: Required phase output must be persisted to declared report files.
+      fail_condition: required_report_only_printed_to_console
+    - id: FILE-OUTPUT-002
+      rule: Agent chat response may summarize only after files are written.
+      fail_condition: agent_summary_without_required_files
+    - id: FILE-OUTPUT-003
+      rule: Agent must not rewrite prior phase reports unless explicitly authorized
+        by revision/rerun policy.
+      fail_condition: phase_agent_rewrote_prior_report
   phase_execution_result_schema:
     required_fields:
     - phase_id
     - owner_agent
     - status
+    - phase_bundle_ref
     - consumed_inputs
     - produced_outputs
-    - gate_result
-    - discovered_triggers
-  phase_execution_prompt_injection:
-    absolute_rules:
-    - id: PHASE-EXEC-PROMPT-ABS-001
-      rule: Alpha must inject the owning agent prompt before phase execution.
-      fail_condition: phase_agent_invoked_without_prompt
+    - missing_outputs
+    - emitted_triggers
+    - revision_requests
+    - blocked_items
+    - permission_violations
+    - summary
+  agent_failure_handling:
+  - failure: runtime_executor_failed
+    alpha_action: mark_phase_blocked
+    required_followup: failure_classification_when_after_implementation_else_rerun_phase
+  - failure: required_output_missing
+    alpha_action: run_output_gate_failure_path
+    required_followup: rerun_phase_or_revision_request
+  - failure: permission_violation
+    alpha_action: block_runtime
+    required_followup: agent_validation
+  - failure: agent_attempted_unowned_phase_work
+    alpha_action: discard_unowned_output_and_block
+    required_followup: agent_validation
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: PHASE-EXEC-CHECK-001
+    check: agent_invocation_uses_prompt_bundle_permissions
+    applies_when:
+      phase_agent_invocation_requested: true
+  fail_conditions:
+  - id: PHASE-EXEC-001
+    condition: required_output_not_written_to_file
+    message: Phase execution output must be persisted to required report files.
+    severity: error

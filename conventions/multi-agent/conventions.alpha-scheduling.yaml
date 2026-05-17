@@ -1,0 +1,170 @@
+version: '1.0'
+file:
+  name: conventions.alpha-scheduling.yaml
+  path: multi-agent/conventions.alpha-scheduling.yaml
+  role: alpha_phase_scheduling_policy
+  executability: decision_engine
+purpose: Define deterministic next-phase selection, scheduling, skipping, blocking,
+  rerun, and finalization rules for Alpha.
+ownership:
+  owns:
+  - phase_readiness_rules
+  - phase_selection_priority
+  - conditional_phase_scheduling
+  - skip_block_rules
+  - rerun_scheduling_rules
+  - scheduling_output_schema
+  does_not_own:
+  - phase_definitions
+  - mission_profile_records
+  - trigger_resolution_policy
+  - revision_policy_definitions
+  - gate_validation_semantics
+activation:
+  mode: conditional
+  activates_when:
+  - alpha_selects_next_phase
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - active_phase_plan
+  - phase_statuses
+  - active_triggers
+  - revision_history
+  - phase_dependencies
+  optional: []
+outputs:
+  produces:
+  - next_phase_decision
+dependencies:
+  required_files:
+  - missions/conventions.active-phase-plan.yaml
+  - missions/conventions.mission-state.yaml
+  - phases/conventions.phase-dependencies.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - triggers/conventions.trigger-blocking-policy.yaml
+  - revisions/conventions.rerun-policy.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  optional_files: []
+sections:
+  phase_readiness_rules:
+  - id: READY-001
+    phase_state: pending
+    ready_when:
+    - all_required_inputs_exist
+    - all_prerequisite_phases_passed_or_validly_skipped
+    - no_required_input_invalidated
+    - entry_gate_can_be_evaluated
+    not_ready_when:
+    - required_input_missing
+    - prerequisite_blocked
+    - required_input_pending_revalidation
+  - id: READY-002
+    phase_state: conditional
+    ready_when:
+    - trigger_or_profile_condition_materialized
+    - all_required_inputs_exist
+    - not_forbidden_by_profile
+    not_ready_when:
+    - condition_absent
+    - condition_blocked
+    - phase_forbidden
+  - id: READY-003
+    phase_state: rerun_required
+    ready_when:
+    - revision_policy_requires_rerun
+    - dependent_outputs_marked_invalidated
+    - fresh_phase_bundle_required
+    not_ready_when:
+    - rerun_reason_missing
+    - invalidated_dependencies_unresolved
+  phase_selection_priority:
+  - priority: 1
+    select_when: blocking_revision_targets_phase
+    decision: select_revision_target_phase
+  - priority: 2
+    select_when: trigger_review_required_before_next_phase
+    decision: select_trigger_review
+  - priority: 3
+    select_when: required_phase_pending_and_ready
+    decision: select_earliest_dependency_ordered_required_phase
+  - priority: 4
+    select_when: conditional_phase_scheduled_and_ready
+    decision: select_earliest_dependency_ordered_conditional_phase
+  - priority: 5
+    select_when: pre_implementation_gate_pending_and_all_prior_required_phases_valid
+    decision: select_pre_implementation_gate
+  - priority: 6
+    select_when: implementation_allowed_and_implementation_pending
+    decision: select_implementation
+  - priority: 7
+    select_when: post_implementation_validation_required
+    decision: select_post_implementation_validation
+  - priority: 8
+    select_when: report_artifact_validation_required
+    decision: select_report_artifact_validation
+  - priority: 9
+    select_when: final_validation_ready
+    decision: select_final_validation
+  - priority: 99
+    select_when: no_ready_phase_and_unresolved_blockers_exist
+    decision: block_runtime
+  skip_block_rules:
+  - id: SCHED-SKIP-001
+    allow_skip_when:
+    - phase_forbidden_by_profile
+    - phase_optional_and_condition_absent
+    - skip_gate_passed
+    reject_skip_when:
+    - phase_required_by_profile
+    - downstream_required_output_depends_on_phase
+    - skip_reason_missing
+  - id: SCHED-BLOCK-001
+    block_when:
+    - required_phase_not_ready
+    - required_input_missing
+    - blocking_trigger_active
+    - blocking_revision_open
+    required_output: runtime_block_record
+  conditional_phase_scheduling:
+  - condition: trigger_requires_phase
+    action: add_phase_to_active_plan_if_not_present
+    reject_when:
+    - phase_forbidden_by_profile_without_revision
+    - target_phase_unknown
+  - condition: risk_escalation_requires_phase
+    action: add_phase_or_required_report
+    reject_when:
+    - risk_signal_unclassified
+  - condition: revision_requires_rerun_from_phase_forward
+    action: insert_rerun_sequence_before_downstream_consumers
+    reject_when:
+    - revision_not_approved_by_alpha
+  scheduling_output_schema:
+    required_fields:
+    - decision_id
+    - selected_phase
+    - decision_type
+    - reason
+    - blocking_items
+    - evidence_refs
+    - state_update_required
+    decision_type_enum:
+    - select_phase
+    - skip_phase
+    - block_runtime
+    - complete_runtime
+    - rerun_phase
+    - schedule_conditional_phase
+validation:
+  required_checks:
+  - id: SCHED-CHECK-001
+    check: selected_phase_is_ready_or_runtime_blocked
+    applies_when:
+      alpha_selects_next_phase: true
+  fail_conditions:
+  - id: SCHED-001
+    condition: alpha_selected_not_ready_phase
+    message: Alpha may not select a phase that is not ready.
+    severity: error

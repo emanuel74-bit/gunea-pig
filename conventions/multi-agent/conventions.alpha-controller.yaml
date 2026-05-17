@@ -4,17 +4,25 @@ file:
   path: multi-agent/conventions.alpha-controller.yaml
   role: alpha_runtime_controller_contract
   executability: orchestrator
-purpose: 'Define Alpha runtime responsibilities: phase scheduling, agent activation, gates, triggers, handoffs, revisions,
-  and mission state updates.'
+purpose: Define Alpha as the strict fail-closed runtime controller for mission execution,
+  phase scheduling, agent activation, gate ordering, trigger/revision processing,
+  and mission-state mutation.
 ownership:
   owns:
-  - active_phase_plan_execution
-  - phase_agent_invocation_rules
-  - alpha_mission_state_update_rules
-  - alpha_trigger_handling_rules
+  - alpha_authority_model
+  - alpha_runtime_invariants
+  - alpha_execution_loop
+  - alpha_blocking_rules
+  - alpha_runtime_transaction_policy
+  - alpha_failure_modes
   does_not_own:
-  - global_pipeline_laws
-  - phase_output_content
+  - phase_agent_work
+  - report_content_authoring
+  - gate_check_semantics
+  - trigger_resolution_matrix
+  - handoff_consumption_rules
+  - revision_policy_definitions
+  - source_code_editing
 activation:
   mode: conditional
   activates_when:
@@ -23,52 +31,238 @@ activation:
   skips_when: []
 inputs:
   required:
-  - mission_profile
+  - mission_request
+  - selected_profile
   - mission_state
+  - active_phase_plan
   - phase_contract_registry
-  - agent_contract_registry
-  - pipeline_contract_constraints
+  - agent_phase_ownership
+  - agent_prompts
+  - agent_permissions
   optional: []
 outputs:
   produces:
   - alpha_execution_result
   - updated_mission_state
+  - runtime_block_record
+  - phase_invocation_request
 dependencies:
   required_files:
-  - core/conventions.file-contract.yaml
   - core/conventions.pipeline-contract.yaml
-  - agents/conventions.agent-contracts.yaml
+  - missions/conventions.mission-state.yaml
+  - missions/conventions.active-phase-plan.yaml
+  - agents/conventions.agent-phase-ownership.yaml
   - agents/conventions.agent-prompts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - phases/conventions.phase-contracts.yaml
   - gates/conventions.gate-validation.yaml
   - triggers/conventions.trigger-resolution.yaml
   - handoffs/conventions.handoff-validation.yaml
-  - revisions/conventions.rerun-policy.yaml
+  - revisions/conventions.revision-request-policy.yaml
+  - reports/conventions.report-validation.yaml
+  - multi-agent/conventions.alpha-scheduling.yaml
+  - multi-agent/conventions.phase-execution.yaml
+  - multi-agent/conventions.alpha-state-transitions.yaml
   optional_files: []
 sections:
-  agent_activation_contract:
-    required_steps:
-    - resolve_phase
-    - resolve_owner_agent
-    - validate_agent_exists
-    - load_agent_prompt
-    - load_agent_permissions
-    - build_phase_input_bundle
-    - run_entry_gate
-    - invoke_agent_executor
-    - collect_phase_result
-    - run_output_gate
-  alpha_execution_algorithm:
-    steps:
-    - select_next_phase
-    - validate_entry_gate
-    - inject_agent_prompt
-    - invoke_owner_agent
-    - validate_output_gate
-    - register_triggers
-    - validate_handoffs
+  alpha_authority_model:
+    exclusive_authority:
+    - select_next_runtime_phase
+    - invoke_phase_agent
+    - invoke_gate_validation
+    - request_handoff_validation
+    - register_trigger_outputs
     - process_revision_requests
-    - update_mission_state
-    - select_next_or_block
+    - mutate_mission_state
+    - block_or_continue_runtime
+    forbidden_authority:
+    - perform_phase_agent_work
+    - write_non_alpha_phase_reports
+    - edit_source_code
+    - declare_gate_passed_without_gate_result
+    - resolve_trigger_without_trigger_subsystem
+    - consume_invalidated_output
+    - weaken_phase_or_agent_contract
+  runtime_invariants:
+  - id: ALPHA-RUNTIME-INV-001
+    invariant: 'Mission state update is transactional: select phase, validate entry,
+      invoke agent, validate output, validate handoff, process triggers/revisions,
+      then commit status.'
+    fail_condition: partial_state_commit_detected
+  - id: ALPHA-RUNTIME-INV-002
+    invariant: Every phase status update must cite the phase bundle, gate result,
+      output reports, and handoff result where applicable.
+    fail_condition: phase_status_missing_runtime_evidence
+  - id: ALPHA-RUNTIME-INV-003
+    invariant: Alpha must fail closed on missing inputs, missing owner agent, missing
+      prompt, missing permission profile, missing reports, unresolved triggers, open
+      revisions, or invalidated consumed outputs.
+    fail_condition: alpha_continued_after_blocking_missing_input
+  alpha_execution_loop:
+    steps:
+    - step_id: LOAD_RUNTIME_STATE
+      action: read
+      inputs:
+      - mission_state
+      - active_phase_plan
+      - report_registry
+      fail_when:
+      - mission_state_missing
+      - active_phase_plan_missing
+    - step_id: SELECT_NEXT_PHASE
+      action: apply_policy
+      policy_ref: multi-agent/conventions.alpha-scheduling.yaml
+      outputs:
+      - selected_phase_or_block_reason
+    - step_id: RESOLVE_OWNER_AGENT
+      action: lookup
+      inputs:
+      - agent_phase_ownership
+      - selected_phase
+      fail_when:
+      - phase_owner_missing_or_ambiguous
+    - step_id: GENERATE_PHASE_BUNDLE
+      action: apply_policy
+      policy_ref: multi-agent/conventions.phase-bundle-policy.yaml
+      outputs:
+      - phase_bundle_ref
+      fail_when:
+      - phase_bundle_missing_required_field
+    - step_id: RUN_ENTRY_GATE
+      action: invoke_gate_validation
+      gate_type: entry_gate
+      fail_when:
+      - entry_gate_failed
+      - entry_gate_blocked
+    - step_id: INVOKE_PHASE_AGENT
+      action: apply_policy
+      policy_ref: multi-agent/conventions.phase-execution.yaml
+      outputs:
+      - phase_execution_result
+    - step_id: RUN_OUTPUT_GATE
+      action: invoke_gate_validation
+      gate_type: output_gate
+      fail_when:
+      - output_gate_failed
+      - required_report_missing
+    - step_id: REGISTER_AND_RESOLVE_TRIGGERS
+      action: delegate
+      subsystem: triggers
+      fail_when:
+      - emitted_trigger_unregistered
+      - blocking_trigger_unresolved
+    - step_id: VALIDATE_HANDOFFS
+      action: delegate
+      subsystem: handoffs
+      fail_when:
+      - handoff_validation_failed
+      - target_consumed_invalidated_output
+    - step_id: PROCESS_REVISIONS
+      action: delegate
+      subsystem: revisions
+      fail_when:
+      - open_blocking_revision_exists
+      - required_rerun_unscheduled
+    - step_id: COMMIT_MISSION_STATE
+      action: apply_policy
+      policy_ref: multi-agent/conventions.alpha-state-transitions.yaml
+      fail_when:
+      - mission_state_transition_invalid
+    - step_id: CONTINUE_OR_BLOCK
+      action: branch
+      branches:
+        continue: select_next_phase
+        blocked: write_runtime_block_record
+        complete: allow_final_validation_only_if_final_gate_passes
+  alpha_blocking_rules:
+  - id: ALPHA-BLOCK-001
+    blocks_when:
+    - entry_gate_failed
+    - entry_gate_blocked
+    blocks_before:
+    - phase_agent_invocation
+    required_action: write_block_record_and_do_not_invoke_agent
+  - id: ALPHA-BLOCK-002
+    blocks_when:
+    - output_gate_failed
+    - required_output_missing
+    blocks_before:
+    - handoff_validation
+    - downstream_phase_execution
+    required_action: mark_phase_blocked_or_failed_and_request_rerun
+  - id: ALPHA-BLOCK-003
+    blocks_when:
+    - active_blocking_trigger_exists
+    blocks_before:
+    - implementation
+    - final_validation
+    required_action: run_trigger_review_or_block
+  - id: ALPHA-BLOCK-004
+    blocks_when:
+    - open_blocking_revision_exists
+    - invalidated_output_consumed
+    blocks_before:
+    - implementation
+    - final_validation
+    required_action: process_revision_or_rerun
+  - id: ALPHA-BLOCK-005
+    blocks_when:
+    - report_artifact_validation_failed
+    blocks_before:
+    - final_validation
+    required_action: repair_report_or_block_mission
+  runtime_transaction_policy:
+    commit_allowed_when:
+    - entry_gate_passed
+    - phase_agent_result_collected
+    - output_gate_passed
+    - required_reports_registered
+    - blocking_triggers_handled
+    - handoff_result_recorded_or_no_handoff_required
+    rollback_required_when:
+    - agent_invocation_failed_after_state_prewrite
+    - output_gate_failed_after_partial_outputs
+    - revision_invalidates_current_phase_output
+    rollback_effects:
+    - do_not_mark_phase_executed
+    - mark_partial_outputs_invalid
+    - preserve_failure_evidence
+    - schedule_failure_classification_when_applicable
+  alpha_failure_modes:
+  - condition: phase_owner_missing_or_ambiguous
+    runtime_status: blocked
+    required_report: runtime-block-record
+    severity: blocking
+  - condition: agent_prompt_missing
+    runtime_status: blocked
+    required_report: runtime-block-record
+    severity: blocking
+  - condition: phase_bundle_missing_required_field
+    runtime_status: blocked
+    required_report: runtime-block-record
+    severity: blocking
+  - condition: subsystem_validator_unavailable
+    runtime_status: blocked
+    required_report: runtime-block-record
+    severity: blocking
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: ALPHA-CHECK-001
+    check: alpha_execution_loop_steps_complete
+    applies_when:
+      multi_agent_execution_enabled: true
+  - id: ALPHA-CHECK-002
+    check: alpha_does_not_redefine_subsystem_authority
+    applies_when:
+      alpha_controller_loaded: true
+  fail_conditions:
+  - id: ALPHA-001
+    condition: alpha_performed_phase_agent_work
+    message: Alpha must orchestrate phase work but must not perform phase-agent content
+      generation.
+    severity: error
+  - id: ALPHA-002
+    condition: alpha_continued_after_blocking_failure
+    message: Alpha must fail closed when a blocking gate, trigger, handoff, revision,
+      or report validation failure exists.
+    severity: error

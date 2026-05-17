@@ -1,0 +1,181 @@
+version: '1.0'
+file:
+  name: conventions.phase-bundle-policy.yaml
+  path: multi-agent/conventions.phase-bundle-policy.yaml
+  role: phase_bundle_generation_contract
+  executability: generator_contract
+purpose: Define the minimal, deterministic phase execution bundle that every phase
+  agent must consume before doing work.
+ownership:
+  owns:
+  - phase_bundle_schema
+  - bundle_content_rules
+  - runtime_pack_policy
+  - bundle_generation_algorithm
+  - bundle_validation_rules
+  does_not_own:
+  - phase_contracts
+  - agent_prompts
+  - agent_permissions
+  - report_templates
+  - mission_state
+  - subsystem_source_files
+activation:
+  mode: conditional
+  activates_when:
+  - phase_agent_invocation_requested
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - phase_contract
+  - owner_agent
+  - agent_contract
+  - agent_prompt
+  - agent_permissions
+  - report_registry
+  optional: []
+outputs:
+  produces:
+  - phase_input_bundle
+  - runtime_pack_manifest
+dependencies:
+  required_files:
+  - phases/conventions.phase-contracts.yaml
+  - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-prompts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - reports/conventions.report-registry.yaml
+  - reports/conventions.report-templates.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files: []
+sections:
+  phase_bundle_schema:
+    required_fields:
+    - mission_id
+    - phase_id
+    - owner_agent
+    - phase_contract_ref
+    - agent_contract_ref
+    - agent_prompt_ref
+    - permission_profile_ref
+    - required_input_reports
+    - optional_input_reports
+    - required_output_reports
+    - report_template_refs
+    - allowed_convention_files
+    - runtime_pack
+    - must_do
+    - must_not_do
+    - allowed_write_scope
+    - forbidden_write_scope
+    - entry_gate_ref
+    - output_gate_ref
+    - handoff_requirements
+    - trigger_emission_rules
+    - revision_request_rules
+    - completion_contract
+    optional_fields:
+    - risk_context
+    - active_triggers
+    - relevant_adapters
+    - previous_failures
+    - rerun_context
+  bundle_content_rules:
+  - id: BUNDLE-CONTENT-001
+    rule: Bundle must include only conventions referenced by the active phase contract,
+      owner agent contract, required output schemas, and active risk/trigger/revision
+      context.
+    fail_condition: phase_bundle_contains_unrelated_full_system_context
+  - id: BUNDLE-CONTENT-002
+    rule: Bundle must include required report templates for every required output
+      report.
+    fail_condition: phase_bundle_missing_report_template
+  - id: BUNDLE-CONTENT-003
+    rule: Bundle must include explicit write scopes and forbidden write scopes.
+    fail_condition: phase_bundle_missing_write_scope
+  - id: BUNDLE-CONTENT-004
+    rule: Bundle must mark invalidated or pending-revalidation inputs as forbidden
+      to consume.
+    fail_condition: phase_bundle_allows_invalidated_input
+  runtime_pack_policy:
+    include:
+    - active_phase_contract
+    - owner_agent_prompt
+    - owner_agent_permissions
+    - required_input_report_refs
+    - required_output_templates
+    - relevant_subsystem_rules
+    - gate_refs
+    - handoff_requirements
+    - trigger_emission_constraints
+    - revision_constraints
+    exclude:
+    - unrelated_subsystem_files
+    - completed_prior_reports_not_declared_as_inputs
+    - obsolete_outputs
+    - full_convention_package_when_not_required
+    fail_when:
+    - runtime_pack_missing_required_rule
+    - runtime_pack_contains_conflicting_authority
+    - runtime_pack_uses_invalidated_input
+  bundle_generation_algorithm:
+  - step_id: LOAD_PHASE_CONTRACT
+    action: read
+    input: phase_contract_registry[phase_id]
+    fail_when:
+    - phase_contract_missing
+  - step_id: RESOLVE_AGENT_CONTEXT
+    action: read
+    input:
+    - agent_contract
+    - agent_prompt
+    - agent_permissions
+    fail_when:
+    - agent_contract_missing
+    - agent_prompt_missing
+    - permission_profile_missing
+  - step_id: COLLECT_REPORT_CONTEXT
+    action: read
+    input:
+    - required_input_reports
+    - required_output_templates
+    fail_when:
+    - required_input_missing
+    - template_missing
+  - step_id: COLLECT_RELEVANT_RULES
+    action: lookup
+    input: allowed_convention_files
+    fail_when:
+    - allowed_convention_file_missing
+  - step_id: APPLY_CONTEXT_MINIMIZATION
+    action: filter
+    output: runtime_pack
+    fail_when:
+    - unrelated_full_system_context_included
+  - step_id: WRITE_PHASE_BUNDLE
+    action: write
+    output: .ai/phase-bundles/{phase_id}.input.yaml
+    fail_when:
+    - phase_bundle_write_failed
+  - step_id: VALIDATE_PHASE_BUNDLE
+    action: validate
+    input: phase_bundle_schema
+    fail_when:
+    - phase_bundle_schema_invalid
+  completion_contract:
+    agent_must_write_all_required_outputs: true
+    chat_response_is_summary_only: true
+    missing_required_output_status: phase_failure
+    agent_must_return_written_file_paths: true
+validation:
+  required_checks:
+  - id: BUNDLE-CHECK-001
+    check: phase_bundle_schema_valid
+    applies_when:
+      phase_agent_invocation_requested: true
+  fail_conditions:
+  - id: BUNDLE-001
+    condition: phase_bundle_contains_unrelated_full_system_context
+    message: Phase bundle must be minimized to the active phase needs.
+    severity: error
