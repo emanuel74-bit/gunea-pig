@@ -2,53 +2,115 @@ version: '1.0'
 file:
   name: conventions.testing.yaml
   path: testing/conventions.testing.yaml
-  role: testing_system_entrypoint
-purpose: Entrypoint and execution order for deriving tests from architecture, roles, and risk.
+  role: testing_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Provide the testing subsystem entrypoint, execution order, authority boundaries, and integration contract for deriving verification obligations
+  from behavior, risk, impact, contracts, boundaries, dependencies, refactoring, and implementation planning.
 ownership:
   owns:
-  - testing_system_metadata
   - testing_file_index
-  - testing_activation_rules
-  - testing_execution_order
+  - testing_local_execution_order
+  - testing_integration_contract
+  - testing_subsystem_rules
   does_not_own:
-  - testing_role_details
-  - test_matrix_details
-  - production_role_definitions
+  - test_type_definitions
+  - test_derivation_algorithm_details
+  - regression_policy_details
+  - characterization_policy_details
+  - test_validation_checks
+  - implementation_execution
 activation:
   mode: entrypoint
   activates_when:
+  - test_derivation_phase_active
   - production_code_created_or_changed
-  - refactor_requested
   - bugfix_requested
-  skips_when: []
+  - refactor_requested
+  - pre_implementation_gate_requires_test_plan
+  skips_when:
+  - mission_profile_forbids_test_derivation
 inputs:
   required:
-  - role_assignment_table
-  optional: []
+  - active_phase_plan
+  - behavior_contract_report
+  optional:
+  - risk_classification_report
+  - contract_classification_report
+  - boundary_validation_report
+  - dependency_validation_report
+  - artifact_actions_report
+  - refactor_strategy_report
+  - change_impact_report
 outputs:
   produces:
-  - testing_system_result
-  - test_plan
+  - testing_subsystem_result
+  - test_derivation_inputs
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - testing/conventions.testing-taxonomy.yaml
   - testing/conventions.testing-matrix.yaml
-  optional_files: []
+  - testing/conventions.test-derivation.yaml
+  - testing/conventions.test-validation.yaml
+  optional_files:
+  - testing/conventions.regression-testing.yaml
+  - testing/conventions.characterization-testing.yaml
 sections:
-  testing_system_metadata:
-    mode: role_derived
   testing_file_index:
-  - testing/conventions.testing-taxonomy.yaml
-  - testing/conventions.testing-matrix.yaml
-  testing_activation_rules:
-  - production_code_created_or_changed
-  - refactor_requested
-  - bugfix_requested
-  testing_execution_order:
+    taxonomy: testing/conventions.testing-taxonomy.yaml
+    matrix: testing/conventions.testing-matrix.yaml
+    derivation: testing/conventions.test-derivation.yaml
+    regression: testing/conventions.regression-testing.yaml
+    characterization: testing/conventions.characterization-testing.yaml
+    validation: testing/conventions.test-validation.yaml
+  testing_local_execution_order:
   - load_testing_taxonomy
-  - derive_test_requirements
+  - load_test_matrix
+  - derive_required_test_obligations
+  - apply_regression_rules_when_bugfix
+  - apply_characterization_rules_when_behavior_preservation
   - validate_test_plan
+  - emit_test_derivation_report
+  testing_integration_contract:
+    consumes_from:
+    - behavior_contract
+    - risk_classification
+    - contract_classification
+    - compatibility_decision
+    - boundary_validation
+    - dependency_validation
+    - artifact_actions
+    - refactor_strategy
+    - change_impact
+    - implementation_sequence
+    provides_to:
+    - implementation_sequence
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - post_implementation_validation
+    - final_validation
+    - reports
+    primary_report: .ai/reports/09-test-plan.yaml
+    secondary_reports:
+    - .ai/reports/regression-test-plan.yaml
+    - .ai/reports/characterization-test-plan.yaml
+  testing_subsystem_rules:
+    absolute_rules:
+    - id: TESTING-SYSTEM-ABS-001
+      rule: Any production behavior change must produce a test derivation result or explicit test gap record.
+      fail_condition: production_change_without_test_derivation
+    - id: TESTING-SYSTEM-ABS-002
+      rule: Bugfix missions must include regression expectations unless reproduction evidence is explicitly unavailable and recorded.
+      fail_condition: bugfix_without_regression_expectation
+    - id: TESTING-SYSTEM-ABS-003
+      rule: Behavior-preserving refactors must include characterization or equivalent existing coverage evidence.
+      fail_condition: refactor_without_preservation_test_evidence
+    - id: TESTING-SYSTEM-ABS-004
+      rule: Testing subsystem may define verification obligations but must not mark implementation validation passed.
+      fail_condition: testing_marked_implementation_validated
 validation:
   fail_conditions:
   - testing_subfile_missing
-  - test_plan_missing_for_production_change
+  - test_derivation_missing_for_required_phase
+  - testing_subsystem_overrode_validation_authority

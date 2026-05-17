@@ -1,0 +1,258 @@
+version: '1.0'
+file:
+  name: conventions.test-validation.yaml
+  path: testing/conventions.test-validation.yaml
+  role: test_validation_contract
+  executability: validator
+purpose: Define strict validation for test plans, regression plans, characterization plans, gaps, validation commands, and test execution claims before implementation
+  or final validation may pass.
+ownership:
+  owns:
+  - test_validation_policy
+  - validation_check_catalog
+  - validation_decision_rules
+  - remediation_mapping
+  - test_validation_algorithm
+  - test_validation_result_schema
+  does_not_own:
+  - test_type_taxonomy
+  - test_derivation_rules
+  - regression_derivation_rules
+  - characterization_derivation_rules
+activation:
+  mode: conditional
+  activates_when:
+  - test_plan_validation_required
+  - pre_implementation_gate_pending
+  - final_validation_pending
+  skips_when: []
+inputs:
+  required:
+  - test_plan_report
+  optional:
+  - regression_test_plan_report
+  - characterization_test_plan_report
+  - validation_command_results_report
+outputs:
+  produces:
+  - test_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - testing/conventions.testing-taxonomy.yaml
+  - testing/conventions.test-derivation.yaml
+  optional_files:
+  - testing/conventions.regression-testing.yaml
+  - testing/conventions.characterization-testing.yaml
+  - reports/conventions.report-validation.yaml
+  - gates/conventions.gate-validation.yaml
+sections:
+  test_validation_policy:
+    absolute_rules:
+    - id: TEST-VALIDATION-ABS-001
+      rule: Test plan validation must fail when required acceptance criteria, obligations, regression expectations, or characterization mappings are missing.
+      fail_condition: test_plan_missing_required_mapping
+    - id: TEST-VALIDATION-ABS-002
+      rule: A test gap marked blocking must block the phases listed in blocks_before until resolved or explicitly accepted by policy.
+      fail_condition: blocking_test_gap_not_enforced
+    - id: TEST-VALIDATION-ABS-003
+      rule: Validation may not mark tests passed unless execution results exist or the phase is explicitly planning-only.
+      fail_condition: test_validation_claimed_execution_without_results
+  validation_check_catalog:
+  - check_id: TEST-CHECK-ACCEPTANCE-MAPPING
+    applies_when:
+    - test_plan_report exists
+    pass_when:
+    - every acceptance criterion has mapped test case or explicit gap record
+    fail_when:
+    - acceptance_criterion_unmapped
+    severity: blocking
+    fail_condition: test_plan_missing_acceptance_mapping
+  - check_id: TEST-CHECK-OBLIGATION-COVERAGE
+    applies_when:
+    - test_obligation_table exists
+    pass_when:
+    - every required or conditional_required obligation is represented by test case, specialized plan, or gap record
+    fail_when:
+    - required_obligation_unrepresented
+    severity: blocking
+    fail_condition: test_obligation_missing_coverage
+  - check_id: TEST-CHECK-GAP-BLOCKING
+    applies_when:
+    - test_gaps exist
+    pass_when:
+    - each gap declares blocking_status, blocks_before, allowed_resolution, and residual risk
+    fail_when:
+    - gap_missing_blocking_status_or_resolution
+    severity: blocking
+    fail_condition: test_gap_missing_blocking_metadata
+  - check_id: TEST-CHECK-REGRESSION
+    applies_when:
+    - mission profile is bugfix or regression obligation exists
+    pass_when:
+    - regression-test-plan exists and maps incorrect behavior to corrected behavior assertions
+    fail_when:
+    - regression_plan_missing_or_incomplete
+    severity: blocking
+    fail_condition: required_regression_plan_invalid
+  - check_id: TEST-CHECK-CHARACTERIZATION
+    applies_when:
+    - behavior preservation required or characterization obligation exists
+    pass_when:
+    - characterization-test-plan maps each preserved behavior to sufficient existing coverage or new characterization case
+    fail_when:
+    - characterization_plan_missing_preserved_behavior_mapping
+    severity: blocking
+    fail_condition: required_characterization_plan_invalid
+  - check_id: TEST-CHECK-VALIDATION-COMMANDS
+    applies_when:
+    - implementation is allowed or validation commands are known
+    pass_when:
+    - each executable test obligation has validation command or explicit command gap
+    fail_when:
+    - validation_command_missing_without_gap
+    severity: error
+    fail_condition: test_validation_command_missing
+  - check_id: TEST-CHECK-NO-FAKE-PASS
+    applies_when:
+    - test execution results not present
+    pass_when:
+    - report does not claim tests passed and records execution as not_run/planning_only
+    fail_when:
+    - report_claims_tests_passed_without_execution_results
+    severity: blocking
+    fail_condition: test_validation_claimed_execution_without_results
+  validation_decision_rules:
+  - id: VALIDATION-PASS
+    decision: passed
+    choose_when:
+    - all blocking checks pass
+    - no blocking test gaps remain
+    - required specialized plans are valid
+    reject_when:
+    - any blocking check failed
+    - execution results required but missing
+    result_status: passed
+  - id: VALIDATION-BLOCKED
+    decision: blocked
+    choose_when:
+    - any blocking check failed
+    - blocking test gap exists
+    - required regression/characterization plan invalid
+    reject_when:
+    - all blocking checks pass
+    result_status: blocked
+  - id: VALIDATION-PASSED-WITH-WARNINGS
+    decision: passed_with_warnings
+    choose_when:
+    - all blocking checks pass
+    - only non-blocking gaps or warnings remain
+    - residual risk recorded
+    reject_when:
+    - blocking gap exists
+    - high/critical risk gap unresolved
+    result_status: passed_with_warnings
+  remediation_mapping:
+  - failure: test_plan_missing_acceptance_mapping
+    required_action:
+    - rerun test_derivation
+    - block pre_implementation_gate
+    - emit validation_required trigger
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - failure: test_obligation_missing_coverage
+    required_action:
+    - rerun testing_matrix or test_derivation
+    - add test case or gap record
+    - block pre_implementation_gate
+    blocks_before:
+    - pre_implementation_gate
+  - failure: required_regression_plan_invalid
+    required_action:
+    - rerun regression_testing
+    - add corrected-behavior assertions
+    - block implementation
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - failure: required_characterization_plan_invalid
+    required_action:
+    - rerun characterization_testing
+    - map preserved behaviors to existing coverage or new cases
+    - block implementation_sequence
+    blocks_before:
+    - implementation_sequence
+    - pre_implementation_gate
+  - failure: test_validation_command_missing
+    required_action:
+    - add validation command or explicit command gap
+    - record residual risk
+    blocks_before:
+    - implementation
+    - final_validation
+  - failure: test_validation_claimed_execution_without_results
+    required_action:
+    - correct report status to not_run/planning_only or attach execution results
+    - block final validation
+    blocks_before:
+    - final_validation
+  test_validation_algorithm:
+    steps:
+    - step_id: LOAD_TEST_REPORTS
+      action: read
+      inputs:
+      - test_plan
+      - regression_test_plan_if_required
+      - characterization_test_plan_if_required
+      - validation_command_results_if_available
+      fail_when:
+      - test_plan_missing
+      outputs:
+      - test_validation_context
+    - step_id: RUN_CHECK_CATALOG
+      action: for_each
+      target: validation_check_catalog
+      fail_when:
+      - required_check_failed
+      outputs:
+      - check_results
+    - step_id: CALCULATE_VALIDATION_DECISION
+      action: apply_decision_rules
+      decision_rules:
+      - validation_decision_rules
+      fail_when:
+      - validation_decision_unresolved
+      outputs:
+      - test_validation_decision
+    - step_id: APPLY_REMEDIATION_MAPPING
+      action: map_failures
+      input: failed_checks
+      fail_when:
+      - blocking_failure_missing_remediation
+      outputs:
+      - required_followups
+      - blocked_phases
+    - step_id: WRITE_VALIDATION_RESULT
+      action: write
+      output: test_validation_result
+      fail_when:
+      - validation_result_missing_status_or_failed_checks
+  test_validation_result_schema:
+    validation_status: ''
+    check_results: []
+    blocking_failures: []
+    warnings: []
+    required_followups: []
+    blocked_phases: []
+    residual_risk: []
+    evidence_refs: []
+validation:
+  fail_conditions:
+  - test_plan_missing_acceptance_mapping
+  - test_obligation_missing_coverage
+  - test_gap_missing_blocking_metadata
+  - required_regression_plan_invalid
+  - required_characterization_plan_invalid
+  - test_validation_command_missing
+  - test_validation_claimed_execution_without_results

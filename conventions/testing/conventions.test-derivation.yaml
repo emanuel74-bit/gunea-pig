@@ -1,0 +1,261 @@
+version: '1.0'
+file:
+  name: conventions.test-derivation.yaml
+  path: testing/conventions.test-derivation.yaml
+  role: test_derivation_contract
+  executability: decision_engine
+purpose: Define deterministic derivation rules that convert behavior, acceptance criteria, matrix obligations, risk, contracts, boundaries, dependencies, and actions
+  into a concrete test plan with explicit gaps and blocking behavior.
+ownership:
+  owns:
+  - test_derivation_policy
+  - acceptance_criterion_classification_rules
+  - test_gap_decision_rules
+  - test_derivation_algorithm
+  - test_plan_record_shape
+  - test_case_record_shape
+  - test_gap_record_shape
+  does_not_own:
+  - test_type_vocabulary
+  - regression_specific_policy
+  - characterization_specific_policy
+  - test_execution
+activation:
+  mode: conditional
+  activates_when:
+  - test_derivation_phase_active
+  skips_when: []
+inputs:
+  required:
+  - behavior_contract_report
+  - test_obligation_table
+  optional:
+  - risk_classification_report
+  - contract_classification_report
+  - boundary_validation_report
+  - dependency_validation_report
+  - artifact_actions_report
+outputs:
+  produces:
+  - test_plan_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - testing/conventions.testing-taxonomy.yaml
+  - testing/conventions.testing-matrix.yaml
+  optional_files:
+  - testing/conventions.regression-testing.yaml
+  - testing/conventions.characterization-testing.yaml
+sections:
+  test_derivation_policy:
+    absolute_rules:
+    - id: TEST-DERIVE-ABS-001
+      rule: Every acceptance criterion must be mapped to at least one test obligation or explicit gap record.
+      fail_condition: acceptance_criterion_unmapped
+    - id: TEST-DERIVE-ABS-002
+      rule: Test gaps must be explicit and classified as blocking or non-blocking.
+      fail_condition: test_gap_missing_blocking_status
+    - id: TEST-DERIVE-ABS-003
+      rule: The test plan may not claim validation has passed; it may only define required validation obligations.
+      fail_condition: test_plan_marked_validation_passed
+  acceptance_criterion_classification_rules:
+  - id: AC-PURE-LOGIC
+    class: pure_logic
+    choose_when:
+    - criterion outcome is determined by deterministic in-memory rules
+    - no external boundary, persistence, or framework lifecycle is required
+    reject_when:
+    - observable behavior depends on repository, external client, queue, framework routing, or public contract
+    default_test_types:
+    - unit
+  - id: AC-PUBLIC-CONTRACT
+    class: public_contract
+    choose_when:
+    - criterion describes request/response shape, DTO, event payload, public export, CLI contract, or consumer-visible behavior
+    reject_when:
+    - criterion is purely internal and no consumer-observable shape changes
+    default_test_types:
+    - contract
+    - regression
+  - id: AC-COLLABORATION
+    class: collaboration
+    choose_when:
+    - criterion requires multiple artifacts/modules/providers to work together
+    reject_when:
+    - single pure unit fully determines behavior
+    default_test_types:
+    - integration
+  - id: AC-PERSISTENCE
+    class: persistence
+    choose_when:
+    - criterion depends on saved state, queries, migrations, indexes, projections, or consistency behavior
+    reject_when:
+    - state is in-memory only
+    default_test_types:
+    - integration
+    - migration
+  - id: AC-SECURITY
+    class: security
+    choose_when:
+    - criterion involves auth, permission, input sanitization, secret handling, or abuse prevention
+    reject_when:
+    - no trust boundary or security-sensitive behavior is touched
+    default_test_types:
+    - security
+  - id: AC-WORKFLOW
+    class: workflow
+    choose_when:
+    - criterion is only meaningful across an ordered user/system workflow
+    reject_when:
+    - lower-level observable outcomes fully cover the behavior
+    default_test_types:
+    - integration
+    - e2e
+  test_gap_decision_rules:
+  - id: GAP-BLOCK-HIGH-RISK
+    applies_when:
+    - gap affects high or critical risk behavior
+    decision: blocking_gap
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    allowed_resolution:
+    - add_test_obligation
+    - reduce_scope
+    - accept_with_explicit_user_approval
+    - block_mission
+    fail_condition: high_risk_test_gap_not_blocking
+  - id: GAP-BLOCK-CONTRACT
+    applies_when:
+    - gap affects public contract, compatibility decision, or consumer obligation
+    decision: blocking_gap
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    allowed_resolution:
+    - add_contract_or_regression_test
+    - provide compatibility acceptance record
+    - block_mission
+    fail_condition: contract_test_gap_not_blocking
+  - id: GAP-BLOCK-PRESERVATION
+    applies_when:
+    - gap affects behavior preservation for refactor or cleanup
+    decision: blocking_gap
+    blocks_before:
+    - implementation_sequence
+    - pre_implementation_gate
+    allowed_resolution:
+    - add_characterization_test
+    - prove_existing_coverage
+    - block_refactor
+    fail_condition: behavior_preservation_gap_not_blocking
+  - id: GAP-NONBLOCKING-LOW-RISK
+    applies_when:
+    - gap affects low risk non-public behavior and acceptance criterion has alternative coverage
+    decision: non_blocking_gap
+    blocks_before: []
+    allowed_resolution:
+    - record_residual_risk
+    - add_followup_test_task
+    fail_condition: non_blocking_gap_missing_residual_risk
+  test_derivation_algorithm:
+    steps:
+    - step_id: LOAD_TEST_INPUTS
+      action: read
+      inputs:
+      - behavior_contract
+      - test_obligation_table
+      - risk_classification
+      - contract_classification
+      - boundary_validation
+      - dependency_validation
+      - artifact_actions
+      fail_when:
+      - behavior_contract_missing
+      - test_obligation_table_missing
+      outputs:
+      - test_derivation_context
+    - step_id: CLASSIFY_ACCEPTANCE_CRITERIA
+      action: for_each
+      target: acceptance_criteria
+      decision_rules:
+      - acceptance_criterion_classification_rules
+      fail_when:
+      - acceptance_criterion_has_no_classification
+      outputs:
+      - classified_acceptance_criteria
+    - step_id: MAP_CRITERION_TO_OBLIGATIONS
+      action: for_each
+      target: classified_acceptance_criteria
+      decision_rules:
+      - test_obligation_table
+      - acceptance_criterion_classification_rules
+      fail_when:
+      - acceptance_criterion_unmapped
+      outputs:
+      - criterion_test_mappings
+    - step_id: CREATE_TEST_CASE_RECORDS
+      action: derive
+      input: criterion_test_mappings
+      fail_when:
+      - test_case_missing_expected_observable
+      - test_case_missing_test_type
+      - test_case_missing_source_refs
+      outputs:
+      - test_case_records
+    - step_id: CLASSIFY_TEST_GAPS
+      action: for_each
+      target: uncovered_criteria_or_obligations
+      decision_rules:
+      - test_gap_decision_rules
+      fail_when:
+      - test_gap_missing_blocking_status
+      - blocking_gap_missing_resolution
+      outputs:
+      - test_gap_records
+    - step_id: WRITE_TEST_PLAN
+      action: write
+      output: .ai/reports/09-test-plan.yaml
+      fail_when:
+      - test_plan_missing_acceptance_criteria_mapping
+      - test_plan_missing_gap_records
+      - test_plan_claims_validation_passed
+  test_plan_record_shape:
+    report_id: test-plan
+    phase_id: test_derivation
+    test_cases: []
+    acceptance_criteria_mapping: []
+    test_obligations: []
+    validation_commands: []
+    test_gaps: []
+    blocked_items: []
+    triggers_emitted: []
+    evidence_refs: []
+  test_case_record_shape:
+    test_case_id: ''
+    test_type: ''
+    strength: required
+    priority: baseline
+    acceptance_criterion_refs: []
+    given: ''
+    when: ''
+    then: ''
+    observable_output: ''
+    required_scope: ''
+    source_signals: []
+    evidence_refs: []
+  test_gap_record_shape:
+    gap_id: ''
+    affected_behavior: ''
+    affected_test_type: ''
+    blocking_status: blocking
+    blocks_before: []
+    allowed_resolution: []
+    residual_risk: ''
+    evidence_refs: []
+validation:
+  fail_conditions:
+  - acceptance_criterion_unmapped
+  - test_gap_missing_blocking_status
+  - test_plan_marked_validation_passed
+  - blocking_gap_missing_resolution

@@ -1,0 +1,223 @@
+version: '1.0'
+file:
+  name: conventions.regression-testing.yaml
+  path: testing/conventions.regression-testing.yaml
+  role: regression_testing_contract
+  executability: decision_engine
+purpose: Define decisive regression derivation rules for bugfixes and failure-driven changes, including failure-mode classification, test type selection, corrected-behavior
+  assertions, and blocking gap behavior.
+ownership:
+  owns:
+  - regression_policy
+  - failure_mode_classification_rules
+  - regression_test_type_selection_rules
+  - regression_derivation_algorithm
+  - regression_expectation_schema
+  - regression_gap_policy
+  does_not_own:
+  - general_test_taxonomy
+  - characterization_testing_policy
+  - test_execution
+activation:
+  mode: conditional
+  activates_when:
+  - bugfix_profile_active
+  - regression_obligation_required
+  - implementation_failure_detected
+  skips_when: []
+inputs:
+  required:
+  - behavior_contract_report
+  optional:
+  - failure_report
+  - risk_classification_report
+  - contract_classification_report
+  - boundary_validation_report
+  - dependency_validation_report
+outputs:
+  produces:
+  - regression_test_plan_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - testing/conventions.testing-taxonomy.yaml
+  optional_files:
+  - testing/conventions.test-derivation.yaml
+sections:
+  regression_policy:
+    absolute_rules:
+    - id: REGRESSION-ABS-001
+      rule: Every bugfix mission must derive at least one regression expectation from the incorrect behavior and expected corrected behavior.
+      fail_condition: bugfix_missing_regression_expectation
+    - id: REGRESSION-ABS-002
+      rule: Regression tests must assert the corrected behavior, not merely exercise the changed code path.
+      fail_condition: regression_test_missing_corrected_behavior_assertion
+    - id: REGRESSION-ABS-003
+      rule: A regression gap blocks pre-implementation and final validation unless explicitly accepted with risk and approval.
+      fail_condition: regression_gap_not_blocking
+  failure_mode_classification_rules:
+  - id: FAILURE-PURE-LOGIC
+    failure_mode: pure_logic_defect
+    choose_when:
+    - failure is reproducible through deterministic input/output without infrastructure
+    reject_when:
+    - failure depends on database, network, broker, time, auth context, or framework lifecycle
+    candidate_regression_types:
+    - unit
+  - id: FAILURE-CONTRACT
+    failure_mode: public_contract_defect
+    choose_when:
+    - failure changes or violates public request/response, DTO, event, export, CLI, or consumer-visible contract
+    reject_when:
+    - failure is not externally observable
+    candidate_regression_types:
+    - contract
+    - integration
+  - id: FAILURE-INTEGRATION
+    failure_mode: collaboration_defect
+    choose_when:
+    - failure arises from collaboration between artifacts, modules, providers, repositories, clients, queues, or transactions
+    reject_when:
+    - single unit behavior fully reproduces failure
+    candidate_regression_types:
+    - integration
+  - id: FAILURE-PERSISTENCE
+    failure_mode: persistence_defect
+    choose_when:
+    - failure depends on query, stored shape, migration, projection, index, transaction, or consistency behavior
+    reject_when:
+    - no persisted state contributes to failure
+    candidate_regression_types:
+    - integration
+    - migration
+  - id: FAILURE-E2E
+    failure_mode: workflow_defect
+    choose_when:
+    - failure is only observable through a complete user/system workflow
+    reject_when:
+    - contract/integration tests reproduce failure with equivalent confidence
+    candidate_regression_types:
+    - e2e
+    - integration
+  regression_test_type_selection_rules:
+  - id: REG-TYPE-UNIT
+    select_test_type: unit
+    choose_when:
+    - failure_mode is pure_logic_defect
+    - corrected behavior can be asserted through direct function/class/use-case input/output
+    reject_when:
+    - failure depends on wiring, boundary, persistence, external integration, or runtime lifecycle
+    required_assertions:
+    - old incorrect output rejected
+    - new correct output produced
+    - edge case from bug evidence covered
+  - id: REG-TYPE-CONTRACT
+    select_test_type: contract
+    choose_when:
+    - failure affects public contract or consumer-visible behavior
+    - compatibility or schema expectation is part of corrected behavior
+    reject_when:
+    - contract shape is unchanged and bug is purely internal
+    required_assertions:
+    - consumer-visible shape preserved or corrected
+    - breaking behavior not introduced
+  - id: REG-TYPE-INTEGRATION
+    select_test_type: integration
+    choose_when:
+    - failure requires collaboration across components or infrastructure boundary
+    - bug evidence includes wiring, repository/client interaction, broker, or module/provider behavior
+    reject_when:
+    - unit or contract test reproduces failure completely with no collaboration risk
+    required_assertions:
+    - collaboration path produces corrected result
+    - important collaborator failure mode handled
+  - id: REG-TYPE-MIGRATION
+    select_test_type: migration
+    choose_when:
+    - bug relates to persisted data migration, schema, index, or backfill behavior
+    reject_when:
+    - no persisted data shape is changed
+    required_assertions:
+    - old data shape handled
+    - new data shape valid
+    - rollback/recovery expectation recorded when applicable
+  - id: REG-TYPE-E2E
+    select_test_type: e2e
+    choose_when:
+    - bug only appears in full workflow or multiple runtime boundaries
+    - risk is high/critical and lower-level tests cannot reproduce behavior
+    reject_when:
+    - integration/contract tests provide equivalent observable confidence
+    required_assertions:
+    - workflow reproduces old failure before fix or documented equivalent
+    - workflow verifies corrected behavior
+  regression_derivation_algorithm:
+    steps:
+    - step_id: LOAD_BUG_EVIDENCE
+      action: read
+      inputs:
+      - behavior_contract.current_incorrect_behavior
+      - behavior_contract.expected_correct_behavior
+      - reproduction_or_failure_evidence
+      fail_when:
+      - bugfix_missing_incorrect_behavior
+      - bugfix_missing_expected_behavior
+      outputs:
+      - bug_evidence_context
+    - step_id: CLASSIFY_FAILURE_MODE
+      action: match
+      decision_rules:
+      - failure_mode_classification_rules
+      fail_when:
+      - failure_mode_unknown_without_gap_record
+      outputs:
+      - failure_mode_record
+    - step_id: SELECT_REGRESSION_TEST_TYPES
+      action: apply_decision_rules
+      decision_rules:
+      - regression_test_type_selection_rules
+      fail_when:
+      - regression_type_not_selected_for_bugfix
+      outputs:
+      - regression_obligations
+    - step_id: DEFINE_CORRECTED_BEHAVIOR_ASSERTIONS
+      action: derive
+      input: regression_obligations
+      fail_when:
+      - regression_test_missing_corrected_behavior_assertion
+      outputs:
+      - regression_expectations
+    - step_id: WRITE_REGRESSION_PLAN
+      action: write
+      output: .ai/reports/regression-test-plan.yaml
+      fail_when:
+      - regression_plan_missing_failure_mapping
+      - regression_plan_missing_validation_commands_or_gap
+  regression_expectation_schema:
+    expectation_id: ''
+    failure_mode: ''
+    selected_test_type: ''
+    incorrect_behavior_ref: ''
+    expected_correct_behavior_ref: ''
+    assertions: []
+    validation_command: ''
+    gap_if_not_testable: ''
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    evidence_refs: []
+  regression_gap_policy:
+    blocking_when:
+    - bugfix mission has no regression expectation
+    - corrected behavior cannot be asserted
+    - failure reproduction is missing and no equivalent evidence exists
+    allowed_resolution:
+    - add_regression_expectation
+    - record reproduction gap and block
+    - accept risk with explicit approval only for non-critical bugs
+validation:
+  fail_conditions:
+  - bugfix_missing_regression_expectation
+  - regression_test_missing_corrected_behavior_assertion
+  - regression_gap_not_blocking
+  - regression_type_not_selected_for_bugfix

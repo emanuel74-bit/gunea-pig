@@ -1,0 +1,225 @@
+version: '1.0'
+file:
+  name: conventions.characterization-testing.yaml
+  path: testing/conventions.characterization-testing.yaml
+  role: characterization_testing_contract
+  executability: decision_engine
+purpose: Define strict behavior-preservation testing rules for refactors, cleanup, splits, extracts, moves, and other changes that must preserve observable behavior.
+ownership:
+  owns:
+  - characterization_policy
+  - existing_coverage_sufficiency_rules
+  - characterization_requirement_rules
+  - preserved_behavior_mapping_rules
+  - characterization_derivation_algorithm
+  - characterization_case_schema
+  does_not_own:
+  - general_test_taxonomy
+  - regression_testing_policy
+  - implementation_sequence
+activation:
+  mode: conditional
+  activates_when:
+  - behavior_preservation_required
+  - refactor_like_action_selected
+  - cleanup_only_profile_active
+  skips_when: []
+inputs:
+  required:
+  - behavior_preservation_requirements
+  optional:
+  - existing_test_inventory
+  - risk_classification_report
+  - change_impact_report
+  - artifact_actions_report
+outputs:
+  produces:
+  - characterization_test_plan_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - testing/conventions.testing-taxonomy.yaml
+  - refactoring/conventions.behavior-preservation.yaml
+  optional_files:
+  - testing/conventions.test-derivation.yaml
+sections:
+  characterization_policy:
+    absolute_rules:
+    - id: CHAR-ABS-001
+      rule: Behavior-preserving refactor or cleanup must prove preserved behavior through existing coverage or characterization obligations.
+      fail_condition: behavior_preservation_without_characterization_or_existing_coverage
+    - id: CHAR-ABS-002
+      rule: Existing coverage is sufficient only when it maps to preserved behavior, observable output, and affected artifact scope.
+      fail_condition: existing_coverage_claimed_without_mapping
+    - id: CHAR-ABS-003
+      rule: Characterization tests must capture current intended behavior, not accidental implementation details unless those details are explicitly preserved.
+      fail_condition: characterization_captures_accidental_detail_as_contract
+  existing_coverage_sufficiency_rules:
+  - id: COVERAGE-SUFFICIENT-DIRECT
+    decision: existing_coverage_sufficient
+    choose_when:
+    - existing test directly asserts preserved behavior
+    - test covers affected artifact or public behavior path
+    - assertion is stable and behavior-relevant
+    reject_when:
+    - test only executes code without assertion
+    - test covers unrelated path
+    - assertion is snapshot noise or implementation detail
+    required_evidence:
+    - test_file_ref
+    - assertion_ref
+    - preserved_behavior_ref
+  - id: COVERAGE-SUFFICIENT-INDIRECT
+    decision: existing_coverage_sufficient_with_risk
+    choose_when:
+    - existing higher-level test asserts same observable outcome
+    - affected artifact is internal and behavior is only externally observable
+    reject_when:
+    - risk is high/critical and no direct assertion exists
+    - public contract behavior is affected without direct contract test
+    required_evidence:
+    - observable_outcome_ref
+    - test_scope_ref
+    - risk_record
+  - id: COVERAGE-INSUFFICIENT
+    decision: new_characterization_required
+    choose_when:
+    - coverage unknown
+    - assertions absent
+    - affected behavior is high risk
+    - public behavior preserved but not asserted
+    - refactor changes control flow, boundaries, or dependencies
+    reject_when:
+    - direct sufficient coverage is proven
+    required_evidence:
+    - gap_reason
+    - affected_behavior_ref
+  characterization_requirement_rules:
+  - id: CHAR-REQUIRED-REFACTOR
+    obligation: characterization_required
+    choose_when:
+    - refactor_like_action_selected
+    - behavior_preservation_required
+    - existing coverage insufficient or unknown
+    reject_when:
+    - all preserved behaviors have sufficient mapped coverage
+    blocks_before:
+    - implementation_sequence
+    - pre_implementation_gate
+  - id: CHAR-REQUIRED-CLEANUP
+    obligation: characterization_required
+    choose_when:
+    - cleanup_only mission changes executable code path or removes/renames/moves behavior-bearing artifact
+    - existing coverage insufficient
+    reject_when:
+    - cleanup only changes comments, formatting, or dead code proven unused
+    blocks_before:
+    - pre_implementation_gate
+  - id: CHAR-OPTIONAL-LOW-RISK
+    obligation: characterization_optional
+    choose_when:
+    - low risk internal refactor
+    - existing higher-level coverage exists
+    - no public contract, persistence, boundary, or dependency behavior affected
+    reject_when:
+    - risk is medium/high/critical or preserved behavior is not covered
+    blocks_before: []
+  - id: CHAR-REJECT-ACCIDENTAL
+    obligation: characterization_rejected
+    choose_when:
+    - candidate test would lock accidental private implementation detail not part of preserved behavior
+    reject_when:
+    - implementation detail is explicitly part of compatibility or persistence contract
+    required_alternative: assert stable observable behavior instead
+  preserved_behavior_mapping_rules:
+  - id: MAP-PUBLIC-BEHAVIOR
+    applies_when:
+    - preserved behavior is consumer-visible
+    required_characterization_scope:
+    - contract
+    - integration
+    fail_condition: public_preserved_behavior_missing_contract_or_integration_characterization
+  - id: MAP-DOMAIN-BEHAVIOR
+    applies_when:
+    - preserved behavior is domain rule/invariant
+    required_characterization_scope:
+    - unit
+    fail_condition: domain_preserved_behavior_missing_unit_characterization
+  - id: MAP-PERSISTENCE-BEHAVIOR
+    applies_when:
+    - preserved behavior includes persisted shape/query/consistency
+    required_characterization_scope:
+    - integration
+    - migration
+    fail_condition: persistence_preserved_behavior_missing_characterization
+  - id: MAP-WORKFLOW-BEHAVIOR
+    applies_when:
+    - preserved behavior spans ordered workflow or asynchronous flow
+    required_characterization_scope:
+    - integration
+    - e2e when lower-level tests cannot observe workflow
+    fail_condition: workflow_preserved_behavior_missing_characterization
+  characterization_derivation_algorithm:
+    steps:
+    - step_id: LOAD_PRESERVED_BEHAVIORS
+      action: read
+      inputs:
+      - behavior_preservation_requirements
+      - refactor_strategy
+      - behavior_contract
+      fail_when:
+      - preserved_behaviors_missing_for_refactor
+      outputs:
+      - preserved_behavior_records
+    - step_id: EVALUATE_EXISTING_COVERAGE
+      action: for_each
+      target: preserved_behavior_records
+      decision_rules:
+      - existing_coverage_sufficiency_rules
+      fail_when:
+      - coverage_sufficiency_unclassified
+      outputs:
+      - coverage_sufficiency_records
+    - step_id: SELECT_CHARACTERIZATION_OBLIGATIONS
+      action: apply_decision_rules
+      decision_rules:
+      - characterization_requirement_rules
+      - preserved_behavior_mapping_rules
+      fail_when:
+      - required_characterization_not_selected
+      outputs:
+      - characterization_obligations
+    - step_id: CREATE_CHARACTERIZATION_CASES
+      action: derive
+      input: characterization_obligations
+      fail_when:
+      - case_missing_observable_behavior
+      - case_locks_accidental_detail
+      outputs:
+      - characterization_cases
+    - step_id: WRITE_CHARACTERIZATION_PLAN
+      action: write
+      output: .ai/reports/characterization-test-plan.yaml
+      fail_when:
+      - characterization_plan_missing_preserved_behavior_mapping
+      - blocking_characterization_gap_unresolved
+  characterization_case_schema:
+    case_id: ''
+    preserved_behavior_ref: ''
+    scope: ''
+    observable_behavior: ''
+    existing_coverage_ref: ''
+    new_test_required: true
+    must_not_lock: []
+    validation_command: ''
+    gap_if_not_testable: ''
+    blocks_before:
+    - implementation_sequence
+    - pre_implementation_gate
+    evidence_refs: []
+validation:
+  fail_conditions:
+  - behavior_preservation_without_characterization_or_existing_coverage
+  - existing_coverage_claimed_without_mapping
+  - characterization_captures_accidental_detail_as_contract
+  - blocking_characterization_gap_unresolved

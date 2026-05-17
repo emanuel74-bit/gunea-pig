@@ -3,219 +3,594 @@ file:
   name: conventions.testing-matrix.yaml
   path: testing/conventions.testing-matrix.yaml
   role: testing_requirement_matrix_contract
-purpose: Derive required and conditional test types from production artifact roles.
+  executability: decision_matrix
+purpose: Define executable matrices that convert roles, subsystem signals, mission profile constraints, risk, contracts, boundaries, dependencies, and actions into
+  required, conditional, optional, rejected, or deescalated test obligations.
 ownership:
   owns:
-  - test_requirements_by_role
-  - testing_collision_rules
-  - testing_boundary_flows
-  - testing_anti_patterns
+  - role_to_test_obligation_matrix
+  - subsystem_signal_obligation_rules
+  - test_deescalation_decision_rules
+  - dedupe_rules
+  - matrix_application_algorithm
+  - test_obligation_record_shape
   does_not_own:
-  - testing_role_definitions
-  - production_role_definitions
-  - architecture_decomposition
+  - test_type_definitions
+  - test_validation_algorithm
+  - implementation_command_execution
 activation:
   mode: conditional
   activates_when:
-  - production_code_created_or_changed
-  - refactor_requested
-  - bugfix_requested
+  - test_derivation_phase_active
+  - test_obligations_required
   skips_when: []
 inputs:
   required:
-  - role_assignment_table
-  - testing_role_taxonomy
-  optional: []
+  - testing_taxonomy
+  - role_assignment_report
+  - behavior_contract_report
+  optional:
+  - risk_classification_report
+  - contract_classification_report
+  - boundary_validation_report
+  - dependency_validation_report
+  - artifact_actions_report
+  - mission_profile_report
 outputs:
   produces:
-  - test_plan
+  - test_obligation_table
 dependencies:
   required_files:
+  - core/conventions.file-contract.yaml
   - testing/conventions.testing-taxonomy.yaml
+  optional_files:
   - roles/conventions.role-taxonomy.yaml
-  optional_files: []
+  - risk/conventions.risk-classification.yaml
+  - contracts/conventions.contract-classification.yaml
+  - boundaries/conventions.boundary-validation.yaml
+  - dependencies/conventions.dependency-validation.yaml
+  - actions/conventions.action-resolution.yaml
 sections:
-  testing_matrix_policy:
-    rule: Tests derive from roles and risk.
-  test_requirements_by_role:
-    entity:
-    - unit_test
-    value_object:
-    - unit_test
-    aggregate:
-    - unit_test
-    rule:
-    - unit_test
-    invariant:
-    - unit_test
-    policy:
-    - unit_test
-    specification:
-    - unit_test
-    selector:
-    - unit_test
-    strategy:
-    - unit_test
-    mapper:
-    - unit_test
-    repository:
-    - integration_test
-    adapter:
-    - unit_test
-    - integration_test
-    client:
-    - integration_test
+  test_matrix_policy:
+    absolute_rules:
+    - id: TEST-MATRIX-ABS-001
+      rule: Test obligations must be derived from explicit behavior, role, risk, contract, boundary, dependency, action, impact, or mission-profile evidence.
+      fail_condition: test_requirement_selected_without_evidence
+    - id: TEST-MATRIX-ABS-002
+      rule: Higher-risk obligations may add tests but lower-risk rules must not remove or weaken them.
+      fail_condition: lower_risk_rule_removed_higher_risk_obligation
+    - id: TEST-MATRIX-ABS-003
+      rule: A test obligation may be deescalated only through an explicit deescalation rule with evidence and preserved coverage.
+      fail_condition: test_obligation_deescalated_without_evidence
+    - id: TEST-MATRIX-ABS-004
+      rule: Every required obligation must declare whether it blocks pre-implementation, implementation, or final validation when missing.
+      fail_condition: test_obligation_missing_blocking_semantics
+  test_obligation_strength_enum:
+    allowed:
+    - required
+    - conditional_required
+    - optional
+    - rejected
+    - deescalated
+  test_obligation_priority_enum:
+    allowed:
+    - baseline
+    - important
+    - blocking
+    - critical
+  role_to_test_obligation_matrix:
     controller:
-    - api_contract_test
-    webhook:
-    - api_contract_test
-    - unit_test
-    consumer:
-    - integration_test
-    - unit_test
-    producer:
-    - integration_test
-    domain_event:
-    - unit_test
-    integration_event:
-    - event_contract_test
-    command:
-    - unit_test
-    query:
-    - unit_test
-    handler:
-    - unit_test
-    use_case:
-    - unit_test
+      baseline_obligations:
+      - contract
+      add_unit_when:
+      - controller performs request/response mapping branches
+      - controller chooses between multiple application actions
+      - controller handles local validation transformation not covered by DTO/schema
+      add_integration_when:
+      - route wiring, guards, interceptors, pipes, auth, or transport behavior is affected
+      - controller delegates across application boundary and behavior is externally observable
+      reject_unit_when:
+      - controller is pure delegation and mapping is trivial
+      - behavior is fully covered by contract/integration test
+      required_evidence:
+      - route_or_transport_surface
+      - delegation_target
+      - mapping_or_branch_presence
+    gateway:
+      baseline_obligations:
+      - contract
+      - integration
+      add_unit_when:
+      - connection/message mapping has branching logic
+      - authorization/session handling is local to gateway
+      reject_unit_when:
+      - gateway only forwards payload to application use case
+      required_evidence:
+      - transport_protocol
+      - message_shape
+      - connection_lifecycle
     service:
-    - unit_test
-    workflow:
-    - unit_test
-    - integration_test
-    job:
-    - unit_test
-    processor:
-    - unit_test
+      baseline_obligations:
+      - unit
+      add_integration_when:
+      - service coordinates repositories, clients, queues, transactions, or multiple modules
+      - service behavior depends on framework dependency injection wiring
+      reject_unit_when:
+      - service is only pass-through and tested through use case/application flow
+      required_evidence:
+      - orchestration_branches
+      - collaborators
+      - side_effects
+    use_case:
+      baseline_obligations:
+      - unit
+      add_integration_when:
+      - use case crosses persistence, external system, event, or transaction boundary
+      - use case coordinates multiple dependencies whose contract is part of behavior
+      reject_unit_when:
+      - use case has no branch and is fully covered by higher-level contract test
+      required_evidence:
+      - input_contract
+      - outcome_contract
+      - dependency_collaboration
+    orchestrator:
+      baseline_obligations:
+      - integration
+      add_unit_when:
+      - orchestrator has deterministic branching, retry, compensation, or sequence selection
+      reject_unit_when:
+      - orchestration is purely declarative and integration validates all branches
+      required_evidence:
+      - workflow_steps
+      - branching_conditions
+      - failure_modes
+    domain_service:
+      baseline_obligations:
+      - unit
+      add_characterization_when:
+      - behavior is being refactored and prior coverage is unknown
+      reject_integration_when:
+      - domain service has no infrastructure collaboration
+      required_evidence:
+      - domain_rule_inputs
+      - domain_rule_outputs
+      - invariants
+    entity:
+      baseline_obligations:
+      - unit
+      add_characterization_when:
+      - entity behavior is refactored
+      required_evidence:
+      - invariants
+      - state_transitions
+    value_object:
+      baseline_obligations:
+      - unit
+      reject_integration_when:
+      - value object is pure and has no external collaboration
+      required_evidence:
+      - construction_rules
+      - equality_or_normalization_rules
+    aggregate:
+      baseline_obligations:
+      - unit
+      add_integration_when:
+      - aggregate persistence mapping or event publishing changes
+      required_evidence:
+      - aggregate_invariants
+      - transaction_boundary
+    policy:
+      baseline_obligations:
+      - unit
+      add_contract_when:
+      - policy outcome is externally observable through public contract
+      required_evidence:
+      - policy_conditions
+      - decision_outcomes
+    rule:
+      baseline_obligations:
+      - unit
+      required_evidence:
+      - rule_conditions
+      - expected_outcomes
+    specification:
+      baseline_obligations:
+      - unit
+      required_evidence:
+      - matching_conditions
+      - non_matching_conditions
+    mapper:
+      baseline_obligations:
+      - unit
+      add_snapshot_when:
+      - output structure is large, stable, and shape regression is important
+      reject_snapshot_when:
+      - output includes unstable timestamps, generated ids, or ordering noise
+      required_evidence:
+      - source_shape
+      - target_shape
+      - lossy_or_lossless_mapping
+    repository:
+      baseline_obligations:
+      - integration
+      add_migration_when:
+      - schema, index, migration, or persisted shape changes
+      reject_unit_when:
+      - repository behavior depends on real database semantics
+      required_evidence:
+      - query_behavior
+      - persistence_model
+      - transaction_or_consistency_behavior
+    adapter:
+      baseline_obligations:
+      - integration
+      - contract
+      add_unit_when:
+      - adapter has mapping or retry/error translation branches
+      required_evidence:
+      - external_contract
+      - translation_rules
+      - failure_modes
+    client:
+      baseline_obligations:
+      - contract
+      - integration
+      add_security_when:
+      - auth, token, secret, or permission behavior changes
+      required_evidence:
+      - external_api_contract
+      - request_response_shape
+      - failure_modes
+    event_handler:
+      baseline_obligations:
+      - integration
+      - contract
+      add_e2e_when:
+      - handler participates in critical asynchronous workflow not fully observable locally
+      required_evidence:
+      - event_contract
+      - side_effects
+      - idempotency_behavior
+    producer:
+      baseline_obligations:
+      - contract
+      - integration
+      required_evidence:
+      - message_contract
+      - routing_key_or_topic
+      - delivery_semantics
+    consumer:
+      baseline_obligations:
+      - contract
+      - integration
+      add_e2e_when:
+      - consumer behavior depends on broker/runtime delivery semantics
+      required_evidence:
+      - message_contract
+      - ack_retry_idempotency
+    module:
+      baseline_obligations:
+      - integration
+      reject_unit_when:
+      - module contains no logic and only declares providers/imports
+      required_evidence:
+      - provider_wiring
+      - exports
+      - module_boundaries
+    factory:
+      baseline_obligations:
+      - unit
+      add_integration_when:
+      - factory composes framework providers or external resources
+      required_evidence:
+      - creation_variants
+      - preconditions
+    validator:
+      baseline_obligations:
+      - unit
+      add_security_when:
+      - validator protects input, auth, permission, or injection surface
+      required_evidence:
+      - valid_cases
+      - invalid_cases
+      - error_shape
+    guard:
+      baseline_obligations:
+      - unit
+      - security
+      add_integration_when:
+      - guard is attached through framework route/module wiring
+      required_evidence:
+      - authorized_cases
+      - unauthorized_cases
+      - context_shape
+    interceptor:
+      baseline_obligations:
+      - unit
+      add_integration_when:
+      - interceptor behavior depends on framework request/response lifecycle
+      required_evidence:
+      - before_after_behavior
+      - context_shape
+    middleware:
+      baseline_obligations:
+      - integration
+      - security
+      required_evidence:
+      - request_mutation
+      - failure_or_bypass_behavior
+    configuration:
+      baseline_obligations:
+      - unit
+      add_integration_when:
+      - configuration affects provider/module/runtime wiring
+      required_evidence:
+      - required_values
+      - defaults
+      - failure_modes
     migration:
-    - integration_test
-    projection:
-    - unit_test
-    - integration_test
-    port:
-    - contract_test
-    contract:
-    - contract_test
-  testing_collision_rules:
-    unit_test_vs_integration_test:
-      choose_unit_test_when:
-      - unit_test responsibility is primary
-      choose_integration_test_when:
-      - integration_test responsibility is primary
+      baseline_obligations:
+      - migration
+      - integration
+      add_regression_when:
+      - migration preserves existing data semantics
+      required_evidence:
+      - before_schema
+      - after_schema
+      - rollback_or_recovery_expectation
+  subsystem_signal_obligation_rules:
+  - id: RISK-HIGH-TESTS
+    applies_when:
+    - risk_level is high
+    add_obligations:
+    - test_type: unit
+      strength: required
+      priority: blocking
+    - test_type: integration
+      strength: required
+      priority: blocking
+    blocks_before:
+    - pre_implementation_gate
+  - id: RISK-CRITICAL-TESTS
+    applies_when:
+    - risk_level is critical
+    add_obligations:
+    - test_type: unit
+      strength: required
+      priority: critical
+    - test_type: integration
+      strength: required
+      priority: critical
+    - test_type: contract
+      strength: conditional_required
+      priority: critical
+    - test_type: e2e
+      strength: conditional_required
+      priority: critical
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - id: PUBLIC-CONTRACT-TESTS
+    applies_when:
+    - public contract changed or compatibility decision required
+    add_obligations:
+    - test_type: contract
+      strength: required
+      priority: critical
+    - test_type: regression
+      strength: required
+      priority: blocking
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - id: EXTERNAL-BOUNDARY-TESTS
+    applies_when:
+    - external boundary or integration boundary changed
+    add_obligations:
+    - test_type: integration
+      strength: required
+      priority: blocking
+    - test_type: contract
+      strength: conditional_required
+      priority: blocking
+    blocks_before:
+    - pre_implementation_gate
+  - id: PERSISTENCE-CHANGE-TESTS
+    applies_when:
+    - persistence model, repository query, migration, or stored shape changes
+    add_obligations:
+    - test_type: integration
+      strength: required
+      priority: blocking
+    - test_type: migration
+      strength: required
+      priority: critical
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - id: SECURITY-SURFACE-TESTS
+    applies_when:
+    - security boundary, auth, permission, validation, or injection surface changes
+    add_obligations:
+    - test_type: security
+      strength: required
+      priority: critical
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - id: BUGFIX-REGRESSION-TESTS
+    applies_when:
+    - mission_profile is bugfix or failure evidence exists
+    add_obligations:
+    - test_type: regression
+      strength: required
+      priority: critical
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - id: REFACTOR-CHARACTERIZATION-TESTS
+    applies_when:
+    - behavior preservation required and existing coverage insufficient or unknown
+    add_obligations:
+    - test_type: characterization
+      strength: required
+      priority: critical
+    blocks_before:
+    - implementation_sequence
+    - pre_implementation_gate
+  - id: ACTION-SPLIT-EXTRACT-TESTS
+    applies_when:
+    - artifact action is split or extract
+    add_obligations:
+    - test_type: characterization
+      strength: conditional_required
+      priority: blocking
+    - test_type: unit
+      strength: required
+      priority: important
+    - test_type: integration
+      strength: conditional_required
+      priority: blocking
+    blocks_before:
+    - pre_implementation_gate
+  - id: ACTION-DELETE-REPLACE-TESTS
+    applies_when:
+    - artifact action is delete, replace, deprecate, or inline
+    add_obligations:
+    - test_type: regression
+      strength: required
+      priority: blocking
+    blocks_before:
+    - pre_implementation_gate
+  test_deescalation_decision_rules:
+  - id: DEESC-E2E-TO-INTEGRATION
+    candidate_test: e2e
+    allow_deescalation_to:
+    - integration
+    - contract
+    choose_when:
+    - workflow is covered by lower-level tests with equivalent observable outcomes
+    - risk level is low or medium
+    - no critical public path, security path, or distributed transaction is affected
+    reject_when:
+    - risk level is high or critical
+    - failure is only observable end-to-end
+    - external runtime coordination is central to behavior
+    must_record:
+    - original_obligation
+    - replacement_obligations
+    - coverage_equivalence_evidence
+    - residual_risk
+  - id: DEESC-INTEGRATION-TO-UNIT
+    candidate_test: integration
+    allow_deescalation_to:
+    - unit
+    choose_when:
+    - collaboration is mocked through stable contract and behavior under test is pure decision logic
+    - no boundary, persistence, external integration, or module wiring behavior is affected
+    reject_when:
+    - provider wiring, repository query, external client, broker, module export, or framework lifecycle is part of behavior
+    must_record:
+    - collaboration_not_under_test
+    - unit_coverage_mapping
+    - residual_risk
+  - id: DEESC-SNAPSHOT-TO-UNIT
+    candidate_test: snapshot
+    allow_deescalation_to:
+    - unit
+    choose_when:
+    - snapshot would capture unstable or irrelevant noise
+    - specific assertions can cover meaningful fields
+    reject_when:
+    - large stable object shape is the contract and field-by-field assertions are less clear
+    must_record:
+    - snapshot_noise_reason
+    - replacement_assertions
+  dedupe_rules:
+  - id: DEDUPE-SAME-TYPE-SAME-BEHAVIOR
+    applies_when:
+    - multiple sources require same test type for same acceptance criterion
+    decision: merge into one obligation with all source refs preserved
+    fail_condition: duplicate_obligations_without_source_merge
+  - id: DEDUPE-DO-NOT-DROP-STRENGTH
+    applies_when:
+    - merged obligations have different strengths or priorities
+    decision: keep strongest strength and highest priority
+    fail_condition: merged_obligation_lost_stronger_priority
+  matrix_application_algorithm:
+    steps:
+    - step_id: LOAD_INPUT_SIGNALS
+      action: read
+      inputs:
+      - behavior_contract
+      - role_assignments
+      - risk_classification
+      - contract_classification
+      - boundary_validation
+      - dependency_validation
+      - artifact_actions
+      - mission_profile
       fail_when:
-      - both responsibilities are primary and cannot be separated
-    integration_test_vs_e2e_test:
-      choose_integration_test_when:
-      - integration_test responsibility is primary
-      choose_e2e_test_when:
-      - e2e_test responsibility is primary
+      - required_behavior_contract_missing
+      outputs:
+      - normalized_test_signals
+    - step_id: MAP_ROLE_BASELINES
+      action: for_each_role
+      decision_rules:
+      - role_to_test_obligation_matrix
       fail_when:
-      - both responsibilities are primary and cannot be separated
-    contract_test_vs_integration_test:
-      choose_contract_test_when:
-      - contract_test responsibility is primary
-      choose_integration_test_when:
-      - integration_test responsibility is primary
+      - role_references_unknown_test_type
+      outputs:
+      - baseline_test_obligations
+    - step_id: APPLY_SUBSYSTEM_SIGNALS
+      action: for_each_signal
+      decision_rules:
+      - subsystem_signal_obligation_rules
       fail_when:
-      - both responsibilities are primary and cannot be separated
-    api_contract_test_vs_e2e_test:
-      choose_api_contract_test_when:
-      - api_contract_test responsibility is primary
-      choose_e2e_test_when:
-      - e2e_test responsibility is primary
+      - signal_requires_test_but_no_obligation_added
+      outputs:
+      - subsystem_required_obligations
+    - step_id: APPLY_DEESCALATION
+      action: evaluate_candidates
+      decision_rules:
+      - test_deescalation_decision_rules
       fail_when:
-      - both responsibilities are primary and cannot be separated
-    event_contract_test_vs_listener_unit_test:
-      choose_event_contract_test_when:
-      - event_contract_test responsibility is primary
-      choose_listener_unit_test_when:
-      - listener_unit_test responsibility is primary
+      - obligation_deescalated_without_recorded_evidence
+      outputs:
+      - deescalated_obligations
+      - residual_risk_records
+    - step_id: DEDUPE_AND_PRESERVE_STRENGTH
+      action: merge
+      decision_rules:
+      - dedupe_rules
       fail_when:
-      - both responsibilities are primary and cannot be separated
-    architecture_test_vs_boundary_test:
-      choose_architecture_test_when:
-      - architecture_test responsibility is primary
-      choose_boundary_test_when:
-      - boundary_test responsibility is primary
+      - strongest_obligation_priority_lost
+      outputs:
+      - deduped_test_obligation_table
+    - step_id: EMIT_OBLIGATION_TABLE
+      action: write
+      output: test_obligation_table
       fail_when:
-      - both responsibilities are primary and cannot be separated
-    mock_vs_stub:
-      choose_mock_when:
-      - mock responsibility is primary
-      choose_stub_when:
-      - stub responsibility is primary
-      fail_when:
-      - both responsibilities are primary and cannot be separated
-    stub_vs_fake:
-      choose_stub_when:
-      - stub responsibility is primary
-      choose_fake_when:
-      - fake responsibility is primary
-      fail_when:
-      - both responsibilities are primary and cannot be separated
-    fake_vs_integration_test:
-      choose_fake_when:
-      - fake responsibility is primary
-      choose_integration_test_when:
-      - integration_test responsibility is primary
-      fail_when:
-      - both responsibilities are primary and cannot be separated
-    fixture_vs_test_factory:
-      choose_fixture_when:
-      - fixture responsibility is primary
-      choose_test_factory_when:
-      - test_factory responsibility is primary
-      fail_when:
-      - both responsibilities are primary and cannot be separated
-    test_factory_vs_test_builder:
-      choose_test_factory_when:
-      - test_factory responsibility is primary
-      choose_test_builder_when:
-      - test_builder responsibility is primary
-      fail_when:
-      - both responsibilities are primary and cannot be separated
-    assertion_vs_matcher:
-      choose_assertion_when:
-      - assertion responsibility is primary
-      choose_matcher_when:
-      - matcher responsibility is primary
-      fail_when:
-      - both responsibilities are primary and cannot be separated
-  testing_boundary_flows:
-    unit_test_flow:
-    - unit_under_test
-    - test_double_optional
-    - behavior_assertions
-    integration_test_flow:
-    - real_component_group
-    - controlled_infrastructure_or_boundary
-    - observable_result
-    - cleanup
-    e2e_test_flow:
-    - public_entrypoint
-    - real_runtime_wiring
-    - externally_observable_result
-    contract_test_flow:
-    - provider_or_consumer
-    - stable_contract
-    - compatibility_assertions
-  testing_anti_patterns:
-  - test_without_clear_role
-  - unit_test_using_real_database_without_reason
-  - integration_test_mocking_the_boundary_it_claims_to_test
-  - e2e_test_asserting_internal_implementation
-  - production_code_imports_test_support
+      - obligation_missing_source_refs
+      - obligation_missing_strength
+      - obligation_missing_blocks_before
+  test_obligation_record_shape:
+    test_type: ''
+    strength: required
+    priority: baseline
+    source_signals: []
+    mapped_acceptance_criteria: []
+    required_scope: ''
+    blocks_before: []
+    deescalation:
+      is_deescalated: false
+      replaced_by: []
+      evidence_refs: []
+    evidence_refs: []
 validation:
   fail_conditions:
-  - required_test_missing_for_role
-  - integration_boundary_without_integration_or_contract_test
-  - test_plan_missing_failure_paths
+  - test_matrix_references_unknown_test_type
+  - test_requirement_selected_without_evidence
+  - bugfix_missing_regression_requirement
+  - test_obligation_deescalated_without_evidence
+  - test_obligation_missing_blocking_semantics
