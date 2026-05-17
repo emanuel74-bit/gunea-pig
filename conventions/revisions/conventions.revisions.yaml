@@ -4,16 +4,26 @@ file:
   path: revisions/conventions.revisions.yaml
   role: revisions_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for revision, rerun, and invalidation policy.
+purpose: Provide the source of truth entrypoint, file index, local execution order, and ownership boundaries for revision, invalidation, and rerun
+  policy.
 ownership:
   owns:
   - revisions_file_index
+  - local_execution_order
+  - subsystem_contract
+  - integration_usage
   does_not_own:
+  - revision_reason_definitions
+  - revision_action_definitions
   - mission_state_storage
+  - phase_contracts
+  - gate_validation_internals
+  - handoff_consumption_policy
 activation:
   mode: entrypoint
   activates_when:
-  - revision_or_rerun_required
+  - revision_policy_required
+  - invalidation_or_rerun_policy_required
   skips_when: []
 inputs:
   required: []
@@ -25,14 +35,69 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - revisions/conventions.revision-taxonomy.yaml
-  - revisions/conventions.rerun-policy.yaml
+  - revisions/conventions.revision-request-policy.yaml
   - revisions/conventions.invalidation-policy.yaml
+  - revisions/conventions.rerun-policy.yaml
+  - revisions/conventions.revision-validation.yaml
   optional_files: []
 sections:
   revisions_file_index:
     taxonomy: revisions/conventions.revision-taxonomy.yaml
-    rerun_policy: revisions/conventions.rerun-policy.yaml
+    request_policy: revisions/conventions.revision-request-policy.yaml
     invalidation_policy: revisions/conventions.invalidation-policy.yaml
+    rerun_policy: revisions/conventions.rerun-policy.yaml
+    validation: revisions/conventions.revision-validation.yaml
+  local_execution_order:
+  - load_revision_taxonomy
+  - validate_revision_request
+  - select_revision_action
+  - apply_invalidation_policy
+  - select_rerun_policy
+  - validate_revision_state
+  subsystem_contract:
+    absolute_rules:
+    - id: REVISIONS-SYSTEM-ABS-001
+      rule: Revisions correct unsafe prior outputs; they do not perform phase work directly.
+      fail_condition: revision_subsystem_performed_phase_work
+    - id: REVISIONS-SYSTEM-ABS-002
+      rule: Revisions may invalidate and schedule reruns but must not redefine phase contracts.
+      fail_condition: revision_subsystem_redefined_phase_contract
+    - id: REVISIONS-SYSTEM-ABS-003
+      rule: Alpha is the decision authority for approving/rejecting revision requests.
+      fail_condition: non_alpha_approved_revision
+    - id: REVISIONS-SYSTEM-ABS-004
+      rule: Invalidation and rerun policy must preserve prior evidence and history.
+      fail_condition: revision_lost_prior_history
+  integration_usage:
+    alpha_controller:
+    - approve/reject revision requests
+    - update mission state
+    - schedule reruns
+    phases:
+    - may emit revision requests when inputs are unsafe
+    - must not apply revisions directly
+    reports:
+    - report lifecycle is invalidated/replaced/revalidated by revision outcomes
+    handoffs:
+    - must block consumption of invalidated or pending-revalidation outputs
+    gates:
+    - must fail when required revision state is unresolved
+    triggers:
+    - may create revision requests through trigger resolution
+    final_validation:
+    - must fail with open revisions or consumed invalidated outputs
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: CONVENTIONS-REVISIONS-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revisions_subsystem_entrypoint: true
+  - id: CONVENTIONS-REVISIONS-YAML-CHECK-002
+    check: owned_sections_do_not_duplicate_external_authority
+    applies_when:
+      revisions_subsystem_entrypoint: true
+  fail_conditions:
+  - id: REVISIONS-SYSTEM-001
+    condition: revision_subsystem_performed_phase_work
+    message: Revision subsystem must correct runtime state and outputs, not execute phase work directly.
+    severity: error

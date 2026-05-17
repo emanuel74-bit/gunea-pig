@@ -4,14 +4,22 @@ file:
   path: revisions/conventions.revision-taxonomy.yaml
   role: revision_vocabulary_contract
   executability: vocabulary
-purpose: Define revision reasons, actions, statuses, and request schema.
+purpose: Define revision reasons, actions, statuses, scopes, and request record schemas used by Alpha and validation phases.
 ownership:
   owns:
   - revision_reason_enum
+  - revision_reason_definitions
   - revision_action_enum
+  - revision_action_definitions
   - revision_status_enum
+  - revision_status_definitions
+  - revision_scope_enum
   - revision_request_schema
+  - revision_request_record_shape
+  - revision_authority_boundaries
   does_not_own:
+  - revision_approval_policy
+  - invalidation_policy
   - rerun_policy
   - mission_state_storage
 activation:
@@ -42,6 +50,117 @@ sections:
     - implementation_revealed_design_gap
     - validation_revealed_behavior_gap
     - report_artifact_invalid
+    - active_trigger_unresolved
+    - risk_escalation_requires_replan
+  revision_reason_definitions:
+    required_input_missing:
+      definition: A phase cannot proceed because an input declared by its phase contract does not exist as a valid file artifact.
+      positive_signals:
+      - entry gate reports required_input_missing
+      - report registry lists required report as missing
+      - phase bundle references absent input
+      reject_when:
+      - input exists and passes lifecycle/consumption policy
+      default_action: rerun_or_schedule_input_producer
+    required_input_incomplete:
+      definition: A declared input exists but lacks required fields, evidence references, decisions, or schema-compliant content.
+      positive_signals:
+      - output gate failed required field check
+      - report validation found missing required fields
+      - consumer phase cannot derive required decision
+      reject_when:
+      - input satisfies required schema and semantic completeness
+      default_action: amend_target_report
+    required_input_contradicted:
+      definition: Two or more upstream outputs make incompatible claims that cannot both be consumed safely.
+      positive_signals:
+      - later report contradicts earlier behavior contract
+      - classification conflicts with action plan
+      - compatibility decision conflicts with contract change type
+      reject_when:
+      - difference is explicitly resolved by newer replacement output
+      default_action: rerun_from_target_phase_forward
+    required_output_schema_invalid:
+      definition: A produced output does not satisfy its registered report schema or lifecycle metadata.
+      positive_signals:
+      - report_missing_required_field
+      - unknown enum value used
+      - wrong report_id or phase_id
+      reject_when:
+      - report validation passes
+      default_action: rerun_target_phase
+    phase_scope_violation_detected:
+      definition: A phase or agent performed work outside its phase contract, permission profile, or allowed write scope.
+      positive_signals:
+      - agent wrote forbidden file
+      - phase output contains decisions owned by another phase
+      - implementation changed file outside allowed scope
+      reject_when:
+      - scope expansion was explicitly approved and reflected in mission state before execution
+      default_action: invalidate_target_output
+    dependency_edge_violation_detected:
+      definition: A phase consumed or executed before required prerequisite phases/outputs were complete and valid.
+      positive_signals:
+      - phase dependency graph violation
+      - target consumed source output without handoff gate
+      - required predecessor missing
+      reject_when:
+      - dependency was conditional and validly skipped with evidence
+      default_action: block_mission_until_plan_fixed
+    trigger_requires_prior_phase_update:
+      definition: A trigger resolution requires an already completed upstream phase to be rerun or amended.
+      positive_signals:
+      - trigger resolution target_phase earlier than current phase
+      - new risk/classification signal changes prior assumptions
+      reject_when:
+      - trigger resolved without prior output changes
+      default_action: rerun_target_phase
+    implementation_revealed_design_gap:
+      definition: During implementation, the approved plan is found insufficient, unsafe, or impossible without design revision.
+      positive_signals:
+      - implementation step impossible
+      - sequence conflicts with codebase
+      - unexpected contract/boundary/dependency need discovered
+      reject_when:
+      - implementation issue can be repaired without changing prior design outputs
+      default_action: rerun_from_target_phase_forward
+    validation_revealed_behavior_gap:
+      definition: Post-implementation or final validation shows the behavior contract, test plan, or design missed required behavior.
+      positive_signals:
+      - acceptance criteria not covered
+      - test plan gap blocks final validation
+      - implemented behavior does not satisfy behavior contract
+      reject_when:
+      - failure is a localized implementation bug repairable within approved plan
+      default_action: rerun_from_target_phase_forward
+    report_artifact_invalid:
+      definition: A report artifact is missing, malformed, invalidated, stale, duplicated incorrectly, or lifecycle-incompatible with downstream
+        use.
+      positive_signals:
+      - required_report_file_missing
+      - downstream consumed invalidated report
+      - report lifecycle not current
+      reject_when:
+      - report exists, validates, and is current
+      default_action: rerun_target_phase
+    active_trigger_unresolved:
+      definition: A trigger that blocks implementation or final validation remains active, unresolved, or blocked without accepted risk.
+      positive_signals:
+      - trigger status active before implementation
+      - blocked trigger before final validation
+      - trigger missing resolution action
+      reject_when:
+      - trigger is resolved, scheduled, invalidated, or explicitly accepted by policy
+      default_action: trigger_review_then_revision
+    risk_escalation_requires_replan:
+      definition: Risk classification or escalation increased strictness enough that previous phase outputs are no longer sufficient.
+      positive_signals:
+      - risk level raised to high or critical
+      - new required report added by risk escalation
+      - gate strictness changed after planning
+      reject_when:
+      - risk escalation adds no new required phase/report/check
+      default_action: rerun_from_target_phase_forward
   revision_action_enum:
     allowed:
     - rerun_target_phase
@@ -49,7 +168,91 @@ sections:
     - invalidate_target_output
     - replace_target_output
     - rerun_from_target_phase_forward
+    - revalidate_dependents_only
     - block_mission
+  revision_action_definitions:
+    rerun_target_phase:
+      definition: Execute the target phase again and produce a replacement output for invalid or incomplete target reports.
+      choose_when:
+      - target output is missing, schema-invalid, or incomplete
+      - dependent outputs can remain valid after revalidation
+      reject_when:
+      - root cause affects multiple downstream decisions
+      invalidates:
+      - target_phase_outputs
+      requires:
+      - replacement_output_record
+    amend_target_report:
+      definition: Create a controlled amendment to an existing report without rerunning full target phase.
+      choose_when:
+      - issue is limited to missing metadata, evidence, or narrow clarification
+      - amendment does not alter downstream decisions
+      reject_when:
+      - decision outcome changes
+      - schema invalidity affects core report meaning
+      invalidates: []
+      requires:
+      - amendment_record
+      - report_lifecycle_update
+    invalidate_target_output:
+      definition: Mark target output unsafe for consumption without immediately selecting a rerun scope.
+      choose_when:
+      - scope violation or unsafe content found
+      - replacement path is not yet known
+      reject_when:
+      - safe replacement is already available
+      invalidates:
+      - target_output
+      requires:
+      - invalidation_record
+    replace_target_output:
+      definition: Replace an invalidated output with a newer output version and update consumption references.
+      choose_when:
+      - new output already exists and validates
+      - all consumers can be redirected safely
+      reject_when:
+      - replacement not validated
+      - dependent outputs require rerun
+      invalidates:
+      - superseded_output
+      requires:
+      - replacement_link
+      - handoff_revalidation
+    rerun_from_target_phase_forward:
+      definition: Invalidate target phase outputs and every dependent downstream output that consumed them, then rerun in dependency order.
+      choose_when:
+      - upstream decision changed
+      - behavior/design/contract gap affects downstream phases
+      reject_when:
+      - issue is isolated and amendable
+      invalidates:
+      - target_outputs
+      - dependent_outputs
+      requires:
+      - dependency_impact_graph
+      - active_phase_plan_update
+    revalidate_dependents_only:
+      definition: Keep upstream replacement output and revalidate dependent reports without rerunning their phases unless validation fails.
+      choose_when:
+      - upstream output changed only in metadata or clarified evidence
+      - downstream decisions likely unaffected
+      reject_when:
+      - dependent decision inputs changed materially
+      invalidates: []
+      requires:
+      - dependent_revalidation_records
+    block_mission:
+      definition: Stop execution until user/system resolves a revision conflict that cannot be safely handled automatically.
+      choose_when:
+      - dependency edge conflict cannot be corrected automatically
+      - risk acceptance or user approval required
+      - multiple authority conflicts exist
+      reject_when:
+      - safe deterministic rerun action exists
+      invalidates: []
+      requires:
+      - blocked_item_record
+      - resolution_instructions
   revision_status_enum:
     allowed:
     - requested
@@ -57,332 +260,89 @@ sections:
     - rejected
     - applied
     - superseded
+    - blocked
+  revision_status_definitions:
+    requested: Revision request was emitted and awaits Alpha decision.
+    approved: Alpha accepted the request and selected a revision action.
+    rejected: Alpha rejected the request with evidence and no invalidation is applied.
+    applied: The selected revision action was completed and reflected in mission state.
+    superseded: A newer revision request or replacement made this request obsolete.
+    blocked: Revision cannot proceed without user approval or unresolved conflict resolution.
+  revision_scope_enum:
+    allowed:
+    - single_report
+    - single_phase
+    - phase_and_direct_dependents
+    - phase_and_all_dependents
+    - mission_blocking
+  revision_scope_definitions:
+    single_report: Only one report artifact is affected.
+    single_phase: All outputs produced by one phase are affected.
+    phase_and_direct_dependents: Target phase and immediate consumers are affected.
+    phase_and_all_dependents: Target phase and transitive downstream consumers are affected.
+    mission_blocking: Mission cannot continue until external resolution occurs.
   revision_request_schema:
     required_fields:
     - revision_id
     - requested_by_phase
+    - requested_by_agent
     - target_phase
-    - reason
+    - target_outputs
+    - revision_reason
     - required_action
+    - reason_summary
+    - evidence_refs
     - invalidated_outputs
-  revision_reason_definitions:
-    required_input_missing:
-      definition: required input missing revision_reason vocabulary value.
-      meaning: Represents the required input missing case within the revision_reason taxonomy.
-      detection_signals:
-      - required input missing signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches required input missing
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using required_input_missing must include reason and evidence
-    required_input_incomplete:
-      definition: required input incomplete revision_reason vocabulary value.
-      meaning: Represents the required input incomplete case within the revision_reason taxonomy.
-      detection_signals:
-      - required input incomplete signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches required input incomplete
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using required_input_incomplete must include reason and evidence
-    required_input_contradicted:
-      definition: required input contradicted revision_reason vocabulary value.
-      meaning: Represents the required input contradicted case within the revision_reason taxonomy.
-      detection_signals:
-      - required input contradicted signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches required input contradicted
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using required_input_contradicted must include reason and evidence
-    required_output_schema_invalid:
-      definition: required output schema invalid revision_reason vocabulary value.
-      meaning: Represents the required output schema invalid case within the revision_reason taxonomy.
-      detection_signals:
-      - required output schema invalid signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches required output schema invalid
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using required_output_schema_invalid must include reason and evidence
-    phase_scope_violation_detected:
-      definition: phase scope violation detected revision_reason vocabulary value.
-      meaning: Represents the phase scope violation detected case within the revision_reason taxonomy.
-      detection_signals:
-      - phase scope violation detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches phase scope violation detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using phase_scope_violation_detected must include reason and evidence
-    dependency_edge_violation_detected:
-      definition: dependency edge violation detected revision_reason vocabulary value.
-      meaning: Represents the dependency edge violation detected case within the revision_reason taxonomy.
-      detection_signals:
-      - dependency edge violation detected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches dependency edge violation detected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using dependency_edge_violation_detected must include reason and evidence
-    trigger_requires_prior_phase_update:
-      definition: trigger requires prior phase update revision_reason vocabulary value.
-      meaning: Represents the trigger requires prior phase update case within the revision_reason taxonomy.
-      detection_signals:
-      - trigger requires prior phase update signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches trigger requires prior phase update
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using trigger_requires_prior_phase_update must include reason and evidence
-    implementation_revealed_design_gap:
-      definition: implementation revealed design gap revision_reason vocabulary value.
-      meaning: Represents the implementation revealed design gap case within the revision_reason taxonomy.
-      detection_signals:
-      - implementation revealed design gap signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches implementation revealed design gap
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using implementation_revealed_design_gap must include reason and evidence
-    validation_revealed_behavior_gap:
-      definition: validation revealed behavior gap revision_reason vocabulary value.
-      meaning: Represents the validation revealed behavior gap case within the revision_reason taxonomy.
-      detection_signals:
-      - validation revealed behavior gap signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches validation revealed behavior gap
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using validation_revealed_behavior_gap must include reason and evidence
-    report_artifact_invalid:
-      definition: report artifact invalid revision_reason vocabulary value.
-      meaning: Represents the report artifact invalid case within the revision_reason taxonomy.
-      detection_signals:
-      - report artifact invalid signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches report artifact invalid
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_reason decisions using report_artifact_invalid must include reason and evidence
-  revision_action_definitions:
-    rerun_target_phase:
-      definition: rerun target phase revision_action vocabulary value.
-      meaning: Represents the rerun target phase case within the revision_action taxonomy.
-      detection_signals:
-      - rerun target phase signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches rerun target phase
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_action decisions using rerun_target_phase must include reason and evidence
-    amend_target_report:
-      definition: amend target report revision_action vocabulary value.
-      meaning: Represents the amend target report case within the revision_action taxonomy.
-      detection_signals:
-      - amend target report signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches amend target report
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_action decisions using amend_target_report must include reason and evidence
-    invalidate_target_output:
-      definition: invalidate target output revision_action vocabulary value.
-      meaning: Represents the invalidate target output case within the revision_action taxonomy.
-      detection_signals:
-      - invalidate target output signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches invalidate target output
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_action decisions using invalidate_target_output must include reason and evidence
-    replace_target_output:
-      definition: replace target output revision_action vocabulary value.
-      meaning: Represents the replace target output case within the revision_action taxonomy.
-      detection_signals:
-      - replace target output signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches replace target output
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_action decisions using replace_target_output must include reason and evidence
-    rerun_from_target_phase_forward:
-      definition: rerun from target phase forward revision_action vocabulary value.
-      meaning: Represents the rerun from target phase forward case within the revision_action taxonomy.
-      detection_signals:
-      - rerun from target phase forward signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches rerun from target phase forward
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_action decisions using rerun_from_target_phase_forward must include reason and evidence
-    block_mission:
-      definition: block mission revision_action vocabulary value.
-      meaning: Represents the block mission case within the revision_action taxonomy.
-      detection_signals:
-      - block mission signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches block mission
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_action decisions using block_mission must include reason and evidence
-  revision_status_definitions:
-    requested:
-      definition: requested revision_status vocabulary value.
-      meaning: Represents the requested case within the revision_status taxonomy.
-      detection_signals:
-      - requested signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches requested
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_status decisions using requested must include reason and evidence
-    approved:
-      definition: approved revision_status vocabulary value.
-      meaning: Represents the approved case within the revision_status taxonomy.
-      detection_signals:
-      - approved signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches approved
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_status decisions using approved must include reason and evidence
-    rejected:
-      definition: rejected revision_status vocabulary value.
-      meaning: Represents the rejected case within the revision_status taxonomy.
-      detection_signals:
-      - rejected signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches rejected
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_status decisions using rejected must include reason and evidence
-    applied:
-      definition: applied revision_status vocabulary value.
-      meaning: Represents the applied case within the revision_status taxonomy.
-      detection_signals:
-      - applied signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches applied
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_status decisions using applied must include reason and evidence
-    superseded:
-      definition: superseded revision_status vocabulary value.
-      meaning: Represents the superseded case within the revision_status taxonomy.
-      detection_signals:
-      - superseded signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches superseded
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - revision_status decisions using superseded must include reason and evidence
+    - status
+    optional_fields:
+    - replacement_outputs
+    - dependent_outputs
+    - blocking_status
+    - approval_record
+    - supersedes_revision_id
+    - notes
+  revision_request_record_shape:
+    revision_id: ''
+    requested_by_phase: ''
+    requested_by_agent: ''
+    target_phase: ''
+    target_outputs: []
+    revision_reason: ''
+    required_action: ''
+    reason_summary: ''
+    evidence_refs: []
+    invalidated_outputs: []
+    replacement_outputs: []
+    dependent_outputs: []
+    blocking_status: ''
+    status: requested
+  revision_authority_boundaries:
+    revisions_owns:
+    - revision vocabulary
+    - revision request shape
+    - revision approval policy
+    - invalidation policy
+    - rerun policy
+    - revision validation
+    does_not_own:
+    - mission state storage
+    - phase scheduling runtime
+    - gate validation internals
+    - report schemas
+    - handoff consumption policy
+    - trigger resolution policy
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: CONVENTIONS-REVISION-TAXONOMY-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revision_vocabulary_contract: true
+  - id: CONVENTIONS-REVISION-TAXONOMY-YAML-CHECK-002
+    check: owned_sections_do_not_duplicate_external_authority
+    applies_when:
+      revision_vocabulary_contract: true
+  fail_conditions:
+  - id: REVISION-TAXONOMY-001
+    condition: unknown_revision_reason
+    message: Revision reason must be defined in revision taxonomy.
+    severity: error

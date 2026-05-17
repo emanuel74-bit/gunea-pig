@@ -1,0 +1,203 @@
+version: '1.0'
+file:
+  name: conventions.revision-request-policy.yaml
+  path: revisions/conventions.revision-request-policy.yaml
+  role: revision_request_decision_engine
+  executability: decision_engine
+purpose: Define who may request revisions, how Alpha approves/rejects them, and which revision action is selected for each reason.
+ownership:
+  owns:
+  - revision_request_policy
+  - allowed_revision_emitters
+  - revision_request_decision_rules
+  - revision_approval_algorithm
+  - revision_request_output_schema
+  does_not_own:
+  - revision_reason_definitions
+  - invalidation_mechanics
+  - rerun_execution
+activation:
+  mode: conditional
+  activates_when:
+  - revision_request_emitted
+  - revision_decision_required
+  skips_when: []
+inputs:
+  required:
+  - revision_taxonomy
+  - revision_request
+  - mission_state
+  optional: []
+outputs:
+  produces:
+  - revision_decision_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files:
+  - triggers/conventions.trigger-resolution.yaml
+  - reports/conventions.report-registry.yaml
+sections:
+  revision_request_policy:
+    mode: fail_closed
+    decision_authority: alpha_controller
+    absolute_rules:
+    - id: REVISION-REQUEST-ABS-001
+      rule: A phase agent may request revision but must not apply it directly.
+      fail_condition: phase_agent_applied_revision_directly
+    - id: REVISION-REQUEST-ABS-002
+      rule: Every revision request must identify target phase, target outputs, reason, required action, and evidence.
+      fail_condition: revision_request_missing_required_field
+    - id: REVISION-REQUEST-ABS-003
+      rule: Alpha must approve, reject, block, or supersede every revision request before final validation can pass.
+      fail_condition: unresolved_revision_request_before_final_validation
+    - id: REVISION-REQUEST-ABS-004
+      rule: A revision affecting pre-implementation inputs blocks implementation until applied or rejected.
+      fail_condition: implementation_started_with_pending_pre_implementation_revision
+  allowed_revision_emitters:
+    alpha_controller:
+    - mission_state_validation
+    - report_artifact_validation
+    - trigger_review
+    - phase_accounting
+    phase_agents:
+    - entry_gate_input_failure
+    - output_gate_failure
+    - semantic_input_contradiction
+    - scope_violation_detected
+    validation_agent:
+    - post_implementation_failure
+    - final_validation_blocker
+    failure_analysis_agent:
+    - failure_owner_phase_requires_revision
+    repair_agent:
+    - repair_not_valid_without_prior_phase_revision
+  revision_request_decision_rules:
+  - id: REVISION-APPROVAL-001
+    priority: 1
+    match:
+      revision_reason: dependency_edge_violation_detected
+    decision:
+      action: block_mission
+      severity: blocking
+      requires:
+      - fix_active_phase_plan
+      - phase_dependency_review
+  - id: REVISION-APPROVAL-002
+    priority: 2
+    match:
+      revision_reason:
+        any_of:
+        - required_output_schema_invalid
+        - report_artifact_invalid
+        - required_input_missing
+    decision:
+      action: rerun_target_phase
+      severity: blocking
+      requires:
+      - invalidate_invalid_outputs
+      - produce_replacement_output
+  - id: REVISION-APPROVAL-003
+    priority: 3
+    match:
+      revision_reason:
+        any_of:
+        - required_input_contradicted
+        - implementation_revealed_design_gap
+        - validation_revealed_behavior_gap
+        - risk_escalation_requires_replan
+    decision:
+      action: rerun_from_target_phase_forward
+      severity: blocking
+      requires:
+      - invalidate_dependents
+      - update_active_phase_plan
+  - id: REVISION-APPROVAL-004
+    priority: 4
+    match:
+      revision_reason: phase_scope_violation_detected
+    decision:
+      action: invalidate_target_output
+      severity: blocking
+      requires:
+      - scope_violation_report
+      - rerun_target_phase_or_block
+  - id: REVISION-APPROVAL-005
+    priority: 5
+    match:
+      revision_reason: required_input_incomplete
+    decision:
+      action: amend_target_report
+      severity: error
+      requires:
+      - amendment_record
+      - output_gate_revalidation
+  - id: REVISION-APPROVAL-006
+    priority: 6
+    match:
+      revision_reason: trigger_requires_prior_phase_update
+    decision:
+      action: rerun_target_phase
+      severity: blocking
+      requires:
+      - trigger_review_update
+      - target_phase_replacement_output
+  - id: REVISION-APPROVAL-007
+    priority: 7
+    match:
+      revision_reason: active_trigger_unresolved
+    decision:
+      action: block_mission
+      severity: blocking
+      requires:
+      - trigger_resolution_or_risk_acceptance
+  revision_approval_algorithm:
+    steps:
+    - step_id: LOAD_REVISION_REQUEST
+      action: read
+      input: revision_request
+    - step_id: VALIDATE_REQUEST_SCHEMA
+      action: validate
+      input: revision_request_schema
+    - step_id: ASSERT_EMITTER_ALLOWED
+      action: assert
+      assertion: requested_by_agent is allowed to request revision
+    - step_id: MATCH_APPROVAL_RULE
+      action: apply_priority_rules
+      input: revision_request_decision_rules
+    - step_id: SELECT_ACTION
+      action: write
+      output: approved_revision_action
+    - step_id: DETERMINE_BLOCKING_SCOPE
+      action: evaluate
+      input: target_phase and dependent_outputs
+    - step_id: REGISTER_DECISION
+      action: append
+      output: mission_state.revision_history
+  revision_request_output_schema:
+    required_fields:
+    - revision_id
+    - decision_status
+    - selected_action
+    - blocking_scope
+    - invalidated_outputs
+    - dependent_outputs
+    - required_reruns
+    - evidence_refs
+validation:
+  required_checks:
+  - id: CONVENTIONS-REVISION-REQUEST-POLICY-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revision_request_decision_engine: true
+  - id: CONVENTIONS-REVISION-REQUEST-POLICY-YAML-CHECK-002
+    check: owned_sections_do_not_duplicate_external_authority
+    applies_when:
+      revision_request_decision_engine: true
+  fail_conditions:
+  - id: REVISION-REQUEST-001
+    condition: revision_request_missing_required_field
+    message: Revision request must identify target, reason, action, and evidence.
+    severity: error

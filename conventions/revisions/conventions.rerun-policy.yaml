@@ -2,37 +2,45 @@ version: '1.0'
 file:
   name: conventions.rerun-policy.yaml
   path: revisions/conventions.rerun-policy.yaml
-  role: rerun_and_revision_policy_contract
-  executability: validator
-purpose: Define revision approval, rerun modes, and rerun algorithm.
+  role: revision_rerun_policy
+  executability: decision_engine
+purpose: Define rerun modes, rerun selection, dependency-ordered rerun execution, and rerun output contracts.
 ownership:
   owns:
-  - revision_approval_policy
-  - rerun_policy
   - rerun_mode_enum
-  - revision_rerun_algorithm
+  - rerun_mode_definitions
+  - rerun_policy
+  - rerun_selection_rules
+  - rerun_execution_order_rules
+  - rerun_algorithm
+  - rerun_output_schema
   does_not_own:
-  - mission_state_storage
   - phase_contracts
+  - agent_execution
+  - gate_validation_internals
 activation:
   mode: conditional
   activates_when:
-  - revision_request_exists
+  - approved_revision_requires_rerun
+  - dependent_output_revalidation_required
   skips_when: []
 inputs:
   required:
-  - revision_request
+  - approved_revision_action
+  - phase_dependency_graph
   - mission_state
   optional: []
 outputs:
   produces:
-  - revision_rerun_result
+  - rerun_plan
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - revisions/conventions.revision-taxonomy.yaml
-  - missions/conventions.mission-state.yaml
-  optional_files: []
+  - phases/conventions.phase-dependencies.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
 sections:
   rerun_mode_enum:
     allowed:
@@ -41,107 +49,135 @@ sections:
     - rerun_from_phase_forward
     - revalidate_dependents_only
     - block_until_manual_resolution
-  revision_approval_policy:
-    decision_authority: alpha_controller
-    approval_rules:
-    - id: REVISION-APPROVAL-001
-      match:
-        revision_reason:
-        - required_input_missing
-        - required_output_schema_invalid
-      decision:
-        default_action: rerun_target_phase
-  rerun_policy:
-    absolute_rules:
-    - id: RERUN-ABS-001
-      rule: A rerun must create a new output version or replacement record.
-      fail_condition: rerun_overwrote_prior_output_without_record
-  revision_rerun_algorithm:
-    steps:
-    - load_revision_request
-    - validate_revision_request
-    - classify_revision_reason
-    - select_revision_action
-    - invalidate_affected_outputs
-    - find_dependent_outputs
-    - update_active_phase_plan
-    - write_revision_history
   rerun_mode_definitions:
     rerun_single_phase:
-      definition: rerun single phase rerun_mode vocabulary value.
-      meaning: Represents the rerun single phase case within the rerun_mode taxonomy.
-      detection_signals:
-      - rerun single phase signals are present in the request, codebase evidence, or prior phase reports
+      definition: Rerun only the target phase and replace its outputs.
       choose_when:
-      - the active evidence best matches rerun single phase
-      - no more specific vocabulary value applies
+      - only target phase output is invalid
+      - no downstream outputs consumed invalid content
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - rerun_mode decisions using rerun_single_phase must include reason and evidence
+      - dependent outputs are stale or semantically affected
     rerun_phase_and_dependents:
-      definition: rerun phase and dependents rerun_mode vocabulary value.
-      meaning: Represents the rerun phase and dependents case within the rerun_mode taxonomy.
-      detection_signals:
-      - rerun phase and dependents signals are present in the request, codebase evidence, or prior phase reports
+      definition: Rerun target phase and directly dependent phases.
       choose_when:
-      - the active evidence best matches rerun phase and dependents
-      - no more specific vocabulary value applies
+      - direct consumers need new input
+      - transitive consumers can be revalidated
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - rerun_mode decisions using rerun_phase_and_dependents must include reason and evidence
+      - transitive downstream decision chain is affected
     rerun_from_phase_forward:
-      definition: rerun from phase forward rerun_mode vocabulary value.
-      meaning: Represents the rerun from phase forward case within the rerun_mode taxonomy.
-      detection_signals:
-      - rerun from phase forward signals are present in the request, codebase evidence, or prior phase reports
+      definition: Rerun target phase and every downstream phase in active dependency order.
       choose_when:
-      - the active evidence best matches rerun from phase forward
-      - no more specific vocabulary value applies
+      - upstream decision changed materially
+      - implementation/design gap affects downstream planning
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - rerun_mode decisions using rerun_from_phase_forward must include reason and evidence
+      - issue can be isolated to one phase
     revalidate_dependents_only:
-      definition: revalidate dependents only rerun_mode vocabulary value.
-      meaning: Represents the revalidate dependents only case within the rerun_mode taxonomy.
-      detection_signals:
-      - revalidate dependents only signals are present in the request, codebase evidence, or prior phase reports
+      definition: Do not rerun dependent phases initially; validate whether existing dependent reports remain valid.
       choose_when:
-      - the active evidence best matches revalidate dependents only
-      - no more specific vocabulary value applies
+      - replacement change is metadata/evidence-only
+      - dependent decision inputs are unchanged
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - rerun_mode decisions using revalidate_dependents_only must include reason and evidence
+      - semantic content changed
     block_until_manual_resolution:
-      definition: block until manual resolution rerun_mode vocabulary value.
-      meaning: Represents the block until manual resolution case within the rerun_mode taxonomy.
-      detection_signals:
-      - block until manual resolution signals are present in the request, codebase evidence, or prior phase reports
+      definition: Block mission until user/system resolves conflict that cannot be safely automated.
       choose_when:
-      - the active evidence best matches block until manual resolution
-      - no more specific vocabulary value applies
+      - authority conflict or high-risk acceptance required
+      - no deterministic rerun path exists
       reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - rerun_mode decisions using block_until_manual_resolution must include reason and evidence
+      - revision policy selects safe deterministic action
+  rerun_policy:
+    mode: fail_closed
+    absolute_rules:
+    - id: RERUN-ABS-001
+      rule: A rerun must produce a new output version or explicit replacement record.
+      fail_condition: rerun_overwrote_prior_output_without_record
+    - id: RERUN-ABS-002
+      rule: Downstream outputs depending on invalidated output must be invalidated, rerun, or revalidated.
+      fail_condition: dependent_downstream_output_not_invalidated_or_revalidated
+    - id: RERUN-ABS-003
+      rule: Rerun history and prior evidence must be preserved.
+      fail_condition: rerun_lost_revision_history
+    - id: RERUN-ABS-004
+      rule: Implementation must pause during reruns that affect pre-implementation inputs.
+      fail_condition: implementation_continued_during_required_revision
+  rerun_selection_rules:
+  - id: RERUN-SELECT-001
+    priority: 1
+    match:
+      revision_action: block_mission
+    select_mode: block_until_manual_resolution
+  - id: RERUN-SELECT-002
+    priority: 2
+    match:
+      revision_action: rerun_from_target_phase_forward
+    select_mode: rerun_from_phase_forward
+  - id: RERUN-SELECT-003
+    priority: 3
+    match:
+      dependent_outputs: direct_dependents_only
+    select_mode: rerun_phase_and_dependents
+  - id: RERUN-SELECT-004
+    priority: 4
+    match:
+      replacement_output_change_type: metadata_or_evidence_only
+    select_mode: revalidate_dependents_only
+  - id: RERUN-SELECT-005
+    priority: 5
+    match:
+      revision_action: rerun_target_phase
+    select_mode: rerun_single_phase
+  rerun_execution_order_rules:
+  - id: RERUN-ORDER-001
+    rule: Rerun phases in phase dependency order, never in discovery order.
+    fail_condition: rerun_order_violates_dependency_graph
+  - id: RERUN-ORDER-002
+    rule: A rerun phase must receive a fresh phase bundle based on current mission state.
+    fail_condition: rerun_used_stale_phase_bundle
+  - id: RERUN-ORDER-003
+    rule: Rerun outputs must pass output and handoff gates before dependents consume them.
+    fail_condition: dependent_consumed_rerun_output_without_gates
+  rerun_algorithm:
+    steps:
+    - step_id: LOAD_APPROVED_REVISION
+      action: read
+      input: revision_history.approved
+    - step_id: SELECT_RERUN_MODE
+      action: apply_priority_rules
+      input: rerun_selection_rules
+    - step_id: COMPUTE_DEPENDENT_PHASES
+      action: graph_traversal
+      input: phase_dependency_graph
+    - step_id: UPDATE_ACTIVE_PHASE_PLAN
+      action: write
+      output: mission_state.active_phase_plan
+    - step_id: MARK_PHASES_PENDING
+      action: write
+      output: mission_state.phase_statuses
+    - step_id: REQUIRE_FRESH_BUNDLES
+      action: enforce
+      output: phase_bundle_regeneration_required
+  rerun_output_schema:
+    required_fields:
+    - rerun_id
+    - rerun_mode
+    - target_phase
+    - affected_phases
+    - affected_reports
+    - dependency_order
+    - blocked_until
+    - evidence_refs
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: CONVENTIONS-RERUN-POLICY-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revision_rerun_policy: true
+  - id: CONVENTIONS-RERUN-POLICY-YAML-CHECK-002
+    check: owned_sections_do_not_duplicate_external_authority
+    applies_when:
+      revision_rerun_policy: true
+  fail_conditions:
+  - id: RERUN-001
+    condition: rerun_overwrote_prior_output_without_record
+    message: Reruns must preserve prior output or create replacement records.
+    severity: error

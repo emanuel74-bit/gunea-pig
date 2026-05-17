@@ -2,25 +2,33 @@ version: '1.0'
 file:
   name: conventions.invalidation-policy.yaml
   path: revisions/conventions.invalidation-policy.yaml
-  role: invalidation_policy_contract
-  executability: validator
-purpose: Define invalidation policy for unsafe outputs and dependent reports.
+  role: revision_invalidation_policy
+  executability: decision_engine
+purpose: Define how unsafe outputs are invalidated, blocked from consumption, replaced, and propagated to dependent outputs.
 ownership:
   owns:
+  - invalidation_type_enum
+  - invalidation_type_definitions
+  - invalidation_record_schema
+  - invalidation_record_shape
   - invalidation_policy
-  - invalidation_validation_rules
+  - invalidation_decision_rules
+  - invalidation_algorithm
   does_not_own:
-  - mission_state_storage
-  - report_artifact_registry
+  - revision_request_approval
+  - handoff_consumption_policy
+  - report_schema_definitions
 activation:
   mode: conditional
   activates_when:
-  - output_invalidation_required
+  - output_invalidated
+  - revision_action_requires_invalidation
   skips_when: []
 inputs:
   required:
+  - approved_revision_action
+  - report_registry
   - mission_state
-  - invalidated_output
   optional: []
 outputs:
   produces:
@@ -29,18 +37,144 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - revisions/conventions.revision-taxonomy.yaml
-  - missions/conventions.mission-state.yaml
-  - reports/conventions.report-artifacts.yaml
-  optional_files: []
+  - reports/conventions.report-lifecycle.yaml
+  - handoffs/conventions.handoff-consumption-policy.yaml
+  optional_files:
+  - phases/conventions.phase-dependencies.yaml
 sections:
+  invalidation_type_enum:
+    allowed:
+    - schema_invalidation
+    - semantic_invalidation
+    - scope_invalidation
+    - dependency_invalidation
+    - replacement_invalidation
+    - risk_invalidation
+    - trigger_invalidation
+  invalidation_type_definitions:
+    schema_invalidation: Output cannot be consumed because it fails schema or required-field checks.
+    semantic_invalidation: Output content is contradicted, incomplete, or semantically unsafe.
+    scope_invalidation: Output was produced by an agent/phase acting outside allowed scope.
+    dependency_invalidation: Output was produced or consumed in the wrong dependency order.
+    replacement_invalidation: Output is superseded by a newer validated replacement.
+    risk_invalidation: Risk escalation made a previously sufficient output insufficient.
+    trigger_invalidation: Trigger resolution invalidated a prior output or required rerun.
+  invalidation_record_schema:
+    required_fields:
+    - invalidation_id
+    - invalidated_output
+    - invalidation_type
+    - invalidated_by_phase
+    - invalidated_by_agent
+    - reason
+    - replacement_required
+    - consumption_blocked
+    - evidence_refs
+    - created_sequence_id
+    optional_fields:
+    - replacement_output
+    - dependent_outputs
+    - revalidation_required
+    - revision_request_ref
+  invalidation_record_shape:
+    invalidation_id: ''
+    invalidated_output: ''
+    invalidation_type: ''
+    invalidated_by_phase: ''
+    invalidated_by_agent: ''
+    reason: ''
+    replacement_required: true
+    consumption_blocked: true
+    evidence_refs: []
+    created_sequence_id: ''
+    replacement_output: ''
+    dependent_outputs: []
   invalidation_policy:
+    mode: fail_closed
     absolute_rules:
     - id: INVALIDATION-ABS-001
-      rule: Invalidated output must include reason, invalidating phase, and replacement requirement.
-      fail_condition: invalidated_output_missing_required_metadata
+      rule: Invalidated outputs must not be consumed by downstream phases.
+      fail_condition: downstream_consumed_invalidated_output
     - id: INVALIDATION-ABS-002
-      rule: Every downstream report that consumed invalidated output must be invalidated or revalidated.
-      fail_condition: downstream_report_not_revalidated_after_invalidation
+      rule: Every invalidation must include reason, invalidating phase/agent, evidence, replacement requirement, and sequence id.
+      fail_condition: invalidation_record_missing_metadata
+    - id: INVALIDATION-ABS-003
+      rule: Invalidation must update report lifecycle to invalidated or replaced.
+      fail_condition: report_lifecycle_not_updated_after_invalidation
+    - id: INVALIDATION-ABS-004
+      rule: Dependent downstream reports must be invalidated or revalidated before final validation.
+      fail_condition: dependent_report_not_invalidated_or_revalidated
+    - id: INVALIDATION-ABS-005
+      rule: Replacement output must reference the invalidated output it supersedes.
+      fail_condition: replacement_missing_invalidated_output_reference
+  invalidation_decision_rules:
+  - id: INVALIDATE-SCHEMA-INVALID
+    applies_when:
+    - report validation fails schema or required field checks
+    invalidation_type: schema_invalidation
+    replacement_required: true
+    blocks_before:
+    - handoff
+    - pre_implementation_gate
+    - final_validation
+  - id: INVALIDATE-CONTRADICTION
+    applies_when:
+    - upstream outputs contradict each other and no resolution exists
+    invalidation_type: semantic_invalidation
+    replacement_required: true
+    blocks_before:
+    - next_dependent_phase
+    - pre_implementation_gate
+    - final_validation
+  - id: INVALIDATE-SCOPE
+    applies_when:
+    - phase or agent violated allowed scope
+    invalidation_type: scope_invalidation
+    replacement_required: true
+    blocks_before:
+    - all_downstream_consumers
+  - id: INVALIDATE-REPLACED
+    applies_when:
+    - validated replacement output is produced
+    invalidation_type: replacement_invalidation
+    replacement_required: false
+    blocks_before:
+    - consumption_of_superseded_output
+  invalidation_algorithm:
+    steps:
+    - step_id: LOAD_REVISION_DECISION
+      action: read
+      input: approved_revision_action
+    - step_id: IDENTIFY_TARGET_OUTPUTS
+      action: resolve
+      input: revision_request.target_outputs
+    - step_id: CREATE_INVALIDATION_RECORDS
+      action: write
+      output: mission_state.invalidated_outputs
+    - step_id: UPDATE_REPORT_LIFECYCLE
+      action: write
+      output: report_registry.invalidated_reports
+    - step_id: BLOCK_CONSUMPTION
+      action: enforce
+      input: handoff_consumption_policy
+    - step_id: FIND_DEPENDENTS
+      action: graph_traversal
+      input: report_registry.consumed_by_phases and phase_dependencies
+    - step_id: MARK_DEPENDENTS
+      action: invalidate_or_require_revalidation
+      output: mission_state.invalidated_outputs
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: CONVENTIONS-INVALIDATION-POLICY-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revision_invalidation_policy: true
+  - id: CONVENTIONS-INVALIDATION-POLICY-YAML-CHECK-002
+    check: owned_sections_do_not_duplicate_external_authority
+    applies_when:
+      revision_invalidation_policy: true
+  fail_conditions:
+  - id: INVALIDATION-001
+    condition: downstream_consumed_invalidated_output
+    message: Invalidated outputs must not be consumed downstream.
+    severity: error

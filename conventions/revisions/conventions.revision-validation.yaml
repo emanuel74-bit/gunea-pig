@@ -1,0 +1,153 @@
+version: '1.0'
+file:
+  name: conventions.revision-validation.yaml
+  path: revisions/conventions.revision-validation.yaml
+  role: revision_validation_contract
+  executability: validator
+purpose: Validate revision requests, invalidations, reruns, open blockers, and final revision state before implementation and final validation.
+ownership:
+  owns:
+  - revision_validation_policy
+  - validation_check_catalog
+  - revision_validation_algorithm
+  - revision_validation_result_schema
+  - remediation_mapping
+  does_not_own:
+  - revision_taxonomy
+  - revision_approval_policy
+  - invalidation_policy
+  - rerun_policy
+activation:
+  mode: conditional
+  activates_when:
+  - revision_validation_required
+  - pre_implementation_gate
+  - final_validation
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  - revision_history
+  - invalidated_outputs
+  optional: []
+outputs:
+  produces:
+  - revision_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  - revisions/conventions.revision-request-policy.yaml
+  - revisions/conventions.invalidation-policy.yaml
+  - revisions/conventions.rerun-policy.yaml
+  - missions/conventions.mission-state.yaml
+  optional_files:
+  - handoffs/conventions.handoff-consumption-policy.yaml
+  - reports/conventions.report-lifecycle.yaml
+sections:
+  revision_validation_policy:
+    mode: fail_closed
+    absolute_rules:
+    - id: REVISION-VALIDATION-ABS-001
+      rule: Every revision request must satisfy revision request schema.
+      fail_condition: revision_request_schema_invalid
+    - id: REVISION-VALIDATION-ABS-002
+      rule: Every invalidated output must be blocked from downstream consumption.
+      fail_condition: invalidated_output_not_blocked
+    - id: REVISION-VALIDATION-ABS-003
+      rule: Every applied revision must appear in mission state revision history.
+      fail_condition: revision_not_recorded_in_mission_state
+    - id: REVISION-VALIDATION-ABS-004
+      rule: No final validation may pass with pending, blocked, or unapplied revisions.
+      fail_condition: final_validation_passed_with_open_revision
+  validation_check_catalog:
+    revision_request_schema_valid:
+      pass_when:
+      - all required revision request fields are present
+      - revision reason/action/status are known enum values
+      fail_when:
+      - missing required field
+      - unknown enum value
+    revision_authority_valid:
+      pass_when:
+      - requesting phase/agent may request revision
+      - Alpha owns approval decision
+      fail_when:
+      - phase agent attempts to apply revision directly
+    invalidation_records_valid:
+      pass_when:
+      - all invalidation records include required metadata
+      - report lifecycle updated
+      fail_when:
+      - invalidation metadata missing
+      - lifecycle stale
+    dependent_outputs_handled:
+      pass_when:
+      - dependent outputs invalidated, rerun, or revalidated
+      fail_when:
+      - dependent output remains current after upstream invalidation
+    implementation_blocking_valid:
+      pass_when:
+      - implementation blocked when pre-implementation inputs are affected
+      fail_when:
+      - implementation allowed during required revision
+    final_validation_blocking_valid:
+      pass_when:
+      - no pending/blocked/unapplied revisions remain
+      fail_when:
+      - open revision exists before final validation
+  revision_validation_algorithm:
+    steps:
+    - step_id: LOAD_REVISION_HISTORY
+      action: read
+      input: mission_state.revision_history
+    - step_id: VALIDATE_REQUESTS
+      action: for_each
+      target: revision_requests
+      assertion: revision_request_schema_valid
+    - step_id: VALIDATE_INVALIDATIONS
+      action: for_each
+      target: mission_state.invalidated_outputs
+      assertion: invalidation_records_valid
+    - step_id: VALIDATE_DEPENDENTS
+      action: graph_check
+      assertion: dependent_outputs_handled
+    - step_id: VALIDATE_BLOCKING
+      action: assert
+      assertion: implementation and final validation blockers are correct
+    - step_id: EMIT_RESULT
+      action: write
+      output: revision_validation_result
+  revision_validation_result_schema:
+    required_fields:
+    - validation_status
+    - checked_revisions
+    - invalid_revisions
+    - open_revisions
+    - blocking_items
+    - required_actions
+    - evidence_refs
+  remediation_mapping:
+  - fail_condition: revision_request_schema_invalid
+    remediation: request corrected revision record or rerun failure classification
+  - fail_condition: invalidated_output_not_blocked
+    remediation: update mission_state invalidated_outputs and handoff consumption policy
+  - fail_condition: dependent_output_not_invalidated_or_revalidated
+    remediation: compute invalidation impact and update active phase plan
+  - fail_condition: final_validation_passed_with_open_revision
+    remediation: block final validation and process revisions
+validation:
+  required_checks:
+  - id: CONVENTIONS-REVISION-VALIDATION-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revision_validation_contract: true
+  - id: CONVENTIONS-REVISION-VALIDATION-YAML-CHECK-002
+    check: owned_sections_do_not_duplicate_external_authority
+    applies_when:
+      revision_validation_contract: true
+  fail_conditions:
+  - id: REVISION-VALIDATION-001
+    condition: final_validation_passed_with_open_revision
+    message: Final validation cannot pass while revision requests remain pending, blocked, or unapplied.
+    severity: error
