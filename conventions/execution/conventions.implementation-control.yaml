@@ -1,0 +1,145 @@
+version: '1.0'
+file:
+  name: conventions.implementation-control.yaml
+  path: execution/conventions.implementation-control.yaml
+  role: controlled_implementation_contract
+  executability: runtime_policy
+purpose: Control implementation execution so code changes occur only after approval, within scope, in sequence, and with durable
+  outputs.
+ownership:
+  owns:
+  - implementation_preconditions
+  - allowed_edit_policy
+  - sequence_adherence_policy
+  - implementation_execution_algorithm
+  - implementation_result_schema
+  does_not_own:
+  - implementation_sequence_planning
+  - test_command_policy
+  - gate_pass_fail_authority
+  - revision_approval
+activation:
+  mode: conditional
+  activates_when:
+  - implementation_phase_active
+  skips_when: []
+inputs:
+  required:
+  - pre-implementation-gate
+  - 10-implementation-sequence
+  - checkpoint-validation-plan
+  - allowed_code_edit_scope
+  optional:
+  - technology-adapter-manifest
+  - repair-plan
+outputs:
+  produces:
+  - implementation-result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - agents/conventions.agent-permissions.yaml
+  - missions/conventions.mission-state.yaml
+  - gates/conventions.gate-validation.yaml
+  - reports/conventions.report-registry.yaml
+  - revisions/conventions.revision-request-policy.yaml
+  optional_files: []
+sections:
+  implementation_preconditions:
+    must_pass:
+    - pre_implementation_gate_passed
+    - implementation_allowed_true
+    - no_active_blocking_triggers
+    - no_open_revision_affecting_preimplementation_inputs
+    - allowed_code_edit_scope_defined
+    - required_sequence_and_checkpoint_reports_exist
+    fail_closed_when:
+    - any_precondition_unknown
+    - mission_state_missing
+    - input_report_invalidated
+  allowed_edit_policy:
+    allowed:
+    - files_declared_by_implementation_sequence
+    - tests_declared_by_test_plan
+    - explicitly_approved_supporting_files
+    - repair_files_declared_by_repair_plan_when_repair_mode
+    forbidden:
+    - convention_files_unless_mission_profile_allows
+    - prior_phase_reports
+    - mission_state_direct_edit_by_non_alpha
+    - unrelated_source_files
+    - ignored_or_generated_artifacts_without_approval
+    violation_result: block_and_emit_unexpected_file_changed
+  sequence_adherence_policy:
+    must_follow:
+    - ordered_steps
+    - step_dependencies
+    - checkpoint_boundaries
+    allowed_deviation_when:
+    - step_blocked_and_deviation_recorded
+    - equivalent_lower_risk_order_preserves_dependencies
+    - Alpha_or_gate_policy_allows_revision
+    forbidden_deviation_when:
+    - dependency_order_broken
+    - validation_checkpoint_skipped
+    - scope_expanded_without_revision
+  implementation_execution_algorithm:
+  - step_id: ASSERT_PRECONDITIONS
+    action: validate
+    fail_when:
+    - implementation_allowed_false
+    - pre_gate_failed
+    - blocking_trigger_active
+    - open_revision_blocks_implementation
+  - step_id: EXECUTE_ORDERED_STEPS
+    action: for_each
+    target: ordered_steps
+    must:
+    - modify_only_allowed_scope
+    - record_completed_or_skipped_step
+    - stop_on_forbidden_scope
+  - step_id: RUN_STEP_VALIDATIONS
+    action: invoke_policy
+    input: checkpoint-validation-plan
+    output: checkpoint-results
+  - step_id: RECORD_RESULT
+    action: write
+    output: implementation-result
+  - step_id: REQUEST_FAILURE_CLASSIFICATION_IF_NEEDED
+    action: emit_trigger
+    when:
+    - blocking_failure_detected
+    trigger: implementation_failure_detected
+  implementation_result_schema:
+    required_fields:
+    - status
+    - completed_steps
+    - skipped_steps
+    - validation_commands_run
+    - implementation_notes
+    - failures
+    - requires_failure_classification
+    - requires_validation_rerun
+validation:
+  required_checks:
+  - id: IMPL-CONTROL-CHECK-001
+    check: implementation_result_written
+    applies_when:
+      implementation_phase_active: true
+  fail_conditions:
+  - condition: implementation_started_without_pre_gate
+    message: Implementation cannot start without pre-implementation gate.
+    severity: error
+    owner: execution/conventions.implementation-control.yaml
+  - condition: implementation_edited_forbidden_file
+    message: Implementation edited forbidden file.
+    severity: error
+    owner: execution/conventions.implementation-control.yaml
+  - condition: implementation_skipped_checkpoint_without_record
+    message: Checkpoint cannot be skipped without recorded reason.
+    severity: error
+    owner: execution/conventions.implementation-control.yaml
+  - condition: implementation_changed_prior_reports
+    message: Implementation agent must not rewrite prior phase reports.
+    severity: error
+    owner: execution/conventions.implementation-control.yaml

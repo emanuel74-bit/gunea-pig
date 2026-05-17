@@ -1,0 +1,140 @@
+version: '1.0'
+file:
+  name: conventions.validation-command-policy.yaml
+  path: execution/conventions.validation-command-policy.yaml
+  role: validation_command_execution_contract
+  executability: runtime_policy
+purpose: Define how validation commands are selected, executed, captured, and interpreted without allowing agents to invent
+  validation results.
+ownership:
+  owns:
+  - validation_command_source_priority
+  - command_execution_policy
+  - command_result_schema
+  - command_failure_policy
+  - validation_command_algorithm
+  does_not_own:
+  - test_obligation_policy
+  - gate_final_pass_fail_authority
+  - implementation_sequence_planning
+activation:
+  mode: conditional
+  activates_when:
+  - validation_commands_required
+  - checkpoint_validation_plan_active
+  - post_implementation_validation_active
+  skips_when: []
+inputs:
+  required:
+  - test-plan
+  - checkpoint-validation-plan
+  optional:
+  - regression-test-plan
+  - characterization-test-plan
+  - package_scripts
+  - technology-adapter-manifest
+outputs:
+  produces:
+  - validation-command-results
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - testing/conventions.test-validation.yaml
+  - reports/conventions.report-registry.yaml
+  - gates/conventions.gate-validation.yaml
+  optional_files: []
+sections:
+  validation_command_source_priority:
+  - explicit_test_plan_commands
+  - checkpoint_validation_plan_commands
+  - project_package_scripts_when_declared
+  - technology_adapter_commands_when_validated
+  - manual_no_command_reason_when_no_command_exists
+  command_execution_policy:
+    must:
+    - record_command_exactly
+    - record_exit_code
+    - record_stdout_or_summary_ref
+    - record_stderr_or_summary_ref
+    - record_working_directory
+    - record_timestamp_or_sequence_id
+    - never_claim_unrun_command_passed
+    must_not:
+    - change_tests_to_make_wrong_behavior_pass
+    - omit_failed_command
+    - summarize_failure_without_result_record
+    - treat_missing_command_as_pass
+  command_result_schema:
+    required_fields:
+    - command_id
+    - command
+    - source_report
+    - working_directory
+    - status
+    - exit_code
+    - result_summary
+    - blocking
+    - related_checkpoint
+    - evidence_refs
+    status_values:
+    - not_run
+    - passed
+    - failed
+    - skipped_with_reason
+    - command_missing
+    - blocked
+  command_failure_policy:
+  - condition: required_command_failed
+    classification: blocking_failure
+    required_followup: failure_classification
+    blocks_before:
+    - final_validation
+  - condition: optional_command_failed
+    classification: warning_or_blocking_by_risk
+    required_followup: risk_review
+  - condition: command_missing
+    classification: blocked_unless_no_command_reason_valid
+    required_followup: test_gap_or_validation_gap_record
+  - condition: not_run_without_reason
+    classification: blocking_failure
+    required_followup: post_implementation_validation
+  validation_command_algorithm:
+  - step_id: COLLECT_COMMANDS
+    action: read
+    inputs:
+    - test-plan
+    - checkpoint-validation-plan
+    - specialized_test_plans
+    output: validation_command_set
+  - step_id: DEDUP_COMMANDS
+    action: normalize
+    rule: same_command_same_workdir_runs_once_but_maps_to_all_sources
+  - step_id: RUN_OR_RECORD_SKIP
+    action: execute_or_record
+    fail_when:
+    - required_command_not_run_without_reason
+  - step_id: CLASSIFY_RESULTS
+    action: apply
+    decision_rules: command_failure_policy
+  - step_id: WRITE_RESULTS
+    action: write
+    output: validation-command-results
+validation:
+  required_checks:
+  - id: VALCMD-CHECK-001
+    check: required_commands_have_results
+    applies_when:
+      validation_commands_required: true
+  fail_conditions:
+  - condition: required_validation_command_missing_result
+    message: Required validation command missing result.
+    severity: error
+    owner: execution/conventions.validation-command-policy.yaml
+  - condition: agent_claimed_unrun_command_passed
+    message: Agent must not claim unrun command passed.
+    severity: error
+    owner: execution/conventions.validation-command-policy.yaml
+  - condition: failed_required_command_not_blocking
+    message: Failed required command must block final validation.
+    severity: error
+    owner: execution/conventions.validation-command-policy.yaml

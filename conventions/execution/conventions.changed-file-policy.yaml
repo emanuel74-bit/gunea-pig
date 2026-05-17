@@ -1,0 +1,160 @@
+version: '1.0'
+file:
+  name: conventions.changed-file-policy.yaml
+  path: execution/conventions.changed-file-policy.yaml
+  role: changed_file_manifest_contract
+  executability: validator
+purpose: Define how changed files are recorded, classified, compared to allowed scope, and used by post-implementation validation.
+ownership:
+  owns:
+  - changed_file_category_enum
+  - changed_file_manifest_schema
+  - scope_validation_rules
+  - unexpected_change_policy
+  - changed_file_manifest_algorithm
+  does_not_own:
+  - implementation_sequence_planning
+  - code_modification
+  - mission_profile_edit_scope
+activation:
+  mode: conditional
+  activates_when:
+  - implementation_phase_completed
+  - post_implementation_validation_active
+  skips_when: []
+inputs:
+  required:
+  - implementation-result
+  - allowed_code_edit_scope
+  optional:
+  - git_diff
+  - filesystem_change_inventory
+  - repair-plan
+outputs:
+  produces:
+  - changed-file-manifest
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-state.yaml
+  - reports/conventions.report-registry.yaml
+  - gates/conventions.gate-validation.yaml
+  optional_files: []
+sections:
+  changed_file_category_enum:
+    allowed:
+    - created_source
+    - modified_source
+    - deleted_source
+    - created_test
+    - modified_test
+    - deleted_test
+    - moved_file
+    - renamed_file
+    - configuration_change
+    - report_file
+    - generated_file
+    - unknown_change
+  changed_file_manifest_schema:
+    required_fields:
+    - changed_files
+    - created_files
+    - modified_files
+    - deleted_files
+    - moved_files
+    - renamed_files
+    - unexpected_files
+    - allowed_scope_result
+    - skipped_steps
+    changed_file_required_fields:
+    - path
+    - category
+    - change_type
+    - allowed_by
+    - related_step_id
+    - scope_status
+    - requires_review
+  scope_validation_rules:
+  - id: CHANGED-SCOPE-001
+    applies_when:
+    - changed_file_path matches allowed_code_edit_scope
+    decision: allowed
+    fail_condition: none
+  - id: CHANGED-SCOPE-002
+    applies_when:
+    - changed_file_path outside allowed_code_edit_scope
+    decision: unexpected
+    fail_condition: changed_file_outside_allowed_scope
+    blocks_before:
+    - post_implementation_validation
+    - final_validation
+  - id: CHANGED-SCOPE-003
+    applies_when:
+    - prior_phase_report_modified_by_implementation_agent
+    decision: forbidden
+    fail_condition: implementation_changed_prior_report
+    blocks_before:
+    - final_validation
+  - id: CHANGED-SCOPE-004
+    applies_when:
+    - convention_file_changed_without_convention_system_edit_profile
+    decision: forbidden
+    fail_condition: convention_file_changed_without_profile
+    blocks_before:
+    - final_validation
+  unexpected_change_policy:
+    must:
+    - record_every_unexpected_file
+    - classify_as_blocking_until_reviewed
+    - emit_unexpected_file_changed_trigger
+    may_resolve_by:
+    - approve_scope_expansion_via_revision
+    - revert_unexpected_file
+    - mark_generated_file_if_allowed
+    must_not:
+    - ignore_unexpected_file
+    - hide_generated_changes
+  changed_file_manifest_algorithm:
+  - step_id: COLLECT_CHANGES
+    action: read
+    inputs:
+    - git_diff_or_filesystem_inventory
+    - implementation_result
+    output: raw_changed_files
+  - step_id: CLASSIFY_CHANGES
+    action: apply
+    rules:
+    - changed_file_category_enum
+    - scope_validation_rules
+    output: changed_file_records
+  - step_id: FLAG_UNEXPECTED
+    action: filter
+    condition: scope_status != allowed
+    output: unexpected_files
+  - step_id: WRITE_MANIFEST
+    action: write
+    output: changed-file-manifest
+  - step_id: EMIT_TRIGGER_IF_NEEDED
+    action: emit
+    when:
+    - unexpected_files not empty
+    trigger: unexpected_file_changed
+validation:
+  required_checks:
+  - id: CHANGED-CHECK-001
+    check: changed_file_manifest_exists_after_implementation
+    applies_when:
+      implementation_phase_completed: true
+  fail_conditions:
+  - condition: changed_file_manifest_missing
+    message: Changed file manifest is required after implementation.
+    severity: error
+    owner: execution/conventions.changed-file-policy.yaml
+  - condition: changed_file_outside_allowed_scope
+    message: Changed file outside allowed scope.
+    severity: error
+    owner: execution/conventions.changed-file-policy.yaml
+  - condition: unexpected_file_not_recorded
+    message: Unexpected changed file must be recorded.
+    severity: error
+    owner: execution/conventions.changed-file-policy.yaml

@@ -1,0 +1,199 @@
+version: '1.0'
+file:
+  name: conventions.execution-validation.yaml
+  path: execution/conventions.execution-validation.yaml
+  role: execution_validation_contract
+  executability: validator
+purpose: Validate execution plans, implementation outputs, changed files, validation command results, feedback decisions,
+  and handoff readiness.
+ownership:
+  owns:
+  - execution_validation_policy
+  - validation_check_catalog
+  - execution_validation_algorithm
+  - remediation_mapping
+  - execution_validation_output_schema
+  does_not_own:
+  - gate_pass_fail_authority
+  - report_registry_authority
+  - revision_approval
+activation:
+  mode: conditional
+  activates_when:
+  - pre_implementation_gate_active
+  - post_implementation_validation_active
+  - final_validation_active
+  skips_when: []
+inputs:
+  required:
+  - 10-implementation-sequence
+  - checkpoint-validation-plan
+  - implementation-result
+  - changed-file-manifest
+  optional:
+  - validation-command-results
+  - checkpoint-results
+  - feedback-loop-decision
+outputs:
+  produces:
+  - execution-validation-result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - gates/conventions.gate-validation.yaml
+  - reports/conventions.report-validation.yaml
+  - handoffs/conventions.handoff-consumption-policy.yaml
+  - revisions/conventions.revision-validation.yaml
+  - missions/conventions.mission-validation.yaml
+  optional_files: []
+sections:
+  execution_validation_policy:
+    fail_closed: true
+    no_fake_pass: true
+    mechanical_results_required:
+    - changed-file-manifest
+    - validation-command-results when commands declared
+    - checkpoint-results when checkpoints declared
+  validation_check_catalog:
+  - check_id: EXEC-VAL-001
+    check: sequence_exists
+    applies_when:
+    - implementation_sequence_required
+    pass_when:
+    - 10-implementation-sequence exists and has ordered_steps
+    fail_when:
+    - sequence_missing
+    - ordered_steps_empty
+    severity: blocking
+    fail_condition: implementation_sequence_missing
+  - check_id: EXEC-VAL-002
+    check: checkpoint_plan_covers_sequence
+    applies_when:
+    - checkpoint_validation_plan_required
+    pass_when:
+    - each checkpoint references valid steps
+    - all high risk steps have checkpoints
+    fail_when:
+    - checkpoint_missing_for_high_risk_step
+    severity: blocking
+    fail_condition: checkpoint_plan_incomplete
+  - check_id: EXEC-VAL-003
+    check: implementation_result_matches_sequence
+    applies_when:
+    - implementation_completed
+    pass_when:
+    - completed_steps subset of ordered_steps
+    - skipped_steps recorded with reasons
+    fail_when:
+    - unrecorded_sequence_deviation
+    severity: blocking
+    fail_condition: implementation_sequence_deviation_unrecorded
+  - check_id: EXEC-VAL-004
+    check: changed_files_within_scope
+    applies_when:
+    - changed_file_manifest_exists
+    pass_when:
+    - no unexpected_files
+    - no forbidden files changed
+    fail_when:
+    - unexpected_files not empty
+    - forbidden_file_changed
+    severity: blocking
+    fail_condition: changed_files_outside_allowed_scope
+  - check_id: EXEC-VAL-005
+    check: required_commands_have_results
+    applies_when:
+    - validation_commands_declared
+    pass_when:
+    - each required command has result
+    - failed commands classified
+    fail_when:
+    - required_command_missing_result
+    - failed_required_command_unclassified
+    severity: blocking
+    fail_condition: validation_command_results_invalid
+  - check_id: EXEC-VAL-006
+    check: feedback_failures_resolved
+    applies_when:
+    - feedback_loop_decision_exists
+    pass_when:
+    - no unresolved blocking failures
+    fail_when:
+    - blocking_failure_unresolved
+    severity: blocking
+    fail_condition: execution_blocking_failure_unresolved
+  execution_validation_algorithm:
+  - step_id: LOAD_EXECUTION_ARTIFACTS
+    action: read
+    inputs:
+    - sequence
+    - checkpoint_plan
+    - implementation_result
+    - changed_file_manifest
+    - validation_command_results
+  - step_id: RUN_CHECKS
+    action: for_each
+    target: validation_check_catalog
+    output: check_results
+  - step_id: CALCULATE_STATUS
+    action: derive
+    rules:
+    - blocking failure => failed
+    - warnings only => passed_with_warnings
+    - all passed => passed
+  - step_id: WRITE_RESULT
+    action: write
+    output: execution-validation-result
+  - step_id: EMIT_REMEDIATION
+    action: map
+    input: failed_checks
+    output: required_followups
+  remediation_mapping:
+  - fail_condition: implementation_sequence_missing
+    required_phase: implementation_sequence
+    blocks_before:
+    - pre_implementation_gate
+  - fail_condition: checkpoint_plan_incomplete
+    required_phase: checkpoint_validation_plan
+    blocks_before:
+    - pre_implementation_gate
+  - fail_condition: changed_files_outside_allowed_scope
+    required_action: revert_or_revision_request
+    blocks_before:
+    - final_validation
+  - fail_condition: validation_command_results_invalid
+    required_phase: post_implementation_validation
+    blocks_before:
+    - final_validation
+  - fail_condition: execution_blocking_failure_unresolved
+    required_phase: failure_classification_or_feedback_repair
+    blocks_before:
+    - final_validation
+  execution_validation_output_schema:
+    required_fields:
+    - validation_status
+    - check_results
+    - blocking_failures
+    - warnings
+    - required_followups
+    - blocks_before
+    - evidence_refs
+validation:
+  required_checks:
+  - id: EXEC-VALIDATION-CHECK-001
+    check: execution_validation_result_written
+    applies_when:
+      execution_validation_required: true
+  fail_conditions:
+  - condition: execution_validation_missing
+    message: Execution validation result is required.
+    severity: error
+    owner: execution/conventions.execution-validation.yaml
+  - condition: execution_marked_passed_with_blocking_failures
+    message: Execution validation cannot pass with blocking failures.
+    severity: error
+    owner: execution/conventions.execution-validation.yaml
+  - condition: mechanical_validation_missing
+    message: Mechanical validation artifacts are required before final validation.
+    severity: error
+    owner: execution/conventions.execution-validation.yaml

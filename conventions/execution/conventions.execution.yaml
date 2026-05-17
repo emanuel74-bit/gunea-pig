@@ -1,0 +1,128 @@
+version: '1.0'
+file:
+  name: conventions.execution.yaml
+  path: execution/conventions.execution.yaml
+  role: execution_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Provide the execution subsystem entrypoint, file index, execution order, ownership boundaries, and integration contract
+  for deterministic implementation planning and controlled execution.
+ownership:
+  owns:
+  - execution_subsystem_metadata
+  - execution_file_index
+  - execution_local_execution_order
+  - execution_ownership_boundaries
+  - execution_integration_contract
+  does_not_own:
+  - architecture_decomposition
+  - artifact_action_selection
+  - testing_policy
+  - gate_validation
+  - report_lifecycle
+  - trigger_resolution
+  - revision_policy
+  - agent_permissions
+activation:
+  mode: entrypoint
+  activates_when:
+  - implementation_sequence_phase_active
+  - implementation_phase_active
+  - checkpoint_validation_plan_required
+  - post_implementation_validation_required
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - execution_subsystem_contract
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - phases/conventions.phase-contracts.yaml
+  - reports/conventions.report-registry.yaml
+  - gates/conventions.gate-validation.yaml
+  optional_files:
+  - testing/conventions.test-validation.yaml
+  - risk/conventions.risk-escalation.yaml
+  - revisions/conventions.revision-validation.yaml
+sections:
+  execution_file_index:
+    implementation_sequence: execution/conventions.implementation-sequence.yaml
+    checkpoint_planning: execution/conventions.checkpoint-planning.yaml
+    implementation_control: execution/conventions.implementation-control.yaml
+    validation_command_policy: execution/conventions.validation-command-policy.yaml
+    changed_file_policy: execution/conventions.changed-file-policy.yaml
+    feedback_loop: execution/conventions.feedback-loop.yaml
+    execution_validation: execution/conventions.execution-validation.yaml
+  local_execution_order:
+  - load_approved_design_inputs
+  - plan_implementation_sequence
+  - plan_checkpoints
+  - validate_pre_implementation_readiness
+  - execute_controlled_implementation
+  - record_changed_files
+  - run_validation_commands
+  - classify_feedback
+  - validate_execution_outputs
+  execution_authority_boundaries:
+    execution_owns:
+    - implementation ordering
+    - checkpoint planning
+    - implementation control rules
+    - validation command capture
+    - changed file recording
+    - feedback loop control
+    - execution validation
+    execution_does_not_own:
+    - whether a phase may start
+    - gate pass/fail internals
+    - test obligation policy
+    - report lifecycle authority
+    - revision approval authority
+    - trigger resolution authority
+    consumes_from_other_subsystems:
+      phases: phase contract and implementation phase boundaries
+      missions: allowed edit scope and active phase plan
+      reports: required report paths and output schemas
+      gates: pre/post/final gate requirements
+      testing: validation commands and test obligations
+      risk: checkpoint strictness and blocking thresholds
+      revisions: rerun and invalidation decisions
+      handoffs: validated consumable inputs
+      agents: implementation-agent permissions
+  execution_integration_contract:
+    preconditions:
+    - pre_implementation_gate_passed
+    - implementation_sequence_report_exists
+    - checkpoint_validation_plan_exists
+    - allowed_code_edit_scope_defined
+    - no_active_blocking_triggers
+    produces_reports:
+    - 10-implementation-sequence
+    - checkpoint-validation-plan
+    - changed-file-manifest
+    - implementation-result
+    - checkpoint-results
+    - validation-command-results
+    blocks_when:
+    - pre_implementation_gate_not_passed
+    - allowed_scope_missing
+    - blocking_trigger_active
+    - required_input_invalidated
+    - checkpoint_plan_missing
+validation:
+  required_checks:
+  - id: EXECUTION-ENTRY-CHECK-001
+    check: execution_file_index_complete
+    applies_when:
+      execution_subsystem_loaded: true
+  fail_conditions:
+  - condition: execution_subsystem_redefines_gate_authority
+    message: Execution subsystem must not redefine gate pass/fail authority.
+    severity: error
+    owner: execution/conventions.execution.yaml
+  - condition: implementation_started_without_pre_gate
+    message: Implementation must not start without a passed pre-implementation gate.
+    severity: error
+    owner: execution/conventions.execution.yaml

@@ -1,0 +1,176 @@
+version: '1.0'
+file:
+  name: conventions.checkpoint-planning.yaml
+  path: execution/conventions.checkpoint-planning.yaml
+  role: checkpoint_validation_planning_contract
+  executability: decision_engine
+purpose: Define checkpoint grouping, validation cadence, expected temporary failure expiry, and pass/fail behavior for implementation
+  execution.
+ownership:
+  owns:
+  - checkpoint_group_schema
+  - checkpoint_strategy_rules
+  - validation_cadence_rules
+  - temporary_failure_policy
+  - checkpoint_generation_algorithm
+  - checkpoint_validation_plan_schema
+  does_not_own:
+  - test_obligation_selection
+  - gate_pass_fail_authority
+  - implementation_code_changes
+activation:
+  mode: conditional
+  activates_when:
+  - checkpoint_validation_plan_phase_active
+  - checkpointed_sequence_required
+  skips_when: []
+inputs:
+  required:
+  - 10-implementation-sequence
+  - test-plan
+  - risk-classification
+  optional:
+  - regression-test-plan
+  - characterization-test-plan
+  - dependency-validation
+  - boundary-contract-classification
+outputs:
+  produces:
+  - checkpoint-validation-plan
+  - checkpoint-groups
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - testing/conventions.test-validation.yaml
+  - risk/conventions.risk-escalation.yaml
+  - gates/conventions.gate-templates.yaml
+  - reports/conventions.report-registry.yaml
+  optional_files: []
+sections:
+  checkpoint_group_schema:
+    required_fields:
+    - checkpoint_id
+    - purpose
+    - included_steps
+    - validation_commands
+    - expected_temporary_failures
+    - expiry_step
+    - pass_when
+    - fail_when
+    - blocks_before
+    optional_fields:
+    - repair_allowed
+    - risk_level
+    - notes
+  checkpoint_strategy_rules:
+  - id: CHECKPOINT-STRATEGY-001
+    applies_when:
+    - risk_level in high critical
+    choose_when:
+    - multi_step_change
+    - contract_or_boundary_or_dependency_surface_changed
+    required_checkpoint: after_each_dependency_group
+    reject_when:
+    - single_low_risk_test_only_change
+  - id: CHECKPOINT-STRATEGY-002
+    applies_when:
+    - behavior_preservation_required
+    required_checkpoint: characterization_or_regression_validation_before_and_after_behavior_sensitive_steps
+    fail_condition: behavior_sensitive_step_without_preservation_checkpoint
+  - id: CHECKPOINT-STRATEGY-003
+    applies_when:
+    - expected_temporary_failure_declared
+    required_fields:
+    - expiry_step
+    - reason
+    - validation_expected_to_fail
+    - later_step_expected_to_resolve
+    fail_condition: temporary_failure_without_expiry
+  validation_cadence_rules:
+  - cadence: after_atomic_step
+    run_when:
+    - step_type in create_or_update_types create_or_update_domain create_or_update_policy
+    validation:
+    - syntax_or_format_check_if_available
+    - targeted_typecheck_if_available
+  - cadence: after_checkpoint_group
+    run_when:
+    - checkpoint_group_completed
+    validation:
+    - typecheck
+    - relevant_unit_tests
+    - architecture_boundary_checks_if_available
+  - cadence: before_final_validation
+    run_when:
+    - all_steps_completed
+    validation:
+    - all_required_validation_commands
+    - report_artifact_validation
+    - changed_file_scope_validation
+  temporary_failure_policy:
+    allowed_when:
+    - failure_is_declared_before_step
+    - failure_has_expiry_step
+    - failure_cannot_affect_external_consumers_before_expiry
+    forbidden_when:
+    - failure_is_security_or_data_loss_related
+    - failure_affects_public_contract_without_compatibility_strategy
+    - failure_persists_after_expiry_step
+    blocks_before:
+    - pre_implementation_gate_when_unplanned
+    - final_validation_when_unresolved
+  checkpoint_generation_algorithm:
+  - step_id: LOAD_SEQUENCE
+    action: read
+    input: 10-implementation-sequence
+    fail_when:
+    - sequence_missing
+  - step_id: GROUP_STEPS
+    action: group
+    decision_rules:
+    - checkpoint_strategy_rules
+    - risk_aware_ordering
+    output: checkpoint_groups
+  - step_id: ATTACH_VALIDATIONS
+    action: map
+    inputs:
+    - test-plan
+    - validation_cadence_rules
+    output: checkpoint_validations
+  - step_id: VALIDATE_TEMPORARY_FAILURES
+    action: assert
+    fail_when:
+    - expected_temporary_failure_without_expiry
+    - forbidden_temporary_failure_declared
+  - step_id: WRITE_CHECKPOINT_PLAN
+    action: write
+    output:
+    - checkpoint-validation-plan
+    - checkpoint-groups
+  checkpoint_validation_plan_schema:
+    required_fields:
+    - checkpoint_validations
+    - expected_temporary_failures
+    - pass_fail_criteria
+    - repair_conditions
+    - blocks_before
+    - validation_commands
+validation:
+  required_checks:
+  - id: CHECKPOINT-CHECK-001
+    check: checkpoint_plan_covers_sequence
+    applies_when:
+      checkpoint_plan_created: true
+  fail_conditions:
+  - condition: checkpoint_group_missing_for_multi_step_change
+    message: Multi-step changes require checkpoint groups.
+    severity: error
+    owner: execution/conventions.checkpoint-planning.yaml
+  - condition: expected_temporary_failure_without_expiry
+    message: Expected temporary failure must have expiry.
+    severity: error
+    owner: execution/conventions.checkpoint-planning.yaml
+  - condition: checkpoint_missing_validation_commands
+    message: Checkpoint must specify validation commands or explicit no-command reason.
+    severity: error
+    owner: execution/conventions.checkpoint-planning.yaml

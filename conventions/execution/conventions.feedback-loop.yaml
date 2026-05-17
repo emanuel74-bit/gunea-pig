@@ -3,75 +3,198 @@ file:
   name: conventions.feedback-loop.yaml
   path: execution/conventions.feedback-loop.yaml
   role: implementation_feedback_loop_contract
-  executability: orchestrator
-purpose: Govern implement-check-repair cycle with failure classification, expected temporary failures, and design revision
-  routing.
+  executability: decision_engine
+purpose: Govern implement-check-classify-repair-rerun loops without allowing blind edits, hidden failures, or scope expansion.
 ownership:
   owns:
-  - feedback_loop_schema
-  - failure_classification
-  - temporary_failure_policy
+  - failure_classification_inputs
+  - failure_type_enum
+  - failure_classification_rules
   - repair_path_rules
   - continue_stop_policy
+  - feedback_loop_algorithm
+  - feedback_loop_output_schema
   does_not_own:
-  - implementation_sequence_planning
-  - architecture_decomposition
+  - primary_failure_analysis_policy
+  - revision_approval
+  - test_obligation_policy
+  - gate_pass_fail_authority
 activation:
   mode: conditional
-  activates_when: []
+  activates_when:
+  - implementation_failure_detected
+  - post_validation_failed
+  - repair_required
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - implementation-result
+  - checkpoint-results
+  - validation-command-results
+  optional:
+  - failure-report
+  - failure-classification
+  - repair-plan
+  - feedback-repair-result
 outputs:
   produces:
-  - feedback_loop_result
+  - feedback-loop-decision
 dependencies:
-  required_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - revisions/conventions.revision-request-policy.yaml
+  - gates/conventions.gate-validation.yaml
+  - reports/conventions.report-lifecycle.yaml
   optional_files: []
 sections:
-  feedback_loop:
-  - implement_next_step
-  - run_relevant_checks
-  - classify_failures
-  - decide_repair_path
-  - repair_code_or_plan
-  - rerun_checks
-  - update_decision_log
-  - continue_or_stop
-  failure_classification:
-    syntax_failure: local_code_repair
-    type_failure: local_or_contract_repair
-    test_failure: behavior_or_test_repair
-    architecture_violation: design_revision
-    contract_violation: compatibility_or_contract_revision
-    dependency_violation: structure_or_dependency_revision
-    expected_temporary: continue_until_expiry
-  anti_patterns:
-  - blindly_editing_until_tests_pass
-  - changing_tests_to_match_wrong_behavior
-  - continuing_after_required_check_failure
-  - contract_failure_treated_as_local_failure
+  failure_type_enum:
+    allowed:
+    - syntax_failure
+    - type_failure
+    - lint_failure
+    - unit_test_failure
+    - integration_test_failure
+    - contract_failure
+    - boundary_failure
+    - dependency_failure
+    - scope_violation
+    - report_validation_failure
+    - expected_temporary_failure
+    - unknown_failure
+  failure_classification_rules:
+  - failure_type: syntax_failure
+    choose_when:
+    - compiler_or_parser_reports_syntax_error
+    default_path: local_code_repair
+    reject_when:
+    - failure_points_to_contract_or_design_change
+  - failure_type: contract_failure
+    choose_when:
+    - consumer_visible behavior or schema mismatch
+    - compatibility decision failed
+    default_path: contract_revision_or_compatibility_repair
+    blocks_before:
+    - final_validation
+  - failure_type: boundary_failure
+    choose_when:
+    - boundary validation reports leak or illegal crossing
+    default_path: boundary_or_structure_revision
+    blocks_before:
+    - implementation_continue_if_unresolved
+  - failure_type: dependency_failure
+    choose_when:
+    - dependency validation or import direction failed
+    default_path: dependency_or_structure_revision
+    blocks_before:
+    - implementation_continue_if_unresolved
+  - failure_type: scope_violation
+    choose_when:
+    - changed-file-manifest reports forbidden or unexpected file
+    default_path: revert_or_scope_revision
+    blocks_before:
+    - post_implementation_validation
+    - final_validation
+  - failure_type: expected_temporary_failure
+    choose_when:
+    - failure was declared with expiry and has not expired
+    default_path: continue_until_expiry
+    reject_when:
+    - expiry_step_reached
+    - failure not declared before step
+  - failure_type: unknown_failure
+    choose_when:
+    - failure cannot be classified with available evidence
+    default_path: block_and_request_failure_classification
+    blocks_before:
+    - final_validation
+  repair_path_rules:
+  - path: local_code_repair
+    allowed_when:
+    - failure localized to implementation step
+    - repair within allowed scope
+    - no design/report contract invalidation needed
+    forbidden_when:
+    - requires behavior contract change
+    - requires public compatibility decision
+  - path: test_repair
+    allowed_when:
+    - test assertion is wrong relative to behavior contract
+    - testing report authorizes test correction
+    forbidden_when:
+    - test is changed only to hide implementation bug
+  - path: design_revision
+    allowed_when:
+    - failure reveals invalid architecture/action/role/structure decision
+    requires:
+    - revision-request
+    - invalidate_dependent_outputs
+  - path: block_mission
+    allowed_when:
+    - failure is unsafe, unknown, or cannot be repaired within scope
+  continue_stop_policy:
+    continue_when:
+    - all blocking failures resolved
+    - expected temporary failures not expired
+    - checkpoint pass criteria satisfied
+    stop_when:
+    - blocking failure unclassified
+    - temporary failure expired
+    - scope violation unresolved
+    - required validation command failed
+    - repair would expand scope without revision
+  feedback_loop_algorithm:
+  - step_id: LOAD_FAILURE_EVIDENCE
+    action: read
+    inputs:
+    - implementation-result
+    - checkpoint-results
+    - validation-command-results
+    - failure-report
+  - step_id: CLASSIFY_FAILURE
+    action: apply
+    decision_rules: failure_classification_rules
+    fail_when:
+    - failure_not_classified
+  - step_id: SELECT_PATH
+    action: apply
+    decision_rules: repair_path_rules
+    output: feedback_loop_decision
+  - step_id: BLOCK_OR_CONTINUE
+    action: apply
+    rules: continue_stop_policy
+  - step_id: WRITE_DECISION
+    action: write
+    output: feedback-loop-decision
+  feedback_loop_output_schema:
+    required_fields:
+    - decision
+    - classified_failures
+    - selected_paths
+    - blocked_items
+    - required_revision_requests
+    - repair_allowed
+    - rerun_required
 validation:
+  required_checks:
+  - id: FEEDBACK-CHECK-001
+    check: failures_classified_before_repair
+    applies_when:
+      failure_detected: true
   fail_conditions:
-  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-001
-    condition: failure_not_classified
-    message: Failure not classified.
+  - condition: failure_not_classified
+    message: Failure must be classified before repair.
     severity: error
     owner: execution/conventions.feedback-loop.yaml
-  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-002
-    condition: required_check_failed_but_pipeline_continued
-    message: Required check failed but pipeline continued.
+  - condition: blind_editing_until_tests_pass
+    message: Blind editing until tests pass is forbidden.
     severity: error
     owner: execution/conventions.feedback-loop.yaml
-  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-003
-    condition: temporary_failure_remaining_after_checkpoint
-    message: Temporary failure remaining after checkpoint.
+  - condition: test_changed_to_match_wrong_behavior
+    message: Tests must not be changed to match wrong behavior.
     severity: error
     owner: execution/conventions.feedback-loop.yaml
-  - id: EXECUTION-CONVENTIONS-FEEDBACK-LOOP-YAML-FC-004
-    condition: design_revision_made_without_decision_log_update
-    message: Design revision made without decision log update.
+  - condition: temporary_failure_expired_but_continued
+    message: Expired temporary failure must block continuation.
     severity: error
     owner: execution/conventions.feedback-loop.yaml
-  required_checks: []
