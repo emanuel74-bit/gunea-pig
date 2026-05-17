@@ -1,0 +1,287 @@
+version: '1.0'
+file:
+  name: conventions.mission-profile-taxonomy.yaml
+  path: missions/conventions.mission-profile-taxonomy.yaml
+  role: mission_profile_vocabulary_contract
+  executability: vocabulary
+purpose: Define mission profile vocabulary, gate strictness, edit-scope vocabulary, skip policy vocabulary, and normalized
+  mission profile record shape. This file defines concepts only; it does not select or execute a mission.
+ownership:
+  owns:
+  - mission_profile_enum
+  - gate_strictness_enum
+  - mission_edit_scope_enum
+  - skip_policy_schema
+  - mission_profile_record_schema
+  - mission_profile_status_semantics
+  does_not_own:
+  - mission_profile_selection_rules
+  - active_phase_plan_materialization
+  - mission_state_storage
+  - phase_contracts
+  - alpha_runtime_scheduling
+  - report_registry
+activation:
+  mode: reference_only
+  activates_when:
+  - mission_profile_values_are_referenced
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - mission_profile_taxonomy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files:
+  - phases/conventions.phase-taxonomy.yaml
+sections:
+  mission_profile_enum:
+    allowed:
+    - small_feature
+    - medium_feature
+    - bugfix
+    - large_refactor
+    - cleanup_only
+    - api_contract_change
+    - integration_change
+    - persistence_change
+    - test_only
+    - convention_system_edit
+  mission_profile_definitions:
+    small_feature:
+      definition: Contained feature/change with limited file and module impact.
+      positive_signals:
+      - new behavior is localized
+      - limited number of artifacts
+      - no public contract or data migration expected
+      negative_signals:
+      - multi-module refactor
+      - public API change
+      - data migration
+      - unknown broad impact
+      default_gate_strictness: standard
+    medium_feature:
+      definition: Feature/change touching existing modules, shared artifacts, or multiple artifact roles.
+      positive_signals:
+      - existing module is modified
+      - multiple artifacts participate
+      - shared artifact may be affected
+      negative_signals:
+      - tests only
+      - pure cleanup with no behavior change
+      - large behavior-preserving refactor
+      default_gate_strictness: strict
+    bugfix:
+      definition: Correction of incorrect behavior with regression protection.
+      positive_signals:
+      - incorrect current behavior exists
+      - expected behavior can be stated
+      - regression test should be derived
+      negative_signals:
+      - no failing behavior described
+      - request is purely new feature
+      default_gate_strictness: strict_on_regression
+    large_refactor:
+      definition: Behavior-preserving restructuring across significant scope.
+      positive_signals:
+      - multi-module restructuring
+      - split/extract/move/rename/replace actions
+      - behavior must be preserved
+      negative_signals:
+      - intentional behavior change is primary goal
+      - tests-only request
+      default_gate_strictness: strict_on_no_behavior_change
+    cleanup_only:
+      definition: Cleanup, deletion, rename, move, or simplification without behavior change.
+      positive_signals:
+      - remove dead code
+      - rename/move files
+      - reduce duplication without behavior change
+      negative_signals:
+      - new behavior
+      - public contract change
+      - migration
+      default_gate_strictness: strict_on_no_behavior_change
+    api_contract_change:
+      definition: Consumer-visible contract change across API, event, DTO, export, schema, or public type surface.
+      positive_signals:
+      - request/response shape changes
+      - public export changes
+      - event payload changes
+      - consumer migration may be needed
+      negative_signals:
+      - pure internal implementation change
+      default_gate_strictness: strict_on_compatibility
+    integration_change:
+      definition: Change to external systems, clients, adapters, queues, events, webhooks, or cross-service communication.
+      positive_signals:
+      - external client changes
+      - message flow changes
+      - queue/event/webhook changes
+      negative_signals:
+      - pure in-memory domain refactor
+      default_gate_strictness: strict_on_boundary_and_failure_modes
+    persistence_change:
+      definition: Change to repositories, persistence models, migrations, schemas, backfills, projections, or data consistency
+        behavior.
+      positive_signals:
+      - database schema/model change
+      - migration/backfill required
+      - repository behavior changes
+      negative_signals:
+      - no persisted state affected
+      default_gate_strictness: strict_on_data_safety
+    test_only:
+      definition: Adds or changes tests without production-code behavior change.
+      positive_signals:
+      - tests only
+      - coverage improvement
+      - regression/characterization tests without code changes
+      negative_signals:
+      - production files must change
+      default_gate_strictness: strict_on_no_production_change
+    convention_system_edit:
+      definition: Change to this convention system while preserving schema, authority boundaries, and machine executability.
+      positive_signals:
+      - conventions YAML changes
+      - agent/phase/gate/report rules changed
+      - validator schema changes
+      negative_signals:
+      - application code feature request
+      default_gate_strictness: strict_on_convention_integrity
+  gate_strictness_enum:
+    allowed:
+    - light
+    - standard
+    - strict
+    - strict_on_regression
+    - strict_on_no_behavior_change
+    - strict_on_compatibility
+    - strict_on_boundary_and_failure_modes
+    - strict_on_data_safety
+    - strict_on_no_production_change
+    - strict_on_convention_integrity
+  gate_strictness_definitions:
+    light:
+      definition: Reduced planning for constrained low-risk work; still requires required reports and gates.
+      may_weaken: []
+      must_not_disable:
+      - report_artifact_validation
+      - final_validation
+    standard:
+      definition: Default strictness for contained changes.
+      required:
+      - entry_output_handoff_gates
+      - required_reports
+      - phase_accounting
+    strict:
+      definition: High oversight mode requiring classification, impact, tests, gate, report, trigger and final validation
+        discipline.
+      required:
+      - risk_classification
+      - change_impact_analysis
+      - test_derivation
+      - pre_implementation_gate
+    strict_on_regression:
+      definition: Bugfix mode requiring reproduction/correction mapping and regression expectations.
+      required:
+      - regression-test-plan
+    strict_on_no_behavior_change:
+      definition: Behavior-preservation mode requiring behavior locks and characterization when needed.
+      required:
+      - behavior-preservation-requirements
+    strict_on_compatibility:
+      definition: Contract-change mode requiring compatibility decision, consumer impact, and migration/deprecation obligations
+        when needed.
+      required:
+      - compatibility-decision
+      - consumer-impact
+    strict_on_boundary_and_failure_modes:
+      definition: Integration/boundary mode requiring boundary validation, dependency validation, failure-mode and retry/idempotency
+        review when applicable.
+      required:
+      - boundary-contract-classification
+      - dependency-validation
+    strict_on_data_safety:
+      definition: Persistence mode requiring data-loss, migration, rollback, and consistency checks.
+      required:
+      - risk-classification
+      - change-impact
+    strict_on_no_production_change:
+      definition: Tests-only mode requiring production-file change detection and failure when production files changed.
+      required:
+      - changed-file-manifest
+    strict_on_convention_integrity:
+      definition: Convention-system mode requiring schema, index, reference, and authority boundary validation.
+      required:
+      - report-artifact-validation
+  mission_edit_scope_enum:
+    allowed:
+    - none
+    - tests_only
+    - feature_module_scope
+    - bugfix_target_scope
+    - cleanup_target_scope
+    - affected_modules_after_impact_analysis
+    - contract_surface_scope
+    - contract_consumer_update_scope
+    - integration_boundary_scope
+    - repository_scope
+    - migration_scope
+    - conventions_yaml_scope
+    - explicitly_approved_supporting_files
+  mission_profile_record_schema:
+    required_fields:
+    - mission_profile_id
+    - purpose
+    - required_phases
+    - conditional_phases
+    - forbidden_phases
+    - required_reports
+    - gate_strictness
+    - allowed_code_edit_scope
+    - skip_policy
+    - escalation_triggers
+    optional_fields:
+    - phase_overrides
+    - default_context_depth
+    - approval_policy
+    - validation_policy
+  skip_policy_schema:
+    required_fields:
+    - allowed_skips
+    - skip_requires
+    absolute_rules:
+    - id: MISSION-SKIP-ABS-001
+      rule: Required phases cannot be silently skipped.
+      fail_condition: required_phase_silently_skipped
+    - id: MISSION-SKIP-ABS-002
+      rule: Every allowed skip requires reason, evidence, and downstream risk review.
+      fail_condition: skip_missing_reason_evidence_or_risk_review
+  profile_authority_boundaries:
+    may_tighten:
+    - required_reports
+    - gate_strictness
+    - phase_overrides
+    - allowed_edit_scope
+    must_not_weaken:
+    - phase_contracts
+    - gates
+    - agent_permissions
+    - report_schemas
+    - trigger_blocking
+    - revision_invalidation
+validation:
+  required_checks:
+  - id: MISSION-TAXONOMY-CHECK-001
+    check: mission_profile_values_known
+    applies_when:
+      mission_profile_values_are_referenced: true
+  fail_conditions:
+  - id: MISSION-TAXONOMY-001
+    condition: unknown_mission_profile
+    message: Mission profile must be defined in mission_profile_enum.allowed.
+    severity: error

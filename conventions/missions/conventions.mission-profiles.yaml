@@ -2,80 +2,52 @@ version: '1.0'
 file:
   name: conventions.mission-profiles.yaml
   path: missions/conventions.mission-profiles.yaml
-  role: mission_profile_selection_and_configuration_contract
-  executability: decision_engine
-purpose: Define mission profile vocabulary and configuration over existing global phases.
+  role: mission_profile_registry
+  executability: registry
+purpose: Define canonical mission profiles that configure global phases, reports, strictness, edit scope, skips, and escalation
+  triggers without redefining phase contracts.
 ownership:
   owns:
-  - mission_profile_enum
-  - mission_profile_schema
-  - mission_profile_selection_rules
-  - mission_profiles
+  - mission_profile_registry
+  - mission_profile_records
+  - profile_required_reports
+  - profile_edit_scopes
+  - profile_phase_overrides
   does_not_own:
-  - phase_vocabulary
-  - phase_contract_definitions
+  - mission_profile_selection
+  - phase_taxonomy
+  - phase_contracts
+  - report_artifact_schema
+  - agent_permissions
+  - gate_logic
 activation:
-  mode: conditional
+  mode: reference_only
   activates_when:
-  - mission_profile_selection_required
+  - mission_profiles_loaded
   skips_when: []
 inputs:
   required:
-  - mission_request
+  - mission_profile_taxonomy
   - phase_taxonomy
+  - report_registry
   optional: []
 outputs:
   produces:
-  - mission_profile
-  - mission_phase_plan
+  - mission_profile_registry
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profile-taxonomy.yaml
   - phases/conventions.phase-taxonomy.yaml
-  - reports/conventions.report-artifacts.yaml
-  optional_files: []
+  - reports/conventions.report-registry.yaml
+  optional_files:
+  - gates/conventions.gate-taxonomy.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
 sections:
-  mission_profile_enum:
-    allowed:
-    - small_feature
-    - medium_feature
-    - bugfix
-    - large_refactor
-    - cleanup_only
-    - api_contract_change
-    - integration_change
-    - persistence_change
-    - test_only
-    - convention_system_edit
-  gate_strictness_enum:
-    allowed:
-    - light
-    - standard
-    - strict
-    - strict_on_regression
-    - strict_on_no_behavior_change
-    - strict_on_compatibility
-    - strict_on_boundary_and_failure_modes
-    - strict_on_data_safety
-    - strict_on_convention_integrity
-  mission_profile_selection_rules:
-    match_decision_rules:
-    - id: MISSION-SELECT-USER-EXPLICIT
-      priority: 1
-      match:
-        user_selected_profile_present: true
-      decision:
-        selected_profile: user_selected_profile
-    - id: MISSION-SELECT-DEFAULT
-      priority: 99
-      match:
-        request_type: unknown
-      decision:
-        selected_profile: medium_feature
   mission_profiles:
     small_feature:
       mission_profile_id: small_feature
-      purpose: Small Feature mission profile.
+      purpose: Add a contained feature with limited impact.
       required_phases:
       - mission_profile_selection
       - mission_initialization
@@ -112,45 +84,29 @@ sections:
       - phase_accounting
       forbidden_phases: []
       required_reports:
-      - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - draft-role-signals
-      - failure-report
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-convention-candidates
       - mission-profile
-      - pattern-decision-log
-      - pattern-pressure
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - regression-test-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
-      - role-collision-resolution
-      - structure-plan
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
       gate_strictness: standard
       allowed_code_edit_scope:
-      - affected_scope
+      - feature_module_scope
       - related_tests_scope
+      - explicitly_approved_supporting_files
       skip_policy:
         allowed_skips: *id001
         skip_requires:
@@ -158,45 +114,32 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: small feature mission_profile vocabulary value.
-      meaning: Represents the small feature case within the mission_profile taxonomy.
-      detection_signals:
-      - small feature signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches small feature
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using small_feature must include reason and evidence
     medium_feature:
       mission_profile_id: medium_feature
-      purpose: Medium Feature mission profile.
-      required_phases: &id005
+      purpose: Add or modify a feature touching existing modules or multiple artifacts.
+      required_phases:
       - mission_profile_selection
       - mission_initialization
       - active_context_manifest
       - phase_accounting
-      - behavior_contract
-      - codebase_reconnaissance
       - local_alignment
-      - risk_classification
       - boundary_contract_classification
       - dependency_classification
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - behavior_contract
+      - codebase_reconnaissance
       - architecture_decomposition
       - draft_role_pass
       - pattern_pressure_detection
       - artifact_reuse_analysis
       - artifact_action_resolution
-      - call_site_impact_analysis
-      - change_impact_analysis
       - final_role_assignment
       - pattern_selection
       - structure_rendering
@@ -215,55 +158,29 @@ sections:
       - feedback_repair
       forbidden_phases: []
       required_reports:
-      - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - boundary-contract-classification
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - compatibility-decision
-      - consumer-impact
-      - dependency-classification
-      - dependency-validation
-      - draft-role-signals
-      - failure-report
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-alignment
-      - local-convention-candidates
       - mission-profile
-      - pattern-decision-log
-      - pattern-pressure
-      - phase-accounting
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - regression-test-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
-      - role-collision-resolution
-      - structure-plan
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
-      - trigger-review
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
       gate_strictness: strict
       allowed_code_edit_scope:
-      - affected_scope
+      - affected_modules_after_impact_analysis
       - related_tests_scope
+      - explicitly_approved_supporting_files
       skip_policy:
         allowed_skips: *id002
         skip_requires:
@@ -271,27 +188,15 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: medium feature mission_profile vocabulary value.
-      meaning: Represents the medium feature case within the mission_profile taxonomy.
-      detection_signals:
-      - medium feature signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches medium feature
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using medium_feature must include reason and evidence
     bugfix:
       mission_profile_id: bugfix
-      purpose: Bugfix mission profile.
+      purpose: Fix incorrect behavior with regression protection.
       required_phases:
       - mission_profile_selection
       - mission_initialization
@@ -328,42 +233,30 @@ sections:
       - phase_accounting
       forbidden_phases: []
       required_reports:
-      - active-context-manifest
-      - artifact-actions
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - consumer-impact
-      - failure-classification
-      - failure-report
-      - feedback-repair-result
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-convention-candidates
       - mission-profile
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - regression-test-plan
-      - repair-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
+      - regression-test-plan
       gate_strictness: strict_on_regression
       allowed_code_edit_scope:
       - bugfix_target_scope
       - regression_tests_scope
+      - minimal_supporting_change_scope
       skip_policy:
         allowed_skips: *id003
         skip_requires:
@@ -371,28 +264,16 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: bugfix mission_profile vocabulary value.
-      meaning: Represents the bugfix case within the mission_profile taxonomy.
-      detection_signals:
-      - bugfix signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches bugfix
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using bugfix must include reason and evidence
     large_refactor:
       mission_profile_id: large_refactor
-      purpose: Large Refactor mission profile.
-      required_phases: &id007
+      purpose: Restructure existing code while preserving behavior and controlling impact.
+      required_phases:
       - mission_profile_selection
       - mission_initialization
       - active_context_manifest
@@ -428,61 +309,31 @@ sections:
       conditional_phases: []
       forbidden_phases: []
       required_reports:
-      - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - behavior-preservation-requirements
-      - boundary-contract-classification
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - compatibility-decision
-      - consumer-impact
-      - dependency-classification
-      - dependency-validation
-      - draft-role-signals
-      - failure-classification
-      - failure-report
-      - feedback-repair-result
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-alignment
-      - local-convention-candidates
       - mission-profile
-      - pattern-decision-log
-      - pattern-pressure
-      - phase-accounting
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - refactor-required-followups
-      - refactor-strategy
-      - regression-test-plan
-      - repair-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
-      - role-collision-resolution
-      - structure-plan
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
-      - trigger-review
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
-      gate_strictness: strict
+      - characterization-test-plan
+      - behavior-preservation-requirements
+      gate_strictness: strict_on_no_behavior_change
       allowed_code_edit_scope:
       - affected_modules_after_impact_analysis
       - affected_tests_after_test_derivation
+      - explicitly_approved_migration_or_adapter_files
       skip_policy:
         allowed_skips: []
         skip_requires:
@@ -490,27 +341,15 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: large refactor mission_profile vocabulary value.
-      meaning: Represents the large refactor case within the mission_profile taxonomy.
-      detection_signals:
-      - large refactor signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches large refactor
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using large_refactor must include reason and evidence
     cleanup_only:
       mission_profile_id: cleanup_only
-      purpose: Cleanup Only mission profile.
+      purpose: Cleanup without behavior change.
       required_phases:
       - mission_profile_selection
       - mission_initialization
@@ -545,39 +384,30 @@ sections:
       - pattern_pressure_detection
       - pattern_selection
       required_reports:
-      - active-context-manifest
-      - artifact-actions
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - consumer-impact
-      - failure-report
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-alignment
-      - local-convention-candidates
       - mission-profile
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - regression-test-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
+      - characterization-test-plan
+      - behavior-preservation-requirements
       gate_strictness: strict_on_no_behavior_change
       allowed_code_edit_scope:
       - cleanup_target_scope
+      - references_required_by_cleanup
       - tests_only_when_reference_updates_required
       skip_policy:
         allowed_skips: *id004
@@ -586,85 +416,153 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: cleanup only mission_profile vocabulary value.
-      meaning: Represents the cleanup only case within the mission_profile taxonomy.
-      detection_signals:
-      - cleanup only signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches cleanup only
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using cleanup_only must include reason and evidence
     api_contract_change:
       mission_profile_id: api_contract_change
-      purpose: Api Contract Change mission profile.
-      required_phases: *id005
-      conditional_phases: &id006
+      purpose: Change public APIs, events, DTOs, exports, schemas, or public types.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id005
       - local_alignment
       - refactor_strategy_selection
       - failure_classification
       - feedback_repair
       forbidden_phases: []
       required_reports:
+      - mission-profile
+      - report-registry
       - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
       - behavior-contract
-      - boundary-contract-classification
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
       - codebase-reconnaissance
+      - risk-classification
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
+      - test-plan
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
+      - validation-summary
       - compatibility-decision
       - consumer-impact
-      - dependency-classification
-      - dependency-validation
-      - draft-role-signals
-      - failure-report
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-alignment
-      - local-convention-candidates
-      - mission-profile
-      - pattern-decision-log
-      - pattern-pressure
-      - phase-accounting
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - regression-test-plan
-      - report-artifact-validation
-      - report-registry
-      - risk-classification
-      - role-collision-resolution
-      - structure-plan
-      - test-plan
-      - trigger-review
-      - validation-summary
       gate_strictness: strict_on_compatibility
       allowed_code_edit_scope:
       - contract_surface_scope
       - contract_consumer_update_scope
       - contract_tests_scope
+      - explicit_adapter_or_mapper_scope
+      skip_policy:
+        allowed_skips: *id005
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
+      - high_risk_detected
+      - implementation_failure_detected
+      - phase_revision_required
+      phase_overrides: {}
+    integration_change:
+      mission_profile_id: integration_change
+      purpose: Change external integrations, clients, queues, events, webhooks, or cross-service flows.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - local_alignment
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - failure_classification
+      - feedback_repair
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id006
+      - refactor_strategy_selection
+      forbidden_phases: []
+      required_reports:
+      - mission-profile
+      - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
+      - risk-classification
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
+      - test-plan
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
+      - validation-summary
+      gate_strictness: strict_on_boundary_and_failure_modes
+      allowed_code_edit_scope:
+      - integration_boundary_scope
+      - client_adapter_gateway_scope
+      - message_contract_scope
+      - integration_tests_scope
       skip_policy:
         allowed_skips: *id006
         skip_requires:
@@ -672,88 +570,146 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: api contract change mission_profile vocabulary value.
-      meaning: Represents the api contract change case within the mission_profile taxonomy.
-      detection_signals:
-      - api contract change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches api contract change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using api_contract_change must include reason and evidence
-    integration_change:
-      mission_profile_id: integration_change
-      purpose: Integration Change mission profile.
-      required_phases: *id007
-      conditional_phases: &id008
+    persistence_change:
+      mission_profile_id: persistence_change
+      purpose: Change persistence behavior, repositories, migrations, models, projections, or data consistency.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - failure_classification
+      - feedback_repair
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id007
+      - local_alignment
       - refactor_strategy_selection
       forbidden_phases: []
       required_reports:
-      - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - behavior-preservation-requirements
-      - boundary-contract-classification
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - compatibility-decision
-      - consumer-impact
-      - dependency-classification
-      - dependency-validation
-      - draft-role-signals
-      - failure-classification
-      - failure-report
-      - feedback-repair-result
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-alignment
-      - local-convention-candidates
       - mission-profile
-      - pattern-decision-log
-      - pattern-pressure
-      - phase-accounting
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - refactor-required-followups
-      - refactor-strategy
-      - regression-test-plan
-      - repair-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
-      - role-collision-resolution
-      - structure-plan
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
-      - trigger-review
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
-      gate_strictness: strict_on_boundary_and_failure_modes
+      gate_strictness: strict_on_data_safety
       allowed_code_edit_scope:
-      - integration_boundary_scope
-      - client_adapter_gateway_scope
-      - integration_tests_scope
+      - repository_scope
+      - migration_scope
+      - persistence_model_scope
+      - data_access_tests_scope
+      - explicit_backfill_or_projection_scope
+      skip_policy:
+        allowed_skips: *id007
+        skip_requires:
+        - skip_reason
+        - evidence
+        - downstream_risk_review
+      escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
+      - high_risk_detected
+      - implementation_failure_detected
+      - phase_revision_required
+      phase_overrides: {}
+    test_only:
+      mission_profile_id: test_only
+      purpose: Add or improve tests without production behavior changes.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - behavior_contract
+      - codebase_reconnaissance
+      - test_derivation
+      - implementation
+      - post_implementation_validation
+      - report_artifact_validation
+      - final_validation
+      conditional_phases: &id008
+      - risk_classification
+      - failure_classification
+      - feedback_repair
+      - trigger_review
+      - phase_accounting
+      forbidden_phases:
+      - architecture_decomposition
+      - draft_role_pass
+      - pattern_pressure_detection
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - refactor_strategy_selection
+      - call_site_impact_analysis
+      - change_impact_analysis
+      - final_role_assignment
+      - pattern_selection
+      - structure_rendering
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      required_reports:
+      - mission-profile
+      - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
+      - risk-classification
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
+      - test-plan
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
+      - validation-summary
+      gate_strictness: strict_on_no_production_change
+      allowed_code_edit_scope:
+      - tests_only
       skip_policy:
         allowed_skips: *id008
         skip_requires:
@@ -761,89 +717,74 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
+      - phase_revision_required
       phase_overrides: {}
-      definition: integration change mission_profile vocabulary value.
-      meaning: Represents the integration change case within the mission_profile taxonomy.
-      detection_signals:
-      - integration change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches integration change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using integration_change must include reason and evidence
-    persistence_change:
-      mission_profile_id: persistence_change
-      purpose: Persistence Change mission profile.
-      required_phases: *id007
+    convention_system_edit:
+      mission_profile_id: convention_system_edit
+      purpose: Modify the convention system while preserving schema, authority boundaries, and executability.
+      required_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - behavior_contract
+      - codebase_reconnaissance
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      - architecture_decomposition
+      - draft_role_pass
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      - change_impact_analysis
+      - final_role_assignment
+      - structure_rendering
+      - test_derivation
+      - implementation_sequence
+      - checkpoint_validation_plan
+      - pre_implementation_gate
+      - implementation
+      - post_implementation_validation
+      - trigger_review
+      - report_artifact_validation
+      - final_validation
       conditional_phases: &id009
       - local_alignment
+      - pattern_pressure_detection
+      - pattern_selection
       - refactor_strategy_selection
+      - call_site_impact_analysis
+      - failure_classification
+      - feedback_repair
       forbidden_phases: []
       required_reports:
-      - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - behavior-preservation-requirements
-      - boundary-contract-classification
-      - call-site-impact
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - compatibility-decision
-      - consumer-impact
-      - dependency-classification
-      - dependency-validation
-      - draft-role-signals
-      - failure-classification
-      - failure-report
-      - feedback-repair-result
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-alignment
-      - local-convention-candidates
       - mission-profile
-      - pattern-decision-log
-      - pattern-pressure
-      - phase-accounting
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - refactor-required-followups
-      - refactor-strategy
-      - regression-test-plan
-      - repair-plan
-      - report-artifact-validation
       - report-registry
+      - active-context-manifest
+      - behavior-contract
+      - codebase-reconnaissance
       - risk-classification
-      - role-collision-resolution
-      - structure-plan
+      - architecture-blueprint
+      - artifact-candidates
+      - artifact-actions
       - test-plan
-      - trigger-review
+      - implementation-sequence
+      - checkpoint-validation-plan
+      - pre-implementation-gate
+      - changed-file-manifest
+      - implementation-result
+      - post-implementation-validation
+      - report-artifact-validation
       - validation-summary
-      gate_strictness: strict_on_data_safety
+      gate_strictness: strict_on_convention_integrity
       allowed_code_edit_scope:
-      - repository_scope
-      - migration_scope
-      - data_access_tests_scope
+      - conventions_yaml_scope
+      - validator_schema_scope
+      - index_and_contract_reference_scope
       skip_policy:
         allowed_skips: *id009
         skip_requires:
@@ -851,361 +792,33 @@ sections:
         - evidence
         - downstream_risk_review
       escalation_triggers:
+      - required_report_missing
+      - report_schema_invalid
       - high_risk_detected
-      - phase_revision_required
       - implementation_failure_detected
-      phase_overrides: {}
-      definition: persistence change mission_profile vocabulary value.
-      meaning: Represents the persistence change case within the mission_profile taxonomy.
-      detection_signals:
-      - persistence change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches persistence change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using persistence_change must include reason and evidence
-    test_only:
-      mission_profile_id: test_only
-      purpose: Test Only mission profile.
-      required_phases:
-      - mission_profile_selection
-      - mission_initialization
-      - active_context_manifest
-      - behavior_contract
-      - codebase_reconnaissance
-      - test_derivation
-      - implementation
-      - post_implementation_validation
-      - report_artifact_validation
-      - final_validation
-      conditional_phases: &id010
-      - risk_classification
-      - failure_classification
-      - feedback_repair
-      - trigger_review
-      - phase_accounting
-      forbidden_phases:
-      - local_alignment
-      - boundary_contract_classification
-      - dependency_classification
-      - architecture_decomposition
-      - draft_role_pass
-      - pattern_pressure_detection
-      - artifact_reuse_analysis
-      - artifact_action_resolution
-      - refactor_strategy_selection
-      - call_site_impact_analysis
-      - change_impact_analysis
-      - final_role_assignment
-      - pattern_selection
-      - structure_rendering
-      - implementation_sequence
-      - checkpoint_validation_plan
-      - pre_implementation_gate
-      required_reports:
-      - active-context-manifest
-      - assumptions
-      - behavior-contract
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-results
-      - codebase-reconnaissance
-      - failure-report
-      - final-unresolved-items
-      - implementation-result
-      - local-convention-candidates
-      - mission-profile
-      - post-implementation-validation
-      - regression-test-plan
-      - report-artifact-validation
-      - report-registry
-      - test-plan
-      - validation-summary
-      gate_strictness: strict_on_no_production_change
-      allowed_code_edit_scope:
-      - tests_only
-      skip_policy:
-        allowed_skips: *id010
-        skip_requires:
-        - skip_reason
-        - evidence
-        - downstream_risk_review
-      escalation_triggers:
-      - high_risk_detected
       - phase_revision_required
-      - implementation_failure_detected
       phase_overrides: {}
-      definition: test only mission_profile vocabulary value.
-      meaning: Represents the test only case within the mission_profile taxonomy.
-      detection_signals:
-      - test only signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches test only
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using test_only must include reason and evidence
-    convention_system_edit:
-      mission_profile_id: convention_system_edit
-      purpose: Convention System Edit mission profile.
-      required_phases:
-      - mission_profile_selection
-      - mission_initialization
-      - active_context_manifest
-      - phase_accounting
-      - behavior_contract
-      - codebase_reconnaissance
-      - risk_classification
-      - boundary_contract_classification
-      - dependency_classification
-      - architecture_decomposition
-      - draft_role_pass
-      - artifact_reuse_analysis
-      - artifact_action_resolution
-      - change_impact_analysis
-      - final_role_assignment
-      - structure_rendering
-      - test_derivation
-      - implementation_sequence
-      - checkpoint_validation_plan
-      - pre_implementation_gate
-      - implementation
-      - post_implementation_validation
-      - trigger_review
-      - report_artifact_validation
-      - final_validation
-      conditional_phases: &id011
-      - local_alignment
-      - pattern_pressure_detection
-      - pattern_selection
-      - refactor_strategy_selection
-      - call_site_impact_analysis
-      - failure_classification
-      - feedback_repair
-      forbidden_phases: []
-      required_reports:
-      - active-context-manifest
-      - architecture-blueprint
-      - artifact-actions
-      - artifact-candidates
-      - artifact-reuse-analysis
-      - assumptions
-      - behavior-contract
-      - boundary-contract-classification
-      - change-impact
-      - changed-file-manifest
-      - characterization-test-plan
-      - checkpoint-groups
-      - checkpoint-results
-      - checkpoint-validation-plan
-      - codebase-reconnaissance
-      - compatibility-decision
-      - consumer-impact
-      - dependency-classification
-      - dependency-validation
-      - draft-role-signals
-      - failure-report
-      - final-file-tree
-      - final-role-assignment
-      - final-unresolved-items
-      - implementation-result
-      - implementation-sequence
-      - local-convention-candidates
-      - mission-profile
-      - phase-accounting
-      - post-action-artifact-candidates
-      - post-implementation-validation
-      - pre-implementation-gate
-      - regression-test-plan
-      - report-artifact-validation
-      - report-registry
-      - risk-classification
-      - role-collision-resolution
-      - structure-plan
-      - test-plan
-      - trigger-review
-      - validation-summary
-      gate_strictness: strict_on_convention_integrity
-      allowed_code_edit_scope:
-      - conventions_yaml_scope
-      - validator_schema_scope
-      skip_policy:
-        allowed_skips: *id011
-        skip_requires:
-        - skip_reason
-        - evidence
-        - downstream_risk_review
-      escalation_triggers:
-      - high_risk_detected
-      - phase_revision_required
-      - implementation_failure_detected
-      phase_overrides: {}
-      definition: convention system edit mission_profile vocabulary value.
-      meaning: Represents the convention system edit case within the mission_profile taxonomy.
-      detection_signals:
-      - convention system edit signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches convention system edit
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - mission_profile decisions using convention_system_edit must include reason and evidence
-  mission_profile_validation_algorithm:
-    steps:
-    - load_phase_taxonomy
-    - load_mission_profiles
-    - assert_profile_phases_exist
-    - assert_no_phase_state_conflict
-    - assert_required_reports_exist
-  gate_strictness_definitions:
-    light:
-      definition: light gate_strictness vocabulary value.
-      meaning: Represents the light case within the gate_strictness taxonomy.
-      detection_signals:
-      - light signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches light
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using light must include reason and evidence
-    standard:
-      definition: standard gate_strictness vocabulary value.
-      meaning: Represents the standard case within the gate_strictness taxonomy.
-      detection_signals:
-      - standard signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches standard
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using standard must include reason and evidence
-    strict:
-      definition: strict gate_strictness vocabulary value.
-      meaning: Represents the strict case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict must include reason and evidence
-    strict_on_regression:
-      definition: strict on regression gate_strictness vocabulary value.
-      meaning: Represents the strict on regression case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict on regression signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict on regression
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict_on_regression must include reason and evidence
-    strict_on_no_behavior_change:
-      definition: strict on no behavior change gate_strictness vocabulary value.
-      meaning: Represents the strict on no behavior change case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict on no behavior change signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict on no behavior change
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict_on_no_behavior_change must include reason and evidence
-    strict_on_compatibility:
-      definition: strict on compatibility gate_strictness vocabulary value.
-      meaning: Represents the strict on compatibility case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict on compatibility signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict on compatibility
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict_on_compatibility must include reason and evidence
-    strict_on_boundary_and_failure_modes:
-      definition: strict on boundary and failure modes gate_strictness vocabulary value.
-      meaning: Represents the strict on boundary and failure modes case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict on boundary and failure modes signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict on boundary and failure modes
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict_on_boundary_and_failure_modes must include reason and evidence
-    strict_on_data_safety:
-      definition: strict on data safety gate_strictness vocabulary value.
-      meaning: Represents the strict on data safety case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict on data safety signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict on data safety
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict_on_data_safety must include reason and evidence
-    strict_on_convention_integrity:
-      definition: strict on convention integrity gate_strictness vocabulary value.
-      meaning: Represents the strict on convention integrity case within the gate_strictness taxonomy.
-      detection_signals:
-      - strict on convention integrity signals are present in the request, codebase evidence, or prior phase reports
-      choose_when:
-      - the active evidence best matches strict on convention integrity
-      - no more specific vocabulary value applies
-      reject_when:
-      - evidence is absent or contradictory
-      - a more specific or more severe value applies
-      required_evidence:
-      - source report reference or explicit no_evidence_available marker
-      validation_rules:
-      - gate_strictness decisions using strict_on_convention_integrity must include reason and evidence
+  profile_override_policy:
+    absolute_rules:
+    - id: MISSION-PROFILE-OVERRIDE-ABS-001
+      rule: Mission profile overrides may tighten phase requirements but must not weaken phase contracts.
+      fail_condition: mission_profile_override_weakens_phase_contract
+    - id: MISSION-PROFILE-OVERRIDE-ABS-002
+      rule: Profiles may select, require, forbid, or conditionally activate global phases but must not create new phases.
+      fail_condition: mission_profile_declares_unknown_phase
+  profile_required_report_policy:
+    absolute_rules:
+    - id: MISSION-PROFILE-REPORT-ABS-001
+      rule: Every profile required report must exist in the report registry.
+      fail_condition: mission_profile_references_unknown_report
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: MISSION-PROFILES-CHECK-001
+    check: every_profile_references_known_phases
+    applies_when:
+      mission_profiles_loaded: true
+  fail_conditions:
+  - id: MISSION-PROFILES-001
+    condition: profile_references_unknown_phase
+    message: Mission profile references a phase not defined in the phase taxonomy.
+    severity: error

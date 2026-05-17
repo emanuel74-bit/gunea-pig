@@ -2,44 +2,52 @@ version: '1.0'
 file:
   name: conventions.mission-state.yaml
   path: missions/conventions.mission-state.yaml
-  role: mission_state_and_phase_accounting_contract
-  executability: schema
-purpose: Define Alpha-controlled mission state, active phase plan, phase accounting, trigger storage, and revision storage.
+  role: mission_state_storage_contract
+  executability: state_schema
+purpose: Define mission state records, Alpha-only mutation rules, phase accounting references, trigger/revision instance storage,
+  implementation permission state, and final mission state semantics.
 ownership:
   owns:
   - mission_state_schema
-  - active_phase_plan_schema
-  - phase_accounting_schema
-  - trigger_instance_storage
-  - revision_instance_storage
+  - mission_state_record_shape
+  - mission_state_transition_rules
+  - mission_state_mutation_policy
+  - phase_status_reference_policy
+  - trigger_revision_instance_storage
   does_not_own:
-  - trigger_vocabulary
-  - revision_policy
-  - phase_gate_logic
+  - trigger_taxonomy
+  - revision_taxonomy
+  - phase_lifecycle_vocabulary
+  - gate_result_schema
+  - report_registry_schema
+  - alpha_execution_algorithm
 activation:
-  mode: conditional
+  mode: reference_only
   activates_when:
   - mission_state_required
   skips_when: []
 inputs:
   required:
-  - mission_profile
-  - phase_taxonomy
-  optional: []
+  - active_phase_plan
+  - report_registry
+  optional:
+  - trigger_records
+  - revision_records
+  - gate_results
+  - user_approvals
 outputs:
   produces:
   - mission_state
-  - phase_accounting_report
-  - trigger_registry
-  - revision_registry
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
-  - phases/conventions.phase-taxonomy.yaml
-  - missions/conventions.mission-profiles.yaml
+  - missions/conventions.active-phase-plan.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - reports/conventions.report-registry.yaml
+  optional_files:
   - triggers/conventions.trigger-taxonomy.yaml
   - revisions/conventions.revision-taxonomy.yaml
-  optional_files: []
+  - gates/conventions.gate-taxonomy.yaml
 sections:
   mission_state_schema:
     required_fields:
@@ -52,6 +60,12 @@ sections:
     - active_triggers
     - blocked_items
     - implementation_allowed
+    optional_fields:
+    - revision_history
+    - rerun_requests
+    - user_approvals
+    - invalidated_outputs
+    - completed_reports
   mission_state_record_shape:
     mission_id: ''
     selected_profile: ''
@@ -62,26 +76,71 @@ sections:
       required_phases: []
       conditional_phases: []
       forbidden_phases: []
+      skipped_phases: []
+      blocked_phases: []
     phase_statuses: []
+    report_registry_ref: .ai/reports/report-registry.yaml
     active_triggers: []
-    revision_history: []
+    blocked_items: []
+    completed_reports: []
     invalidated_outputs: []
-  phase_accounting_schema:
-    required_fields:
-    - phase_id
-    - status
-    - reason
-    - evidence_refs
-    - required_outputs
-    - produced_outputs
-    - gate_status
-  mission_state_validation_algorithm:
-    steps:
-    - load_mission_state
-    - assert_phase_statuses_exist
-    - assert_active_triggers_handled_before_implementation
-    - assert_implementation_allowed
-    - assert_final_state_has_no_blockers
+    revision_history: []
+    rerun_requests: []
+    user_approvals: []
+  mission_state_mutation_policy:
+    absolute_rules:
+    - id: MISSION-STATE-MUTATION-ABS-001
+      rule: Only Alpha may update mission state.
+      fail_condition: non_alpha_updates_mission_state
+    - id: MISSION-STATE-MUTATION-ABS-002
+      rule: Phase agents may request state changes only by reports, triggers, or revision requests.
+      fail_condition: phase_agent_directly_mutated_mission_state
+    - id: MISSION-STATE-MUTATION-ABS-003
+      rule: implementation_allowed must remain false until pre_implementation_gate passes.
+      fail_condition: implementation_allowed_without_pre_implementation_gate
+  mission_state_transition_rules:
+  - id: MISSION-STATE-TRANSITION-001
+    from: mission_created
+    to: profile_selected
+    requires:
+    - mission-profile report
+  - id: MISSION-STATE-TRANSITION-002
+    from: profile_selected
+    to: active_plan_materialized
+    requires:
+    - active_phase_plan
+  - id: MISSION-STATE-TRANSITION-003
+    from: phase_output_validated
+    to: next_phase_ready
+    requires:
+    - output_gate_passed
+    - handoff_gate_passed_or_no_downstream_inputs
+  - id: MISSION-STATE-TRANSITION-004
+    from: pre_implementation_gate_passed
+    to: implementation_allowed
+    requires:
+    - no_active_triggers
+    - no_blocking_items
+    - required_reports_exist
+  - id: MISSION-STATE-TRANSITION-005
+    from: final_validation_passed
+    to: mission_complete
+    requires:
+    - report_artifact_validation_passed
+    - no_unresolved_triggers
+    - no_consumed_invalidated_outputs
+  trigger_revision_instance_storage:
+    trigger_instances_use: triggers/conventions.trigger-taxonomy.yaml
+    revision_instances_use: revisions/conventions.revision-taxonomy.yaml
+    rule: Mission state stores instances only; it does not define trigger or revision vocabulary.
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: MISSION-STATE-CHECK-001
+    check: mission_state_exists_after_initialization
+    applies_when:
+      phase_after_mission_initialization_starts: true
+  fail_conditions:
+  - id: MISSION-STATE-001
+    condition: mission_state_missing
+    message: Mission state is required after mission initialization.
+    severity: error

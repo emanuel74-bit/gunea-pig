@@ -4,21 +4,30 @@ file:
   path: missions/conventions.missions.yaml
   role: missions_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Entrypoint for mission profiles and mission state.
+purpose: Provide the missions subsystem entrypoint, file index, execution order, ownership boundaries, and integration contract
+  for mission profiles, active phase plans, and mission state.
 ownership:
   owns:
   - missions_file_index
+  - missions_local_execution_order
+  - missions_subsystem_contract
+  - missions_integration_contract
   does_not_own:
-  - phase_vocabulary
-  - agent_permissions
+  - mission_profile_records
+  - mission_state_storage_details
+  - phase_contracts
+  - alpha_runtime_execution
+  - gate_validation
+  - report_artifact_schema
+  - trigger_resolution
+  - revision_policy
 activation:
   mode: entrypoint
   activates_when:
-  - mission_profile_selection_required
+  - mission_subsystem_loaded
   skips_when: []
 inputs:
-  required:
-  - mission_request
+  required: []
   optional: []
 outputs:
   produces:
@@ -26,13 +35,73 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profile-taxonomy.yaml
+  - missions/conventions.mission-profile-selection.yaml
   - missions/conventions.mission-profiles.yaml
+  - missions/conventions.active-phase-plan.yaml
   - missions/conventions.mission-state.yaml
-  optional_files: []
+  - missions/conventions.mission-validation.yaml
+  optional_files:
+  - phases/conventions.phase-taxonomy.yaml
+  - reports/conventions.report-registry.yaml
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - revisions/conventions.revision-validation.yaml
 sections:
   missions_file_index:
+    taxonomy: missions/conventions.mission-profile-taxonomy.yaml
+    selection: missions/conventions.mission-profile-selection.yaml
     profiles: missions/conventions.mission-profiles.yaml
-    state: missions/conventions.mission-state.yaml
+    active_phase_plan: missions/conventions.active-phase-plan.yaml
+    mission_state: missions/conventions.mission-state.yaml
+    validation: missions/conventions.mission-validation.yaml
+  missions_local_execution_order:
+  - mission-profile-taxonomy
+  - mission-profile-selection
+  - mission-profiles
+  - active-phase-plan
+  - mission-state
+  - mission-validation
+  missions_subsystem_contract:
+    absolute_rules:
+    - id: MISSIONS-SYSTEM-ABS-001
+      rule: Mission profiles configure global phases but must not create, redefine, or weaken phase contracts.
+      fail_condition: mission_profile_redefined_phase_contract
+    - id: MISSIONS-SYSTEM-ABS-002
+      rule: Mission state stores runtime truth but only Alpha may mutate it.
+      fail_condition: non_alpha_updates_mission_state
+    - id: MISSIONS-SYSTEM-ABS-003
+      rule: Mission validation is fail-closed for unknown phases, reports, triggers, revisions, agents, or gate strictness.
+      fail_condition: mission_validation_allowed_unknown_reference
+  missions_integration_contract:
+    consumes_from:
+    - phases
+    - reports
+    - agents
+    - gates
+    - triggers
+    - revisions
+    - risk
+    provides_to:
+    - alpha_controller
+    - phase_execution
+    - pre_implementation_gate
+    - final_validation
+    - report_artifact_validation
+    must_not_override:
+    - gate pass/fail internals
+    - trigger resolution matrix
+    - revision invalidation rules
+    - report schemas
+    - agent permissions
 validation:
-  required_checks: []
-  fail_conditions: []
+  required_checks:
+  - id: MISSIONS-SYSTEM-CHECK-001
+    check: missions_subsystem_files_follow_file_contract
+    applies_when:
+      mission_subsystem_loaded: true
+  fail_conditions:
+  - id: MISSIONS-SYSTEM-001
+    condition: missions_subsystem_authority_violation
+    message: Missions subsystem must not override phase, gate, report, trigger, revision, or agent authority.
+    severity: error

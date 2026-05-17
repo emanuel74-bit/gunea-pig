@@ -1,0 +1,218 @@
+version: '1.0'
+file:
+  name: conventions.mission-profile-selection.yaml
+  path: missions/conventions.mission-profile-selection.yaml
+  role: mission_profile_selection_decision_engine
+  executability: decision_engine
+purpose: Select exactly one mission profile from request and reconnaissance signals, using priority-ordered rules and fail-closed
+  uncertainty handling.
+ownership:
+  owns:
+  - mission_profile_selection_inputs
+  - mission_profile_selection_rules
+  - selection_tie_breakers
+  - selection_algorithm
+  - selection_output_schema
+  does_not_own:
+  - mission_profile_vocabulary
+  - mission_profile_records
+  - active_phase_plan_materialization
+  - phase_execution
+  - code_implementation
+activation:
+  mode: reference_only
+  activates_when:
+  - mission_profile_selection_phase_runs
+  skips_when: []
+inputs:
+  required:
+  - mission_request
+  - mission_profile_taxonomy
+  optional:
+  - initial_codebase_signals
+  - user_selected_profile
+outputs:
+  produces:
+  - mission_profile_selection_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profile-taxonomy.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  optional_files:
+  - planning/conventions.behavior-contract.yaml
+  - risk/conventions.risk-taxonomy.yaml
+sections:
+  mission_profile_selection_inputs:
+    required:
+    - mission_request
+    optional:
+    - user_selected_profile
+    - initial_reconnaissance_signals
+    - explicit_constraints
+    forbidden:
+    - implementation_plan
+    - source_code_edits
+  mission_profile_selection_rules:
+  - id: MISSION-SELECT-EXPLICIT
+    priority: 1
+    match:
+      user_selected_profile_present: true
+    decision:
+      selected_profile: user_selected_profile
+      required_followups:
+      - validate_profile_exists
+      - validate_profile_allowed_for_request
+    reject_when:
+    - selected profile does not exist
+    - selected profile forbids requested work
+  - id: MISSION-SELECT-CONVENTION-SYSTEM-EDIT
+    priority: 2
+    match:
+      request_targets_any_of:
+      - conventions_yaml
+      - convention_system
+      - agent_rules
+      - phase_contracts
+      - report_registry
+    decision:
+      selected_profile: convention_system_edit
+  - id: MISSION-SELECT-TEST-ONLY
+    priority: 3
+    match:
+      request_targets: tests_only
+      production_behavior_change_requested: false
+    decision:
+      selected_profile: test_only
+  - id: MISSION-SELECT-BUGFIX
+    priority: 4
+    match:
+      request_type: bugfix
+      incorrect_behavior_present: true
+    decision:
+      selected_profile: bugfix
+  - id: MISSION-SELECT-PERSISTENCE
+    priority: 5
+    match:
+      persistence_surface_changed: true
+    decision:
+      selected_profile: persistence_change
+  - id: MISSION-SELECT-INTEGRATION
+    priority: 6
+    match:
+      integration_surface_changed: true
+    decision:
+      selected_profile: integration_change
+  - id: MISSION-SELECT-API-CONTRACT
+    priority: 7
+    match:
+      public_contract_change_possible: true
+    decision:
+      selected_profile: api_contract_change
+  - id: MISSION-SELECT-LARGE-REFACTOR
+    priority: 8
+    match:
+      request_type: refactor
+      affected_scope_any_of:
+      - multi_module
+      - unclear_large_scope
+      - behavior_preservation_required
+    decision:
+      selected_profile: large_refactor
+  - id: MISSION-SELECT-CLEANUP
+    priority: 9
+    match:
+      request_type: cleanup
+      behavior_change_requested: false
+    decision:
+      selected_profile: cleanup_only
+  - id: MISSION-SELECT-MEDIUM-FEATURE
+    priority: 10
+    match:
+      request_type: feature
+      affected_scope_any_of:
+      - existing_module
+      - multiple_artifacts
+      - shared_artifact
+    decision:
+      selected_profile: medium_feature
+  - id: MISSION-SELECT-SMALL-FEATURE
+    priority: 11
+    match:
+      request_type: feature
+      affected_scope: contained
+    decision:
+      selected_profile: small_feature
+  - id: MISSION-SELECT-DEFAULT
+    priority: 99
+    match:
+      request_type: unknown_or_mixed
+    decision:
+      selected_profile: medium_feature
+      required_followups:
+      - record_profile_selection_uncertainty
+      - tighten_gate_strictness_to_strict
+  selection_tie_breakers:
+  - id: MISSION-TIE-001
+    rule: Prefer the profile with stricter gate strictness when two profiles match and neither is user-selected.
+    applies_when:
+    - multiple_profiles_match
+    - no_user_selected_profile
+    decision: select_stricter_profile
+  - id: MISSION-TIE-002
+    rule: Persistence, integration, and API contract profiles override generic feature profiles.
+    applies_when:
+    - specialized_surface_profile_matches
+    - feature_profile_matches
+    decision: select_specialized_surface_profile
+  - id: MISSION-TIE-003
+    rule: Bugfix overrides cleanup only when incorrect behavior and expected behavior are both present.
+    applies_when:
+    - bugfix_and_cleanup_signals_present
+    decision: select_bugfix_if_behavior_correction_required_else_cleanup_only
+  selection_algorithm:
+    steps:
+    - step_id: LOAD_REQUEST_SIGNALS
+      action: read
+      inputs:
+      - mission_request
+      - explicit_constraints
+    - step_id: APPLY_PRIORITY_RULES
+      action: evaluate_in_priority_order
+      rules_ref: mission_profile_selection_rules
+    - step_id: APPLY_TIE_BREAKERS
+      action: resolve_multiple_matches
+      rules_ref: selection_tie_breakers
+    - step_id: ASSERT_SINGLE_PROFILE
+      action: assert
+      pass_when:
+      - exactly_one_profile_selected
+      fail_when:
+      - no_profile_selected
+      - multiple_profiles_unresolved
+    - step_id: WRITE_SELECTION_REPORT
+      action: write_report
+      output: .ai/reports/00-mission-profile.yaml
+  selection_output_schema:
+    required_fields:
+    - selected_profile
+    - selection_rule
+    - rejected_profiles
+    - reason_summary
+    - evidence_refs
+    - required_followups
+    fail_when:
+    - selected_profile_missing
+    - selection_rule_missing
+    - unknown_profile_selected
+validation:
+  required_checks:
+  - id: MISSION-SELECTION-CHECK-001
+    check: exactly_one_mission_profile_selected
+    applies_when:
+      mission_profile_selection_phase_runs: true
+  fail_conditions:
+  - id: MISSION-SELECTION-001
+    condition: mission_profile_selection_ambiguous
+    message: Mission profile selection must resolve to exactly one profile or block.
+    severity: error

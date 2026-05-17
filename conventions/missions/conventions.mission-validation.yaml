@@ -1,0 +1,208 @@
+version: '1.0'
+file:
+  name: conventions.mission-validation.yaml
+  path: missions/conventions.mission-validation.yaml
+  role: mission_validation_contract
+  executability: validator
+purpose: Validate mission profiles, active phase plans, mission state, cross-subsystem references, profile strictness, allowed
+  edit scopes, and final mission readiness.
+ownership:
+  owns:
+  - mission_profile_validation_rules
+  - active_phase_plan_validation_rules
+  - mission_state_validation_rules
+  - cross_subsystem_validation_rules
+  - mission_validation_algorithm
+  - mission_validation_output_schema
+  does_not_own:
+  - phase_contracts
+  - report_schemas
+  - gate_logic
+  - trigger_resolution
+  - revision_policy
+  - agent_permissions
+activation:
+  mode: reference_only
+  activates_when:
+  - mission_validation_required
+  - mission_initialization_runs
+  - pre_implementation_gate_runs
+  - final_validation_runs
+  skips_when: []
+inputs:
+  required:
+  - mission_profile_registry
+  - active_phase_plan
+  - mission_state
+  optional:
+  - report_registry
+  - gate_results
+  - trigger_records
+  - revision_records
+outputs:
+  produces:
+  - mission_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profile-taxonomy.yaml
+  - missions/conventions.mission-profiles.yaml
+  - missions/conventions.active-phase-plan.yaml
+  - missions/conventions.mission-state.yaml
+  - phases/conventions.phase-validation.yaml
+  - reports/conventions.report-validation.yaml
+  optional_files:
+  - agents/conventions.agent-permissions.yaml
+  - gates/conventions.gate-validation.yaml
+  - triggers/conventions.trigger-validation.yaml
+  - revisions/conventions.revision-validation.yaml
+sections:
+  mission_profile_validation_rules:
+  - id: MISSION-VALIDATE-PROFILE-001
+    check: profile_phases_exist
+    pass_when:
+    - all profile phases exist in phase taxonomy
+    fail_when:
+    - unknown_required_phase
+    - unknown_conditional_phase
+    - unknown_forbidden_phase
+    severity: error
+  - id: MISSION-VALIDATE-PROFILE-002
+    check: no_phase_state_conflict
+    pass_when:
+    - no phase appears in more than one of required/conditional/forbidden
+    fail_when:
+    - phase_required_and_forbidden
+    - phase_conditional_and_forbidden
+    severity: error
+  - id: MISSION-VALIDATE-PROFILE-003
+    check: profile_reports_exist
+    pass_when:
+    - all required reports exist in report registry
+    fail_when:
+    - mission_profile_references_unknown_report
+    severity: error
+  active_phase_plan_validation_rules:
+  - id: MISSION-VALIDATE-PLAN-001
+    check: ordered_plan_complete
+    pass_when:
+    - all required phases appear in ordered_phases
+    fail_when:
+    - active_phase_plan_missing_required_phase
+    severity: error
+  - id: MISSION-VALIDATE-PLAN-002
+    check: dependency_edges_respected
+    pass_when:
+    - phase dependency graph satisfied
+    fail_when:
+    - active_phase_plan_violates_dependency_edge
+    severity: error
+  - id: MISSION-VALIDATE-PLAN-003
+    check: conditional_phase_authorized
+    pass_when:
+    - conditional phase added by trigger, profile condition, or revision requirement
+    fail_when:
+    - conditional_phase_added_without_trigger_or_condition
+    severity: error
+  mission_state_validation_rules:
+  - id: MISSION-VALIDATE-STATE-001
+    check: phase_status_accounting
+    pass_when:
+    - every active phase has exactly one status record
+    fail_when:
+    - phase_missing_accounting_status
+    - duplicate_phase_status_record
+    severity: error
+  - id: MISSION-VALIDATE-STATE-002
+    check: implementation_blocking_state
+    pass_when:
+    - implementation_allowed only after pre_implementation_gate passed
+    fail_when:
+    - implementation_allowed_without_pre_implementation_gate
+    - implementation_started_with_active_trigger
+    severity: blocking
+  - id: MISSION-VALIDATE-STATE-003
+    check: final_state_clean
+    pass_when:
+    - no unresolved triggers
+    - no unresolved blocked items
+    - no consumed invalidated outputs
+    fail_when:
+    - final_validation_passed_with_unresolved_state
+    severity: blocking
+  cross_subsystem_validation_rules:
+  - id: MISSION-CROSS-001
+    check: owner_agents_exist
+    uses: agents/conventions.agent-taxonomy.yaml
+    fail_when:
+    - phase_owner_agent_unknown
+  - id: MISSION-CROSS-002
+    check: report_registry_consistency
+    uses: reports/conventions.report-registry.yaml
+    fail_when:
+    - required_report_file_missing
+    - report_missing_required_field
+  - id: MISSION-CROSS-003
+    check: gate_strictness_supported
+    uses: gates/conventions.gate-taxonomy.yaml
+    fail_when:
+    - unknown_gate_strictness
+  - id: MISSION-CROSS-004
+    check: trigger_revision_instances_valid
+    uses:
+    - triggers/conventions.trigger-validation.yaml
+    - revisions/conventions.revision-validation.yaml
+    fail_when:
+    - unknown_trigger_type
+    - revision_request_missing_required_field
+  mission_validation_algorithm:
+    steps:
+    - step_id: LOAD_MISSION_INPUTS
+      action: read
+      inputs:
+      - mission_profile_registry
+      - active_phase_plan
+      - mission_state
+      - report_registry
+    - step_id: VALIDATE_PROFILE
+      action: run_checks
+      rules_ref: mission_profile_validation_rules
+    - step_id: VALIDATE_ACTIVE_PLAN
+      action: run_checks
+      rules_ref: active_phase_plan_validation_rules
+    - step_id: VALIDATE_STATE
+      action: run_checks
+      rules_ref: mission_state_validation_rules
+    - step_id: VALIDATE_CROSS_SUBSYSTEM_REFS
+      action: run_checks
+      rules_ref: cross_subsystem_validation_rules
+    - step_id: CALCULATE_RESULT
+      action: fail_closed
+      pass_when:
+      - no_error_or_blocking_failures
+      fail_when:
+      - any_error_or_blocking_failure
+  mission_validation_output_schema:
+    required_fields:
+    - validation_status
+    - checked_profiles
+    - checked_phase_plan
+    - checked_state
+    - failures
+    - blocking_items
+    - required_remediation
+    status_values:
+    - passed
+    - failed
+    - blocked
+validation:
+  required_checks:
+  - id: MISSION-VALIDATION-CHECK-001
+    check: mission_validation_result_emitted
+    applies_when:
+      mission_validation_required: true
+  fail_conditions:
+  - id: MISSION-VALIDATION-001
+    condition: mission_validation_missing
+    message: Mission validation must produce a validation result when required.
+    severity: error

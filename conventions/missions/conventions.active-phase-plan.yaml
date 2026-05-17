@@ -1,0 +1,125 @@
+version: '1.0'
+file:
+  name: conventions.active-phase-plan.yaml
+  path: missions/conventions.active-phase-plan.yaml
+  role: active_phase_plan_materialization_contract
+  executability: state_builder
+purpose: Materialize a selected mission profile into an executable ordered phase plan while respecting required, conditional,
+  forbidden, skipped, blocked, dependency, trigger, and revision states.
+ownership:
+  owns:
+  - active_phase_plan_schema
+  - phase_plan_materialization_rules
+  - phase_plan_merge_rules
+  - skip_block_rules
+  - phase_plan_validation_inputs
+  does_not_own:
+  - mission_profile_records
+  - phase_contracts
+  - phase_dependency_edges
+  - alpha_runtime_scheduling
+  - gate_execution
+  - trigger_resolution
+activation:
+  mode: reference_only
+  activates_when:
+  - mission_profile_selected
+  - mission_initialization_runs
+  skips_when: []
+inputs:
+  required:
+  - selected_mission_profile
+  - phase_taxonomy
+  - phase_dependencies
+  optional:
+  - active_triggers
+  - revision_requests
+  - user_approvals
+outputs:
+  produces:
+  - active_phase_plan
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profiles.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-dependencies.yaml
+  optional_files:
+  - triggers/conventions.trigger-resolution.yaml
+  - revisions/conventions.rerun-policy.yaml
+sections:
+  active_phase_plan_schema:
+    required_fields:
+    - selected_profile
+    - ordered_phases
+    - required_phases
+    - conditional_phases
+    - forbidden_phases
+    - skipped_phases
+    - blocked_phases
+    - phase_plan_source
+    - dependency_validation_status
+    optional_fields:
+    - trigger_added_phases
+    - revision_added_phases
+    - approval_required_phases
+  phase_plan_materialization_rules:
+  - id: PLAN-MATERIALIZE-001
+    applies_when:
+    - mission_profile_selected
+    action: start_from_required_phases
+    pass_when:
+    - all_required_phases_exist_in_taxonomy
+    fail_when:
+    - unknown_required_phase
+  - id: PLAN-MATERIALIZE-002
+    applies_when:
+    - conditional_phase_triggered_or_condition_true
+    action: add_conditional_phase
+    pass_when:
+    - conditional_phase_not_forbidden
+    - dependency_edges_satisfied
+    fail_when:
+    - conditional_phase_forbidden
+    - dependency_edge_missing
+  - id: PLAN-MATERIALIZE-003
+    applies_when:
+    - phase_is_forbidden_by_profile
+    action: exclude_phase
+    pass_when:
+    - phase_not_in_ordered_phases
+    fail_when:
+    - forbidden_phase_present_in_ordered_plan
+  - id: PLAN-MATERIALIZE-004
+    applies_when:
+    - trigger_requires_phase
+    action: require_or_block_phase
+    pass_when:
+    - target_phase_allowed_by_profile_or_override
+    fail_when:
+    - target_phase_forbidden_without_valid_override
+  ordering_policy:
+    rule: ordered_phases must satisfy phases/conventions.phase-dependencies.yaml prerequisite edges and producer-consumer
+      requirements.
+    fail_conditions:
+    - required_phase_order_violates_dependency_edge
+    - target_phase_before_required_input_producer
+  skip_block_rules:
+  - id: PLAN-SKIP-001
+    rule: Allowed skips require skip record with reason, evidence, and downstream risk review.
+    fail_condition: skip_record_missing_required_fields
+  - id: PLAN-BLOCK-001
+    rule: A blocked phase must declare blocking_items and required_resolution before execution can continue past its blocking
+      boundary.
+    fail_condition: blocked_phase_missing_resolution
+validation:
+  required_checks:
+  - id: ACTIVE-PHASE-PLAN-CHECK-001
+    check: ordered_phases_contains_all_required_phases
+    applies_when:
+      active_phase_plan_materialized: true
+  fail_conditions:
+  - id: ACTIVE-PHASE-PLAN-001
+    condition: active_phase_plan_contains_forbidden_phase
+    message: Active phase plan must not contain phases forbidden by the selected profile.
+    severity: error
