@@ -1,0 +1,85 @@
+version: '1.0'
+file:
+  name: conventions.script-delegation-policy.yaml
+  path: core/conventions.script-delegation-policy.yaml
+  role: script_delegation_policy_contract
+  executability: policy
+purpose: Define when deterministic work must be delegated to scripts/executables instead of AI agents, preserving AI effort
+  for judgment, design, code generation, and semantic diagnosis.
+ownership:
+  owns:
+  - script_first_policy
+  - script_delegation_categories
+  - ai_owned_work_categories
+  - script_result_authority
+  - future_executable_feature_policy
+  does_not_own:
+  - script_implementation_code
+  - tool_runtime_config
+  - technology_adapter_content
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - script_delegation_policy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  script_first_policy:
+    absolute_rules:
+    - id: SCRIPT-FIRST-ABS-001
+      rule: Deterministic validation, lookup, graph traversal, reference checking, file existence checking, report template
+        generation, and phase bundle generation must be delegated to scripts when scripts exist.
+      fail_condition: ai_performed_scriptable_work_manually
+    - id: SCRIPT-FIRST-ABS-002
+      rule: AI agents may interpret script outputs but must not replace mechanical script pass/fail results with unsupported
+        judgment.
+      fail_condition: ai_overrode_script_result_without_revision
+    - id: SCRIPT-FIRST-ABS-003
+      rule: Phase agents must consume generated phase bundles when available.
+      fail_condition: phase_agent_loaded_full_system_instead_of_bundle
+  script_delegation_categories:
+  - yaml_parse_validation
+  - file_contract_validation
+  - index_reference_validation
+  - semantic_completeness_validation
+  - phase_bundle_generation
+  - report_template_generation
+  - gate_validation
+  - trigger_resolution
+  - handoff_validation
+  - invalidation_graph_traversal
+  - changed_file_manifest_generation
+  - validation_command_execution
+  ai_owned_work_categories:
+  - intent_interpretation
+  - architecture_decomposition
+  - role_action_pattern_judgment
+  - tradeoff_explanation
+  - implementation_code_writing
+  - complex_failure_diagnosis
+  - semantic_revision_decisions
+  script_result_authority:
+    mechanical_checks: script_result_is_authoritative
+    semantic_judgment: agent_may_decide_inside_phase_contract
+    conflict: raise_revision_or_block_do_not_ignore
+  future_executable_feature_policy: When adding new executable-like behavior, prefer scripts or deterministic validators over
+    additional prose instructions.
+validation:
+  required_checks:
+  - id: SCRIPT-POLICY-CHECK-001
+    check: scriptable_work_not_assigned_to_phase_agent_when_script_exists
+    applies_when:
+      scripts_available: true
+  fail_conditions:
+  - id: SCRIPT-POLICY-001
+    condition: ai_performed_scriptable_work_manually
+    message: Scriptable deterministic work must be delegated to scripts when scripts are available.
+    severity: error

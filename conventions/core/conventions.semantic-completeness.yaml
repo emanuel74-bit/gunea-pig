@@ -1,0 +1,137 @@
+version: '1.0'
+file:
+  name: conventions.semantic-completeness.yaml
+  path: core/conventions.semantic-completeness.yaml
+  role: semantic_completeness_quality_contract
+  executability: validator
+purpose: Define strict semantic completeness tiers so convention files cannot pass with vague definitions, placeholder references,
+  or non-executable decision/rule content.
+ownership:
+  owns:
+  - semantic_completeness_tiers
+  - vague_content_policy
+  - decision_rule_completeness_rules
+  - algorithm_completeness_rules
+  - semantic_failure_conditions
+  does_not_own:
+  - subsystem_specific_decision_values
+  - local_validation_algorithms
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - semantic_completeness_contract
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  semantic_completeness_tiers:
+    enum_value:
+      required:
+      - definition_or_pointer_to_active_definition
+      fail_when:
+      - enum_value_undefined
+      - definition_repeats_enum_name_only
+    taxonomy_object:
+      required:
+      - definition
+      - positive_signals
+      - negative_signals_or_reject_when
+      recommended:
+      - examples
+      - non_examples
+      - risk_signals
+    decision_object:
+      required:
+      - applies_when_or_match
+      - choose_when_or_pass_when
+      - reject_when_or_fail_when
+      - fail_condition
+      recommended:
+      - priority
+      - tie_breakers
+      - required_evidence
+      - blocks_before
+    validation_check:
+      required:
+      - id
+      - check_or_rule
+      - pass_when
+      - fail_when_or_fail_condition
+      - severity
+      recommended:
+      - remediation
+      - blocks_before
+    algorithm:
+      required:
+      - ordered_steps
+      - explicit_inputs
+      - explicit_outputs
+      step_required:
+      - step_id
+      - action
+      step_recommended:
+      - pass_when
+      - fail_when
+      - decision_rules
+      - output
+    schema:
+      required:
+      - required_fields
+      recommended:
+      - optional_fields
+      - record_shape
+      - field_semantics
+  vague_content_policy:
+    forbidden_in_executable_sections:
+    - as appropriate
+    - when needed
+    - where relevant
+    - use best practices
+    - handle logic
+    - manage things
+    - defined elsewhere
+    - defined in step
+    - 'source: Step'
+    - TBD
+    - TODO
+    - placeholder
+    allowed_only_when: backed by structured applies_when/pass_when/fail_when/choose_when/reject_when fields
+  semantic_quality_invariants:
+  - id: SEMANTIC-INV-001
+    rule: Every active vocabulary value must be defined in the active section that owns it.
+    fail_condition: active_vocabulary_value_undefined
+  - id: SEMANTIC-INV-002
+    rule: Every decision engine must contain explicit selection and rejection logic.
+    fail_condition: decision_engine_missing_reject_logic
+  - id: SEMANTIC-INV-003
+    rule: Every validator must define fail conditions and severity.
+    fail_condition: validator_missing_fail_conditions
+  - id: SEMANTIC-INV-004
+    rule: No restored/canonical side sections may coexist with active sections.
+    fail_condition: side_by_side_restored_content_detected
+validation:
+  required_checks:
+  - id: SEMANTIC-CHECK-001
+    check: semantic_completeness_tiers_satisfied
+    applies_when:
+      convention_package_validated: true
+  fail_conditions:
+  - id: SEMANTIC-001
+    condition: active_vocabulary_value_undefined
+    message: Active vocabulary value is missing a usable definition.
+    severity: error
+  - id: SEMANTIC-002
+    condition: decision_engine_missing_reject_logic
+    message: Decision engine must include rejection/failure logic, not only positive guidance.
+    severity: error
+  - id: SEMANTIC-003
+    condition: vague_executable_wording_without_conditions
+    message: Executable rule contains vague wording without structured conditions.
+    severity: error

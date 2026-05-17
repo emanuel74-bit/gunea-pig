@@ -1,0 +1,161 @@
+version: '1.0'
+file:
+  name: conventions.authority-boundaries.yaml
+  path: core/conventions.authority-boundaries.yaml
+  role: global_authority_boundary_contract
+  executability: policy
+purpose: Define global authority ordering and prevent duplicated ownership between core, Alpha, phases, agents, reports, gates,
+  triggers, handoffs, revisions, and domain subsystems.
+ownership:
+  owns:
+  - global_authority_order
+  - subsystem_authority_matrix
+  - conflict_resolution_policy
+  - duplicate_authority_rules
+  - override_rules
+  does_not_own:
+  - local_subsystem_content
+  - agent_prompt_text
+  - runtime_state_storage
+  - implementation_code
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - authority_boundary_contract
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.index.yaml
+  optional_files: []
+sections:
+  global_authority_order:
+  - priority: 1
+    authority: user_request_and_safety_constraints
+    meaning: The user request and safety constraints define mission intent and non-negotiable limits.
+  - priority: 2
+    authority: core_contracts
+    meaning: Core defines global format, lookup, validation aggregation, semantic quality, and cross-subsystem invariants.
+  - priority: 3
+    authority: alpha_runtime
+    meaning: Alpha controls runtime scheduling, activation, state commits, and fail-closed orchestration.
+  - priority: 4
+    authority: phase_contracts
+    meaning: Phase contracts define required inputs, outputs, ownership, gates, and allowed convention paths.
+  - priority: 5
+    authority: specialized_subsystems
+    meaning: Each subsystem owns its local vocabulary, decision rules, algorithms, and validators.
+  - priority: 6
+    authority: reports_and_mission_state
+    meaning: Reports and mission state are durable runtime truth, subject to lifecycle and validation.
+  - priority: 7
+    authority: phase_agent_judgment
+    meaning: Agents apply judgment only inside phase bundle, permission, and contract boundaries.
+  subsystem_authority_matrix:
+    actions:
+      owns: artifact action vocabulary, action resolution, collisions, and followups
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    agent:
+      owns: legacy/general single-agent protocol/output/context policy compatibility layer
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    agents:
+      owns: fixed phase-agent roster, prompts, permissions, activation contracts, and phase ownership
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    architecture:
+      owns: architecture decomposition, structure strategy, and final structure rendering
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    boundaries:
+      owns: boundary taxonomy, classification, crossing policy, leak detection, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    contracts:
+      owns: contract taxonomy, classification, change detection, and compatibility strategy
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    dependencies:
+      owns: dependency taxonomy, classification, direction rules, import rules, test dependency rules, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    execution:
+      owns: implementation sequencing, checkpoint planning, controlled implementation, validation commands, changed files,
+        and feedback loop
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    gates:
+      owns: entry/output/handoff/implementation/final gate vocabulary, templates, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    handoffs:
+      owns: phase output handoff schema, consumption policy, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    missions:
+      owns: mission profiles, profile selection, active phase plans, mission state, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    multi-agent:
+      owns: Alpha runtime control, phase scheduling, phase bundles, phase execution, oversight, and state transitions
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    patterns:
+      owns: design pattern catalog, selection, restrictions, and role-pattern compatibility
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    phases:
+      owns: phase taxonomy, lifecycle, contracts, dependencies, and phase validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    planning:
+      owns: behavior contracts, scope, assumptions, reconnaissance, local alignment, change impact, and decision logging
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    refactoring:
+      owns: refactor taxonomy, classification, behavior preservation, strategy, safety, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    reports:
+      owns: durable report schemas, registry, lifecycle, consumption, templates, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    revisions:
+      owns: revision taxonomy, request policy, invalidation, rerun policy, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    risk:
+      owns: risk taxonomy, signals, classification, escalation, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    roles:
+      owns: class/artifact role taxonomy, resolution, collisions, placement, and role validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    testing:
+      owns: test taxonomy, test matrix, test derivation, regression, characterization, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+    triggers:
+      owns: trigger taxonomy, emission, resolution, blocking, and validation
+      must_not_own: authority assigned to other subsystems or Alpha runtime
+  duplicate_authority_rules:
+  - id: AUTH-DUP-001
+    rule: A subsystem may reference another subsystem output but must not redefine its vocabulary or validator.
+    fail_condition: subsystem_redefines_external_authority
+  - id: AUTH-DUP-002
+    rule: Core may aggregate validation but must not own specialized pass/fail semantics when a local validator owns them.
+    fail_condition: core_duplicates_specialized_validation_authority
+  - id: AUTH-DUP-003
+    rule: Alpha may execute validators and block runtime but must not rewrite validator rules.
+    fail_condition: alpha_redefined_subsystem_validator
+  authority_conflict_resolution_policy:
+  - condition: local_rule_conflicts_with_core_contract
+    decision: core_contract_wins
+    required_action: revise_local_rule
+  - condition: local_rule_conflicts_with_more_specific_subsystem
+    decision: specific_subsystem_wins_inside_its_domain
+    required_action: remove_duplicate_authority
+  - condition: agent_prompt_conflicts_with_phase_contract
+    decision: phase_contract_wins
+    required_action: block_agent_invocation_until_prompt_fixed
+validation:
+  required_checks:
+  - id: AUTH-CHECK-001
+    check: no_duplicate_source_of_truth
+    applies_when:
+      subsystems_loaded: true
+  fail_conditions:
+  - id: AUTH-001
+    condition: subsystem_redefines_external_authority
+    message: A subsystem redefined authority owned by another subsystem.
+    severity: error
+  - id: AUTH-002
+    condition: authority_conflict_unresolved
+    message: Authority conflict must be resolved before execution continues.
+    severity: error

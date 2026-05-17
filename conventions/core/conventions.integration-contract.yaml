@@ -1,0 +1,86 @@
+version: '1.0'
+file:
+  name: conventions.integration-contract.yaml
+  path: core/conventions.integration-contract.yaml
+  role: cross_subsystem_integration_contract
+  executability: policy
+purpose: Define how subsystems consume each other through reports, phase bundles, gates, triggers, handoffs, revisions, mission
+  state, and validation without tight coupling or authority duplication.
+ownership:
+  owns:
+  - integration_surface_taxonomy
+  - subsystem_usage_matrix
+  - allowed_cross_subsystem_interactions
+  - integration_failure_policy
+  - future_extension_points
+  does_not_own:
+  - local_decision_rules
+  - technology_adapter_profiles
+  - runtime_plugin_policy
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - cross_subsystem_integration_contract
+dependencies:
+  required_files:
+  - core/conventions.index.yaml
+  - core/conventions.authority-boundaries.yaml
+  optional_files: []
+sections:
+  integration_surface_taxonomy:
+    report_artifact: durable file output consumed across phases/subsystems
+    phase_bundle: minimized runtime packet for one phase-agent invocation
+    gate_result: mechanical pass/fail runtime boundary result
+    trigger_record: followup signal requiring scheduling, resolution, block, or invalidation
+    handoff_record: source-to-target phase output transfer record
+    revision_record: correction/invalidation/rerun request and decision record
+    mission_state: Alpha-owned runtime state snapshot
+  subsystem_usage_matrix:
+    multi-agent: consumes all validators, phase contracts, agent prompts/permissions, mission state, gates, triggers, handoffs,
+      revisions, reports, and risk escalation
+    agents: consume phase bundles, prompts, permissions, report templates, and relevant subsystem runtime packs
+    phases: reference agents, reports, gates, handoffs, triggers, and subsystem convention paths but do not own them
+    reports: provide durable communication for all phase outputs and final validation
+    gates: consume reports, mission state, triggers, handoffs, permissions, and validation results to allow/block transitions
+    triggers: consume phase outputs and emit runtime followups that Alpha resolves
+    revisions: consume validation failures, invalidations, and changed upstream decisions to control rerun/correction
+    risk: consumes signals from all decision subsystems and escalates gates/reports/triggers
+    testing: consumes behavior, risk, contracts, boundaries, dependencies, actions, refactoring, and implementation constraints
+    execution: consumes approved plans, gates, tests, risk, reports, changed-file scope, and feedback decisions
+  allowed_cross_subsystem_interactions:
+  - source: any_subsystem
+    target: reports
+    allowed: produce or consume declared report artifacts
+  - source: any_subsystem
+    target: risk
+    allowed: emit risk signals using risk signal schema
+  - source: any_subsystem
+    target: triggers
+    allowed: emit declared trigger records with evidence
+  - source: any_subsystem
+    target: revisions
+    allowed: request revision through revision request policy
+  - source: alpha
+    target: any_validator
+    allowed: run validator and consume result without changing validator rules
+  future_extension_points:
+    technology_adapters: may provide implementation conventions only after normalization and validation
+    runtime_adapters: may invoke Alpha/agents but must not weaken core, gates, reports, or phase contracts
+    script_executors: may implement deterministic validation/generation declared by convention files
+validation:
+  required_checks:
+  - id: INTEGRATION-CHECK-001
+    check: cross_subsystem_references_use_declared_interfaces
+    applies_when:
+      integration_validated: true
+  fail_conditions:
+  - id: INTEGRATION-001
+    condition: cross_subsystem_reference_bypasses_declared_interface
+    message: Subsystems must integrate through declared reports, bundles, gates, triggers, handoffs, revisions, or validators.
+    severity: error

@@ -2,20 +2,23 @@ version: '1.0'
 file:
   name: conventions.validation.yaml
   path: core/conventions.validation.yaml
-  role: cross_system_validation_contract
+  role: global_validation_aggregation_contract
   executability: validator
-purpose: Validate every active subsystem and every cross-system handoff in the 42-file system.
+purpose: Aggregate global validation categories, route validation to subsystem validators, define final package/mission validation
+  gates, and enforce fail-closed severity semantics.
 ownership:
   owns:
-  - final_cross_system_validation
-  - active_system_validation
-  - vocabulary_reference_integrity
-  - handoff_validation
-  - fail_conditions
+  - validation_taxonomy
+  - validation_routing_matrix
+  - global_validation_algorithm
+  - package_validation_policy
+  - runtime_validation_policy
+  - failure_severity_semantics
+  - remediation_routing
   does_not_own:
-  - vocabulary_definitions
-  - routing
-  - phase_execution
+  - specialized_local_validation_logic
+  - runtime_state_mutation
+  - report_content_generation
 activation:
   mode: always
   activates_when: []
@@ -25,171 +28,167 @@ inputs:
   optional: []
 outputs:
   produces:
-  - validation_validation_report
+  - global_validation_contract
+  - validation_routing_matrix
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  - core/conventions.index.yaml
+  - core/conventions.semantic-completeness.yaml
   optional_files: []
 sections:
-  agent_usability_validation:
-    fail_conditions:
-    - id: AGENT-CORE-001
-      condition: agent_subsystem_claims_authoritative_routing
-      message: Agent subsystem must not claim ownership of active_file_manifest.
-      severity: error
-      owner: core/conventions.validation.yaml
-    - id: AGENT-CORE-002
-      condition: decision_engine_loaded_without_source_vocabulary
-      message: Decision engines must not run without their source vocabulary.
-      severity: error
-      owner: core/conventions.validation.yaml
-  file_contract_validation:
-    fail_conditions:
-    - id: FILE-CONTRACT-CORE-001
-      condition: convention_file_missing_required_top_level_section
-      message: Every convention file must follow the universal file contract.
-      severity: error
-      owner: core/conventions.validation.yaml
-  validation_pipeline:
-  - validate_activation_manifest
-  - validate_vocabulary_source_of_truth
-  - validate_behavior_contract
-  - validate_decision_log_baseline
-  - validate_risk_classification
-  - validate_boundary_classification_if_active
-  - validate_contract_classification_if_active
-  - validate_dependency_classification_if_active
-  - validate_codebase_reconnaissance_if_active
-  - validate_local_alignment_if_active
-  - validate_architecture
-  - validate_action_resolution_if_active
-  - validate_post_action_artifacts_if_active
-  - validate_roles
-  - validate_patterns_if_active
-  - validate_role_pattern_compatibility_if_active
-  - validate_change_impact_if_active
-  - validate_structure
-  - validate_testing_if_active
-  - validate_implementation_sequence_if_active
-  - validate_feedback_loop_if_active
-  - validate_decision_log_final
-  - produce_validation_report
-  - validate_draft_role_signals_if_active
-  - validate_behavior_preservation_requirements_if_active
-  - validate_refactor_strategy_decision_if_active
-  vocabulary_source_of_truth_validation:
-  - unknown_vocabulary_value_used
-  - enum_value_duplicated_outside_source_vocabulary
-  - artifact_action_used_without_action_taxonomy_reference
-  - risk_level_used_without_risk_taxonomy_reference
-  - boundary_type_used_without_boundary_taxonomy_reference
-  - contract_type_used_without_contract_taxonomy_reference
-  - dependency_type_used_without_dependency_taxonomy_reference
-  handoff_validation:
-  - architecture_started_without_behavior_contract
-  - contract_classification_without_boundary_classification
-  - role_assignment_used_initial_artifact_candidates_instead_of_post_action_artifacts
-  - implementation_sequence_missing_change_impact_or_test_plan
-  - feedback_loop_missing_implementation_sequence
-  fail_conditions:
-  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-001
-    condition: silent_assumption_detected
-    message: Silent assumption detected.
-    severity: error
-    owner: core/conventions.validation.yaml
-  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-002
-    condition: blocking_uncertainty_unresolved
-    message: Blocking uncertainty unresolved.
-    severity: error
-    owner: core/conventions.validation.yaml
-  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-003
-    condition: forbidden_dependency_direction
-    message: Forbidden dependency direction.
-    severity: error
-    owner: core/conventions.validation.yaml
-  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-004
-    condition: breaking_change_without_compatibility_strategy
-    message: Breaking change without compatibility strategy.
-    severity: error
-    owner: core/conventions.validation.yaml
-  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-005
-    condition: no_code_change_without_behavior_evidence
-    message: No code change without behavior evidence.
-    severity: error
-    owner: core/conventions.validation.yaml
-  - id: CORE-CONVENTIONS-VALIDATION-YAML-FC-006
-    condition: duplicate_vocabulary_source
-    message: Duplicate vocabulary source.
-    severity: error
-    owner: core/conventions.validation.yaml
-  refactoring_validation:
-    fail_conditions:
-    - id: CORE-REFACTOR-001
-      condition: refactor_active_without_behavior_preservation_requirements
-      message: Active refactor requires behavior preservation requirements.
-      severity: error
-    - id: CORE-REFACTOR-002
-      condition: refactor_strategy_not_grounded_in_artifact_actions
-      message: Refactor strategy must be grounded in artifact actions.
-      severity: error
-    - id: CORE-REFACTOR-003
-      condition: high_risk_refactor_without_checkpoint_sequence
-      message: High-risk refactor requires checkpointed implementation sequence.
-      severity: error
-    - id: CORE-REFACTOR-004
-      condition: refactor_redefines_global_vocabulary
-      message: Refactor subsystem must use global vocabularies instead of redefining local equivalents.
-      severity: error
-  runtime_validation_fail_conditions_added_in_steps_36_to_41:
-    fail_conditions:
-    - active_phase_plan_violates_dependency_edge
-    - phase_missing_required_gate
-    - phase_agent_invoked_without_prompt
-    - required_report_file_missing
-    - trigger_left_active_without_resolution
-    - downstream_phase_consumed_invalidated_output
-    - revision_request_missing_required_field
-  semantic_depth_validation:
-    fail_conditions:
-    - id: CORE-SEMANTIC-001
-      condition: definition_is_generic_placeholder
-      message: Vocabulary definitions must not be generated placeholders or name-only descriptions.
-      severity: error
-    - id: CORE-SEMANTIC-002
-      condition: enum_value_missing_semantic_definition
-      message: Every enum value in a taxonomy must have a semantic definition or canonical source record.
-      severity: error
-    - id: CORE-SEMANTIC-003
-      condition: decision_value_missing_choose_or_reject_criteria
-      message: Decision-engine values must include choose_when/use_when/signals or explicit rejection/blocking criteria.
-      severity: error
-    - id: CORE-SEMANTIC-004
-      condition: canonical_source_content_thinned
-      message: Canonical source content must be preserved under normalized schema and must not be replaced with summaries.
-      severity: error
-    - id: CORE-SEMANTIC-005
-      condition: taxonomy_entry_missing_detection_signals
-      message: Taxonomy entries that drive agent behavior must include detection signals or a canonical source equivalent.
-      severity: error
-  validation_algorithms:
-    semantic_depth_validation_algorithm:
-      steps:
-      - load_taxonomy_files
-      - check_enum_values_have_definitions
-      - detect_placeholder_definitions
-      - check_decision_values_have_use_when_or_signals
-      - verify_canonical_restored_source_when_source_file_available
-      - emit_failures
+  validation_status_enum:
+  - pending
+  - passed
+  - passed_with_warnings
+  - failed
+  - blocked
+  - not_applicable
+  severity_semantics:
+    info: record_only
+    warning: record_and_continue_unless_policy_blocks
+    error: block_current_gate_or_validation_scope
+    blocking: block_runtime_progress_until_resolved
+  validation_routing_matrix:
+    PACKAGE_MANIFEST_CORE.yaml:
+      validator_source: null
+      entrypoint: PACKAGE_MANIFEST_CORE.yaml
+    VALIDATION_REPORT_CORE.yaml:
+      validator_source: null
+      entrypoint: VALIDATION_REPORT_CORE.yaml
+    actions:
+      validator_source: null
+      entrypoint: actions/conventions.actions.yaml
+    agent:
+      validator_source: null
+      entrypoint: agent/conventions.agent.yaml
+    agents:
+      validator_source: agents/conventions.agent-validation.yaml
+      entrypoint: agents/conventions.agents.yaml
+    architecture:
+      validator_source: null
+      entrypoint: architecture/conventions.architecture.yaml
+    boundaries:
+      validator_source: boundaries/conventions.boundary-validation.yaml
+      entrypoint: boundaries/conventions.boundaries.yaml
+    contracts:
+      validator_source: null
+      entrypoint: contracts/conventions.contracts.yaml
+    dependencies:
+      validator_source: dependencies/conventions.dependency-validation.yaml
+      entrypoint: dependencies/conventions.dependencies.yaml
+    execution:
+      validator_source: execution/conventions.execution-validation.yaml
+      entrypoint: execution/conventions.execution.yaml
+    gates:
+      validator_source: gates/conventions.gate-validation.yaml
+      entrypoint: gates/conventions.gates.yaml
+    handoffs:
+      validator_source: handoffs/conventions.handoff-validation.yaml
+      entrypoint: handoffs/conventions.handoffs.yaml
+    missions:
+      validator_source: missions/conventions.mission-validation.yaml
+      entrypoint: missions/conventions.missions.yaml
+    multi-agent:
+      validator_source: multi-agent/conventions.multi-agent-validation.yaml
+      entrypoint: multi-agent/conventions.multi-agent.yaml
+    patterns:
+      validator_source: null
+      entrypoint: patterns/conventions.patterns.yaml
+    phases:
+      validator_source: phases/conventions.phase-validation.yaml
+      entrypoint: phases/conventions.phases.yaml
+    planning:
+      validator_source: null
+      entrypoint: planning/conventions.planning.yaml
+    refactoring:
+      validator_source: refactoring/conventions.refactor-validation.yaml
+      entrypoint: refactoring/conventions.refactoring.yaml
+    reports:
+      validator_source: reports/conventions.report-validation.yaml
+      entrypoint: reports/conventions.reports.yaml
+    revisions:
+      validator_source: revisions/conventions.invalidation-policy.yaml
+      entrypoint: revisions/conventions.revisions.yaml
+    risk:
+      validator_source: risk/conventions.risk-validation.yaml
+      entrypoint: risk/conventions.risk.yaml
+    roles:
+      validator_source: null
+      entrypoint: roles/conventions.roles.yaml
+    testing:
+      validator_source: testing/conventions.test-validation.yaml
+      entrypoint: testing/conventions.testing.yaml
+    triggers:
+      validator_source: triggers/conventions.trigger-validation.yaml
+      entrypoint: triggers/conventions.triggers.yaml
+  global_validation_algorithm:
+  - step_id: LOAD_CORE_CONTRACTS
+    action: read
+    input:
+    - file_contract
+    - index
+    - authority_boundaries
+    - semantic_completeness
+  - step_id: VALIDATE_FILE_CONTRACTS
+    action: for_each
+    target: all_convention_files
+    decision_rules:
+    - file_contract_required_sections
+  - step_id: VALIDATE_INDEX_REFERENCES
+    action: for_each
+    target: core_index.file_index
+    fail_when:
+    - indexed_file_missing
+  - step_id: VALIDATE_AUTHORITY_BOUNDARIES
+    action: evaluate
+    decision_rules:
+    - authority_boundaries.duplicate_authority_rules
+  - step_id: RUN_SPECIALIZED_VALIDATORS
+    action: route
+    input: validation_routing_matrix
+    output: subsystem_validation_results
+  - step_id: VALIDATE_SEMANTIC_COMPLETENESS
+    action: evaluate
+    decision_rules:
+    - semantic_completeness_tiers
+  - step_id: AGGREGATE_RESULTS
+    action: calculate
+    fail_when:
+    - any_error_or_blocking_failure
+  package_validation_policy:
+    must_pass:
+    - yaml_parse
+    - file_contract
+    - index_references
+    - authority_boundaries
+    - semantic_completeness
+    - subsystem_validation_routing
+    fail_closed: true
+  runtime_validation_policy:
+    alpha_must_consume:
+    - gates
+    - triggers
+    - handoffs
+    - revisions
+    - reports
+    - missions
+    - agents
+    - phases
+    - risk
+    final_validation_requires: no_errors_no_blocking_failures_no_unresolved_state
 validation:
-  required_checks: []
+  required_checks:
+  - id: GLOBAL-VALIDATION-CHECK-001
+    check: validation_routing_targets_exist
+    applies_when:
+      validation_run: true
   fail_conditions:
-  - id: CORE-VALIDATION-REFACTOR-001
-    condition: refactor_active_without_behavior_preservation_requirements
-    message: Active refactor requires behavior preservation requirements.
+  - id: GLOBAL-VALIDATION-001
+    condition: validation_route_missing_validator
+    message: Validation routing points to a missing validator file.
     severity: error
-    owner: core/conventions.validation.yaml
-  - id: CORE-VALIDATION-REFACTOR-002
-    condition: refactor_strategy_not_grounded_in_artifact_actions
-    message: Refactor strategy must be grounded in artifact actions.
+  - id: GLOBAL-VALIDATION-002
+    condition: global_validation_passed_with_blocking_failure
+    message: Global validation cannot pass with any blocking failure.
     severity: error
-    owner: core/conventions.validation.yaml
