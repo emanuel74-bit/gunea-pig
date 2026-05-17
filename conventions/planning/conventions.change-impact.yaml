@@ -2,78 +2,235 @@ version: '1.0'
 file:
   name: conventions.change-impact.yaml
   path: planning/conventions.change-impact.yaml
-  role: change_impact_analysis_contract
+  role: planning_change_impact_contract
   executability: decision_engine
-purpose: Determine downstream impact of planned actions across call sites, contracts, tests, migrations, runtime paths, and
-  integrations.
+purpose: Define planning-time impact surface analysis, severity classification, followup routing, blocking behavior, and consumer/contract/dependency impact outputs.
 ownership:
   owns:
-  - change_impact_schema
-  - impact_categories
-  - unknown_impact_policy
-  - compatibility_plan_rules
-  - change_impact_risk_signals
+  - impact_surface_taxonomy
+  - impact_record_schema
+  - impact_surface_decision_rules
+  - impact_severity_rules
+  - impact_followup_mapping
+  - change_impact_algorithm
+  - change_impact_output_schema
   does_not_own:
-  - artifact_action_selection
-  - role_assignment
-  - test_derivation
+  - implementation_sequence
+  - code_editing
+  - test_execution
+  - final_validation
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - change_impact_phase_active
+  - artifact_actions_exist
+  - contract_or_boundary_or_dependency_change_possible
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - behavior_contract_report
+  - artifact_actions_report
+  optional:
+  - call_site_impact_report
+  - risk_classification
+  - boundary_contract_classification
+  - dependency_classification
+  - local_alignment_report
 outputs:
   produces:
-  - change_impact_result
+  - change_impact_report
+  - consumer_impact_report
+  - impact_triggers
+  - required_followups
 dependencies:
   required_files:
-  - actions/conventions.action-taxonomy.yaml
-  - contracts/conventions.contract-taxonomy.yaml
-  - dependencies/conventions.dependency-taxonomy.yaml
-  - risk/conventions.risk-taxonomy.yaml
-  optional_files: []
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  optional_files:
+  - risk/conventions.risk-escalation.yaml
+  - contracts/conventions.compatibility.yaml
+  - dependencies/conventions.dependency-validation.yaml
 sections:
-  impact_categories:
-  - call_site_impact
-  - contract_impact
-  - test_impact
-  - data_migration_impact
-  - integration_impact
-  - dependency_architecture_impact
-  unknown_impact_policy:
-  - Unknown high-risk impact blocks implementation sequencing
-  - Unknown call sites block delete and split decisions
-  change_impact_risk_signals:
-    public_contract_changed:
-      minimum_risk_hint: high
-      emits_concerns:
-      - public_contract
-    migration_required:
-      minimum_risk_hint: high
-      emits_concerns:
-      - migration
+  impact_surface_taxonomy:
+    code_structure:
+      definition: Files, roles, modules, folders, or ownership structure affected.
+    public_contract:
+      definition: Exported API, DTO, event/message, route, type, or consumer-visible behavior affected.
+    dependency_graph:
+      definition: Import direction, module dependency, runtime dependency, or external dependency affected.
+    boundary:
+      definition: Layer/module/integration/persistence boundary crossing affected.
+    testing:
+      definition: Existing or required test obligations affected.
+    data:
+      definition: Persistence shape, migration, consistency, or backfill affected.
+    runtime_behavior:
+      definition: Runtime ordering, scheduling, side effects, retries, idempotency, or failure modes affected.
+  impact_record_schema:
+    required_fields:
+    - impact_id
+    - surface
+    - affected_items
+    - severity
+    - reason
+    - evidence_refs
+    - required_followups
+    - blocks_before
+    optional_fields:
+    - required_phase
+    - required_report
+    - trigger_type
+    - consumer_obligations
+  impact_surface_decision_rules:
+  - id: IMPACT-CONTRACT-001
+    choose_surface: public_contract
+    when:
+    - artifact action modifies exported/public artifact
+    - behavior affects DTO/event/route/API/module export
+    required_followup: compatibility_decision_required
+    blocks_before:
+    - pre_implementation_gate
+  - id: IMPACT-DEPENDENCY-001
+    choose_surface: dependency_graph
+    when:
+    - action moves/splits/replaces artifact
+    - import/export/runtime dependency changes possible
+    required_followup: dependency_validation_required
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+  - id: IMPACT-BOUNDARY-001
+    choose_surface: boundary
+    when:
+    - cross-layer/module/integration/persistence boundary is introduced or changed
+    required_followup: boundary_validation_required
+    blocks_before:
+    - pre_implementation_gate
+  - id: IMPACT-TEST-001
+    choose_surface: testing
+    when:
+    - acceptance criteria, risk, bugfix, refactor, contract, boundary, or dependency obligations change
+    required_followup: test_derivation
+    blocks_before:
+    - pre_implementation_gate
+  impact_severity_rules:
+  - id: IMPACT-SEV-CRITICAL
+    choose_severity: critical
+    when:
+    - data loss/security/payment/auth/public contract breaking change possible
+    blocks_before:
+    - implementation
+    - final_validation
+    requires_approval: true
+  - id: IMPACT-SEV-HIGH
+    choose_severity: high
+    when:
+    - public contract compatibility, cross-module dependency, persistence, integration, or behavior preservation affected
+    blocks_before:
+    - pre_implementation_gate
+    requires_report:
+    - risk-classification
+    - test-plan
+  - id: IMPACT-SEV-MEDIUM
+    choose_severity: medium
+    when:
+    - localized module behavior or internal dependency affected with known consumers
+    blocks_before:
+    - implementation_sequence
+  - id: IMPACT-SEV-LOW
+    choose_severity: low
+    when:
+    - local implementation detail affected with no external consumer and test obligation clear
+    deescalation_requires:
+    - evidence_refs
+    - no public boundary/contract/dependency impact
+  impact_followup_mapping:
+  - condition: public_contract surface selected
+    severity: blocking
+    emit_trigger: compatibility_decision_required
+    required_report: compatibility-decision
+    required_phase: boundary_contract_classification
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+    resolution_required: true
+  - condition: dependency_graph surface selected
+    severity: blocking
+    emit_trigger: dependency_validation_required
+    required_report: dependency-validation
+    required_phase: dependency_classification
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+    resolution_required: true
+  - condition: boundary surface selected
+    severity: blocking
+    emit_trigger: boundary_validation_required
+    required_report: boundary-contract-classification
+    required_phase: boundary_contract_classification
+    blocks_before:
+    - pre_implementation_gate
+    resolution_required: true
+  - condition: testing surface selected
+    severity: blocking_when_gap_exists
+    emit_trigger: validation_required
+    required_report: test-plan
+    required_phase: test_derivation
+    blocks_before:
+    - pre_implementation_gate
+    resolution_required: true
+  change_impact_algorithm:
+  - step_id: COLLECT_IMPACT_INPUTS
+    action: load behavior/actions/call-sites/risk/contracts/boundaries/dependencies
+    pass_when:
+    - required inputs exist or missing input recorded as blocker
+    fail_when:
+    - impact input missing without blocker
+  - step_id: CLASSIFY_SURFACES
+    action: apply_impact_surface_decision_rules
+    pass_when:
+    - each selected action has impact surface decisions
+    fail_when:
+    - artifact action lacks impact analysis
+    output:
+    - impact_records
+  - step_id: ASSIGN_SEVERITY
+    action: apply_impact_severity_rules
+    pass_when:
+    - each impact record has severity and blocks_before
+    fail_when:
+    - severity missing
+    output:
+    - impact_records
+  - step_id: EMIT_FOLLOWUPS
+    action: apply_impact_followup_mapping
+    pass_when:
+    - required triggers/reports/phases recorded
+    fail_when:
+    - blocking impact lacks followup
+    output:
+    - impact_triggers
+    - required_followups
+    - consumer_impact_report
 validation:
+  required_checks:
+  - id: IMPACT-CHECK-001
+    check: every_artifact_action_has_impact_record
+  - id: IMPACT-CHECK-002
+    check: blocking_impacts_have_followups
+  - id: IMPACT-CHECK-003
+    check: severity_and_blocks_before_recorded
   fail_conditions:
-  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-001
-    condition: artifact_action_without_impact_review
-    message: Artifact action without impact review.
+  - id: IMPACT-001
+    condition: artifact_action_lacks_impact_analysis
+    message: Every artifact action must be analyzed for impact.
     severity: error
-    owner: planning/conventions.change-impact.yaml
-  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-002
-    condition: contract_change_without_compatibility_plan
-    message: Contract change without compatibility plan.
+  - id: IMPACT-002
+    condition: blocking_impact_lacks_followup
+    message: Blocking impacts must emit required phase/report/trigger followups.
     severity: error
-    owner: planning/conventions.change-impact.yaml
-  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-003
-    condition: migration_required_but_not_planned
-    message: Migration required but not planned.
+  - id: IMPACT-003
+    condition: severity_missing
+    message: Every impact record needs severity.
     severity: error
-    owner: planning/conventions.change-impact.yaml
-  - id: PLANNING-CONVENTIONS-CHANGE-IMPACT-YAML-FC-004
-    condition: call_sites_not_accounted_for
-    message: Call sites not accounted for.
-    severity: error
-    owner: planning/conventions.change-impact.yaml
-  required_checks: []

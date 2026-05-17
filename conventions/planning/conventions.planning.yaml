@@ -1,0 +1,110 @@
+version: '1.0'
+file:
+  name: conventions.planning.yaml
+  path: planning/conventions.planning.yaml
+  role: planning_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Define the planning subsystem entrypoint, execution order, ownership boundaries, and integration contract for behavior
+  understanding, scope control, assumptions, reconnaissance, local alignment, impact planning, and decision logging.
+ownership:
+  owns:
+  - planning_file_index
+  - planning_execution_order
+  - planning_integration_contract
+  - planning_authority_boundaries
+  does_not_own:
+  - phase_scheduling
+  - mission_profile_selection
+  - architecture_decomposition
+  - role_assignment
+  - pattern_selection
+  - code_implementation
+  - gate_validation
+  - trigger_resolution
+  - report_registry_authority
+activation:
+  mode: entrypoint
+  activates_when:
+  - planning_subsystem_loaded
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+  - planning_subsystem_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files:
+  - phases/conventions.phase-contracts.yaml
+  - reports/conventions.report-registry.yaml
+  - risk/conventions.risk-classification.yaml
+sections:
+  planning_file_index:
+    behavior_contract: planning/conventions.behavior-contract.yaml
+    scope: planning/conventions.scope.yaml
+    assumptions: planning/conventions.assumptions.yaml
+    codebase_reconnaissance: planning/conventions.codebase-reconnaissance.yaml
+    local_alignment: planning/conventions.local-alignment.yaml
+    change_impact: planning/conventions.change-impact.yaml
+    decision_log: planning/conventions.decision-log.yaml
+  planning_execution_order:
+  - order: 1
+    file: planning/conventions.behavior-contract.yaml
+    purpose: extract requested behavior before any design decision
+  - order: 2
+    file: planning/conventions.scope.yaml
+    purpose: classify in-scope, out-of-scope, uncertain, and expansion risks
+  - order: 3
+    file: planning/conventions.assumptions.yaml
+    purpose: make assumptions explicit and classify blockers
+  - order: 4
+    file: planning/conventions.codebase-reconnaissance.yaml
+    purpose: discover existing artifacts and evidence
+  - order: 5
+    file: planning/conventions.local-alignment.yaml
+    purpose: decide which local conventions may influence later phases
+  - order: 6
+    file: planning/conventions.change-impact.yaml
+    purpose: forecast impact surfaces from planned changes
+  - order: 7
+    file: planning/conventions.decision-log.yaml
+    purpose: record planning decisions and rejected alternatives
+  planning_integration_contract:
+    provides_to:
+      risk: behavior risk signals, unknowns, scope expansion risk, impact surfaces
+      architecture: behavior contract, scope boundaries, existing artifact evidence, local alignment decisions
+      actions: existing artifact candidates, reuse signals, impact scope
+      contracts: public surface signals and consumer knowledge hints
+      boundaries: boundary surface signals and crossing concerns
+      dependencies: dependency signals and import/call-site evidence
+      testing: acceptance criteria, behavior preservation requirements, regression hints, test gaps
+      reports: required durable planning reports and decision records
+      phases: planning phase output contracts and dependencies
+    consumes_from:
+      reports: prior mission reports and templates when available
+      phases: active phase contracts and required outputs
+      mission_state: selected profile and active phase plan when available
+  planning_authority_rules:
+  - id: PLANNING-AUTH-001
+    rule: Planning may define behavior, scope, assumptions, evidence, and decision records but must not select final architecture
+      roles, patterns, or implementation sequence.
+    fail_condition: planning_selected_downstream_design_authority
+  - id: PLANNING-AUTH-002
+    rule: Planning outputs must be persisted as reports and may not be satisfied by chat-only summaries.
+    fail_condition: planning_output_only_in_chat
+  - id: PLANNING-AUTH-003
+    rule: Planning must classify uncertainty explicitly instead of silently assuming missing details.
+    fail_condition: silent_planning_assumption
+validation:
+  required_checks: []
+  fail_conditions:
+  - id: PLANNING-SYSTEM-001
+    condition: planning_selected_downstream_design_authority
+    message: Planning subsystem must not own architecture, role, pattern, or implementation decisions.
+    severity: error
+  - id: PLANNING-SYSTEM-002
+    condition: planning_output_only_in_chat
+    message: Planning outputs must be persisted as report artifacts.
+    severity: error

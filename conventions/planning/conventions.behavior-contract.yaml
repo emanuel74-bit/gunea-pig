@@ -4,84 +4,460 @@ file:
   path: planning/conventions.behavior-contract.yaml
   role: behavior_contract_extraction_contract
   executability: decision_engine
-purpose: Convert a raw request into explicit expected behavior before architecture, roles, patterns, structure, or implementation.
+purpose: Convert a user request into a strict behavior contract with request type, functional requirements, acceptance criteria, ambiguity, assumptions, non-goals,
+  and preservation locks before design or implementation.
 ownership:
   owns:
   - behavior_contract_schema
-  - requirement_classification
-  - acceptance_criteria_rules
-  - behavior_preservation_rules
-  - scope_extraction_rules
-  - boundary_detection_rules
-  - ambiguity_policy
-  - behavior_risk_signals
+  - request_type_taxonomy
+  - request_type_classification_rules
+  - behavior_extraction_rules
+  - acceptance_criteria_validation_rules
+  - ambiguity_blocking_policy
+  - behavior_preservation_lock_rules
+  - behavior_contract_algorithm
+  - behavior_contract_output_schema
   does_not_own:
   - architecture_decomposition
   - role_assignment
-  - implementation_sequence
+  - pattern_selection
+  - artifact_action_resolution
+  - test_execution
+  - code_implementation
+  - mission_profile_selection
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - behavior_contract_phase_active
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - mission_request
+  optional:
+  - selected_mission_profile
+  - prior_behavior_contract
+  - user_constraints
+  - active_context_manifest
 outputs:
   produces:
-  - behavior_contract
+  - behavior_contract_report
+  - assumptions_report
+  - scope_seed_records
+  - planning_decision_records
 dependencies:
-  required_files: []
-  optional_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  - reports/conventions.report-registry.yaml
+  optional_files:
+  - missions/conventions.mission-state.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - testing/conventions.testing-taxonomy.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
 sections:
+  request_type_taxonomy:
+    feature:
+      definition: Adds new externally or internally observable behavior/capability.
+      positive_signals:
+      - new capability
+      - new endpoint/command/job/flow
+      - add support for behavior not currently available
+      negative_signals:
+      - only reorganizes existing code
+      - only fixes incorrect existing behavior
+      - only adds tests
+      required_contract_fields:
+      - functional_requirements
+      - acceptance_criteria
+      - scope
+    bugfix:
+      definition: Corrects existing behavior that is wrong, failing, or inconsistent with expected behavior.
+      positive_signals:
+      - actual vs expected mismatch
+      - failing test or bug report
+      - incorrect current behavior
+      negative_signals:
+      - no existing behavior is described
+      - only new capability requested
+      required_contract_fields:
+      - current_incorrect_behavior
+      - expected_correct_behavior
+      - regression_expectations
+    refactor:
+      definition: Changes code structure while preserving externally relevant behavior.
+      positive_signals:
+      - refactor
+      - split responsibilities
+      - reduce coupling
+      - improve structure without behavior change
+      negative_signals:
+      - new behavior accepted without explicit allowance
+      required_contract_fields:
+      - preserved_behaviors
+      - allowed_behavior_changes
+      - forbidden_behavior_changes
+    cleanup:
+      definition: No-behavior-change cleanup such as dead-code removal, renaming, simplification, or organization.
+      positive_signals:
+      - cleanup
+      - remove dead code
+      - rename
+      - simplify without behavior change
+      negative_signals:
+      - public behavior change
+      - contract change
+      - persistence semantic change
+      required_contract_fields:
+      - no_behavior_change_statement
+      - preserved_behaviors
+    test_only:
+      definition: Adds or improves tests without production behavior changes.
+      positive_signals:
+      - add tests
+      - improve coverage
+      - test only
+      negative_signals:
+      - production implementation required
+      required_contract_fields:
+      - test_targets
+      - production_change_prohibited
+    unknown:
+      definition: Request type cannot be confidently classified.
+      positive_signals:
+      - conflicting signals
+      - missing behavior statement
+      - multiple incompatible goals
+      negative_signals:
+      - single clear request type
+      default_policy: record blocking ambiguity and use conservative planning path
+  request_type_classification_rules:
+  - id: REQUEST-TYPE-001
+    priority: 1
+    choose: test_only
+    when:
+    - request only mentions tests or coverage
+    - no production behavior change requested
+    reject_when:
+    - production implementation is required to satisfy request
+    confidence: high
+  - id: REQUEST-TYPE-002
+    priority: 2
+    choose: bugfix
+    when:
+    - incorrect current behavior is described
+    - expected corrected behavior is described or inferable from explicit failure
+    reject_when:
+    - no existing failure or incorrect behavior is described
+    confidence: high
+  - id: REQUEST-TYPE-003
+    priority: 3
+    choose: refactor
+    when:
+    - requested change is structural
+    - behavior preservation is required or implied
+    reject_when:
+    - new observable behavior is requested without preservation constraint
+    confidence: high
+  - id: REQUEST-TYPE-004
+    priority: 4
+    choose: cleanup
+    when:
+    - request is rename/remove/simplify/reorganize
+    - no behavior change is allowed
+    reject_when:
+    - change affects public behavior, persistence semantics, or contracts
+    confidence: medium
+  - id: REQUEST-TYPE-005
+    priority: 5
+    choose: feature
+    when:
+    - new observable behavior/capability is requested
+    reject_when:
+    - request is only a correction, cleanup, refactor, or test-only mission
+    confidence: medium
+  - id: REQUEST-TYPE-FAIL-CLOSED
+    priority: 99
+    choose: unknown
+    when:
+    - two or more request types match with incompatible obligations
+    - required behavior cannot be determined
+    decision: block downstream design until ambiguity is recorded
+    emits_trigger: mission_blocked
   behavior_contract_schema:
-    required:
+    required_fields:
+    - report_id
+    - phase_id
     - request_summary
     - request_type
     - user_intent
     - functional_requirements
     - acceptance_criteria
     - scope
+    - non_goals
     - assumptions
-    - open_questions
+    - unresolved_ambiguity
+    - behavior_preservation
+    - risk_hints
+    - test_expectations
+    - triggers_emitted
+    functional_requirement_record:
+      required_fields:
+      - requirement_id
+      - statement
+      - source
+      - observable_behavior
+      - priority
+      - evidence_refs
+      optional_fields:
+      - owner_hint
+      - related_constraints
+    acceptance_criterion_record:
+      required_fields:
+      - criterion_id
+      - statement
+      - verifiable_by
+      - mapped_requirement_ids
+      - test_expectation
+      - blocking
+      fail_when:
+      - not observable
+      - not mapped to requirement
+      - uses vague wording without observable result
+    ambiguity_record:
+      required_fields:
+      - ambiguity_id
+      - question_or_uncertainty
+      - affected_outputs
+      - blocking
+      - default_if_unanswered
+      - risk_if_assumed
+      - blocks_before
+      optional_fields:
+      - safe_default_evidence
+    behavior_preservation_record:
+      required_fields:
+      - preserved_behavior
+      - applies_when
+      - evidence_required
+      - characterization_required
+      - locked_by
+      optional_fields:
+      - allowed_behavior_changes
+      - forbidden_behavior_changes
+  behavior_extraction_rules:
+  - id: BEHAVIOR-EXTRACT-001
+    applies_when:
+    - request contains explicit desired outcome
+    must_extract:
+    - actor/caller
+    - trigger/input
+    - observable success result
+    - observable failure/error behavior when present
+    fail_when:
+    - desired behavior omitted
+    - success result absent for behavior-changing request
+    fail_condition: requested_behavior_not_recorded
+  - id: BEHAVIOR-EXTRACT-002
+    applies_when:
+    - request contains constraints such as stack, version, library, file scope, no behavior change
+    must_extract:
+    - constraint value
+    - constraint source
+    - binding strength
+    - affected phases
+    fail_when:
+    - constraint ignored
+    - constraint generalized into vague best practice
+    fail_condition: user_constraint_not_recorded
+  - id: BEHAVIOR-EXTRACT-003
+    applies_when:
+    - request implies refactor/cleanup/no behavior change
+    must_extract:
+    - preserved behaviors
+    - allowed behavior changes
+    - forbidden behavior changes
+    - characterization need
+    fail_when:
+    - behavior preservation is implicit but not recorded
+    fail_condition: behavior_preservation_missing
+  - id: BEHAVIOR-EXTRACT-004
+    applies_when:
+    - behavior cannot be verified from the request
+    must_extract:
+    - ambiguity record
+    - blocking status
+    - safe default or block reason
+    - risk if assumed
+    fail_when:
+    - agent silently assumes behavior
+    fail_condition: silent_behavior_assumption
+  acceptance_criteria_validation_rules:
+  - id: ACCEPTANCE-VALID-001
+    applies_when:
+    - functional requirement is recorded
+    pass_when:
+    - criterion maps to requirement
+    - criterion has observable result
+    - criterion identifies expected validation type
+    fail_when:
+    - criterion missing
+    - criterion not testable
+    - criterion not mapped
+    fail_condition: acceptance_criterion_invalid
+    blocks_before:
+    - architecture_decomposition
+    - test_derivation
+  - id: ACCEPTANCE-VALID-002
+    applies_when:
+    - request_type is bugfix
+    pass_when:
+    - current incorrect behavior recorded
+    - expected corrected behavior recorded
+    - regression expectation recorded
+    fail_when:
+    - bugfix lacks current/expected pair
+    - regression expectation missing
+    fail_condition: bugfix_without_regression_expectation
+    blocks_before:
+    - test_derivation
+    - pre_implementation_gate
+  - id: ACCEPTANCE-VALID-003
+    applies_when:
+    - request_type is refactor or cleanup
+    pass_when:
+    - preserved behaviors recorded
+    - forbidden behavior changes recorded
+    - characterization need decided
+    fail_when:
+    - preservation criteria missing
+    fail_condition: refactor_without_preservation_criteria
+    blocks_before:
+    - refactor_strategy_selection
+    - test_derivation
+  ambiguity_blocking_policy:
+    blocking_when:
+    - ambiguity changes public behavior
+    - ambiguity affects data deletion, payment, auth, security, persistence, external integration, or public contract
+    - implementation would require choosing between incompatible behaviors
+    - acceptance criteria cannot be derived
+    non_blocking_when:
+    - ambiguity affects only naming or internal implementation detail
+    - safe default is explicitly recorded and reversible
+    - downstream phases do not depend on ambiguous choice
+    required_actions_when_blocking:
+    - emit trigger mission_blocked
+    - add blocked item to mission state
+    - prevent architecture_decomposition until resolved or explicitly scoped down
+    allowed_resolution:
+    - user clarification
+    - scope reduction
+    - recorded safe default with evidence
+    - mission blocked
+  behavior_preservation_lock_rules:
+  - id: PRESERVE-LOCK-001
+    applies_when:
+    - request_type is refactor or cleanup
+    lock: no externally observable behavior may change unless listed under allowed_behavior_changes
+    fail_condition: unapproved_behavior_change_allowed
+  - id: PRESERVE-LOCK-002
+    applies_when:
+    - public contract, persistence, integration, or dependency behavior may be affected
+    requires:
+    - behavior-preservation-requirements report
+    - characterization_test_plan when existing tests insufficient
+    fail_condition: preservation_lock_without_validation_path
+  integration_outputs:
+    risk:
+    - risk_hints feed risk/conventions.risk-signals.yaml
+    testing:
+    - acceptance_criteria and preservation locks feed testing/conventions.test-derivation.yaml
+    architecture:
+    - functional_requirements feed architecture_decomposition
+    scope:
+    - scope seed records feed planning/conventions.scope.yaml
+    triggers:
+    - blocking ambiguity emits mission_blocked or phase_revision_required
+  behavior_contract_algorithm:
+  - step_id: CLASSIFY_REQUEST_TYPE
+    action: apply_decision_rules
+    rules_ref: request_type_classification_rules
+    pass_when:
+    - exactly one non-unknown type selected or unknown recorded with blocker
+    fail_when:
+    - conflicting request types not recorded
+    output:
+    - request_type
+    - classification_evidence
     - confidence
-  behavior_risk_signals:
-    security_terms:
-      minimum_risk_hint: high
-      emits_concerns:
-      - security
-    payment_terms:
-      minimum_risk_hint: critical
-      emits_concerns:
-      - payment
-  rule_sets:
-    absolute_rules:
-    - id: BEHAVIOR-CONTRACT-ABS-001
-      rule: Architecture must not start before behavior contract exists.
-      fail_condition: architecture_started_without_behavior_contract
-    - id: BEHAVIOR-CONTRACT-ABS-002
-      rule: Every business rule must later receive an owner.
-      fail_condition: business_rule_without_owner
-    - id: BEHAVIOR-CONTRACT-ABS-003
-      rule: Every acceptance criterion must map to a test expectation.
-      fail_condition: acceptance_criterion_without_test_expectation
-    - id: BEHAVIOR-CONTRACT-ABS-004
-      rule: Silent assumptions are forbidden.
-      fail_condition: silent_assumption_detected
+  - step_id: EXTRACT_REQUIREMENTS
+    action: for_each_explicit_behavior
+    rules_ref: behavior_extraction_rules
+    pass_when:
+    - all explicit behavior and constraints recorded
+    fail_when:
+    - explicit requirement omitted
+    output:
+    - functional_requirements
+    - constraints
+    - non_goals
+  - step_id: DERIVE_AND_VALIDATE_ACCEPTANCE
+    action: map_requirements_to_acceptance_criteria
+    rules_ref: acceptance_criteria_validation_rules
+    pass_when:
+    - every functional requirement has valid acceptance criterion or explicit non-testable blocker
+    fail_when:
+    - unmapped requirement without blocker
+    output:
+    - acceptance_criteria
+    - test_expectations
+    - test_gap_hints
+  - step_id: HANDLE_AMBIGUITY
+    action: classify_ambiguities
+    rules_ref: ambiguity_blocking_policy
+    pass_when:
+    - every ambiguity classified blocking/non_blocking with resolution path
+    fail_when:
+    - ambiguity silently assumed
+    output:
+    - unresolved_ambiguity
+    - triggers_emitted
+    - blocked_items
+  - step_id: APPLY_PRESERVATION_LOCKS
+    action: apply_behavior_preservation_lock_rules
+    rules_ref: behavior_preservation_lock_rules
+    pass_when:
+    - required preservation locks recorded for refactor/cleanup/no-behavior-change missions
+    fail_when:
+    - preservation required but absent
+    output:
+    - behavior_preservation
+    - risk_hints
 validation:
+  required_checks:
+  - id: BEHAVIOR-CHECK-001
+    check: request_type_selected_or_blocked
+  - id: BEHAVIOR-CHECK-002
+    check: all_requirements_have_acceptance_or_blocker
+  - id: BEHAVIOR-CHECK-003
+    check: blocking_ambiguities_emit_blocking_trigger
   fail_conditions:
-  - id: PLANNING-CONVENTIONS-BEHAVIOR-CONTRACT-YAML-FC-001
-    condition: behavior_contract_missing
-    message: Behavior contract missing.
+  - id: BEHAVIOR-CONTRACT-001
+    condition: requested_behavior_not_recorded
+    message: Every explicit requested behavior must be recorded.
     severity: error
-    owner: planning/conventions.behavior-contract.yaml
-  - id: PLANNING-CONVENTIONS-BEHAVIOR-CONTRACT-YAML-FC-002
-    condition: acceptance_criteria_missing
-    message: Acceptance criteria missing.
+  - id: BEHAVIOR-CONTRACT-002
+    condition: silent_behavior_assumption
+    message: Behavior ambiguity must be recorded instead of silently assumed.
     severity: error
-    owner: planning/conventions.behavior-contract.yaml
-  - id: PLANNING-CONVENTIONS-BEHAVIOR-CONTRACT-YAML-FC-003
-    condition: silent_assumption_detected
-    message: Silent assumption detected.
+  - id: BEHAVIOR-CONTRACT-003
+    condition: acceptance_criterion_invalid
+    message: Acceptance criteria must be observable, mapped, and verifiable.
     severity: error
-    owner: planning/conventions.behavior-contract.yaml
-  required_checks: []
+  - id: BEHAVIOR-CONTRACT-004
+    condition: refactor_without_preservation_criteria
+    message: Refactor/cleanup missions require explicit preservation criteria.
+    severity: error
+  - id: BEHAVIOR-CONTRACT-005
+    condition: bugfix_without_regression_expectation
+    message: Bugfix missions require regression expectation.
+    severity: error

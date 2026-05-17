@@ -1,0 +1,237 @@
+version: '1.0'
+file:
+  name: conventions.scope.yaml
+  path: planning/conventions.scope.yaml
+  role: scope_control_contract
+  executability: decision_engine
+purpose: Classify mission scope, prevent silent expansion, define allowed scope changes, and route scope changes to triggers, revisions, reports, and downstream invalidation.
+ownership:
+  owns:
+  - scope_taxonomy
+  - scope_item_schema
+  - scope_classification_rules
+  - scope_expansion_policy
+  - scope_change_policy
+  - scope_revision_triggers
+  - scope_invalidation_rules
+  - scope_algorithm
+  - scope_output_schema
+  does_not_own:
+  - behavior_extraction
+  - architecture_decomposition
+  - code_implementation
+  - mission_profile_selection
+activation:
+  mode: conditional
+  activates_when:
+  - scope_classification_required
+  - behavior_contract_produced
+  skips_when: []
+inputs:
+  required:
+  - behavior_contract_report
+  optional:
+  - mission_profile
+  - codebase_reconnaissance
+  - active_phase_plan
+  - user_constraints
+outputs:
+  produces:
+  - scope_records
+  - scope_blockers
+  - scope_triggers
+  - scope_revision_requests
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  optional_files:
+  - revisions/conventions.revision-request-policy.yaml
+  - phases/conventions.phase-contracts.yaml
+sections:
+  scope_status_enum:
+    allowed:
+    - in_scope
+    - out_of_scope
+    - uncertain
+    - deferred
+    - blocked
+  scope_item_schema:
+    required_fields:
+    - scope_item_id
+    - statement
+    - scope_status
+    - reason
+    - evidence_refs
+    - affected_phases
+    - blocks_before
+    optional_fields:
+    - resolution_path
+    - invalidates_outputs
+    - required_trigger
+    - required_revision
+  scope_classification_rules:
+  - id: SCOPE-IN-001
+    choose: in_scope
+    when:
+    - explicitly requested by user
+    - required to satisfy acceptance criterion
+    - required by selected mission profile
+    reject_when:
+    - only speculative improvement
+    - not needed by acceptance criteria
+    confidence: high
+  - id: SCOPE-OUT-001
+    choose: out_of_scope
+    when:
+    - explicitly excluded by user
+    - not required for acceptance criteria
+    - would expand affected surfaces beyond mission profile
+    reject_when:
+    - required by behavior contract or gate
+    confidence: high
+  - id: SCOPE-UNCERTAIN-001
+    choose: uncertain
+    when:
+    - needed only if an unresolved assumption is true
+    - evidence is insufficient
+    - local codebase impact unknown
+    reject_when:
+    - explicitly included or excluded
+    required_followup: codebase_reconnaissance_or_user_clarification
+  - id: SCOPE-DEFER-001
+    choose: deferred
+    when:
+    - valid work but not required for current acceptance criteria
+    - can be safely tracked as followup without blocking
+    reject_when:
+    - blocks required behavior or compatibility
+    required_record:
+    - reason
+    - safe_to_defer_evidence
+  - id: SCOPE-BLOCK-001
+    choose: blocked
+    when:
+    - scope cannot be safely classified
+    - scope uncertainty affects public behavior, data, security, or contract
+    required_trigger: mission_blocked
+    blocks_before:
+    - architecture_decomposition
+    - pre_implementation_gate
+  scope_expansion_policy:
+    allowed_only_when:
+    - new scope item is required by accepted behavior contract
+    - new scope item is required to resolve gate failure
+    - new scope item is required by trigger resolution
+    - user explicitly approves expansion
+    forbidden_when:
+    - expansion is convenience refactor
+    - expansion is speculative cleanup
+    - expansion changes unrelated module
+    - expansion hides failure in prior phase
+    requires:
+    - scope_change_record
+    - reason
+    - affected_reports
+    - affected_phases
+    - risk_review
+    - revision_or_trigger_when_downstream_outputs_exist
+    blocks_before:
+    - implementation
+    - final_validation
+  scope_change_policy:
+  - id: SCOPE-CHANGE-001
+    applies_when:
+    - new in-scope item appears after architecture_decomposition
+    required_action: create_revision_request
+    target_phase: behavior_contract
+    invalidates:
+    - architecture-blueprint
+    - artifact-candidates
+    - test-plan
+    fail_condition: scope_change_without_revision
+  - id: SCOPE-CHANGE-002
+    applies_when:
+    - scope expansion affects public contract or boundary
+    required_action: emit_trigger
+    trigger_type: compatibility_decision_required
+    required_phase: boundary_contract_classification
+    fail_condition: scope_contract_change_without_compatibility_review
+  - id: SCOPE-CHANGE-003
+    applies_when:
+    - scope expansion affects implementation after pre_implementation_gate
+    required_action: block_implementation_and_rerun_pre_implementation_gate
+    fail_condition: implementation_continued_after_scope_change
+  scope_invalidation_rules:
+  - id: SCOPE-INVALIDATE-001
+    when:
+    - accepted behavior changes after downstream reports exist
+    invalidate_outputs:
+    - architecture-blueprint
+    - artifact-actions
+    - structure-plan
+    - test-plan
+    - implementation-sequence
+    requires_revision: true
+  - id: SCOPE-INVALIDATE-002
+    when:
+    - scope reduction removes required behavior
+    invalidate_outputs:
+    - acceptance criteria mappings
+    - test obligations for removed scope
+    requires_report_revalidation: true
+  scope_algorithm:
+  - step_id: LOAD_BEHAVIOR_SCOPE
+    action: read_behavior_contract
+    pass_when:
+    - behavior contract exists and has scope/non_goals
+    fail_when:
+    - behavior_contract_missing_scope
+  - step_id: CLASSIFY_SCOPE_ITEMS
+    action: apply_scope_classification_rules
+    pass_when:
+    - every scope item has one status
+    fail_when:
+    - scope_item_unclassified
+    output:
+    - scope_records
+  - step_id: DETECT_EXPANSION
+    action: compare_scope_against_active_phase_plan_and_prior_reports
+    pass_when:
+    - new items either approved, triggered, deferred, or blocked
+    fail_when:
+    - scope expansion unrecorded
+    output:
+    - scope_change_records
+    - triggers_emitted
+  - step_id: APPLY_INVALIDATION
+    action: apply_scope_invalidation_rules
+    pass_when:
+    - affected downstream reports invalidated or revalidated
+    fail_when:
+    - downstream_report_uses_stale_scope
+    output:
+    - revision_requests
+    - invalidated_outputs
+validation:
+  required_checks:
+  - id: SCOPE-CHECK-001
+    check: all_scope_items_classified
+  - id: SCOPE-CHECK-002
+    check: scope_expansion_recorded
+  - id: SCOPE-CHECK-003
+    check: scope_change_invalidations_applied
+  fail_conditions:
+  - id: SCOPE-001
+    condition: scope_item_unclassified
+    message: Every scope item must be classified.
+    severity: error
+  - id: SCOPE-002
+    condition: scope_change_without_revision
+    message: Scope changes after downstream outputs require revision or invalidation.
+    severity: error
+  - id: SCOPE-003
+    condition: implementation_continued_after_scope_change
+    message: Implementation must pause after scope change affecting pre-implementation inputs.
+    severity: error

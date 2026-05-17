@@ -4,66 +4,212 @@ file:
   path: planning/conventions.codebase-reconnaissance.yaml
   role: codebase_reconnaissance_contract
   executability: decision_engine
-purpose: Inspect existing codebase before architecture to find related features, reusable artifacts, local conventions, and extractable behavior.
+purpose: Define strict evidence collection, artifact discovery, call-site discovery, unknown handling, and local convention candidate extraction for planning phases.
 ownership:
   owns:
-  - codebase_reconnaissance_report_schema
-  - search_target_derivation
-  - similar_feature_discovery
-  - reusable_artifact_discovery
-  - extractable_behavior_discovery
+  - evidence_source_taxonomy
+  - artifact_discovery_rules
+  - call_site_discovery_rules
+  - found_not_found_unknown_policy
+  - dynamic_reference_policy
+  - reconnaissance_algorithm
+  - reconnaissance_output_schema
   does_not_own:
-  - local_convention_conflict_resolution
-  - artifact_action_decisions
+  - architecture_decisions
+  - artifact_action_selection
+  - role_assignment
+  - implementation
+  - import_validation
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - codebase_reconnaissance_phase_active
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - behavior_contract_report
+  optional:
+  - scope_records
+  - active_context_manifest
+  - source_inventory
+  - project_files
 outputs:
   produces:
   - codebase_reconnaissance_report
+  - local_convention_candidates_report
+  - reconnaissance_unknowns
 dependencies:
   required_files:
-  - planning/conventions.behavior-contract.yaml
-  - actions/conventions.action-taxonomy.yaml
-  optional_files: []
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  optional_files:
+  - dependencies/conventions.dependency-classification.yaml
+  - boundaries/conventions.boundary-classification.yaml
 sections:
-  discovery_outputs:
-  - similar_features_found
-  - existing_capabilities_found
-  - reusable_artifacts
-  - reusable_behavior_candidates
-  - relocation_candidates
-  - rename_candidates
-  - replacement_candidates
-  - inline_candidates
-  - no_code_change_candidates
-  rule_sets:
-    absolute_rules:
-    - id: RECON-ABS-001
-      rule: Codebase reconnaissance may detect extractable behavior but must not decide extraction.
-      fail_condition: reconnaissance_decides_artifact_action
-    - id: RECON-ABS-002
-      rule: The agent must not claim codebase reconnaissance without codebase context or evidence.
-      fail_condition: reconnaissance_claimed_without_codebase_context
+  evidence_source_taxonomy:
+    source_file:
+      definition: Workspace source code file relevant to requested behavior or impacted artifacts.
+      confidence: high_when_direct_match
+    test_file:
+      definition: Existing test file proving behavior or consumer expectation.
+      confidence: high_when_assertion_matches_behavior
+    config_file:
+      definition: Project config that constrains stack, paths, commands, or module behavior.
+      confidence: medium_high
+    package_manifest:
+      definition: Dependency/tooling manifest such as package.json/go.mod/pyproject.
+      confidence: medium
+    absence_evidence:
+      definition: Recorded search path and result showing artifact not found.
+      confidence: low_until_scope_of_search_recorded
+  artifact_discovery_rules:
+  - id: DISCOVER-ARTIFACT-001
+    applies_when:
+    - behavior mentions existing capability or source area
+    search_targets:
+    - file names
+    - class/function names
+    - route/event names
+    - module exports
+    - test names
+    pass_when:
+    - matching artifacts recorded or not_found record includes searched paths
+    fail_when:
+    - agent states artifact absent without search evidence
+    fail_condition: absence_without_search_evidence
+  - id: DISCOVER-ARTIFACT-002
+    applies_when:
+    - new artifact candidate proposed later
+    required_action: search for reusable/related existing artifact first
+    fail_condition: create_new_without_reconnaissance
+  - id: DISCOVER-ARTIFACT-003
+    applies_when:
+    - dynamic dispatch, reflection, string event names, decorators, queues, or config-based wiring appear
+    required_action: record dynamic_reference_risk and emit trigger dynamic_reference_risk_detected
+    fail_condition: dynamic_reference_unrecorded
+  call_site_discovery_rules:
+  - id: CALLSITE-001
+    applies_when:
+    - existing artifact may be modified, moved, renamed, deleted, split, extracted, or replaced
+    must_search:
+    - imports
+    - direct invocations
+    - exports
+    - tests
+    - configuration references
+    - string/event references when relevant
+    pass_when:
+    - direct call sites recorded or unknown with reason
+    fail_when:
+    - impact analysis proceeds without call-site evidence
+    fail_condition: call_site_search_missing
+  - id: CALLSITE-002
+    applies_when:
+    - artifact is public/exported/contractual
+    must_search:
+    - external/public consumers when available
+    - module exports
+    - barrel exports
+    - DTO/event/message usage
+    fail_condition: public_consumer_search_missing
+  found_not_found_unknown_policy:
+    found:
+      requires:
+      - evidence_ref
+      - source_path
+      - why_relevant
+      may_feed:
+      - architecture_decomposition
+      - artifact_reuse_analysis
+      - dependency_classification
+    not_found:
+      requires:
+      - searched_paths
+      - searched_terms
+      - search_method
+      - confidence
+      must_not_mean: safe_to_create_new unless reuse analysis accepts
+    unknown:
+      requires:
+      - reason
+      - risk
+      - required_followup
+      emits_trigger_when:
+      - dynamic_reference_risk_detected
+      - additional_contract_review_required
+  dynamic_reference_policy:
+    signals:
+    - decorator wiring
+    - string event names
+    - queue names
+    - DI tokens
+    - runtime imports
+    - configuration-driven class references
+    required_output: dynamic_references list
+    blocks_before:
+    - pre_implementation_gate
+  reconnaissance_algorithm:
+  - step_id: DERIVE_SEARCH_PLAN
+    action: derive search targets from behavior_contract and scope
+    pass_when:
+    - search terms and artifact categories recorded
+    fail_when:
+    - search plan absent
+  - step_id: SEARCH_ARTIFACTS
+    action: apply_artifact_discovery_rules
+    pass_when:
+    - each target has found/not_found/unknown record
+    fail_when:
+    - absence_without_search_evidence
+    output:
+    - relevant_artifacts
+    - reusable_behavior
+  - step_id: SEARCH_CALL_SITES
+    action: apply_call_site_discovery_rules
+    pass_when:
+    - call sites found/not_found/unknown recorded for impacted artifacts
+    fail_when:
+    - call_site_search_missing
+    output:
+    - call_sites
+    - consumer_candidates
+  - step_id: DETECT_DYNAMIC_REFERENCES
+    action: apply_dynamic_reference_policy
+    pass_when:
+    - dynamic risks recorded or explicitly absent
+    fail_when:
+    - dynamic_reference_unrecorded
+    output:
+    - dynamic_references
+    - triggers_emitted
+  - step_id: EXTRACT_LOCAL_CONVENTION_CANDIDATES
+    action: record repeated local structure/naming/role patterns
+    pass_when:
+    - candidates include evidence and compatibility unknown status
+    output:
+    - local_convention_candidates
 validation:
+  required_checks:
+  - id: RECON-CHECK-001
+    check: artifact_absence_has_search_evidence
+  - id: RECON-CHECK-002
+    check: call_site_search_completed_for_impacted_artifacts
+  - id: RECON-CHECK-003
+    check: dynamic_reference_risk_recorded
   fail_conditions:
-  - id: PLANNING-CONVENTIONS-CODEBASE-RECONNAISSANCE-YAML-FC-001
-    condition: architecture_started_without_reconnaissance_when_codebase_available
-    message: Architecture started without reconnaissance when codebase available.
+  - id: RECON-001
+    condition: absence_without_search_evidence
+    message: Not-found claims require search evidence.
     severity: error
-    owner: planning/conventions.codebase-reconnaissance.yaml
-  - id: PLANNING-CONVENTIONS-CODEBASE-RECONNAISSANCE-YAML-FC-002
-    condition: new_artifact_created_without_existing_artifact_check
-    message: New artifact created without existing artifact check.
+  - id: RECON-002
+    condition: create_new_without_reconnaissance
+    message: Create-new decisions require prior reconnaissance.
     severity: error
-    owner: planning/conventions.codebase-reconnaissance.yaml
-  - id: PLANNING-CONVENTIONS-CODEBASE-RECONNAISSANCE-YAML-FC-003
-    condition: reconnaissance_claimed_without_codebase_context
-    message: Reconnaissance claimed without codebase context.
+  - id: RECON-003
+    condition: call_site_search_missing
+    message: Call-site search is required before impact-sensitive actions.
     severity: error
-    owner: planning/conventions.codebase-reconnaissance.yaml
-  required_checks: []
+  - id: RECON-004
+    condition: dynamic_reference_unrecorded
+    message: Dynamic reference risk must be recorded.
+    severity: error

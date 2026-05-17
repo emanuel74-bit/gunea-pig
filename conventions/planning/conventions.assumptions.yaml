@@ -1,0 +1,209 @@
+version: '1.0'
+file:
+  name: conventions.assumptions.yaml
+  path: planning/conventions.assumptions.yaml
+  role: assumption_governance_contract
+  executability: decision_engine
+purpose: Define how assumptions are created, classified, consumed, invalidated, and converted into triggers, blockers, or revisions.
+ownership:
+  owns:
+  - assumption_taxonomy
+  - assumption_record_schema
+  - assumption_classification_rules
+  - assumption_validity_rules
+  - assumption_consumption_policy
+  - assumption_invalidation_rules
+  - assumption_algorithm
+  - assumption_output_schema
+  does_not_own:
+  - behavior_extraction
+  - risk_classification
+  - implementation
+  - mission_profile_selection
+activation:
+  mode: conditional
+  activates_when:
+  - assumptions_present
+  - behavior_contract_phase_active
+  skips_when: []
+inputs:
+  required:
+  - behavior_contract_report
+  optional:
+  - scope_records
+  - reconnaissance_report
+  - risk_classification
+  - mission_state
+outputs:
+  produces:
+  - assumptions_report
+  - blocking_assumption_records
+  - assumption_triggers
+  - assumption_revision_requests
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  optional_files:
+  - revisions/conventions.invalidation-policy.yaml
+  - risk/conventions.risk-taxonomy.yaml
+sections:
+  assumption_type_enum:
+    allowed:
+    - behavior
+    - scope
+    - technical
+    - integration
+    - data
+    - dependency
+    - testing
+    - local_convention
+    - implementation
+  assumption_status_enum:
+    allowed:
+    - proposed
+    - accepted_non_blocking
+    - blocking
+    - validated
+    - invalidated
+    - superseded
+  assumption_record_schema:
+    required_fields:
+    - assumption_id
+    - type
+    - statement
+    - status
+    - evidence_refs
+    - risk_if_wrong
+    - consumed_by
+    - validation_path
+    - blocks_before
+    optional_fields:
+    - safe_default
+    - invalidates_outputs
+    - trigger_type
+    - revision_request_ref
+  assumption_classification_rules:
+  - id: ASSUME-BLOCK-001
+    choose_status: blocking
+    when:
+    - assumption affects public behavior, contract, persistence, data loss, security, or integration semantics
+    - no safe reversible default exists
+    blocks_before:
+    - architecture_decomposition
+    - pre_implementation_gate
+    emit_trigger: mission_blocked
+  - id: ASSUME-NONBLOCK-001
+    choose_status: accepted_non_blocking
+    when:
+    - assumption affects only internal implementation detail
+    - safe default exists
+    - wrong assumption can be corrected without invalidating behavior contract
+    reject_when:
+    - public behavior or data semantics affected
+  - id: ASSUME-VALIDATED-001
+    choose_status: validated
+    when:
+    - evidence directly confirms assumption
+    requires_evidence: true
+  - id: ASSUME-INVALID-001
+    choose_status: invalidated
+    when:
+    - later evidence contradicts assumption
+    required_action: create_revision_request_or_invalidate_dependents
+  assumption_validity_rules:
+  - id: ASSUME-VALIDITY-001
+    applies_when:
+    - assumption is consumed by downstream phase
+    pass_when:
+    - assumption status is validated or accepted_non_blocking
+    - risk_if_wrong is recorded
+    - validation_path exists
+    fail_when:
+    - blocking assumption consumed
+    - assumption lacks validation path
+    fail_condition: invalid_assumption_consumed
+  - id: ASSUME-VALIDITY-002
+    applies_when:
+    - assumption is invalidated
+    pass_when:
+    - all dependent reports listed for invalidation/revalidation
+    fail_when:
+    - dependent outputs continue consuming invalidated assumption
+    fail_condition: invalidated_assumption_consumed
+  assumption_consumption_policy:
+    allowed_consumers:
+    - risk_classification
+    - architecture_decomposition
+    - artifact_action_resolution
+    - test_derivation
+    - implementation_sequence
+    blocked_consumption_when:
+    - assumption status is blocking
+    - assumption status is invalidated
+    - assumption lacks validation path
+    requires:
+    - evidence_refs
+    - risk_if_wrong
+    - blocks_before decision
+  assumption_invalidation_rules:
+  - id: ASSUME-INVALIDATE-001
+    when:
+    - evidence contradicts assumption before implementation
+    required_action: revision_request
+    target_phase: behavior_contract_or_codebase_reconnaissance
+    invalidates:
+    - reports that consumed assumption
+  - id: ASSUME-INVALIDATE-002
+    when:
+    - implementation reveals assumption false
+    required_action: failure_classification
+    blocks_before:
+    - final_validation
+  assumption_algorithm:
+  - step_id: COLLECT_ASSUMPTIONS
+    action: extract_assumptions_from_behavior_scope_reconnaissance
+    pass_when:
+    - all assumptions have id/type/status
+    fail_when:
+    - implicit assumption not recorded
+  - step_id: CLASSIFY_ASSUMPTIONS
+    action: apply_assumption_classification_rules
+    pass_when:
+    - blocking/non_blocking/validated decisions made
+    fail_when:
+    - assumption status unknown
+  - step_id: VALIDATE_CONSUMPTION
+    action: apply_assumption_consumption_policy
+    pass_when:
+    - no blocked/invalidated assumption is consumed
+    fail_when:
+    - invalid_assumption_consumed
+  - step_id: HANDLE_INVALIDATION
+    action: apply_assumption_invalidation_rules
+    pass_when:
+    - dependent outputs invalidated or revalidated
+    fail_when:
+    - invalidated_assumption_consumed
+validation:
+  required_checks:
+  - id: ASSUMPTION-CHECK-001
+    check: assumptions_classified
+  - id: ASSUMPTION-CHECK-002
+    check: blocking_assumptions_not_consumed
+  - id: ASSUMPTION-CHECK-003
+    check: invalidated_assumption_dependents_handled
+  fail_conditions:
+  - id: ASSUMPTION-001
+    condition: implicit_assumption_not_recorded
+    message: Implicit assumptions must be recorded.
+    severity: error
+  - id: ASSUMPTION-002
+    condition: invalid_assumption_consumed
+    message: Blocking or invalidated assumptions must not be consumed downstream.
+    severity: error
+  - id: ASSUMPTION-003
+    condition: invalidated_assumption_consumed
+    message: Dependent outputs must be invalidated or revalidated when an assumption is invalidated.
+    severity: error

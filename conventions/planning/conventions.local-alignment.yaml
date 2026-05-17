@@ -2,66 +2,184 @@ version: '1.0'
 file:
   name: conventions.local-alignment.yaml
   path: planning/conventions.local-alignment.yaml
-  role: local_convention_alignment_contract
+  role: local_alignment_contract
   executability: decision_engine
-purpose: Compare local codebase conventions against global conventions and decide which local conventions to follow or reject.
+purpose: Classify local project conventions, decide whether they are accepted/rejected/constrained, and prevent local rules from weakening global architecture contracts.
 ownership:
   owns:
-  - local_convention_alignment_report_schema
-  - local_global_conflict_resolution
-  - evidence_thresholds
-  - deviation_recording
+  - local_convention_taxonomy
+  - local_convention_decision_schema
+  - global_vs_local_authority_matrix
+  - local_alignment_decision_rules
+  - conflict_escalation_rules
+  - local_alignment_algorithm
+  - local_alignment_output_schema
   does_not_own:
-  - codebase_reconnaissance
-  - action_selection
+  - global_vocabulary
+  - framework_profiles
+  - code_implementation
+  - mission_profile_selection
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - local_alignment_phase_active
+  - local_convention_candidates_exist
   skips_when: []
 inputs:
-  required: []
-  optional: []
+  required:
+  - local_convention_candidates_report
+  - codebase_reconnaissance_report
+  optional:
+  - active_context_manifest
+  - architecture_blueprint
+  - role_taxonomy
 outputs:
   produces:
-  - local_alignment_result
+  - local_alignment_report
+  - local_conflict_triggers
 dependencies:
-  required_files: []
-  optional_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  optional_files:
+  - roles/conventions.role-taxonomy.yaml
+  - architecture/conventions.architecture.yaml
+  - boundaries/conventions.boundary-validation.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
 sections:
-  classification:
-    compatible: follow_local
-    incompatible: reject_local
-    unclear: prefer_global
-    legacy_exception: do_not_copy
-  rule_sets:
-    absolute_rules:
-    - id: LOCAL-ALIGN-ABS-001
-      rule: Compatible local convention should be followed.
-      fail_condition: compatible_local_convention_ignored_without_reason
-    - id: LOCAL-ALIGN-ABS-002
-      rule: Global absolute rules override local convention.
-      fail_condition: local_convention_overrides_global_absolute_rule
-    - id: LOCAL-ALIGN-ABS-003
-      rule: Legacy violations must not be expanded.
-      fail_condition: legacy_violation_expanded
-    - id: LOCAL-ALIGN-ABS-004
-      rule: A single example is not a convention.
-      fail_condition: single_example_treated_as_convention
+  local_convention_status_enum:
+    allowed:
+    - accepted
+    - rejected
+    - constrained
+    - unknown
+    - superseded_by_global
+  local_convention_record_schema:
+    required_fields:
+    - convention_id
+    - kind
+    - observed_rule
+    - evidence_refs
+    - status
+    - reason
+    - applies_to
+    - conflicts_with
+    optional_fields:
+    - allowed_scope
+    - required_guardrails
+    - trigger_type
+  global_vs_local_authority_matrix:
+  - id: LOCAL-AUTH-001
+    subject: layer_direction
+    winner: global
+    reason: Local dependency direction cannot weaken global architecture or dependency rules.
+  - id: LOCAL-AUTH-002
+    subject: role_responsibility
+    winner: global
+    reason: Local naming cannot allow mixed responsibilities or role violations.
+  - id: LOCAL-AUTH-003
+    subject: file_naming_or_folder_style
+    winner: local_when_not_conflicting
+    reason: Local style may apply when it does not weaken role, boundary, dependency, or report rules.
+  - id: LOCAL-AUTH-004
+    subject: test_structure_style
+    winner: local_when_not_conflicting
+    reason: Local test layout may apply if required coverage and validation obligations remain intact.
+  local_alignment_decision_rules:
+  - id: LOCAL-ACCEPT-001
+    choose_status: accepted
+    when:
+    - local convention is evidenced by multiple nearby artifacts
+    - does not conflict with global rules
+    - improves consistency
+    reject_when:
+    - conflicts with global authority matrix
+  - id: LOCAL-CONSTRAIN-001
+    choose_status: constrained
+    when:
+    - local convention is useful but can cause boundary/dependency/role ambiguity
+    requires:
+    - allowed_scope
+    - guardrails
+    - affected phases
+    reject_when:
+    - cannot be constrained safely
+  - id: LOCAL-REJECT-001
+    choose_status: rejected
+    when:
+    - local convention conflicts with global rule
+    - local convention creates mixed responsibility
+    - local convention allows forbidden dependency
+    required_trigger: phase_revision_required_when_already_consumed
+  - id: LOCAL-UNKNOWN-001
+    choose_status: unknown
+    when:
+    - evidence is insufficient or conflicting
+    required_followup: codebase_reconnaissance_or_manual_review
+  conflict_escalation_rules:
+  - id: LOCAL-CONFLICT-001
+    when:
+    - local convention conflicts with boundary or dependency rule
+    emit_trigger: dependency_validation_required
+    blocks_before:
+    - structure_rendering
+    - pre_implementation_gate
+  - id: LOCAL-CONFLICT-002
+    when:
+    - local convention conflicts with role taxonomy
+    emit_trigger: role_collision_possible
+    blocks_before:
+    - final_role_assignment
+  - id: LOCAL-CONFLICT-003
+    when:
+    - local convention was consumed by downstream report and later rejected
+    required_action: create_revision_request
+    invalidates:
+    - structure-plan
+    - implementation-sequence
+  local_alignment_algorithm:
+  - step_id: LOAD_CANDIDATES
+    action: read_local_convention_candidates
+    pass_when:
+    - each candidate has evidence_refs
+    fail_when:
+    - candidate lacks evidence
+  - step_id: APPLY_AUTHORITY_MATRIX
+    action: match candidate against global_vs_local_authority_matrix
+    pass_when:
+    - authority winner selected
+    fail_when:
+    - authority conflict unresolved
+  - step_id: DECIDE_STATUS
+    action: apply_local_alignment_decision_rules
+    pass_when:
+    - candidate status accepted/rejected/constrained/unknown selected
+    fail_when:
+    - candidate status missing
+  - step_id: ESCALATE_CONFLICTS
+    action: apply_conflict_escalation_rules
+    pass_when:
+    - conflicts produce triggers/revisions/blockers
+    fail_when:
+    - conflict silently ignored
 validation:
+  required_checks:
+  - id: LOCAL-CHECK-001
+    check: local_candidates_have_decisions
+  - id: LOCAL-CHECK-002
+    check: global_authority_not_weakened
+  - id: LOCAL-CHECK-003
+    check: conflicts_emit_followups
   fail_conditions:
-  - id: PLANNING-CONVENTIONS-LOCAL-ALIGNMENT-YAML-FC-001
-    condition: local_convention_used_without_compatibility_check
-    message: Local convention used without compatibility check.
+  - id: LOCAL-001
+    condition: authority_conflict_unresolved
+    message: Global/local authority conflicts must be resolved.
     severity: error
-    owner: planning/conventions.local-alignment.yaml
-  - id: PLANNING-CONVENTIONS-LOCAL-ALIGNMENT-YAML-FC-002
-    condition: global_absolute_rule_overridden_by_local_convention
-    message: Global absolute rule overridden by local convention.
+  - id: LOCAL-002
+    condition: local_rule_weakened_global_rule
+    message: Local conventions must not weaken global rules.
     severity: error
-    owner: planning/conventions.local-alignment.yaml
-  - id: PLANNING-CONVENTIONS-LOCAL-ALIGNMENT-YAML-FC-003
-    condition: single_example_treated_as_standard
-    message: Single example treated as standard.
+  - id: LOCAL-003
+    condition: conflict_silently_ignored
+    message: Local conflicts must emit followup or blocker.
     severity: error
-    owner: planning/conventions.local-alignment.yaml
-  required_checks: []

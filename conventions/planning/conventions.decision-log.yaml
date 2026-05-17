@@ -2,79 +2,174 @@ version: '1.0'
 file:
   name: conventions.decision-log.yaml
   path: planning/conventions.decision-log.yaml
-  role: decision_log_and_assumption_control_contract
-  executability: decision_engine
-purpose: Record important decisions, assumptions, uncertainty, affected artifacts, rejected alternatives, and revisions throughout the pipeline.
+  role: planning_decision_log_contract
+  executability: schema_and_policy
+purpose: Define durable planning decision records, evidence requirements, rejected alternatives, replacement, invalidation, and integration with report lifecycle
+  and revisions.
 ownership:
   owns:
-  - decision_log_schema
-  - assumption_register_schema
-  - uncertainty_register_schema
-  - affected_artifact_record_schema
-  - decision_revision_policy
+  - decision_record_schema
+  - decision_type_taxonomy
+  - decision_evidence_policy
+  - rejected_alternative_policy
+  - decision_replacement_policy
+  - decision_invalidation_policy
+  - decision_log_algorithm
+  - decision_log_output_schema
   does_not_own:
-  - behavior_contract_extraction
-  - action_selection
-  - risk_resolution
+  - deciding_architecture
+  - selecting_actions
+  - assigning_roles
+  - runtime_scheduling
 activation:
-  mode: always
-  activates_when: []
+  mode: conditional
+  activates_when:
+  - planning_decision_recording_required
   skips_when: []
 inputs:
   required: []
-  optional: []
+  optional:
+  - any_planning_report
+  - revision_request
+  - report_lifecycle_state
 outputs:
   produces:
-  - decision_log_result
+  - planning_decision_log
+  - decision_invalidation_records
 dependencies:
-  required_files: []
-  optional_files: []
+  required_files:
+  - core/conventions.file-contract.yaml
+  - reports/conventions.report-schemas.yaml
+  - reports/conventions.report-lifecycle.yaml
+  optional_files:
+  - revisions/conventions.invalidation-policy.yaml
+  - revisions/conventions.revision-request-policy.yaml
 sections:
-  affected_artifact_record_schema:
-    required_fields:
-    - artifact_id
-    - artifact_name
-    - artifact_role
-    - artifact_scope
-    - artifact_action
-    - change_type
-    - affected_responsibility
+  decision_type_enum:
+    allowed:
+    - request_type
+    - scope
+    - assumption
+    - reconnaissance_result
+    - local_alignment
     - impact_surface
-    - downstream_checks_required
-  rule_sets:
+    - impact_severity
+    - ambiguity_resolution
+    - followup_required
+    - revision_required
+  decision_record_schema:
+    required_fields:
+    - decision_id
+    - decision_type
+    - selected_value
+    - reason_summary
+    - evidence_refs
+    - rejected_values
+    - produced_by_phase
+    - consumed_by_phases
+    - lifecycle_state
+    optional_fields:
+    - invalidates_decisions
+    - replacement_for
+    - revision_request_ref
+    - trigger_refs
+  decision_evidence_policy:
     absolute_rules:
-    - id: DECISION-LOG-ABS-001
-      rule: Silent assumptions are forbidden.
-      fail_condition: silent_assumption_detected
-    - id: DECISION-LOG-ABS-002
-      rule: Important decisions must record selected option, rejected alternatives, reason, confidence, and convention rule used.
-      fail_condition: important_decision_missing_required_record
-    - id: DECISION-LOG-ABS-003
-      rule: Every artifact-changing decision must include affected_artifacts.
-      fail_condition: artifact_changing_decision_without_affected_artifacts
-    - id: DECISION-LOG-ABS-004
-      rule: Decision revisions must be recorded.
-      fail_condition: decision_revision_not_recorded
+    - id: DECISION-EVIDENCE-ABS-001
+      rule: Every planning decision must have evidence_refs or explicit no_evidence_available with reason.
+      fail_condition: planning_decision_missing_evidence
+    - id: DECISION-EVIDENCE-ABS-002
+      rule: A decision affecting downstream phases must list consumed_by_phases.
+      fail_condition: decision_consumers_missing
+  rejected_alternative_policy:
+    required_when:
+    - multiple valid choices existed
+    - decision affects architecture/actions/testing/risk
+    - local convention conflicts with global rule
+    record_fields:
+    - alternative
+    - reason_rejected
+    - evidence_refs
+    - risk_if_selected
+    fail_condition: rejected_alternative_missing
+  decision_replacement_policy:
+  - id: DECISION-REPLACE-001
+    applies_when:
+    - new evidence changes prior decision
+    requires:
+    - replacement_for
+    - reason
+    - affected_reports
+    - revision_request_ref when downstream consumed old decision
+    fail_condition: decision_replacement_without_trace
+  - id: DECISION-REPLACE-002
+    applies_when:
+    - old decision was consumed by downstream report
+    required_action: invalidate_or_revalidate_consumers
+    fail_condition: decision_replacement_without_downstream_invalidation
+  decision_invalidation_policy:
+  - id: DECISION-INVALIDATE-001
+    when:
+    - decision evidence is contradicted
+    - scope/assumption/behavior changes
+    - report lifecycle invalidates source evidence
+    required_action: mark decision invalidated and create revision or revalidation request
+    blocks_before:
+    - pre_implementation_gate
+    - final_validation
+  - id: DECISION-INVALIDATE-002
+    when:
+    - decision has active unresolved invalidation
+    forbidden:
+    - final_validation_passed
+    fail_condition: final_pass_with_invalidated_decision
+  decision_log_algorithm:
+  - step_id: COLLECT_DECISIONS
+    action: scan_planning_reports_for_decisions
+    pass_when:
+    - required decisions written as records
+    fail_when:
+    - decision exists only in prose
+  - step_id: VALIDATE_EVIDENCE
+    action: apply_decision_evidence_policy
+    pass_when:
+    - evidence or no_evidence reason exists
+    fail_when:
+    - planning_decision_missing_evidence
+  - step_id: VALIDATE_ALTERNATIVES
+    action: apply_rejected_alternative_policy
+    pass_when:
+    - rejected alternatives recorded when required
+    fail_when:
+    - rejected_alternative_missing
+  - step_id: VALIDATE_REPLACEMENT_INVALIDATION
+    action: apply_replacement_and_invalidation_policy
+    pass_when:
+    - consumers invalidated/revalidated when decision changes
+    fail_when:
+    - decision_replacement_without_downstream_invalidation
 validation:
+  required_checks:
+  - id: DECISION-CHECK-001
+    check: decisions_have_evidence
+  - id: DECISION-CHECK-002
+    check: rejected_alternatives_recorded_when_required
+  - id: DECISION-CHECK-003
+    check: invalidated_decision_consumers_handled
   fail_conditions:
-  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-001
-    condition: silent_assumption_detected
-    message: Silent assumption detected.
+  - id: DECISION-001
+    condition: planning_decision_missing_evidence
+    message: Planning decisions require evidence or explicit no-evidence marker.
     severity: error
-    owner: planning/conventions.decision-log.yaml
-  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-002
-    condition: artifact_changing_decision_without_affected_artifacts
-    message: Artifact changing decision without affected artifacts.
+  - id: DECISION-002
+    condition: rejected_alternative_missing
+    message: Rejected alternatives are required for material planning decisions.
     severity: error
-    owner: planning/conventions.decision-log.yaml
-  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-003
-    condition: blocking_uncertainty_unresolved
-    message: Blocking uncertainty unresolved.
+  - id: DECISION-003
+    condition: decision_replacement_without_downstream_invalidation
+    message: Replacing a consumed decision requires invalidation or revalidation of consumers.
     severity: error
-    owner: planning/conventions.decision-log.yaml
-  - id: PLANNING-CONVENTIONS-DECISION-LOG-YAML-FC-004
-    condition: low_confidence_required_decision_in_final_plan
-    message: Low confidence required decision in final plan.
+  - id: DECISION-004
+    condition: final_pass_with_invalidated_decision
+    message: Final validation cannot pass with active invalidated planning decisions.
     severity: error
-    owner: planning/conventions.decision-log.yaml
-  required_checks: []
