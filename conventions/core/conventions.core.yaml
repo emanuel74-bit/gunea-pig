@@ -4,8 +4,9 @@ file:
   path: core/conventions.core.yaml
   role: core_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lookup index, authority boundaries,
-  pipeline laws, output schemas, semantic completeness, validation, integration, and script-delegation policy.'
+purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lightweight routing index,
+  authority boundaries, generated authority registry contract, pipeline laws, output schemas, semantic completeness, validation,
+  integration, and script-delegation policy.'
 ownership:
   owns:
   - core_subsystem_metadata
@@ -13,6 +14,7 @@ ownership:
   - core_local_execution_order
   - core_authority_boundary_summary
   - system_integration_contract
+  - core_authority_registry_contract
   does_not_own:
   - subsystem_local_rules
   - phase_agent_work
@@ -36,6 +38,7 @@ dependencies:
   - core/conventions.file-contract.yaml
   - core/conventions.index.yaml
   - core/conventions.authority-boundaries.yaml
+  - core/conventions.authority-registry.yaml
   - core/conventions.integration-contract.yaml
   - core/conventions.pipeline-contract.yaml
   - core/conventions.output-schema.yaml
@@ -54,10 +57,12 @@ sections:
     conventions.semantic-completeness.yaml: core/conventions.semantic-completeness.yaml
     conventions.validation.yaml: core/conventions.validation.yaml
     conventions.script-delegation-policy.yaml: core/conventions.script-delegation-policy.yaml
+    conventions.authority-registry.yaml: core/conventions.authority-registry.yaml
   core_local_execution_order:
   - load_file_contract
   - load_index
   - load_authority_boundaries
+  - load_authority_registry
   - load_integration_contract
   - load_pipeline_contract
   - load_output_schema
@@ -65,7 +70,8 @@ sections:
   - load_validation
   - load_script_delegation_policy
   core_authority_boundary_summary:
-    core_owns: global contracts, source lookup, cross-subsystem invariants, semantic quality standard, validation aggregation
+    core_owns: global contracts, source lookup, canonical authority registry, cross-subsystem invariants, semantic quality
+      standard, validation aggregation
     subsystems_own: their local vocabularies, decisions, algorithms, schemas, and validators
     alpha_owns: runtime scheduling, phase activation, prompt injection, mission-state mutation, and gate/handoff/trigger/revision
       orchestration
@@ -81,6 +87,11 @@ sections:
     - perform local subsystem decisions
     - override specialized validators
     - act as Alpha runtime
+  authority_registry_policy:
+    authority_registry_file: core/conventions.authority-registry.yaml
+    mode: generated_from_distributed_ownership_declarations
+    index_overlap_policy: index routes to files; authority registry governs/generated-validates ownership; neither duplicates
+      the other
 validation:
   required_checks:
   - id: CORE-ENTRY-CHECK-001

@@ -1,16 +1,27 @@
 package: sync_conventions_system_regular_yaml
-generated_from: accepted design through Step 0 cross-reference stabilization repair pass
-yaml_file_count: 145
+generated_from: Step 2 index-authority split refinement
+yaml_file_count: 146
+folder_count: 23
 notes:
 - Regular YAML convention files only.
-- Cross-reference stabilization pass applied.
-- Manifest regenerated from actual package contents.
-- Runtime artifact identity registry added.
+- Index reduced to lightweight routing/loading metadata.
+- Authority registry converted to generated-registry contract derived from distributed ownership declarations.
+- Full concept authority table is no longer duplicated manually in core index or registry.
 - Claude Code adaptation is still a future layer unless explicitly generated later.
-folder_count: 22
 stabilization_summary:
   stale_agent_paths_fixed: true
   executability_enum_expanded: true
   duplicate_ownership_resolved: true
   runtime_artifact_registry_added: true
   generic_selection_algorithm_split: true
+authority_registry_summary:
+  registry_file: core/conventions.authority-registry.yaml
+  mode: generated_from_distributed_ownership_declarations
+  manual_concept_authority_table_present: false
+  owned_concepts_discovered: 827
+  duplicate_owned_concepts_detected: 0
+  duplicate_ownership_policy: forbidden
+index_summary:
+  index_file: core/conventions.index.yaml
+  mode: lightweight_router
+  semantic_concept_lookup_present: false

@@ -1,0 +1,115 @@
+version: '2.0'
+file:
+  name: conventions.authority-registry.yaml
+  path: core/conventions.authority-registry.yaml
+  role: generated_authority_registry_contract
+  executability: generator_contract
+purpose: Define how the canonical authority registry is generated and validated from distributed ownership declarations, without
+  manually duplicating every owned concept in this file.
+ownership:
+  owns:
+  - authority_registry_generation_contract
+  - authority_relationship_taxonomy
+  - authority_conflict_detection_rules
+  - generic_concept_collision_policy
+  - distributed_authority_model
+  does_not_own:
+  - concept_authority_index
+  - local_subsystem_rules
+  - runtime_artifact_contents
+  - report_instance_contents
+  - implementation_code
+activation:
+  mode: validation_only
+  activates_when:
+  - authority_validation
+  - ownership_conflict_detection
+  - registry_generation
+  - subsystem_edit_validation
+  skips_when:
+  - normal_mission_context_unless_needed
+inputs:
+  required:
+  - parsed_convention_files
+  - declared_ownership_sections
+  optional:
+  - runtime_artifact_registry
+  - source_lookup_index
+outputs:
+  produces:
+  - generated_concept_authority_index
+  - duplicate_authority_validation_result
+  - generic_name_collision_validation_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.authority-boundaries.yaml
+  optional_files:
+  - core/conventions.index.yaml
+  - reports/conventions.runtime-artifacts.yaml
+sections:
+  distributed_authority_model:
+    source_of_truth: Each convention file declares its local authoritative concepts under ownership.owns.
+    compiled_registry: Validators compile a virtual/generated registry by scanning ownership.owns across all convention YAML
+      files.
+    manual_registry_entries: forbidden
+    reason: Prevents index/registry drift and avoids loading an 800+ concept table during ordinary mission execution.
+  authority_relationship_taxonomy:
+    owns: Defines canonical authority for a concept. Exactly one owner is allowed globally.
+    consumes: Uses a concept owned elsewhere without redefining it.
+    produces: Emits an artifact or output shaped by an owned concept or schema.
+    validates: Checks conformance to a concept owned elsewhere.
+    extends: Adds compatible detail to a concept owned elsewhere without replacing authority.
+    specializes: Narrows a concept for a local subsystem while preserving upstream authority.
+    enforces: Applies a policy or rule owned elsewhere.
+    references: Mentions a concept without authority or transformation.
+  generation_algorithm:
+  - parse_all_convention_yaml_files
+  - read_each_file_ownership_owns_list
+  - normalize_concept_ids
+  - build_concept_to_owner_map
+  - fail_if_concept_has_multiple_owners
+  - fail_if_generic_concept_name_is_reused_for_distinct_meanings
+  - emit_generated_registry_artifact_for_validation_reports_or_tooling_only
+  generic_concept_collision_policy:
+    rule: Generic concept names must be intent-qualified when reused across different domains or meanings.
+    high_risk_names:
+    - selection_algorithm
+    - rules
+    - policy
+    - mapping
+    - catalog
+    - registry
+    - schema
+    - contract
+    - validator
+    - state
+    required_action: rename_to_intent_specific_concept_id_or_prove_same_authority
+    examples:
+    - mission_profile_selection_algorithm
+    - pattern_selection_algorithm
+    - agent_assignment_selection_algorithm
+    - phase_execution_selection_algorithm
+    - remediation_selection_algorithm
+  validation_rules:
+    single_owner_rule: Every concept_id listed under ownership.owns MUST have exactly one global owner.
+    duplicate_ownership_rule: Two files MUST NOT declare the same concept_id under ownership.owns.
+    non_owner_relationship_rule: Files that need a concept owned elsewhere MUST use consumes, produces, validates, extends,
+      specializes, enforces, or references.
+    registry_drift_rule: A manually maintained concept_authority_registry list is forbidden; generated output must be rebuilt
+      from source declarations.
+  runtime_context_policy:
+    load_by_default: false
+    normal_runtime_usage: Load only this contract or a filtered generated registry slice when ownership validation is relevant.
+    bundle_compiler_usage: Include only authority entries for subsystems/files touched by the mission bundle.
+validation:
+  must_pass:
+  - distributed_ownership_scan_successful
+  - no_duplicate_owned_concepts
+  - no_manual_concept_authority_registry_entries
+  - generic_name_collision_policy_present
+  fail_conditions:
+  - duplicate_owned_concept
+  - manually_duplicated_concept_authority_table
+  - ambiguous_generic_concept_id
+  - ownership_relationship_used_as_consumption

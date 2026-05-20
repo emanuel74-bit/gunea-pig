@@ -4,8 +4,8 @@ file:
   path: core/conventions.authority-boundaries.yaml
   role: global_authority_boundary_contract
   executability: policy
-purpose: Define global authority ordering and prevent duplicated ownership between core, Alpha, phases, agents, reports, gates,
-  triggers, handoffs, revisions, and domain subsystems.
+purpose: Define global authority ordering and prevent duplicated ownership between core, Alpha, phases, agents, reports, gates, triggers, handoffs,
+  revisions, and domain subsystems.
 ownership:
   owns:
   - global_authority_order
@@ -32,7 +32,8 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - core/conventions.index.yaml
-  optional_files: []
+  optional_files:
+  - core/conventions.authority-registry.yaml
 sections:
   global_authority_order:
   - priority: 1
@@ -79,8 +80,7 @@ sections:
       owns: dependency taxonomy, classification, direction rules, import rules, test dependency rules, and validation
       must_not_own: authority assigned to other subsystems or Alpha runtime
     execution:
-      owns: implementation sequencing, checkpoint planning, controlled implementation, validation commands, changed files,
-        and feedback loop
+      owns: implementation sequencing, checkpoint planning, controlled implementation, validation commands, changed files, and feedback loop
       must_not_own: authority assigned to other subsystems or Alpha runtime
     gates:
       owns: entry/output/handoff/implementation/final gate vocabulary, templates, and validation
@@ -144,6 +144,17 @@ sections:
   - condition: agent_prompt_conflicts_with_phase_contract
     decision: phase_contract_wins
     required_action: block_agent_invocation_until_prompt_fixed
+  canonical_authority_registry_requirement:
+    rule: Subsystem authority boundaries are enforceable only when each owned concept is resolved through core/conventions.authority-registry.yaml.
+    duplicate_ownership_policy: forbidden
+    non_owner_relationships:
+    - consumes
+    - produces
+    - validates
+    - extends
+    - specializes
+    - enforces
+    - references
 validation:
   required_checks:
   - id: AUTH-CHECK-001
