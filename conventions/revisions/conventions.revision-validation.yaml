@@ -4,11 +4,11 @@ file:
   path: revisions/conventions.revision-validation.yaml
   role: revision_validation_contract
   executability: validator
-purpose: Validate revision requests, invalidations, reruns, open blockers, and final revision state before implementation and final validation.
+purpose: Validate revision requests, invalidations, reruns, open blockers, and final revision state before implementation
+  and final validation.
 ownership:
   owns:
   - revision_validation_policy
-  - validation_check_catalog
   - revision_validation_algorithm
   - revision_validation_result_schema
   - remediation_mapping
@@ -17,6 +17,8 @@ ownership:
   - revision_approval_policy
   - invalidation_policy
   - rerun_policy
+  specializes:
+  - validation_check_catalog
 activation:
   mode: conditional
   activates_when:

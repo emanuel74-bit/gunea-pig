@@ -82,6 +82,27 @@ sections:
   - runtime_controller
   - advisory_entrypoint
   - advisory_contract
+  - artifact_registry
+  - contract_registry
+  - decision_matrix
+  - decision_support
+  - detector
+  - execution_policy
+  - generator_contract
+  - graph_contract
+  - mapping
+  - orchestrator
+  - oversight_policy
+  - permission_registry
+  - placement_affinity_registry
+  - prompt_registry
+  - registry
+  - router
+  - runtime_policy
+  - schema_and_policy
+  - state_builder
+  - state_machine
+  - state_schema
   standard_decision_object_schema:
     required_fields:
     - id

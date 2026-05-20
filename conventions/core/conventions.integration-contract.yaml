@@ -13,6 +13,7 @@ ownership:
   - allowed_cross_subsystem_interactions
   - integration_failure_policy
   - future_extension_points
+  - integration_usage
   does_not_own:
   - local_decision_rules
   - technology_adapter_profiles
@@ -73,6 +74,19 @@ sections:
     technology_adapters: may provide implementation conventions only after normalization and validation
     runtime_adapters: may invoke Alpha/agents but must not weaken core, gates, reports, or phase contracts
     script_executors: may implement deterministic validation/generation declared by convention files
+  integration_usage:
+    rule: Runtime integrations must use declared integration surfaces and may not create local cross-subsystem authority.
+    allowed_usage:
+    - consume
+    - produce
+    - validate
+    - extend
+    - specialize
+    - enforce
+    forbidden_usage:
+    - duplicate_authority
+    - implicit_dependency
+    - unregistered_runtime_artifact
 validation:
   required_checks:
   - id: INTEGRATION-CHECK-001

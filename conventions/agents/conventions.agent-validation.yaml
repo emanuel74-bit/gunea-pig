@@ -10,12 +10,13 @@ ownership:
   - agent_validation_policy
   - agent_validation_checks
   - agent_validation_algorithm
-  - validation_output_schema
   does_not_own:
   - agent_vocabulary
   - agent_permissions
   - agent_prompts
   - phase_contracts
+  produces:
+  - validation_output_schema
 activation:
   mode: conditional
   activates_when:

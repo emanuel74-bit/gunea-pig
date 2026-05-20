@@ -8,15 +8,16 @@ purpose: Provide entrypoint, ownership boundaries, local execution order, and in
 ownership:
   owns:
   - risk_file_index
-  - local_execution_order
   - risk_subsystem_contract
-  - integration_usage
   does_not_own:
   - risk level definitions
   - risk signal collection
   - risk classification decisions
   - risk escalation decisions
   - risk validation checks
+  consumes:
+  - local_execution_order
+  - integration_usage
 activation:
   mode: entrypoint
   activates_when:

@@ -13,6 +13,7 @@ ownership:
   - execution_local_execution_order
   - execution_ownership_boundaries
   - execution_integration_contract
+  - local_execution_order
   does_not_own:
   - architecture_decomposition
   - artifact_action_selection

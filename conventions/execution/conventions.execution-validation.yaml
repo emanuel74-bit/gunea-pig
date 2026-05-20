@@ -11,12 +11,13 @@ ownership:
   - execution_validation_policy
   - validation_check_catalog
   - execution_validation_algorithm
-  - remediation_mapping
   - execution_validation_output_schema
   does_not_own:
   - gate_pass_fail_authority
   - report_registry_authority
   - revision_approval
+  consumes:
+  - remediation_mapping
 activation:
   mode: conditional
   activates_when:

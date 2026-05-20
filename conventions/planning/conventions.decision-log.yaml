@@ -4,11 +4,10 @@ file:
   path: planning/conventions.decision-log.yaml
   role: planning_decision_log_contract
   executability: schema_and_policy
-purpose: Define durable planning decision records, evidence requirements, rejected alternatives, replacement, invalidation, and integration with report lifecycle
-  and revisions.
+purpose: Define durable planning decision records, evidence requirements, rejected alternatives, replacement, invalidation,
+  and integration with report lifecycle and revisions.
 ownership:
   owns:
-  - decision_record_schema
   - decision_type_taxonomy
   - decision_evidence_policy
   - rejected_alternative_policy
@@ -21,6 +20,8 @@ ownership:
   - selecting_actions
   - assigning_roles
   - runtime_scheduling
+  consumes:
+  - decision_record_schema
 activation:
   mode: conditional
   activates_when:

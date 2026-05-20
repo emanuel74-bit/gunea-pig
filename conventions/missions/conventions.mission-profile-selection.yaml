@@ -11,7 +11,7 @@ ownership:
   - mission_profile_selection_inputs
   - mission_profile_selection_rules
   - selection_tie_breakers
-  - selection_algorithm
+  - mission_profile_selection_algorithm
   - selection_output_schema
   does_not_own:
   - mission_profile_vocabulary
@@ -170,7 +170,19 @@ sections:
     applies_when:
     - bugfix_and_cleanup_signals_present
     decision: select_bugfix_if_behavior_correction_required_else_cleanup_only
-  selection_algorithm:
+  selection_output_schema:
+    required_fields:
+    - selected_profile
+    - selection_rule
+    - rejected_profiles
+    - reason_summary
+    - evidence_refs
+    - required_followups
+    fail_when:
+    - selected_profile_missing
+    - selection_rule_missing
+    - unknown_profile_selected
+  mission_profile_selection_algorithm:
     steps:
     - step_id: LOAD_REQUEST_SIGNALS
       action: read
@@ -193,18 +205,6 @@ sections:
     - step_id: WRITE_SELECTION_REPORT
       action: write_report
       output: .ai/reports/00-mission-profile.yaml
-  selection_output_schema:
-    required_fields:
-    - selected_profile
-    - selection_rule
-    - rejected_profiles
-    - reason_summary
-    - evidence_refs
-    - required_followups
-    fail_when:
-    - selected_profile_missing
-    - selection_rule_missing
-    - unknown_profile_selected
 validation:
   required_checks:
   - id: MISSION-SELECTION-CHECK-001

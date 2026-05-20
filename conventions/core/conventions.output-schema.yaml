@@ -9,17 +9,19 @@ purpose: Define shared primitive schemas and cross-subsystem output record shape
 ownership:
   owns:
   - shared_primitives
-  - decision_record_schema
   - evidence_reference_schema
   - validation_result_schema
   - phase_bundle_schema_reference
   - runtime_result_schemas
   - schema_reference_policy
+  - validation_output_schema
   does_not_own:
   - local_report_registry
   - local_subsystem_vocabularies
   - template_content
   - agent_prompt_content
+  consumes:
+  - decision_record_schema
 activation:
   mode: always
   activates_when: []
@@ -66,7 +68,7 @@ sections:
     - source_lines
     - confidence
     - notes
-  validation_result_schema:
+  validation_result_schema: &id001
     required_fields:
     - validator_id
     - status
@@ -90,6 +92,7 @@ sections:
     rule: Cross-subsystem outputs must include stable ids, owner, lifecycle/status when relevant, and evidence or explicit
       no-evidence marker.
     fail_condition: output_record_missing_traceability
+  validation_output_schema: *id001
 validation:
   required_checks:
   - id: OUTPUT-SCHEMA-CHECK-001

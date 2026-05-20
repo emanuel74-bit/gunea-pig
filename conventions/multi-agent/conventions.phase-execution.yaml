@@ -4,12 +4,11 @@ file:
   path: multi-agent/conventions.phase-execution.yaml
   role: phase_agent_execution_loop_contract
   executability: orchestrator
-purpose: Define how Alpha invokes phase agents using phase bundles, prompt injection,
-  permission enforcement, file-output contracts, and phase result collection.
+purpose: Define how Alpha invokes phase agents using phase bundles, prompt injection, permission enforcement, file-output
+  contracts, and phase result collection.
 ownership:
   owns:
   - phase_execution_request_schema
-  - prompt_injection_policy
   - agent_invocation_algorithm
   - phase_execution_result_schema
   - file_output_enforcement
@@ -21,6 +20,8 @@ ownership:
   - gate_validation_semantics
   - report_schema_definitions
   - implementation_content
+  enforces:
+  - prompt_injection_policy
 activation:
   mode: conditional
   activates_when:
@@ -64,12 +65,10 @@ sections:
     rule: Alpha must inject exactly the prompt matching owner_agent.
     fail_condition: wrong_agent_prompt_injected
   - id: PROMPT-INJECT-002
-    rule: Injected prompt may constrain behavior but must not weaken phase contract,
-      gate, permission, or report requirements.
+    rule: Injected prompt may constrain behavior but must not weaken phase contract, gate, permission, or report requirements.
     fail_condition: prompt_weakened_runtime_contract
   - id: PROMPT-INJECT-003
-    rule: Agent prompt and phase bundle are both required; neither may substitute
-      for the other.
+    rule: Agent prompt and phase bundle are both required; neither may substitute for the other.
     fail_condition: agent_invoked_without_prompt_or_bundle
   agent_invocation_algorithm:
   - step_id: ASSERT_ENTRY_GATE_PASSED
@@ -125,8 +124,7 @@ sections:
       rule: Agent chat response may summarize only after files are written.
       fail_condition: agent_summary_without_required_files
     - id: FILE-OUTPUT-003
-      rule: Agent must not rewrite prior phase reports unless explicitly authorized
-        by revision/rerun policy.
+      rule: Agent must not rewrite prior phase reports unless explicitly authorized by revision/rerun policy.
       fail_condition: phase_agent_rewrote_prior_report
   phase_execution_result_schema:
     required_fields:

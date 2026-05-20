@@ -4,13 +4,12 @@ file:
   path: reports/conventions.report-schemas.yaml
   role: report_schema_contract
   executability: schema
-purpose: Define common report schemas, compact report shape, evidence references,
-  decision records, registry records, template records, and validation result records.
+purpose: Define common report schemas, compact report shape, evidence references, decision records, registry records, template
+  records, and validation result records.
 ownership:
   owns:
   - compact_report_schema
   - decision_record_schema
-  - evidence_reference_schema
   - gate_result_reference_schema
   - report_artifact_record_schema
   - report_registry_schema
@@ -20,6 +19,8 @@ ownership:
   - report_artifact_registry
   - validation_algorithms
   - phase_contracts
+  consumes:
+  - evidence_reference_schema
 activation:
   mode: conditional
   activates_when:

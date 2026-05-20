@@ -8,9 +8,7 @@ purpose: Validate risk taxonomy usage, signal completeness, classification outpu
 ownership:
   owns:
   - risk_validation_policy
-  - validation_check_catalog
   - risk_validation_algorithm
-  - remediation_mapping
   - risk_validation_output_schema
   does_not_own:
   - risk taxonomy
@@ -18,6 +16,10 @@ ownership:
   - risk escalation
   - gate internals
   - trigger resolution
+  specializes:
+  - validation_check_catalog
+  consumes:
+  - remediation_mapping
 activation:
   mode: conditional
   activates_when: []

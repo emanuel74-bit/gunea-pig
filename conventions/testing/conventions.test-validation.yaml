@@ -4,14 +4,12 @@ file:
   path: testing/conventions.test-validation.yaml
   role: test_validation_contract
   executability: validator
-purpose: Define strict validation for test plans, regression plans, characterization plans, gaps, validation commands, and test execution claims before implementation
-  or final validation may pass.
+purpose: Define strict validation for test plans, regression plans, characterization plans, gaps, validation commands, and
+  test execution claims before implementation or final validation may pass.
 ownership:
   owns:
   - test_validation_policy
-  - validation_check_catalog
   - validation_decision_rules
-  - remediation_mapping
   - test_validation_algorithm
   - test_validation_result_schema
   does_not_own:
@@ -19,6 +17,10 @@ ownership:
   - test_derivation_rules
   - regression_derivation_rules
   - characterization_derivation_rules
+  specializes:
+  - validation_check_catalog
+  consumes:
+  - remediation_mapping
 activation:
   mode: conditional
   activates_when:
@@ -50,10 +52,12 @@ sections:
   test_validation_policy:
     absolute_rules:
     - id: TEST-VALIDATION-ABS-001
-      rule: Test plan validation must fail when required acceptance criteria, obligations, regression expectations, or characterization mappings are missing.
+      rule: Test plan validation must fail when required acceptance criteria, obligations, regression expectations, or characterization
+        mappings are missing.
       fail_condition: test_plan_missing_required_mapping
     - id: TEST-VALIDATION-ABS-002
-      rule: A test gap marked blocking must block the phases listed in blocks_before until resolved or explicitly accepted by policy.
+      rule: A test gap marked blocking must block the phases listed in blocks_before until resolved or explicitly accepted
+        by policy.
       fail_condition: blocking_test_gap_not_enforced
     - id: TEST-VALIDATION-ABS-003
       rule: Validation may not mark tests passed unless execution results exist or the phase is explicitly planning-only.

@@ -11,7 +11,6 @@ ownership:
   - active_phase_plan_schema
   - phase_plan_materialization_rules
   - phase_plan_merge_rules
-  - skip_block_rules
   - phase_plan_validation_inputs
   does_not_own:
   - mission_profile_records
@@ -20,6 +19,8 @@ ownership:
   - alpha_runtime_scheduling
   - gate_execution
   - trigger_resolution
+  consumes:
+  - skip_block_rules
 activation:
   mode: reference_only
   activates_when:

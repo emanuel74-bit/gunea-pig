@@ -4,9 +4,8 @@ file:
   path: patterns/conventions.pattern-selection.yaml
   role: pattern_selection_contract
   executability: decision_engine
-purpose: Define the executable pattern-selection decision engine used to select exactly
-  one design pattern or NoPattern from evidenced pattern pressure, final roles, artifact
-  actions, restrictions, and role-pattern compatibility.
+purpose: Define the executable pattern-selection decision engine used to select exactly one design pattern or NoPattern from
+  evidenced pattern pressure, final roles, artifact actions, restrictions, and role-pattern compatibility.
 ownership:
   owns:
   - selection_policy
@@ -14,7 +13,7 @@ ownership:
   - no_pattern_decision
   - pattern_pressure_taxonomy
   - candidate_differentiation_rules
-  - selection_algorithm
+  - pattern_selection_algorithm
   - pattern_activation_gates
   - pattern_selection_order
   - pattern_decision_rules
@@ -68,21 +67,16 @@ sections:
     default_decision: NoPattern
     authority: binding_decision_only_during_pattern_selection_phase
     principles:
-    - NoPattern is the default unless a concrete pattern pressure is detected and
-      evidenced.
+    - NoPattern is the default unless a concrete pattern pressure is detected and evidenced.
     - Pattern selection must solve a named pressure, not satisfy stylistic preference.
-    - Role decomposition, clear boundaries, and direct composition must be considered
-      before adding a pattern.
-    - A selected pattern must be compatible with final artifact roles and artifact
-      actions.
-    - A selected pattern must not weaken dependency direction, boundary rules, or
-      report/phase contracts.
-    - Restricted, conditional, deferred, and disallowed pattern statuses are enforced
-      by pattern restrictions before final selection.
-    - When multiple patterns fit, choose the simplest pattern that fully resolves
-      the primary pressure and adds the fewest new artifacts.
-    - If all candidates are weak, ambiguous, or over-engineered, select NoPattern
-      and record why.
+    - Role decomposition, clear boundaries, and direct composition must be considered before adding a pattern.
+    - A selected pattern must be compatible with final artifact roles and artifact actions.
+    - A selected pattern must not weaken dependency direction, boundary rules, or report/phase contracts.
+    - Restricted, conditional, deferred, and disallowed pattern statuses are enforced by pattern restrictions before final
+      selection.
+    - When multiple patterns fit, choose the simplest pattern that fully resolves the primary pressure and adds the fewest
+      new artifacts.
+    - If all candidates are weak, ambiguous, or over-engineered, select NoPattern and record why.
     must_do:
     - load_pattern_pressure_report
     - load_final_role_assignment
@@ -130,23 +124,20 @@ sections:
     - pattern_restrictions_missing
     - role_pattern_compatibility_missing
   no_pattern_decision:
-    definition: Explicit decision that no design pattern should be introduced because
-      existing roles, direct composition, or simple extraction are sufficient.
+    definition: Explicit decision that no design pattern should be introduced because existing roles, direct composition,
+      or simple extraction are sufficient.
     choose_when:
     - no concrete pattern pressure is detected
     - pressure can be resolved by assigning clearer roles without new pattern structure
     - a simple helper, mapper, policy, or direct dependency is sufficient
     - candidate patterns introduce more concepts than the behavior requires
-    - candidate patterns require roles or files that would violate structure or dependency
-      rules
+    - candidate patterns require roles or files that would violate structure or dependency rules
     - the selected mission profile forbids or discourages extra abstraction
     - the evidence for pattern need is speculative or not tied to current behavior
     reject_when:
-    - pattern_pressure_report marks selection_required_later as true and candidate
-      pressure is supported by evidence
+    - pattern_pressure_report marks selection_required_later as true and candidate pressure is supported by evidence
     - multiple interchangeable algorithms, providers, or behaviors are required now
-    - an external boundary requires adaptation and direct mapping would leak external
-      concerns inward
+    - an external boundary requires adaptation and direct mapping would leak external concerns inward
     - a multi-step distributed workflow requires durable compensation or idempotency
     - event publication or consumption is a first-class behavior boundary
     - construction complexity would duplicate across multiple call sites
@@ -157,8 +148,7 @@ sections:
       evidence_refs: evidence supporting the no-pattern decision
   pattern_pressure_taxonomy:
     creation_pressure:
-      definition: Pressure caused by repeated, variable, or multi-step object creation
-        that should be centralized or abstracted.
+      definition: Pressure caused by repeated, variable, or multi-step object creation that should be centralized or abstracted.
       positive_signals:
       - multiple construction branches create related artifacts
       - construction requires ordered validation/defaulting/composition steps
@@ -179,8 +169,8 @@ sections:
       - duplicated_creation_site
       - variant_family_or_complex_creation_steps
     strategy_variation_pressure:
-      definition: Pressure caused by interchangeable behavior variants selected by
-        input, policy, configuration, tenant, source type, or runtime context.
+      definition: Pressure caused by interchangeable behavior variants selected by input, policy, configuration, tenant, source
+        type, or runtime context.
       positive_signals:
       - same intent has multiple algorithms
       - branching selects between interchangeable behaviors
@@ -202,8 +192,8 @@ sections:
       - selection_condition
       - shared_intent
     adapter_boundary_pressure:
-      definition: Pressure caused by needing to isolate an external interface, incompatible
-        API, legacy shape, protocol, package, or boundary from internal roles.
+      definition: Pressure caused by needing to isolate an external interface, incompatible API, legacy shape, protocol, package,
+        or boundary from internal roles.
       positive_signals:
       - external API shape differs from internal contract
       - third-party or infrastructure type would leak into domain/application code
@@ -226,8 +216,8 @@ sections:
       - mismatch_description
       - leakage_risk
     workflow_pressure:
-      definition: Pressure caused by ordered, conditional, or multi-step process flow
-        that needs explicit sequencing or handler boundaries.
+      definition: Pressure caused by ordered, conditional, or multi-step process flow that needs explicit sequencing or handler
+        boundaries.
       positive_signals:
       - multiple ordered steps transform or validate the same request
       - handlers may accept, reject, enrich, or pass responsibility
@@ -249,8 +239,7 @@ sections:
       - ordered_steps_or_handlers
       - failure_or_branching_semantics
     event_pressure:
-      definition: Pressure caused by asynchronous publication, subscription, state
-        change notification, or durable event processing.
+      definition: Pressure caused by asynchronous publication, subscription, state change notification, or durable event processing.
       positive_signals:
       - domain or integration events must notify multiple consumers
       - event publication should be decoupled from producers
@@ -274,8 +263,8 @@ sections:
       - producer_consumer_boundary
       - delivery_or_decoupling_need
     state_lifecycle_pressure:
-      definition: Pressure caused by behavior changing according to lifecycle state,
-        transitions, or valid state-dependent operations.
+      definition: Pressure caused by behavior changing according to lifecycle state, transitions, or valid state-dependent
+        operations.
       positive_signals:
       - same operation behaves differently by current state
       - valid transitions must be constrained
@@ -294,8 +283,8 @@ sections:
       - state_list
       - state_dependent_behavior_or_transitions
     data_access_pressure:
-      definition: Pressure caused by persistence abstraction, transaction coordination,
-        query/read separation, data mapping, or read model projection needs.
+      definition: Pressure caused by persistence abstraction, transaction coordination, query/read separation, data mapping,
+        or read model projection needs.
       positive_signals:
       - application logic should not depend directly on persistence implementation
       - multiple operations must share a transaction boundary
@@ -318,8 +307,8 @@ sections:
       - persistence_boundary
       - mapping_or_transaction_or_read_model_need
     resilience_pressure:
-      definition: Pressure caused by external failure modes requiring repeatability,
-        retry, circuit breaking, idempotency, or compensation.
+      definition: Pressure caused by external failure modes requiring repeatability, retry, circuit breaking, idempotency,
+        or compensation.
       positive_signals:
       - external call can fail transiently
       - operation may be retried and must remain safe
@@ -484,8 +473,7 @@ sections:
       Pipeline: when dynamic responsibility selection is primary
   - pattern: Command
     choose_when:
-    - operation must be represented as an object/message for queueing, logging, retrying,
-      undo, or dispatch
+    - operation must be represented as an object/message for queueing, logging, retrying, undo, or dispatch
     - invoker should be decoupled from operation execution
     reject_when:
     - a direct method call is clearer and no dispatch/retry/logging boundary exists
@@ -493,8 +481,7 @@ sections:
       Strategy: when operation identity and dispatch are primary, not algorithm family
   - pattern: Saga
     choose_when:
-    - distributed multi-step process needs compensation, retry, or durable progress
-      tracking
+    - distributed multi-step process needs compensation, retry, or durable progress tracking
     - transaction spans multiple services/resources without single ACID boundary
     reject_when:
     - workflow is local/in-process
@@ -607,8 +594,7 @@ sections:
       Inbox: when dedupe is request/API centric rather than message-consumer centric
   - pattern: Proxy
     choose_when:
-    - access to another object must be controlled for lazy loading, remote call, caching,
-      authorization, or instrumentation
+    - access to another object must be controlled for lazy loading, remote call, caching, authorization, or instrumentation
     reject_when:
     - wrapper adds behavior that changes the object contract
     - simple decorator or middleware fits better
@@ -622,51 +608,6 @@ sections:
     - subsystem simplification or external adaptation is primary
     prefer_over:
       Proxy: when additive behavior around same interface is primary
-  selection_algorithm:
-  - step_id: LOAD_REQUIRED_INPUTS
-    action: read
-    must_have:
-    - pattern_pressure_report
-    - final_role_assignment
-    - artifact_action_table
-    - pattern_catalog
-    - pattern_restrictions
-    - role_pattern_compatibility
-  - step_id: CHECK_NO_PATTERN_DEFAULT
-    action: initialize_decision
-    decision: NoPattern remains selected until a candidate passes all gates
-  - step_id: READ_PRESSURE_TYPES
-    action: extract
-    input: pattern_pressure_report.pressure_types
-  - step_id: BUILD_CANDIDATE_SET
-    action: map_pressure_to_candidate_patterns
-    source: pattern_pressure_taxonomy
-  - step_id: REMOVE_UNSUPPORTED_CANDIDATES
-    action: filter
-    fail_when:
-    - candidate_has_no_matching_positive_signal
-    - candidate_matches_reject_when
-  - step_id: APPLY_RESTRICTIONS
-    action: filter_or_require_justification
-    source: patterns/conventions.pattern-restrictions.yaml
-  - step_id: VALIDATE_ROLE_COMPATIBILITY
-    action: validate
-    source: patterns/conventions.role-pattern-compatibility.yaml
-  - step_id: CHECK_SIMPLER_ALTERNATIVES
-    action: compare
-    requirement: reject simpler role-based or direct solution before selecting heavier
-      pattern
-  - step_id: RANK_SURVIVORS
-    action: score
-    source: ranking_criteria
-  - step_id: SELECT_FINAL_DECISION
-    action: select
-    allowed_results:
-    - one_selected_pattern
-    - NoPattern
-  - step_id: WRITE_DECISION_LOG
-    action: write
-    output: .ai/reports/pattern-decision-log.yaml
   pattern_activation_gates:
   - gate_id: PATTERN-ACTIVATION-001
     name: pressure_gate
@@ -898,6 +839,50 @@ sections:
         conflicts: []
       triggers_emitted: []
       evidence_refs: []
+  pattern_selection_algorithm:
+  - step_id: LOAD_REQUIRED_INPUTS
+    action: read
+    must_have:
+    - pattern_pressure_report
+    - final_role_assignment
+    - artifact_action_table
+    - pattern_catalog
+    - pattern_restrictions
+    - role_pattern_compatibility
+  - step_id: CHECK_NO_PATTERN_DEFAULT
+    action: initialize_decision
+    decision: NoPattern remains selected until a candidate passes all gates
+  - step_id: READ_PRESSURE_TYPES
+    action: extract
+    input: pattern_pressure_report.pressure_types
+  - step_id: BUILD_CANDIDATE_SET
+    action: map_pressure_to_candidate_patterns
+    source: pattern_pressure_taxonomy
+  - step_id: REMOVE_UNSUPPORTED_CANDIDATES
+    action: filter
+    fail_when:
+    - candidate_has_no_matching_positive_signal
+    - candidate_matches_reject_when
+  - step_id: APPLY_RESTRICTIONS
+    action: filter_or_require_justification
+    source: patterns/conventions.pattern-restrictions.yaml
+  - step_id: VALIDATE_ROLE_COMPATIBILITY
+    action: validate
+    source: patterns/conventions.role-pattern-compatibility.yaml
+  - step_id: CHECK_SIMPLER_ALTERNATIVES
+    action: compare
+    requirement: reject simpler role-based or direct solution before selecting heavier pattern
+  - step_id: RANK_SURVIVORS
+    action: score
+    source: ranking_criteria
+  - step_id: SELECT_FINAL_DECISION
+    action: select
+    allowed_results:
+    - one_selected_pattern
+    - NoPattern
+  - step_id: WRITE_DECISION_LOG
+    action: write
+    output: .ai/reports/pattern-decision-log.yaml
 validation:
   required_checks:
   - id: PATTERN-SELECTION-CHECK-001
@@ -931,18 +916,15 @@ validation:
     severity: error
   - id: PATTERN-SELECTION-002
     condition: pattern_decision_missing_required_input
-    message: Pattern selection requires pressure, roles, actions, catalog, restrictions,
-      and compatibility inputs.
+    message: Pattern selection requires pressure, roles, actions, catalog, restrictions, and compatibility inputs.
     severity: error
   - id: PATTERN-SELECTION-003
     condition: disallowed_pattern_selected
-    message: A disallowed pattern cannot be selected unless a declared exception allows
-      it.
+    message: A disallowed pattern cannot be selected unless a declared exception allows it.
     severity: error
   - id: PATTERN-SELECTION-004
     condition: restricted_pattern_selected_without_justification
-    message: Restricted patterns require explicit justification and simpler-alternative
-      rejection.
+    message: Restricted patterns require explicit justification and simpler-alternative rejection.
     severity: error
   - id: PATTERN-SELECTION-005
     condition: pattern_selected_with_role_conflict
@@ -958,11 +940,9 @@ validation:
     severity: error
   - id: PATTERN-SELECTION-008
     condition: pattern_decision_missing_required_evidence
-    message: Pattern decision must include pressure, ranking, compatibility, rejected
-      candidates, and evidence.
+    message: Pattern decision must include pressure, ranking, compatibility, rejected candidates, and evidence.
     severity: error
   - id: PATTERN-SELECTION-009
     condition: no_pattern_decision_without_reason
-    message: NoPattern decision must include reason and rejected candidates when candidates
-      existed.
+    message: NoPattern decision must include reason and rejected candidates when candidates existed.
     severity: error

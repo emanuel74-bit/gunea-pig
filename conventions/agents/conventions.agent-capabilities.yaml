@@ -4,18 +4,20 @@ file:
   path: agents/conventions.agent-capabilities.yaml
   role: agent_capability_mapping_contract
   executability: decision_support
-purpose: Define what capabilities each fixed agent may exercise and which subsystem vocabularies each agent may use during phase execution.
+purpose: Define what capabilities each fixed agent may exercise and which subsystem vocabularies each agent may use during
+  phase execution.
 ownership:
   owns:
   - capability_type_enum
   - capability_records
   - capability_to_agent_matrix
-  - subsystem_usage_matrix
   does_not_own:
   - phase_ownership
   - agent_prompts
   - agent_permissions
   - subsystem_vocabulary_definitions
+  consumes:
+  - subsystem_usage_matrix
 activation:
   mode: reference_only
   activates_when:

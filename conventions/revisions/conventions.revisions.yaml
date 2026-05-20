@@ -4,14 +4,12 @@ file:
   path: revisions/conventions.revisions.yaml
   role: revisions_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the source of truth entrypoint, file index, local execution order, and ownership boundaries for revision, invalidation, and rerun
-  policy.
+purpose: Provide the source of truth entrypoint, file index, local execution order, and ownership boundaries for revision,
+  invalidation, and rerun policy.
 ownership:
   owns:
   - revisions_file_index
-  - local_execution_order
   - subsystem_contract
-  - integration_usage
   does_not_own:
   - revision_reason_definitions
   - revision_action_definitions
@@ -19,6 +17,9 @@ ownership:
   - phase_contracts
   - gate_validation_internals
   - handoff_consumption_policy
+  consumes:
+  - local_execution_order
+  - integration_usage
 activation:
   mode: entrypoint
   activates_when:

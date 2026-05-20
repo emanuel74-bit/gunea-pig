@@ -1,8 +1,16 @@
 package: sync_conventions_system_regular_yaml
-generated_from: accepted design through Step 41B
-yaml_file_count: 81
+generated_from: accepted design through Step 0 cross-reference stabilization repair pass
+yaml_file_count: 145
 notes:
 - Regular YAML convention files only.
-- Not yet transformed into Claude Code subagent/skill files.
-- Base normalized 51-file package was preserved except old routing/orchestrator were
-  replaced by core index/pipeline contract.
+- Cross-reference stabilization pass applied.
+- Manifest regenerated from actual package contents.
+- Runtime artifact identity registry added.
+- Claude Code adaptation is still a future layer unless explicitly generated later.
+folder_count: 22
+stabilization_summary:
+  stale_agent_paths_fixed: true
+  executability_enum_expanded: true
+  duplicate_ownership_resolved: true
+  runtime_artifact_registry_added: true
+  generic_selection_algorithm_split: true

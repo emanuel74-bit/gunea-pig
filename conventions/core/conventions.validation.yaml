@@ -59,9 +59,6 @@ sections:
     actions:
       validator_source: null
       entrypoint: actions/conventions.actions.yaml
-    agent:
-      validator_source: null
-      entrypoint: agent/conventions.agent.yaml
     agents:
       validator_source: agents/conventions.agent-validation.yaml
       entrypoint: agents/conventions.agents.yaml

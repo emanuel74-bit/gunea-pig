@@ -305,19 +305,6 @@ sections:
     - artifact_count
     - role_family_count
     - local_alignment
-    selection_algorithm:
-    - step_id: COUNT_STRUCTURE_PRESSURE
-      action: compute flow_count, artifact_count, role_family_count, variant_count, boundary_count
-    - step_id: EVALUATE_DENSITY_MODES
-      action: evaluate choose_when and reject_when for each density mode
-    - step_id: SCORE_VALID_MODES
-      action: score modes using declared score rules
-    - step_id: APPLY_TIE_BREAKERS
-      action: apply density_tie_breakers when score difference is not decisive
-    - step_id: REJECT_BLOAT
-      action: reject any mode that creates folder depth without a discoverability or boundary reason
-    - step_id: EMIT_STRUCTURE_STRATEGY
-      action: write selected density mode, rejected modes, evidence, and folder policy decisions
     density_tie_breakers:
     - priority: 1
       rule: Prefer flat when it satisfies all requirements and no name collision or boundary ambiguity exists.
@@ -339,6 +326,19 @@ sections:
     - density_mode_selected_despite_reject_when_match
     - hybrid_selected_without_large_flow_and_role_density
     - folder_depth_added_without_evidence
+    structure_density_selection_algorithm:
+    - step_id: COUNT_STRUCTURE_PRESSURE
+      action: compute flow_count, artifact_count, role_family_count, variant_count, boundary_count
+    - step_id: EVALUATE_DENSITY_MODES
+      action: evaluate choose_when and reject_when for each density mode
+    - step_id: SCORE_VALID_MODES
+      action: score modes using declared score rules
+    - step_id: APPLY_TIE_BREAKERS
+      action: apply density_tie_breakers when score difference is not decisive
+    - step_id: REJECT_BLOAT
+      action: reject any mode that creates folder depth without a discoverability or boundary reason
+    - step_id: EMIT_STRUCTURE_STRATEGY
+      action: write selected density mode, rejected modes, evidence, and folder policy decisions
 validation:
   required_checks:
   - id: STRUCT-STRAT-CHECK-001

@@ -1,0 +1,1605 @@
+version: '1.0'
+file:
+  name: conventions.runtime-artifacts.yaml
+  path: reports/conventions.runtime-artifacts.yaml
+  role: runtime_artifact_identity_registry
+  executability: registry
+purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules for runtime artifacts such
+  as .ai reports, manifests, validation summaries, and phase outputs.
+ownership:
+  owns:
+  - runtime_artifact_identity_model
+  - runtime_artifact_path_normalization
+  - runtime_artifact_registry
+  - runtime_artifact_conflict_rules
+  does_not_own:
+  - local_report_template_content
+  - phase_execution_logic
+  - mission_state_mutation
+activation:
+  mode: always
+  activates_when: []
+  skips_when: []
+inputs:
+  required: []
+  optional:
+  - runtime_artifact_references
+outputs:
+  produces:
+  - runtime_artifact_registry
+  - runtime_artifact_identity_validation_rules
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.output-schema.yaml
+  optional_files:
+  - reports/conventions.report-registry.yaml
+sections:
+  runtime_artifact_identity_model:
+    required_fields:
+    - artifact_id
+    - path
+    - artifact_type
+    - schema
+    - producer
+    - consumers
+    - scope
+    - lifecycle
+    - write_mode
+    - required
+  runtime_artifact_path_normalization:
+    rules:
+    - strip_trailing_semicolon
+    - strip_trailing_comma
+    - strip_quotes
+    - normalize_slashes
+    - preserve_glob_semantics
+    - distinguish_runtime_artifacts_from_convention_files
+  runtime_artifact_conflict_rules:
+  - id: ARTIFACT-SAME-PATH-SAME-ID
+    condition: same_path_and_same_artifact_id
+    result: valid_shared_reference
+  - id: ARTIFACT-SAME-PATH-DIFFERENT-ID
+    condition: same_path_and_different_artifact_id
+    result: invalid_conflict
+  - id: ARTIFACT-DIFFERENT-PATH-SAME-ID
+    condition: different_path_and_same_artifact_id
+    result: valid_only_if_alias_or_migration_declared
+  - id: ARTIFACT-MULTIPLE-PRODUCERS
+    condition: same_artifact_id_has_multiple_producers
+    result: invalid_unless_write_mode_is_append_or_aggregate
+  runtime_artifact_registry:
+  - artifact_id: ai_logs
+    path: .ai/logs/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-permissions.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_mission_state_yaml
+    path: .ai/mission-state.yaml
+    artifact_type: runtime_artifact
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-permissions.yaml
+    - gates/conventions.gate-validation.yaml
+    - handoffs/conventions.handoff-schema.yaml
+    - phases/conventions.phase-contracts.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_phase_bundles
+    path: .ai/phase-bundles/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-permissions.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_phase_bundles_phase_id_input_yaml
+    path: .ai/phase-bundles/{phase_id}.input.yaml
+    artifact_type: runtime_artifact
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - multi-agent/conventions.phase-bundle-policy.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports
+    path: .ai/reports
+    artifact_type: runtime_artifact
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports
+    path: .ai/reports/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-permissions.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_00_mission_profile_yaml
+    path: .ai/reports/00-mission-profile.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - missions/conventions.mission-profile-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_01_active_context_manifest_yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_02_behavior_contract_yaml
+    path: .ai/reports/02-behavior-contract.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.architecture.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_03_codebase_reconnaissance_yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.architecture.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_04_draft_role_signals_yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_05_artifact_actions_yaml
+    path: .ai/reports/05-artifact-actions.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure-strategy.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_06_refactor_strategy_yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_07_change_impact_yaml
+    path: .ai/reports/07-change-impact.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_08_final_role_assignment_yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure-strategy.yaml
+    - architecture/conventions.structure.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_09_test_plan_yaml
+    path: .ai/reports/09-test-plan.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    - testing/conventions.test-derivation.yaml
+    - testing/conventions.testing.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_10_implementation_sequence_yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_99_validation_summary_yaml
+    path: .ai/reports/99-validation-summary.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_architecture_blueprint_yaml
+    path: .ai/reports/architecture-blueprint.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.architecture.yaml
+    - architecture/conventions.structure-strategy.yaml
+    - architecture/conventions.structure.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_artifact_candidates_yaml
+    path: .ai/reports/artifact-candidates.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.architecture.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_artifact_reuse_analysis_yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_assumptions_yaml
+    path: .ai/reports/assumptions.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_behavior_preservation_requirements_yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_boundary_contract_classification_yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.architecture.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_call_site_impact_yaml
+    path: .ai/reports/call-site-impact.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_changed_file_manifest_yaml
+    path: .ai/reports/changed-file-manifest.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_characterization_test_plan_yaml
+    path: .ai/reports/characterization-test-plan.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    - testing/conventions.characterization-testing.yaml
+    - testing/conventions.testing.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_checkpoint_groups_yaml
+    path: .ai/reports/checkpoint-groups.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_checkpoint_results_yaml
+    path: .ai/reports/checkpoint-results.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_checkpoint_validation_plan_yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_compatibility_decision_yaml
+    path: .ai/reports/compatibility-decision.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - contracts/conventions.compatibility.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_consumer_impact_yaml
+    path: .ai/reports/consumer-impact.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_dependency_classification_yaml
+    path: .ai/reports/dependency-classification.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_dependency_validation_yaml
+    path: .ai/reports/dependency-validation.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_failure_classification_yaml
+    path: .ai/reports/failure-classification.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_failure_report_yaml
+    path: .ai/reports/failure-report.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_feedback_repair_result_yaml
+    path: .ai/reports/feedback-repair-result.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_final_file_tree_yaml
+    path: .ai/reports/final-file-tree.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_final_unresolved_items_yaml
+    path: .ai/reports/final-unresolved-items.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_handoffs_yaml
+    path: .ai/reports/handoffs.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - handoffs/conventions.handoff-validation.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_implementation_result_yaml
+    path: .ai/reports/implementation-result.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_local_alignment_yaml
+    path: .ai/reports/local-alignment.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure-strategy.yaml
+    - architecture/conventions.structure.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_local_convention_candidates_yaml
+    path: .ai/reports/local-convention-candidates.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_pattern_decision_log_yaml
+    path: .ai/reports/pattern-decision-log.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure-strategy.yaml
+    - architecture/conventions.structure.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_pattern_pressure_yaml
+    path: .ai/reports/pattern-pressure.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_phase_accounting_yaml
+    path: .ai/reports/phase-accounting.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_post_action_artifact_candidates_yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_post_implementation_validation_yaml
+    path: .ai/reports/post-implementation-validation.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_pre_implementation_gate_yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_refactor_required_followups_yaml
+    path: .ai/reports/refactor-required-followups.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_regression_test_plan_yaml
+    path: .ai/reports/regression-test-plan.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    - testing/conventions.regression-testing.yaml
+    - testing/conventions.testing.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_repair_plan_yaml
+    path: .ai/reports/repair-plan.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_report_artifact_validation_yaml
+    path: .ai/reports/report-artifact-validation.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_report_registry_yaml
+    path: .ai/reports/report-registry.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - gates/conventions.gate-validation.yaml
+    - missions/conventions.mission-state.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_risk_classification_yaml
+    path: .ai/reports/risk-classification.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.architecture.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_role_collision_resolution_yaml
+    path: .ai/reports/role-collision-resolution.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_structure_plan_yaml
+    path: .ai/reports/structure-plan.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - architecture/conventions.structure.yaml
+    - patterns/conventions.pattern-selection.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_trigger_review_yaml
+    path: .ai/reports/trigger-review.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-contracts.yaml
+    - agents/conventions.agent-permissions.yaml
+    - agents/conventions.agent-phase-ownership.yaml
+    - phases/conventions.phase-contracts.yaml
+    - phases/conventions.phase-taxonomy.yaml
+    - reports/conventions.report-registry.yaml
+    - triggers/conventions.trigger-resolution.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_runtime_packs
+    path: .ai/runtime-packs/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - agents/conventions.agent-permissions.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_template_yaml
+    path: .ai/templates/reports/*.template.yaml
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-templates.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_00_mission_profile_template_yaml
+    path: .ai/templates/reports/00-mission-profile.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_01_active_context_manifest_template_yaml
+    path: .ai/templates/reports/01-active-context-manifest.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_02_behavior_contract_template_yaml
+    path: .ai/templates/reports/02-behavior-contract.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_03_codebase_reconnaissance_template_yaml
+    path: .ai/templates/reports/03-codebase-reconnaissance.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_04_draft_role_signals_template_yaml
+    path: .ai/templates/reports/04-draft-role-signals.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_05_artifact_actions_template_yaml
+    path: .ai/templates/reports/05-artifact-actions.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_06_refactor_strategy_template_yaml
+    path: .ai/templates/reports/06-refactor-strategy.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_07_change_impact_template_yaml
+    path: .ai/templates/reports/07-change-impact.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_08_final_role_assignment_template_yaml
+    path: .ai/templates/reports/08-final-role-assignment.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_09_test_plan_template_yaml
+    path: .ai/templates/reports/09-test-plan.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_10_implementation_sequence_template_yaml
+    path: .ai/templates/reports/10-implementation-sequence.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_99_validation_summary_template_yaml
+    path: .ai/templates/reports/99-validation-summary.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_architecture_blueprint_template_yaml
+    path: .ai/templates/reports/architecture-blueprint.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_artifact_candidates_template_yaml
+    path: .ai/templates/reports/artifact-candidates.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_artifact_reuse_analysis_template_yaml
+    path: .ai/templates/reports/artifact-reuse-analysis.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_assumptions_template_yaml
+    path: .ai/templates/reports/assumptions.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_behavior_preservation_requirements_template_yaml
+    path: .ai/templates/reports/behavior-preservation-requirements.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_boundary_contract_classification_template_yaml
+    path: .ai/templates/reports/boundary-contract-classification.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_call_site_impact_template_yaml
+    path: .ai/templates/reports/call-site-impact.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_changed_file_manifest_template_yaml
+    path: .ai/templates/reports/changed-file-manifest.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_characterization_test_plan_template_yaml
+    path: .ai/templates/reports/characterization-test-plan.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_checkpoint_groups_template_yaml
+    path: .ai/templates/reports/checkpoint-groups.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_checkpoint_results_template_yaml
+    path: .ai/templates/reports/checkpoint-results.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_checkpoint_validation_plan_template_yaml
+    path: .ai/templates/reports/checkpoint-validation-plan.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_compatibility_decision_template_yaml
+    path: .ai/templates/reports/compatibility-decision.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_consumer_impact_template_yaml
+    path: .ai/templates/reports/consumer-impact.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_dependency_classification_template_yaml
+    path: .ai/templates/reports/dependency-classification.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_dependency_validation_template_yaml
+    path: .ai/templates/reports/dependency-validation.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_failure_classification_template_yaml
+    path: .ai/templates/reports/failure-classification.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_failure_report_template_yaml
+    path: .ai/templates/reports/failure-report.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_feedback_repair_result_template_yaml
+    path: .ai/templates/reports/feedback-repair-result.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_final_file_tree_template_yaml
+    path: .ai/templates/reports/final-file-tree.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_final_unresolved_items_template_yaml
+    path: .ai/templates/reports/final-unresolved-items.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_implementation_result_template_yaml
+    path: .ai/templates/reports/implementation-result.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_local_alignment_template_yaml
+    path: .ai/templates/reports/local-alignment.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_local_convention_candidates_template_yaml
+    path: .ai/templates/reports/local-convention-candidates.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_pattern_decision_log_template_yaml
+    path: .ai/templates/reports/pattern-decision-log.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_pattern_pressure_template_yaml
+    path: .ai/templates/reports/pattern-pressure.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_phase_accounting_template_yaml
+    path: .ai/templates/reports/phase-accounting.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_post_action_artifact_candidates_template_yaml
+    path: .ai/templates/reports/post-action-artifact-candidates.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_post_implementation_validation_template_yaml
+    path: .ai/templates/reports/post-implementation-validation.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_pre_implementation_gate_template_yaml
+    path: .ai/templates/reports/pre-implementation-gate.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_refactor_required_followups_template_yaml
+    path: .ai/templates/reports/refactor-required-followups.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_regression_test_plan_template_yaml
+    path: .ai/templates/reports/regression-test-plan.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_repair_plan_template_yaml
+    path: .ai/templates/reports/repair-plan.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_report_artifact_validation_template_yaml
+    path: .ai/templates/reports/report-artifact-validation.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_report_registry_template_yaml
+    path: .ai/templates/reports/report-registry.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_risk_classification_template_yaml
+    path: .ai/templates/reports/risk-classification.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_role_collision_resolution_template_yaml
+    path: .ai/templates/reports/role-collision-resolution.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_structure_plan_template_yaml
+    path: .ai/templates/reports/structure-plan.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_templates_reports_trigger_review_template_yaml
+    path: .ai/templates/reports/trigger-review.template.yaml
+    artifact_type: report_output
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: must_be_declared_by_runtime_execution_context
+    consumers:
+    - reports/conventions.report-registry.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+validation:
+  required_checks:
+  - id: RUNTIME-ARTIFACT-CHECK-001
+    check: runtime_artifact_paths_normalized
+  - id: RUNTIME-ARTIFACT-CHECK-002
+    check: runtime_artifact_identity_conflicts_detected
+  fail_conditions:
+  - id: RUNTIME-ARTIFACT-001
+    condition: same_path_declared_for_different_artifacts
+    message: Runtime artifact path has conflicting identities.
+    severity: error
+  - id: RUNTIME-ARTIFACT-002
+    condition: runtime_artifact_path_contains_trailing_punctuation
+    message: Runtime artifact path must be normalized before validation.
+    severity: error

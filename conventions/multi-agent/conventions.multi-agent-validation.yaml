@@ -4,16 +4,14 @@ file:
   path: multi-agent/conventions.multi-agent-validation.yaml
   role: multi_agent_runtime_validation_contract
   executability: validator
-purpose: Define validation checks for the Alpha runtime, phase execution, phase bundles,
-  state transitions, subsystem authority boundaries, and fail-closed behavior.
+purpose: Define validation checks for the Alpha runtime, phase execution, phase bundles, state transitions, subsystem authority
+  boundaries, and fail-closed behavior.
 ownership:
   owns:
   - multi_agent_validation_policy
-  - validation_check_catalog
   - runtime_invariant_checks
   - authority_boundary_checks
   - validation_algorithm
-  - validation_output_schema
   does_not_own:
   - phase_execution
   - agent_phase_outputs
@@ -21,6 +19,10 @@ ownership:
   - trigger_resolution_semantics
   - handoff_consumption_semantics
   - revision_policy_semantics
+  produces:
+  - validation_output_schema
+  specializes:
+  - validation_check_catalog
 activation:
   mode: conditional
   activates_when:
