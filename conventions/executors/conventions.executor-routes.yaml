@@ -4,8 +4,7 @@ file:
   path: executors/conventions.executor-routes.yaml
   role: central_executor_route_map
   executability: router
-purpose: Define the central route map that agents use to resolve declared executor route IDs into script-backed
-  runtime actions.
+purpose: Define the central route map that agents use to resolve declared executor route IDs into script-backed runtime actions.
 ownership:
   owns:
   - central_executor_route_map
@@ -40,8 +39,7 @@ dependencies:
   required_files:
   - core/conventions.file-contract.yaml
   - executors/conventions.executor-contract.yaml
-  optional_files:
-  - scripts/conventions.scripts.yaml
+  optional_files: []
 sections:
   route_resolution_rules:
     lookup_key: route_id
@@ -176,8 +174,7 @@ sections:
         - revisions
     generator:
       generate_phase_bundle:
-        description: Generate minimal phase context bundle from active mission, phase, routes, and relevant convention
-          slices.
+        description: Generate minimal phase context bundle from active mission, phase, routes, and relevant convention slices.
         script: scripts/generate-phase-bundle.ts
         required_inputs:
         - mission_context
@@ -261,8 +258,7 @@ sections:
         - multi-agent
     report:
       collect_phase_report:
-        description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase
-          report.
+        description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase report.
         script: scripts/collect-phase-report.ts
         required_inputs:
         - phase_output

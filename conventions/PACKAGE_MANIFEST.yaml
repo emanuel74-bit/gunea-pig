@@ -1,14 +1,15 @@
-package: sync_conventions_system_executor_cleanup_model
-generated_from: 'Executor routing cleanup: obsolete authority registry and boundary files removed'
-yaml_file_count: 150
+package: sync_conventions_system_executor_script_contract_model
+generated_from: Scripts convention subsystem removed; script implementation rules retained inside executor route contracts
+yaml_file_count: 149
 folder_count: 25
 notes:
 - Regular YAML convention files only.
 - Standalone compiler subsystem direction has been collapsed into executor route types.
 - Agents must not call scripts directly; scripts are resolved through central executor routes.
 - Local files declare required_executor_routes; central executor routing maps route IDs to scripts.
-- Obsolete authority registry and authority boundary convention files removed; authority truth is produced only by executor-routed scripts as
-  generated artifacts.
+- Obsolete authority registry and authority boundary convention files removed; authority truth is produced only by executor-routed
+  scripts as generated artifacts.
+- No scripts convention subsystem; scripts/ is reserved for actual runnable implementation files only.
 stabilization_summary:
   stale_agent_paths_fixed: true
   executability_enum_expanded: true
@@ -22,7 +23,6 @@ index_summary:
 executor_system_summary:
   executor_entrypoint: executors/conventions.executors.yaml
   central_route_file: executors/conventions.executor-routes.yaml
-  script_layer_contract: scripts/conventions.scripts.yaml
   route_namespace: global_with_optional_subsystem_prefix
   route_grouping: by_executor_type
   route_naming: verb_noun
@@ -30,6 +30,7 @@ executor_system_summary:
   unknown_route_behavior: fail_closed
   script_folder: scripts/
   direct_script_calls_by_agents: forbidden
+  script_folder_meaning: centralized runnable implementation path, not a convention subsystem
 generated_authority_artifact_summary:
   manual_authority_registry_file_present: false
   manual_authority_boundary_file_present: false

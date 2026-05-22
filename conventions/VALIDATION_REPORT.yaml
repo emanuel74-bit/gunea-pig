@@ -1,34 +1,22 @@
-package: sync_conventions_system_executor_cleanup_model
-yaml_files_checked: 150
-yaml_parse_errors: []
-semantic_depth_errors: []
-status: passed
-cross_reference_checks:
-  missing_dependency_files: []
-  duplicate_owned_concepts: &id001 {}
-  undeclared_executability_values: []
-index_checks:
-  index_file: core/conventions.index.yaml
-  mode: lightweight_router
-  contains_full_concept_lookup: false
-  contains_authority_registry_entries: false
-executor_system_checks:
-  executor_entrypoint_exists: true
-  central_route_file_exists: true
-  script_layer_contract_exists: true
-  direct_script_selection_by_agents: forbidden
-  unknown_route_behavior: fail_closed
-  failure_control_field: failure_behavior_only
-  obsolete_compiler_system_file_present: false
-notes:
-- Executor subsystem added using central executor routing plus local route requirements.
-- Standalone compiler system file removed; compiler is now an executor route type.
-- Scripts are centralized under scripts/ and selected only through executor routes.
-- Obsolete authority registry and authority boundary convention files removed; generated authority topology is produced through executor routing.
-generated_authority_artifact_checks:
+validation_report: sync_conventions_system_executor_script_contract_model
+status: pass
+yaml_file_count: 149
+folder_count: 25
+checks:
+  yaml_parse_errors: 0
+  missing_required_dependencies: 0
+  duplicate_owned_concepts: 0
+  undeclared_executability_values: 0
   manual_authority_registry_file_present: false
   manual_authority_boundary_file_present: false
-  authority_truth_source: distributed_local_ownership_declarations
-  executor_route: compile_authority_topology
-  generated_output: .ai/topologies/authority-topology.yaml
-  duplicate_owned_concepts: *id001
+errors:
+  parse_errors: []
+  missing_required_dependencies: []
+  duplicate_owned_concepts: {}
+  undeclared_executability_values: []
+executor_script_contract_validation:
+  script_convention_subsystem_present: false
+  centralized_script_folder_policy: scripts/
+  script_folder_meaning: actual runnable implementation files only
+  script_selection_source: executors/conventions.executor-routes.yaml
+  direct_script_calls_by_agents: forbidden

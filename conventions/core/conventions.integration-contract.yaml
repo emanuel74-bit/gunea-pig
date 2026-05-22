@@ -4,8 +4,8 @@ file:
   path: core/conventions.integration-contract.yaml
   role: cross_subsystem_integration_contract
   executability: policy
-purpose: Define how subsystems consume each other through reports, phase bundles, gates, triggers, handoffs, revisions, mission state, and validation
-  without tight coupling or authority duplication.
+purpose: Define how subsystems consume each other through reports, phase bundles, gates, triggers, handoffs, revisions, mission
+  state, and validation without tight coupling or authority duplication.
 ownership:
   owns:
   - integration_surface_taxonomy
@@ -42,8 +42,8 @@ sections:
     revision_record: correction/invalidation/rerun request and decision record
     mission_state: Alpha-owned runtime state snapshot
   subsystem_usage_matrix:
-    multi-agent: consumes all validators, phase contracts, agent prompts/permissions, mission state, gates, triggers, handoffs, revisions, reports,
-      and risk escalation
+    multi-agent: consumes all validators, phase contracts, agent prompts/permissions, mission state, gates, triggers, handoffs,
+      revisions, reports, and risk escalation
     agents: consume phase bundles, prompts, permissions, report templates, and relevant subsystem runtime packs
     phases: reference agents, reports, gates, handoffs, triggers, and subsystem convention paths but do not own them
     reports: provide durable communication for all phase outputs and final validation

@@ -4,8 +4,8 @@ file:
   path: executors/conventions.executors.yaml
   role: executor_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Define the executor subsystem entrypoint for central executor routing, local route requirements, route
-  contracts, lifecycle hooks, and script-backed runtime enforcement.
+purpose: Define the executor subsystem entrypoint for central executor routing, local route requirements, route contracts,
+  lifecycle hooks, and script-backed runtime enforcement.
 ownership:
   owns:
   - executor_subsystem_metadata
@@ -45,7 +45,6 @@ dependencies:
   optional_files:
   - executors/conventions.executor-lifecycle.yaml
   - executors/conventions.executor-failures.yaml
-  - scripts/conventions.scripts.yaml
 sections:
   executor_file_index:
     executor_contract: executors/conventions.executor-contract.yaml
@@ -54,11 +53,12 @@ sections:
     executor_failures: executors/conventions.executor-failures.yaml
   core_model:
     routing_model: central_executor_routing_plus_local_route_requirements
-    agent_rule: Agents MUST NOT call scripts directly. Agents MUST execute scripts only through declared executor
-      routes.
+    agent_rule: Agents MUST NOT call scripts directly. Agents MUST execute scripts only through declared executor routes.
     local_file_rule: Local files declare required_executor_routes by route_id and never hardcode script paths.
-    central_route_rule: Executor routes resolve route_id to executor_type, script, inputs, outputs, lifecycle hooks,
-      write permissions, and failure behavior.
+    central_route_rule: Executor routes resolve route_id to executor_type, script, inputs, outputs, lifecycle hooks, write
+      permissions, and failure behavior.
+    script_implementation_rule: All route scripts MUST resolve to centralized implementation paths under scripts/, but scripts/
+      is not a convention subsystem.
   route_namespace_policy:
     namespace: global_route_namespace_with_optional_subsystem_prefix
     global_route_examples:
