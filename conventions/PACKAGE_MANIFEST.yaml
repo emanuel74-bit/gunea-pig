@@ -1,16 +1,17 @@
-package: sync_conventions_system_executor_pivot_reconciled
-generated_from: Executor Pivot Reconciliation Pass applied to accepted phase bundle routing milestone.
+package: sync_conventions_system_first_scripts
+generated_from: Phase 2 First Real Script Implementation applied to executor pivot reconciled milestone.
 yaml_file_count: 149
-folder_count: 23
+folder_count: 24
+script_file_count: 16
 notes:
-- Milestone baseline was conventions_phase_bundle_routes.zip.
-- Central executor routing with local script requirements is the active runtime automation model.
+- Milestone baseline was conventions_executor_pivot_reconciled.zip.
+- Central executor routing with local script requirements remains the active runtime automation model.
 - Agents must not call scripts directly; scripts are resolved only through declared executor routes.
-- No standalone compiler, validation, scripts convention, manual authority registry, or manual authority boundary subsystem
-  is active.
-- Compiler and validation behaviors are executor route types backed by centralized scripts/ implementation files.
-- Phase bundles are generated and validated through executor routes before phase-agent consumption.
-- Executor pivot reconciliation removed stale authority/script convention references and wired local lifecycle hooks to required_executor_routes.
+- No standalone compiler, validation, scripts convention, manual authority registry, or manual authority boundary
+  subsystem is active.
+- Compiler and validation behaviors remain executor route types backed by centralized scripts/ implementation files.
+- Phase 2 adds the first runnable TypeScript script implementations under scripts/ without creating a scripts convention
+  subsystem.
 executor_system_summary:
   executor_entrypoint: executors/conventions.executors.yaml
   central_route_file: executors/conventions.executor-routes.yaml
@@ -22,22 +23,29 @@ executor_system_summary:
   script_folder: scripts/
   script_folder_meaning: centralized runnable implementation path only
   direct_script_calls_by_agents: forbidden
-reconciliation_summary:
-  stale_authority_registry_references_removed: true
-  stale_script_convention_references_removed: true
-  core_validation_delegates_to_executor_routes: true
-  runtime_artifact_validation_route_added: true
-  local_required_executor_route_files:
-  - execution/conventions.execution.yaml
-  - gates/conventions.gates.yaml
-  - handoffs/conventions.handoffs.yaml
-  - missions/conventions.missions.yaml
-  - multi-agent/conventions.multi-agent.yaml
-  - multi-agent/conventions.phase-bundle-policy.yaml
-  - phases/conventions.phase-lifecycle.yaml
-  - reports/conventions.reports.yaml
-  - revisions/conventions.revisions.yaml
-  local_required_executor_route_file_count: 9
+phase_2_script_summary:
+  primary_foundational_scripts:
+  - scripts/validate-executor-routes.ts
+  - scripts/compile-authority-topology.ts
+  - scripts/validate-references.ts
+  - scripts/validate-changed-files.ts
+  supporting_route_scripts:
+  - scripts/collect-phase-report.ts
+  - scripts/compile-runtime-artifact-topology.ts
+  - scripts/create-revision-task.ts
+  - scripts/generate-mission-bundle.ts
+  - scripts/generate-phase-bundle.ts
+  - scripts/prepare-agent-handoff.ts
+  - scripts/run-gate-check.ts
+  - scripts/validate-authority-topology.ts
+  - scripts/validate-phase-bundle.ts
+  - scripts/validate-phase-output.ts
+  - scripts/validate-runtime-artifacts.ts
+  script_support_files:
+  - scripts/lib/common.ts
+  - scripts/package.json
+  - scripts/tsconfig.json
+  route_script_paths_all_exist: true
 foundational_routes:
 - collect_phase_report
 - compile_authority_topology

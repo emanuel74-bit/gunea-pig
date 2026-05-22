@@ -1,0 +1,19 @@
+{
+  "name": "sync-conventions-runtime-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate:executor-routes": "tsx validate-executor-routes.ts",
+    "compile:authority-topology": "tsx compile-authority-topology.ts",
+    "validate:authority-topology": "tsx validate-authority-topology.ts",
+    "validate:references": "tsx validate-references.ts",
+    "validate:changed-files": "tsx validate-changed-files.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.4.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}

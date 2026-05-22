@@ -1,7 +1,8 @@
-validation_report: sync_conventions_system_executor_pivot_reconciled
+validation_report: sync_conventions_system_first_scripts
 status: pass
 yaml_file_count: 149
-folder_count: 23
+folder_count: 24
+script_file_count: 16
 checks:
   yaml_parse_errors: 0
   missing_required_dependencies: 0
@@ -12,9 +13,10 @@ checks:
   unknown_local_executor_route_references: 0
   stale_removed_authority_references: 0
   stale_removed_script_convention_references: 0
-  stale_authority_boundary_validation_steps: 0
-  runtime_artifact_validation_route_present: true
-  local_required_executor_route_file_count: 9
+  route_script_paths_missing: 0
+  typescript_script_files_present: 16
+  foundational_script_implementations_present: 4
+  all_executor_route_scripts_present: true
 errors:
   parse_errors: []
   missing_required_dependencies: []
@@ -23,24 +25,14 @@ errors:
   undeclared_executability_values: []
   executor_route_contract_errors: []
   unknown_local_executor_route_references: []
-  stale_references:
-    authority-registry.yaml: []
-    authority-boundaries.yaml: []
-    scripts/conventions.: []
-    VALIDATE_AUTHORITY_BOUNDARIES: []
-executor_pivot_reconciliation:
-  core_validation_model: executor_route_delegated
-  authority_model: distributed_ownership_compiled_by_executor_route
-  script_invocation_model: central_executor_route_map_only
-  local_lifecycle_hook_model: required_executor_routes
-  runtime_artifact_validation_route: validate_runtime_artifacts
-  local_required_executor_route_files:
-  - execution/conventions.execution.yaml
-  - gates/conventions.gates.yaml
-  - handoffs/conventions.handoffs.yaml
-  - missions/conventions.missions.yaml
-  - multi-agent/conventions.multi-agent.yaml
-  - multi-agent/conventions.phase-bundle-policy.yaml
-  - phases/conventions.phase-lifecycle.yaml
-  - reports/conventions.reports.yaml
-  - revisions/conventions.revisions.yaml
+  missing_route_scripts: []
+phase_2_first_script_implementation:
+  implementation_model: centralized_scripts_folder_referenced_only_by_executor_routes
+  primary_scripts:
+  - scripts/validate-executor-routes.ts
+  - scripts/compile-authority-topology.ts
+  - scripts/validate-references.ts
+  - scripts/validate-changed-files.ts
+  supporting_scripts_reason: present so every accepted executor route resolves to an implementation path and validate_executor_routes
+    can fail closed on true missing scripts
+  script_invocation_rule: agents_must_execute_routes_not_scripts_directly
