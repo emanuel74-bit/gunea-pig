@@ -1,0 +1,84 @@
+version: '1.0'
+file:
+  name: conventions.scripts.yaml
+  path: scripts/conventions.scripts.yaml
+  role: script_implementation_layer_contract
+  executability: runtime_contract
+purpose: Define the centralized script implementation layer that backs executor routes. This file describes script
+  expectations only; actual executable scripts are implementation artifacts.
+ownership:
+  owns:
+  - script_implementation_layer_contract
+  - centralized_script_folder_policy
+  - script_io_contract
+  - script_write_safety_rules
+  - script_exit_result_policy
+  does_not_own:
+  - actual_script_implementation_code
+  - subsystem_local_business_rules
+  - phase_or_mission_authority
+  - manual_script_selection_by_agents
+activation:
+  mode: on_demand
+  activates_when:
+  - script_execution_required
+  - executor_route_resolution_required
+  skips_when:
+  - advisory_lookup_without_runtime_action
+inputs:
+  required: []
+  optional:
+  - declared_executor_routes
+  - active_lifecycle_hook
+  - changed_file_set
+  - mission_context
+  - phase_context
+outputs:
+  produces:
+  - script_layer_contract
+  - script_io_expectations
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  script_layer_model:
+    script_folder: scripts/
+    script_selection: Scripts are selected only by executor routes, never directly by agents.
+    script_categories:
+    - validation
+    - compiler
+    - generator
+    - gate
+    - handoff
+    - revision
+    - report
+    - bundle
+  script_contract:
+    required_properties:
+    - script_id
+    - route_id
+    - input_schema_or_input_contract
+    - output_schema_or_output_contract
+    - allowed_write_paths
+    - exit_result
+    - artifact_outputs
+    must_not:
+    - require_agent_guessing
+    - write_outside_allowed_paths
+    - silently_ignore_invalid_input
+  script_result_policy:
+    success: script produced declared outputs and no blocking failures
+    failure: script emits structured failure result consumed through executor failure_behavior
+    stdout_only_success: forbidden
+validation:
+  required_checks:
+  - required_executor_route_fields_present
+  - unknown_route_references_fail_closed
+  - script_paths_resolve_through_central_routes
+  fail_conditions:
+  - unknown_executor_route
+  - direct_script_reference_from_local_subsystem_file
+  - executor_route_missing_script
+  - executor_route_missing_failure_behavior

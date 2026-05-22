@@ -1,0 +1,83 @@
+version: '1.0'
+file:
+  name: conventions.executor-lifecycle.yaml
+  path: executors/conventions.executor-lifecycle.yaml
+  role: executor_lifecycle_hook_policy
+  executability: runtime_policy
+purpose: Define lifecycle hooks where local convention files may require executor routes and how agents execute
+  multiple routes in declared order.
+ownership:
+  owns:
+  - executor_lifecycle_hooks
+  - executor_declared_order_policy
+  - executor_local_requirement_policy
+  - executor_hook_execution_rules
+  does_not_own:
+  - actual_script_implementation_code
+  - subsystem_local_business_rules
+  - phase_or_mission_authority
+  - manual_script_selection_by_agents
+activation:
+  mode: on_demand
+  activates_when:
+  - script_execution_required
+  - executor_route_resolution_required
+  skips_when:
+  - advisory_lookup_without_runtime_action
+inputs:
+  required: []
+  optional:
+  - declared_executor_routes
+  - active_lifecycle_hook
+  - changed_file_set
+  - mission_context
+  - phase_context
+outputs:
+  produces:
+  - executor_lifecycle_policy
+  - local_executor_requirement_policy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  lifecycle_hooks:
+  - before_mission_start
+  - before_phase_start
+  - before_file_change
+  - after_file_change
+  - after_phase_output
+  - before_handoff
+  - after_handoff
+  - on_gate_check
+  - on_validation_failure
+  - before_mission_complete
+  local_usage_model:
+    field: required_executor_routes
+    allowed_values: route IDs defined in executors/conventions.executor-routes.yaml
+    script_paths_allowed: false
+    execution_order: declared_order
+  agent_execution_loop:
+  - read_local_required_executor_routes
+  - resolve_each_route_from_central_executor_routes
+  - run_mapped_script
+  - read_produced_outputs
+  - apply_failure_behavior
+  - continue_only_when_route_result_allows_continuation
+  fail_closed_cases:
+  - unknown_route_id
+  - missing_route_contract_field
+  - script_output_missing
+  - script_writes_outside_allowed_paths
+  - required_artifact_missing
+validation:
+  required_checks:
+  - required_executor_route_fields_present
+  - unknown_route_references_fail_closed
+  - script_paths_resolve_through_central_routes
+  fail_conditions:
+  - unknown_executor_route
+  - direct_script_reference_from_local_subsystem_file
+  - executor_route_missing_script
+  - executor_route_missing_failure_behavior

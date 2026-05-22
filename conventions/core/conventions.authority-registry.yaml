@@ -2,10 +2,11 @@ version: '2.0'
 file:
   name: conventions.authority-registry.yaml
   path: core/conventions.authority-registry.yaml
-  role: generated_authority_registry_contract
+  role: authority_topology_generation_contract
   executability: generator_contract
-purpose: Define how the canonical authority registry is generated and validated from distributed ownership declarations, without
-  manually duplicating every owned concept in this file.
+purpose: Define how the authority topology is generated and validated from distributed ownership declarations. The legacy
+  registry file name is retained for compatibility, but script outputs are treated as generated topologies, not manually
+  maintained registries.
 ownership:
   owns:
   - authority_registry_generation_contract
@@ -13,12 +14,16 @@ ownership:
   - authority_conflict_detection_rules
   - generic_concept_collision_policy
   - distributed_authority_model
+  - authority_topology_generation_contract
+  - generated_topology_compatibility_policy
   does_not_own:
   - concept_authority_index
   - local_subsystem_rules
   - runtime_artifact_contents
   - report_instance_contents
   - implementation_code
+  - manually_maintained_authority_registry
+  - generated_topology_instances
 activation:
   mode: validation_only
   activates_when:
@@ -40,6 +45,8 @@ outputs:
   - generated_concept_authority_index
   - duplicate_authority_validation_result
   - generic_name_collision_validation_result
+  - generated_authority_topology
+  - authority_topology_validation_result
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
@@ -47,11 +54,12 @@ dependencies:
   optional_files:
   - core/conventions.index.yaml
   - reports/conventions.runtime-artifacts.yaml
+  - executors/conventions.executor-routes.yaml
 sections:
   distributed_authority_model:
     source_of_truth: Each convention file declares its local authoritative concepts under ownership.owns.
-    compiled_registry: Validators compile a virtual/generated registry by scanning ownership.owns across all convention YAML
-      files.
+    compiled_registry: Validators or executor routes or scripts compile a generated authority topology by scanning ownership.owns and
+      relationship declarations across all convention YAML files.
     manual_registry_entries: forbidden
     reason: Prevents index/registry drift and avoids loading an 800+ concept table during ordinary mission execution.
   authority_relationship_taxonomy:
@@ -65,12 +73,12 @@ sections:
     references: Mentions a concept without authority or transformation.
   generation_algorithm:
   - parse_all_convention_yaml_files
-  - read_each_file_ownership_owns_list
+  - read_ownership_relationships
   - normalize_concept_ids
-  - build_concept_to_owner_map
+  - build_authority_topology
   - fail_if_concept_has_multiple_owners
   - fail_if_generic_concept_name_is_reused_for_distinct_meanings
-  - emit_generated_registry_artifact_for_validation_reports_or_tooling_only
+  - emit_generated_authority_topology_for_validation_reports_or_tooling_only
   generic_concept_collision_policy:
     rule: Generic concept names must be intent-qualified when reused across different domains or meanings.
     high_risk_names:
@@ -101,7 +109,12 @@ sections:
   runtime_context_policy:
     load_by_default: false
     normal_runtime_usage: Load only this contract or a filtered generated registry slice when ownership validation is relevant.
-    bundle_compiler_usage: Include only authority entries for subsystems/files touched by the mission bundle.
+    bundle_compiler_usage: Include only authority topology entries for subsystems/files touched by the mission bundle.
+  naming_policy:
+    preferred_output_name: authority_topology
+    legacy_file_name: conventions.authority-registry.yaml
+    rule: Use topology for generated relationship truth. Use registry only for legacy file compatibility or narrow lookup
+      tables.
 validation:
   must_pass:
   - distributed_ownership_scan_successful

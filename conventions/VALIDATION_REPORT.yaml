@@ -1,5 +1,5 @@
-package: sync_conventions_system_index_authority_split
-yaml_files_checked: 146
+package: sync_conventions_system_executor_routing_model
+yaml_files_checked: 152
 yaml_parse_errors: []
 semantic_depth_errors: []
 status: passed
@@ -16,12 +16,20 @@ authority_registry_checks:
   registry_file: core/conventions.authority-registry.yaml
   mode: generated_from_distributed_ownership_declarations
   manual_concept_authority_table_present: false
-  owned_concepts_discovered: 827
+  owned_concepts_discovered: 856
   duplicate_owned_concepts: *id001
   generic_concept_collision_policy_present: true
-  single_owner_policy: enforced_by_generated_registry_contract
+  single_owner_policy: enforced_by_generated_authority_topology
+  preferred_output_name: authority_topology
+executor_system_checks:
+  executor_entrypoint_exists: true
+  central_route_file_exists: true
+  script_layer_contract_exists: true
+  direct_script_selection_by_agents: forbidden
+  unknown_route_behavior: fail_closed
+  failure_control_field: failure_behavior_only
+  obsolete_compiler_system_file_present: false
 notes:
-- This report was regenerated after the index/authority split refinement.
-- Runtime artifact paths are governed by reports/conventions.runtime-artifacts.yaml.
-- Authority registry is now generated from distributed ownership declarations instead of manually duplicating all concept
-  entries.
+- Executor subsystem added using central executor routing plus local route requirements.
+- Standalone compiler system file removed; compiler is now an executor route type.
+- Scripts are centralized under scripts/ and selected only through executor routes.

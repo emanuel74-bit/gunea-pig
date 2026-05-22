@@ -1,0 +1,112 @@
+version: '1.0'
+file:
+  name: conventions.executor-contract.yaml
+  path: executors/conventions.executor-contract.yaml
+  role: executor_route_contract_schema
+  executability: schema
+purpose: Define the required shape of every executor route and the constraints that make script execution predictable
+  and safe for agents.
+ownership:
+  owns:
+  - executor_route_contract_schema
+  - executor_route_required_fields
+  - executor_route_type_taxonomy
+  - executor_route_naming_policy
+  - local_route_requirement_contract
+  does_not_own:
+  - actual_script_implementation_code
+  - subsystem_local_business_rules
+  - phase_or_mission_authority
+  - manual_script_selection_by_agents
+activation:
+  mode: on_demand
+  activates_when:
+  - script_execution_required
+  - executor_route_resolution_required
+  skips_when:
+  - advisory_lookup_without_runtime_action
+inputs:
+  required: []
+  optional:
+  - declared_executor_routes
+  - active_lifecycle_hook
+  - changed_file_set
+  - mission_context
+  - phase_context
+outputs:
+  produces:
+  - executor_route_schema
+  - local_route_requirement_schema
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  optional_files: []
+sections:
+  executor_route_contract:
+    required_fields:
+    - executor_type
+    - description
+    - script
+    - required_inputs
+    - produced_outputs
+    - allowed_write_paths
+    - required_artifacts
+    - lifecycle_hooks
+    - failure_behavior
+    - consumers
+    forbidden_fields:
+    - blocking
+    - failure_policy
+    - direct_agent_script_selection
+    minimal_example:
+      validate_phase_output:
+        executor_type: validation
+        description: Validate phase output after a phase produces its required artifacts.
+        script: scripts/validate-phase-output.ts
+        required_inputs:
+        - phase_output
+        - phase_contract
+        produced_outputs:
+        - phase_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts:
+        - phase_output
+        lifecycle_hooks:
+        - after_phase_output
+        failure_behavior: block
+        consumers:
+        - phases
+        - multi-agent
+        - reports
+  executor_type_taxonomy:
+  - validation
+  - compiler
+  - generator
+  - gate
+  - handoff
+  - revision
+  - report
+  - bundle
+  route_naming_policy:
+    format: verb_noun
+    allowed_subsystem_prefix: <subsystem_id>.<verb_noun>
+    forbidden:
+    - noun_only
+    - script_filename_as_route_id
+    - ambiguous_generic_route_id
+  local_route_requirement_contract:
+    field: required_executor_routes
+    values: route_id_list
+    script_paths_allowed: false
+    execution_order: declared_order
+validation:
+  required_checks:
+  - required_executor_route_fields_present
+  - unknown_route_references_fail_closed
+  - script_paths_resolve_through_central_routes
+  fail_conditions:
+  - unknown_executor_route
+  - direct_script_reference_from_local_subsystem_file
+  - executor_route_missing_script
+  - executor_route_missing_failure_behavior

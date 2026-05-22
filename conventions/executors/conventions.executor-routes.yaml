@@ -1,0 +1,314 @@
+version: '1.0'
+file:
+  name: conventions.executor-routes.yaml
+  path: executors/conventions.executor-routes.yaml
+  role: central_executor_route_map
+  executability: router
+purpose: Define the central route map that agents use to resolve declared executor route IDs into script-backed
+  runtime actions.
+ownership:
+  owns:
+  - central_executor_route_map
+  - executor_route_lookup_rules
+  - executor_route_namespace
+  - executor_route_grouping_by_type
+  does_not_own:
+  - actual_script_implementation_code
+  - subsystem_local_business_rules
+  - phase_or_mission_authority
+  - manual_script_selection_by_agents
+activation:
+  mode: on_demand
+  activates_when:
+  - script_execution_required
+  - executor_route_resolution_required
+  skips_when:
+  - advisory_lookup_without_runtime_action
+inputs:
+  required: []
+  optional:
+  - declared_executor_routes
+  - active_lifecycle_hook
+  - changed_file_set
+  - mission_context
+  - phase_context
+outputs:
+  produces:
+  - central_executor_route_map
+  - executor_route_resolution_result
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-contract.yaml
+  optional_files:
+  - scripts/conventions.scripts.yaml
+sections:
+  route_resolution_rules:
+    lookup_key: route_id
+    namespace: global_route_namespace_with_optional_subsystem_prefix
+    unknown_route_behavior: fail_closed
+    script_path_authority: central_executor_route_map
+    local_script_path_override: forbidden
+    route_execution_order: declared_order_from_local_required_executor_routes
+  executor_routes:
+    validation:
+      validate_executor_routes:
+        description: Validate central executor routes and local route references.
+        script: scripts/validate-executor-routes.ts
+        required_inputs:
+        - executor_routes
+        - local_required_executor_routes
+        produced_outputs:
+        - executor_route_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - agents
+        - multi-agent
+        - execution
+      validate_phase_output:
+        description: Validate produced phase output against phase contracts and required evidence.
+        script: scripts/validate-phase-output.ts
+        required_inputs:
+        - phase_output
+        - phase_contract
+        produced_outputs:
+        - phase_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts:
+        - phase_output
+        lifecycle_hooks:
+        - after_phase_output
+        failure_behavior: block
+        consumers:
+        - phases
+        - multi-agent
+        - reports
+      validate_changed_files:
+        description: Validate changed files and affected convention dependencies.
+        script: scripts/validate-changed-files.ts
+        required_inputs:
+        - changed_file_set
+        - reference_topology
+        produced_outputs:
+        - changed_file_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts:
+        - changed_file_manifest
+        lifecycle_hooks:
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - execution
+        - testing
+        - reports
+      validate_references:
+        description: Validate file, subsystem, contract, route, and runtime artifact references.
+        script: scripts/validate-references.ts
+        required_inputs:
+        - parsed_convention_files
+        produced_outputs:
+        - reference_validation_result
+        - reference_topology
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/topologies/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - core
+        - execution
+        - reports
+    compiler:
+      compile_authority_topology:
+        description: Compile distributed ownership declarations into an authority topology and conflict report.
+        script: scripts/compile-authority-topology.ts
+        required_inputs:
+        - parsed_convention_files
+        - ownership_declarations
+        produced_outputs:
+        - authority_topology
+        - authority_conflict_report
+        allowed_write_paths:
+        - .ai/topologies/**
+        - .ai/reports/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - core
+        - validation
+        - execution
+      compile_runtime_artifact_topology:
+        description: Compile runtime artifact declarations and usages into producer/consumer topology.
+        script: scripts/compile-runtime-artifact-topology.ts
+        required_inputs:
+        - runtime_artifact_declarations
+        - runtime_artifact_references
+        produced_outputs:
+        - runtime_artifact_topology
+        - artifact_conflict_report
+        allowed_write_paths:
+        - .ai/topologies/**
+        - .ai/reports/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - reports
+        - gates
+        - handoffs
+        - revisions
+    generator:
+      generate_phase_bundle:
+        description: Generate minimal phase context bundle from active mission, phase, routes, and relevant convention
+          slices.
+        script: scripts/generate-phase-bundle.ts
+        required_inputs:
+        - mission_context
+        - active_phase
+        - loading_group_map
+        produced_outputs:
+        - phase_context_bundle
+        allowed_write_paths:
+        - .ai/bundles/**
+        required_artifacts:
+        - active_phase_plan
+        lifecycle_hooks:
+        - before_phase_start
+        failure_behavior: block
+        consumers:
+        - agents
+        - multi-agent
+        - phases
+    gate:
+      run_gate_check:
+        description: Run gate checks for phase or mission transition.
+        script: scripts/run-gate-check.ts
+        required_inputs:
+        - gate_id
+        - gate_inputs
+        - validation_results
+        produced_outputs:
+        - gate_result
+        allowed_write_paths:
+        - .ai/gates/**
+        - .ai/reports/**
+        required_artifacts:
+        - validation_result
+        lifecycle_hooks:
+        - on_gate_check
+        failure_behavior: block
+        consumers:
+        - gates
+        - multi-agent
+        - missions
+    handoff:
+      prepare_agent_handoff:
+        description: Prepare and validate handoff payload between phase agents.
+        script: scripts/prepare-agent-handoff.ts
+        required_inputs:
+        - source_phase_output
+        - target_agent_requirements
+        produced_outputs:
+        - agent_handoff_packet
+        allowed_write_paths:
+        - .ai/handoffs/**
+        required_artifacts:
+        - source_phase_output
+        lifecycle_hooks:
+        - before_handoff
+        failure_behavior: block
+        consumers:
+        - handoffs
+        - agents
+        - multi-agent
+    revision:
+      create_revision_task:
+        description: Convert failed validation or gate result into a deterministic revision task.
+        script: scripts/create-revision-task.ts
+        required_inputs:
+        - failure_result
+        - remediation_mapping
+        produced_outputs:
+        - revision_task
+        allowed_write_paths:
+        - .ai/revisions/**
+        - .ai/reports/**
+        required_artifacts:
+        - failure_result
+        lifecycle_hooks:
+        - on_validation_failure
+        failure_behavior: revise
+        consumers:
+        - revisions
+        - risk
+        - multi-agent
+    report:
+      collect_phase_report:
+        description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase
+          report.
+        script: scripts/collect-phase-report.ts
+        required_inputs:
+        - phase_output
+        - validation_results
+        - gate_results
+        produced_outputs:
+        - phase_report
+        allowed_write_paths:
+        - .ai/reports/**
+        required_artifacts:
+        - phase_output
+        lifecycle_hooks:
+        - after_phase_output
+        failure_behavior: warn
+        consumers:
+        - reports
+        - phases
+        - multi-agent
+    bundle:
+      generate_mission_bundle:
+        description: Generate mission-level context bundle and execution route list.
+        script: scripts/generate-mission-bundle.ts
+        required_inputs:
+        - mission_type
+        - mission_context
+        - subsystem_entrypoint_map
+        produced_outputs:
+        - mission_context_bundle
+        allowed_write_paths:
+        - .ai/bundles/**
+        required_artifacts:
+        - mission_definition
+        lifecycle_hooks:
+        - before_mission_start
+        failure_behavior: block
+        consumers:
+        - missions
+        - agents
+        - multi-agent
+validation:
+  required_checks:
+  - required_executor_route_fields_present
+  - unknown_route_references_fail_closed
+  - script_paths_resolve_through_central_routes
+  fail_conditions:
+  - unknown_executor_route
+  - direct_script_reference_from_local_subsystem_file
+  - executor_route_missing_script
+  - executor_route_missing_failure_behavior

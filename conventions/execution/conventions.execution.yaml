@@ -4,8 +4,9 @@ file:
   path: execution/conventions.execution.yaml
   role: execution_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the execution subsystem entrypoint, file index, execution order, ownership boundaries, and integration contract
-  for deterministic implementation planning and controlled execution.
+purpose: Provide the execution subsystem entrypoint, execution order, ownership boundaries, and integration contract
+  for deterministic implementation planning and controlled execution. Script-backed runtime actions are resolved
+  through the executors subsystem.
 ownership:
   owns:
   - execution_subsystem_metadata
@@ -14,6 +15,7 @@ ownership:
   - execution_ownership_boundaries
   - execution_integration_contract
   - local_execution_order
+  - execution_executor_integration
   does_not_own:
   - architecture_decomposition
   - artifact_action_selection
@@ -47,6 +49,10 @@ dependencies:
   - testing/conventions.test-validation.yaml
   - risk/conventions.risk-escalation.yaml
   - revisions/conventions.revision-validation.yaml
+  - core/conventions.script-delegation-policy.yaml
+  - executors/conventions.executors.yaml
+  - executors/conventions.executor-routes.yaml
+  - core/conventions.script-delegation-policy.yaml
 sections:
   execution_file_index:
     implementation_sequence: execution/conventions.implementation-sequence.yaml
@@ -58,6 +64,7 @@ sections:
     execution_validation: execution/conventions.execution-validation.yaml
   local_execution_order:
   - load_approved_design_inputs
+  - load_executor_routes
   - plan_implementation_sequence
   - plan_checkpoints
   - validate_pre_implementation_readiness
@@ -99,6 +106,7 @@ sections:
     - checkpoint_validation_plan_exists
     - allowed_code_edit_scope_defined
     - no_active_blocking_triggers
+    - executor_route_preflight_passed_when_required
     produces_reports:
     - 10-implementation-sequence
     - checkpoint-validation-plan
@@ -106,12 +114,14 @@ sections:
     - implementation-result
     - checkpoint-results
     - validation-command-results
+    - executor_route_validation_report
     blocks_when:
     - pre_implementation_gate_not_passed
     - allowed_scope_missing
     - blocking_trigger_active
     - required_input_invalidated
     - checkpoint_plan_missing
+    - required_compiled_topology_missing
 validation:
   required_checks:
   - id: EXECUTION-ENTRY-CHECK-001

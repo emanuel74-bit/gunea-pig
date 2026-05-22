@@ -1,0 +1,88 @@
+version: '1.0'
+file:
+  name: conventions.executors.yaml
+  path: executors/conventions.executors.yaml
+  role: executor_subsystem_entrypoint
+  executability: advisory_entrypoint
+purpose: Define the executor subsystem entrypoint for central executor routing, local route requirements, route
+  contracts, lifecycle hooks, and script-backed runtime enforcement.
+ownership:
+  owns:
+  - executor_subsystem_metadata
+  - executor_file_index
+  - executor_routing_model
+  - executor_agent_obligations
+  - central_executor_route_authority
+  does_not_own:
+  - actual_script_implementation_code
+  - subsystem_local_business_rules
+  - phase_or_mission_authority
+  - manual_script_selection_by_agents
+activation:
+  mode: on_demand
+  activates_when:
+  - script_execution_required
+  - executor_route_resolution_required
+  skips_when:
+  - advisory_lookup_without_runtime_action
+inputs:
+  required: []
+  optional:
+  - declared_executor_routes
+  - active_lifecycle_hook
+  - changed_file_set
+  - mission_context
+  - phase_context
+outputs:
+  produces:
+  - executor_subsystem_contract
+  - executor_route_resolution_policy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files:
+  - executors/conventions.executor-lifecycle.yaml
+  - executors/conventions.executor-failures.yaml
+  - scripts/conventions.scripts.yaml
+sections:
+  executor_file_index:
+    executor_contract: executors/conventions.executor-contract.yaml
+    executor_routes: executors/conventions.executor-routes.yaml
+    executor_lifecycle: executors/conventions.executor-lifecycle.yaml
+    executor_failures: executors/conventions.executor-failures.yaml
+  core_model:
+    routing_model: central_executor_routing_plus_local_route_requirements
+    agent_rule: Agents MUST NOT call scripts directly. Agents MUST execute scripts only through declared executor
+      routes.
+    local_file_rule: Local files declare required_executor_routes by route_id and never hardcode script paths.
+    central_route_rule: Executor routes resolve route_id to executor_type, script, inputs, outputs, lifecycle hooks,
+      write permissions, and failure behavior.
+  route_namespace_policy:
+    namespace: global_route_namespace_with_optional_subsystem_prefix
+    global_route_examples:
+    - validate_phase_output
+    - compile_authority_topology
+    - generate_phase_bundle
+    subsystem_prefixed_examples:
+    - risk.validate_risk_output
+    - agents.compile_agent_context
+    - missions.validate_mission_plan
+    collision_policy: fail_closed
+  organization_policy:
+    central_routes_grouping: group_by_executor_type
+    route_naming: verb_noun
+    execution_order: declared_order
+    unknown_route_behavior: fail_closed
+    script_location: centralized_scripts_folder
+validation:
+  required_checks:
+  - required_executor_route_fields_present
+  - unknown_route_references_fail_closed
+  - script_paths_resolve_through_central_routes
+  fail_conditions:
+  - unknown_executor_route
+  - direct_script_reference_from_local_subsystem_file
+  - executor_route_missing_script
+  - executor_route_missing_failure_behavior

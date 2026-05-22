@@ -1,0 +1,69 @@
+version: '1.0'
+file:
+  name: conventions.executor-failures.yaml
+  path: executors/conventions.executor-failures.yaml
+  role: executor_failure_behavior_policy
+  executability: policy
+purpose: Define the allowed executor failure behaviors and how agents must respond to script-backed route failures.
+ownership:
+  owns:
+  - executor_failure_behavior_values
+  - executor_failure_response_rules
+  - executor_fail_closed_policy
+  does_not_own:
+  - actual_script_implementation_code
+  - subsystem_local_business_rules
+  - phase_or_mission_authority
+  - manual_script_selection_by_agents
+activation:
+  mode: on_demand
+  activates_when:
+  - script_execution_required
+  - executor_route_resolution_required
+  skips_when:
+  - advisory_lookup_without_runtime_action
+inputs:
+  required: []
+  optional:
+  - declared_executor_routes
+  - active_lifecycle_hook
+  - changed_file_set
+  - mission_context
+  - phase_context
+outputs:
+  produces:
+  - executor_failure_behavior_policy
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-contract.yaml
+  optional_files: []
+sections:
+  allowed_failure_behavior:
+  - block
+  - warn
+  - retry
+  - revise
+  - report_only
+  behavior_semantics:
+    block: Stop the current mission or phase until the failure is resolved.
+    warn: Record warning evidence and continue execution.
+    retry: Rerun the same route according to script-supported retry behavior.
+    revise: Create or activate a revision route before continuing.
+    report_only: Record the failure in reports without blocking continuation.
+  default_behavior: block
+  forbidden_complexity:
+  - blocking_field
+  - failure_policy_object
+  - implicit_retry_without_route_support
+  - agent_invented_recovery_behavior
+validation:
+  required_checks:
+  - required_executor_route_fields_present
+  - unknown_route_references_fail_closed
+  - script_paths_resolve_through_central_routes
+  fail_conditions:
+  - unknown_executor_route
+  - direct_script_reference_from_local_subsystem_file
+  - executor_route_missing_script
+  - executor_route_missing_failure_behavior

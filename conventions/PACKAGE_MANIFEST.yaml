@@ -1,13 +1,13 @@
-package: sync_conventions_system_regular_yaml
-generated_from: Step 2 index-authority split refinement
-yaml_file_count: 146
-folder_count: 23
+package: sync_conventions_system_executor_routing_model
+generated_from: Step 4 executor-driven script system design
+yaml_file_count: 152
+folder_count: 24
 notes:
 - Regular YAML convention files only.
-- Index reduced to lightweight routing/loading metadata.
-- Authority registry converted to generated-registry contract derived from distributed ownership declarations.
-- Full concept authority table is no longer duplicated manually in core index or registry.
-- Claude Code adaptation is still a future layer unless explicitly generated later.
+- Standalone compiler subsystem direction has been collapsed into executor route types.
+- Agents must not call scripts directly; scripts are resolved through central executor routes.
+- Local files declare required_executor_routes; central executor routing maps route IDs to scripts.
+- Compiler remains only an executor_type for routes that derive topology, plan, or report artifacts.
 stabilization_summary:
   stale_agent_paths_fixed: true
   executability_enum_expanded: true
@@ -18,10 +18,22 @@ authority_registry_summary:
   registry_file: core/conventions.authority-registry.yaml
   mode: generated_from_distributed_ownership_declarations
   manual_concept_authority_table_present: false
-  owned_concepts_discovered: 827
+  owned_concepts_discovered: 856
   duplicate_owned_concepts_detected: 0
   duplicate_ownership_policy: forbidden
+  preferred_output_name: authority_topology
 index_summary:
   index_file: core/conventions.index.yaml
   mode: lightweight_router
   semantic_concept_lookup_present: false
+executor_system_summary:
+  executor_entrypoint: executors/conventions.executors.yaml
+  central_route_file: executors/conventions.executor-routes.yaml
+  script_layer_contract: scripts/conventions.scripts.yaml
+  route_namespace: global_with_optional_subsystem_prefix
+  route_grouping: by_executor_type
+  route_naming: verb_noun
+  execution_order: declared_order
+  unknown_route_behavior: fail_closed
+  script_folder: scripts/
+  direct_script_calls_by_agents: forbidden

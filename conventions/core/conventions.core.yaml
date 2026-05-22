@@ -5,7 +5,7 @@ file:
   role: core_subsystem_entrypoint
   executability: advisory_entrypoint
 purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lightweight routing index,
-  authority boundaries, generated authority registry contract, pipeline laws, output schemas, semantic completeness, validation,
+  authority boundaries, generated authority topology contract, pipeline laws, output schemas, semantic completeness, validation,
   integration, and script-delegation policy.'
 ownership:
   owns:
@@ -45,6 +45,7 @@ dependencies:
   - core/conventions.semantic-completeness.yaml
   - core/conventions.validation.yaml
   - core/conventions.script-delegation-policy.yaml
+  - executors/conventions.executor-routes.yaml
 sections:
   core_file_index:
     conventions.core.yaml: core/conventions.core.yaml
@@ -88,10 +89,12 @@ sections:
     - override specialized validators
     - act as Alpha runtime
   authority_registry_policy:
-    authority_registry_file: core/conventions.authority-registry.yaml
+    authority_contract_file: core/conventions.authority-registry.yaml
+    preferred_output_name: authority_topology
     mode: generated_from_distributed_ownership_declarations
-    index_overlap_policy: index routes to files; authority registry governs/generated-validates ownership; neither duplicates
+    index_overlap_policy: index routes to files; authority topology governs/generated-validates ownership; neither duplicates
       the other
+    executor_routes: executors/conventions.executor-routes.yaml
 validation:
   required_checks:
   - id: CORE-ENTRY-CHECK-001
