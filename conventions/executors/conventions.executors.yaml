@@ -61,6 +61,7 @@ sections:
       is not a convention subsystem.
     foundational_validation_model: Validation is handled as executor routes backed by scripts; no standalone validation subsystem
       is required.
+    phase_bundle_model: Phase bundles are generated and validated through executor routes before phase-agent work begins.
   route_namespace_policy:
     namespace: global_route_namespace_with_optional_subsystem_prefix
     global_route_examples:
@@ -85,7 +86,16 @@ sections:
     - validate_authority_topology
     - validate_references
     - validate_changed_files
+    - validate_phase_bundle
     standalone_validation_subsystem: forbidden
+  phase_bundle_routes:
+    purpose: Provide the executor routes that generate and validate minimized phase context before an agent starts phase work.
+    required_routes_in_declared_order:
+    - generate_phase_bundle
+    - validate_phase_bundle
+    agent_consumption_rule: Agents may consume a phase bundle only after validate_phase_bundle succeeds.
+    script_selection_rule: Agents never choose bundle scripts directly; they execute required_executor_routes and resolve
+      scripts through the central route map.
 validation:
   required_checks:
   - required_executor_route_fields_present

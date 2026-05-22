@@ -4,8 +4,7 @@ file:
   path: multi-agent/conventions.phase-bundle-policy.yaml
   role: phase_bundle_generation_contract
   executability: generator_contract
-purpose: Define the minimal, deterministic phase execution bundle that every phase
-  agent must consume before doing work.
+purpose: Define the minimal, deterministic phase execution bundle that every phase agent must consume before doing work.
 ownership:
   owns:
   - phase_bundle_schema
@@ -13,6 +12,9 @@ ownership:
   - runtime_pack_policy
   - bundle_generation_algorithm
   - bundle_validation_rules
+  - phase_bundle_executor_integration
+  - phase_bundle_context_minimization_rules
+  - phase_bundle_consumption_gate
   does_not_own:
   - phase_contracts
   - agent_prompts
@@ -39,6 +41,8 @@ outputs:
   produces:
   - phase_input_bundle
   - runtime_pack_manifest
+  - phase_bundle_manifest
+  - phase_bundle_validation_requirement
 dependencies:
   required_files:
   - phases/conventions.phase-contracts.yaml
@@ -48,6 +52,8 @@ dependencies:
   - reports/conventions.report-registry.yaml
   - reports/conventions.report-templates.yaml
   - missions/conventions.mission-state.yaml
+  - executors/conventions.executor-routes.yaml
+  - executors/conventions.executor-contract.yaml
   optional_files: []
 sections:
   phase_bundle_schema:
@@ -83,20 +89,17 @@ sections:
     - rerun_context
   bundle_content_rules:
   - id: BUNDLE-CONTENT-001
-    rule: Bundle must include only conventions referenced by the active phase contract,
-      owner agent contract, required output schemas, and active risk/trigger/revision
-      context.
+    rule: Bundle must include only conventions referenced by the active phase contract, owner agent contract, required output
+      schemas, and active risk/trigger/revision context.
     fail_condition: phase_bundle_contains_unrelated_full_system_context
   - id: BUNDLE-CONTENT-002
-    rule: Bundle must include required report templates for every required output
-      report.
+    rule: Bundle must include required report templates for every required output report.
     fail_condition: phase_bundle_missing_report_template
   - id: BUNDLE-CONTENT-003
     rule: Bundle must include explicit write scopes and forbidden write scopes.
     fail_condition: phase_bundle_missing_write_scope
   - id: BUNDLE-CONTENT-004
-    rule: Bundle must mark invalidated or pending-revalidation inputs as forbidden
-      to consume.
+    rule: Bundle must mark invalidated or pending-revalidation inputs as forbidden to consume.
     fail_condition: phase_bundle_allows_invalidated_input
   runtime_pack_policy:
     include:
@@ -155,27 +158,81 @@ sections:
     - unrelated_full_system_context_included
   - step_id: WRITE_PHASE_BUNDLE
     action: write
-    output: .ai/phase-bundles/{phase_id}.input.yaml
+    output: .ai/bundles/phases/{mission_id}/{phase_id}.bundle.yaml
     fail_when:
     - phase_bundle_write_failed
   - step_id: VALIDATE_PHASE_BUNDLE
-    action: validate
-    input: phase_bundle_schema
+    action: execute_route
+    input: validate_phase_bundle
     fail_when:
-    - phase_bundle_schema_invalid
+    - phase_bundle_validation_failed
   completion_contract:
     agent_must_write_all_required_outputs: true
     chat_response_is_summary_only: true
     missing_required_output_status: phase_failure
     agent_must_return_written_file_paths: true
+  executor_route_integration:
+    local_requirement_field: required_executor_routes
+    before_phase_start:
+    - generate_phase_bundle
+    - validate_phase_bundle
+    declared_order_required: true
+    direct_script_reference_forbidden: true
+    unknown_route_behavior: fail_closed
+    agent_consumption_rule: phase_agent_must_not_start_work_until_generate_phase_bundle_and_validate_phase_bundle_succeed
+  phase_bundle_identity:
+    artifact_id: phase_context_bundle
+    canonical_path: .ai/bundles/phases/{mission_id}/{phase_id}.bundle.yaml
+    manifest_path: .ai/bundles/phases/{mission_id}/{phase_id}.manifest.yaml
+    producer_route: generate_phase_bundle
+    validator_route: validate_phase_bundle
+    scope: single_phase_agent_invocation
+    lifecycle: generated_before_phase_start_consumed_during_phase_archived_after_handoff
+    write_mode: replace_for_same_mission_phase_rerun
+  context_minimization_policy:
+    include_only:
+    - active_phase_contract
+    - owner_agent_contract_prompt_and_permissions
+    - declared_required_input_artifacts
+    - declared_required_output_templates
+    - required_executor_routes_for_active_phase
+    - referenced_gate_handoff_trigger_revision_rules
+    - directly_relevant_convention_files
+    exclude_always:
+    - unrelated_subsystem_files
+    - full_convention_package
+    - completed_prior_outputs_not_declared_as_inputs
+    - obsolete_or_invalidated_artifacts
+    - alternative_agent_prompts_not_assigned_to_phase
+    fail_when:
+    - bundle_contains_unrelated_full_system_context
+    - bundle_missing_required_executor_route
+    - bundle_allows_invalidated_input
+    - bundle_missing_required_output_template
 validation:
   required_checks:
   - id: BUNDLE-CHECK-001
     check: phase_bundle_schema_valid
     applies_when:
       phase_agent_invocation_requested: true
+  - id: BUNDLE-CHECK-002
+    check: phase_bundle_generated_through_executor_route
+    applies_when:
+      phase_agent_invocation_requested: true
+  - id: BUNDLE-CHECK-003
+    check: phase_bundle_validated_before_agent_consumption
+    applies_when:
+      phase_agent_invocation_requested: true
   fail_conditions:
   - id: BUNDLE-001
     condition: phase_bundle_contains_unrelated_full_system_context
     message: Phase bundle must be minimized to the active phase needs.
+    severity: error
+  - id: BUNDLE-002
+    condition: phase_bundle_bypassed_executor_route
+    message: Phase bundle generation must use declared executor routes, not direct script selection.
+    severity: error
+  - id: BUNDLE-003
+    condition: agent_consumed_unvalidated_phase_bundle
+    message: Phase agent cannot consume a phase bundle before validate_phase_bundle succeeds.
     severity: error

@@ -69,6 +69,7 @@ sections:
         - agents
         - multi-agent
         - execution
+        executor_type: validation
       validate_authority_topology:
         description: Validate compiled authority topology against distributed ownership declarations and single-owner rules.
         script: scripts/validate-authority-topology.ts
@@ -90,6 +91,7 @@ sections:
         - core
         - executors
         - reports
+        executor_type: validation
       validate_phase_output:
         description: Validate produced phase output against phase contracts and required evidence.
         script: scripts/validate-phase-output.ts
@@ -109,6 +111,30 @@ sections:
         - phases
         - multi-agent
         - reports
+        executor_type: validation
+      validate_phase_bundle:
+        description: Validate generated phase context bundle before an agent consumes it.
+        script: scripts/validate-phase-bundle.ts
+        required_inputs:
+        - phase_context_bundle
+        - phase_bundle_schema
+        - active_phase_plan
+        produced_outputs:
+        - phase_bundle_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts:
+        - phase_context_bundle
+        lifecycle_hooks:
+        - before_phase_start
+        failure_behavior: block
+        consumers:
+        - agents
+        - multi-agent
+        - phases
+        - reports
+        executor_type: validation
       validate_changed_files:
         description: Validate changed files and affected convention dependencies.
         script: scripts/validate-changed-files.ts
@@ -129,6 +155,7 @@ sections:
         - execution
         - testing
         - reports
+        executor_type: validation
       validate_references:
         description: Validate file, subsystem, contract, route, and runtime artifact references.
         script: scripts/validate-references.ts
@@ -149,6 +176,7 @@ sections:
         - core
         - execution
         - reports
+        executor_type: validation
     compiler:
       compile_authority_topology:
         description: Compile distributed ownership declarations into an authority topology and conflict report.
@@ -171,6 +199,7 @@ sections:
         - core
         - executors
         - execution
+        executor_type: compiler
       compile_runtime_artifact_topology:
         description: Compile runtime artifact declarations and usages into producer/consumer topology.
         script: scripts/compile-runtime-artifact-topology.ts
@@ -193,20 +222,29 @@ sections:
         - gates
         - handoffs
         - revisions
+        executor_type: compiler
     generator:
       generate_phase_bundle:
-        description: Generate minimal phase context bundle from active mission, phase, routes, and relevant convention slices.
+        description: Generate minimal phase context bundle from active mission, phase contract, owner agent, executor routes,
+          and relevant convention slices.
         script: scripts/generate-phase-bundle.ts
         required_inputs:
         - mission_context
         - active_phase
+        - active_phase_plan
+        - phase_contract
+        - owner_agent_contract
+        - central_executor_route_map
         - loading_group_map
+        - required_output_templates
         produced_outputs:
         - phase_context_bundle
+        - phase_bundle_manifest
         allowed_write_paths:
         - .ai/bundles/**
         required_artifacts:
         - active_phase_plan
+        - phase_contract
         lifecycle_hooks:
         - before_phase_start
         failure_behavior: block
@@ -214,6 +252,8 @@ sections:
         - agents
         - multi-agent
         - phases
+        - executors
+        executor_type: generator
     gate:
       run_gate_check:
         description: Run gate checks for phase or mission transition.
@@ -236,6 +276,7 @@ sections:
         - gates
         - multi-agent
         - missions
+        executor_type: gate
     handoff:
       prepare_agent_handoff:
         description: Prepare and validate handoff payload between phase agents.
@@ -256,6 +297,7 @@ sections:
         - handoffs
         - agents
         - multi-agent
+        executor_type: handoff
     revision:
       create_revision_task:
         description: Convert failed validation or gate result into a deterministic revision task.
@@ -277,6 +319,7 @@ sections:
         - revisions
         - risk
         - multi-agent
+        executor_type: revision
     report:
       collect_phase_report:
         description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase report.
@@ -298,6 +341,7 @@ sections:
         - reports
         - phases
         - multi-agent
+        executor_type: report
     bundle:
       generate_mission_bundle:
         description: Generate mission-level context bundle and execution route list.
@@ -319,6 +363,7 @@ sections:
         - missions
         - agents
         - multi-agent
+        executor_type: bundle
 validation:
   required_checks:
   - required_executor_route_fields_present
@@ -326,6 +371,9 @@ validation:
   - script_paths_resolve_through_central_routes
   - validation_routes_present_for_authority_references_changed_files_and_executor_routes
   - validation_route_outputs_are_written_only_to_allowed_artifact_paths
+  - phase_bundle_generation_route_present
+  - phase_bundle_validation_route_present
+  - phase_bundle_generation_followed_by_validation_before_agent_consumption
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -333,3 +381,6 @@ validation:
   - executor_route_missing_failure_behavior
   - missing_foundational_validation_route
   - validation_route_not_script_backed
+  - missing_phase_bundle_generation_route
+  - missing_phase_bundle_validation_route
+  - agent_consumes_unvalidated_phase_bundle

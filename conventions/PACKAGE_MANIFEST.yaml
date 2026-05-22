@@ -1,8 +1,8 @@
-package: sync_conventions_system_foundational_validation_routes
-generated_from: Foundational validation executor routes added; validation remains executor-route based with no standalone
-  validation subsystem.
+package: sync_conventions_system_phase_bundle_routes
+generated_from: Phase bundle generation and validation integrated into executor routing; no standalone scripts or validation
+  subsystem.
 yaml_file_count: 149
-folder_count: 25
+folder_count: 23
 notes:
 - Regular YAML convention files only.
 - Standalone compiler subsystem direction has been collapsed into executor route types.
@@ -12,6 +12,8 @@ notes:
   scripts as generated artifacts.
 - No scripts convention subsystem; scripts/ is reserved for actual runnable implementation files only.
 - Foundational validation is modeled as executor routes backed by centralized scripts, not as a separate validation subsystem.
+- Phase bundles are generated and validated through executor routes before phase-agent consumption.
+- generate_phase_bundle and validate_phase_bundle are resolved centrally through executor routing.
 stabilization_summary:
   stale_agent_paths_fixed: true
   executability_enum_expanded: true
@@ -38,7 +40,12 @@ executor_system_summary:
   - validate_authority_topology
   - validate_references
   - validate_changed_files
+  - validate_phase_bundle
   standalone_validation_subsystem: forbidden
+  phase_bundle_routes:
+  - generate_phase_bundle
+  - validate_phase_bundle
+  phase_bundle_consumption_rule: phase agents may consume a bundle only after validate_phase_bundle succeeds
 generated_authority_artifact_summary:
   manual_authority_registry_file_present: false
   manual_authority_boundary_file_present: false
