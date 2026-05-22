@@ -1,5 +1,6 @@
-package: sync_conventions_system_executor_script_contract_model
-generated_from: Scripts convention subsystem removed; script implementation rules retained inside executor route contracts
+package: sync_conventions_system_foundational_validation_routes
+generated_from: Foundational validation executor routes added; validation remains executor-route based with no standalone
+  validation subsystem.
 yaml_file_count: 149
 folder_count: 25
 notes:
@@ -10,6 +11,7 @@ notes:
 - Obsolete authority registry and authority boundary convention files removed; authority truth is produced only by executor-routed
   scripts as generated artifacts.
 - No scripts convention subsystem; scripts/ is reserved for actual runnable implementation files only.
+- Foundational validation is modeled as executor routes backed by centralized scripts, not as a separate validation subsystem.
 stabilization_summary:
   stale_agent_paths_fixed: true
   executability_enum_expanded: true
@@ -31,6 +33,12 @@ executor_system_summary:
   script_folder: scripts/
   direct_script_calls_by_agents: forbidden
   script_folder_meaning: centralized runnable implementation path, not a convention subsystem
+  foundational_validation_routes:
+  - validate_executor_routes
+  - validate_authority_topology
+  - validate_references
+  - validate_changed_files
+  standalone_validation_subsystem: forbidden
 generated_authority_artifact_summary:
   manual_authority_registry_file_present: false
   manual_authority_boundary_file_present: false

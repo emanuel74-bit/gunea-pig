@@ -5,7 +5,7 @@ file:
   role: executor_subsystem_entrypoint
   executability: advisory_entrypoint
 purpose: Define the executor subsystem entrypoint for central executor routing, local route requirements, route contracts,
-  lifecycle hooks, and script-backed runtime enforcement.
+  lifecycle hooks, and script-backed runtime enforcement, including foundational validation routes.
 ownership:
   owns:
   - executor_subsystem_metadata
@@ -59,6 +59,8 @@ sections:
       permissions, and failure behavior.
     script_implementation_rule: All route scripts MUST resolve to centralized implementation paths under scripts/, but scripts/
       is not a convention subsystem.
+    foundational_validation_model: Validation is handled as executor routes backed by scripts; no standalone validation subsystem
+      is required.
   route_namespace_policy:
     namespace: global_route_namespace_with_optional_subsystem_prefix
     global_route_examples:
@@ -76,6 +78,14 @@ sections:
     execution_order: declared_order
     unknown_route_behavior: fail_closed
     script_location: centralized_scripts_folder
+  foundational_validation_routes:
+    purpose: Provide the first script-backed validation routes required to keep executor routing and generated truth reliable.
+    routes:
+    - validate_executor_routes
+    - validate_authority_topology
+    - validate_references
+    - validate_changed_files
+    standalone_validation_subsystem: forbidden
 validation:
   required_checks:
   - required_executor_route_fields_present

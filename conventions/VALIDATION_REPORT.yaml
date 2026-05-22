@@ -1,22 +1,38 @@
-validation_report: sync_conventions_system_executor_script_contract_model
-status: pass
+validation_report: sync_conventions_system_foundational_validation_routes
+status: fail
 yaml_file_count: 149
-folder_count: 25
+folder_count: 23
 checks:
   yaml_parse_errors: 0
   missing_required_dependencies: 0
   duplicate_owned_concepts: 0
-  undeclared_executability_values: 0
+  undeclared_executability_values: 7
   manual_authority_registry_file_present: false
   manual_authority_boundary_file_present: false
 errors:
   parse_errors: []
   missing_required_dependencies: []
   duplicate_owned_concepts: {}
-  undeclared_executability_values: []
+  undeclared_executability_values:
+  - agents/conventions.agent-activation-policy.yaml: execution_policy
+  - agents/conventions.agent-capabilities.yaml: decision_support
+  - missions/conventions.active-phase-plan.yaml: state_builder
+  - missions/conventions.mission-state.yaml: state_schema
+  - multi-agent/conventions.alpha-oversight.yaml: oversight_policy
+  - planning/conventions.decision-log.yaml: schema_and_policy
+  - roles/conventions.role-placement.yaml: placement_affinity_registry
 executor_script_contract_validation:
   script_convention_subsystem_present: false
   centralized_script_folder_policy: scripts/
   script_folder_meaning: actual runnable implementation files only
   script_selection_source: executors/conventions.executor-routes.yaml
   direct_script_calls_by_agents: forbidden
+foundational_validation_routes:
+  standalone_validation_subsystem_present: false
+  routes:
+  - validate_executor_routes
+  - validate_authority_topology
+  - validate_references
+  - validate_changed_files
+  script_selection_source: executors/conventions.executor-routes.yaml
+  unknown_route_behavior: fail_closed

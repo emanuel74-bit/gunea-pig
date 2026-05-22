@@ -69,6 +69,27 @@ sections:
         - agents
         - multi-agent
         - execution
+      validate_authority_topology:
+        description: Validate compiled authority topology against distributed ownership declarations and single-owner rules.
+        script: scripts/validate-authority-topology.ts
+        required_inputs:
+        - authority_topology
+        - ownership_declarations
+        produced_outputs:
+        - authority_topology_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts:
+        - authority_topology
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - core
+        - executors
+        - reports
       validate_phase_output:
         description: Validate produced phase output against phase contracts and required evidence.
         script: scripts/validate-phase-output.ts
@@ -148,7 +169,7 @@ sections:
         failure_behavior: block
         consumers:
         - core
-        - validation
+        - executors
         - execution
       compile_runtime_artifact_topology:
         description: Compile runtime artifact declarations and usages into producer/consumer topology.
@@ -303,8 +324,12 @@ validation:
   - required_executor_route_fields_present
   - unknown_route_references_fail_closed
   - script_paths_resolve_through_central_routes
+  - validation_routes_present_for_authority_references_changed_files_and_executor_routes
+  - validation_route_outputs_are_written_only_to_allowed_artifact_paths
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
   - executor_route_missing_script
   - executor_route_missing_failure_behavior
+  - missing_foundational_validation_route
+  - validation_route_not_script_backed
