@@ -4,8 +4,8 @@ file:
   path: core/conventions.pipeline-contract.yaml
   role: global_pipeline_law_contract
   executability: policy
-purpose: Define global pipeline laws, invariant ordering constraints, fail-closed execution rules, and cross-phase lifecycle
-  constraints without owning phase contracts or Alpha scheduling internals.
+purpose: Define global pipeline laws, invariant ordering constraints, fail-closed execution rules, and cross-phase lifecycle constraints without
+  owning phase contracts or Alpha scheduling internals.
 ownership:
   owns:
   - global_pipeline_laws
@@ -32,7 +32,6 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
-  - core/conventions.authority-boundaries.yaml
   optional_files: []
 sections:
   global_pipeline_laws:
@@ -46,12 +45,12 @@ sections:
     law: Pattern pressure precedes pattern selection; NoPattern remains valid default.
     fail_condition: pattern_selected_without_pressure_or_justification
   - id: PIPELINE-LAW-004
-    law: Implementation cannot begin before required planning reports, tests, sequence, checkpoints, triggers, and pre-implementation
-      gate are resolved.
+    law: Implementation cannot begin before required planning reports, tests, sequence, checkpoints, triggers, and pre-implementation gate are
+      resolved.
     fail_condition: implementation_started_before_pre_implementation_gate
   - id: PIPELINE-LAW-005
-    law: Final validation cannot pass with missing reports, unresolved triggers, open revisions, consumed invalidated outputs,
-      or failed required gates.
+    law: Final validation cannot pass with missing reports, unresolved triggers, open revisions, consumed invalidated outputs, or failed required
+      gates.
     fail_condition: final_validation_passed_with_unresolved_runtime_state
   - id: PIPELINE-LAW-006
     law: Every phase output must be persisted to declared report files; chat output cannot satisfy required reports.
@@ -96,6 +95,5 @@ validation:
     severity: error
   - id: PIPELINE-002
     condition: final_validation_passed_with_unresolved_runtime_state
-    message: Final validation cannot pass with unresolved reports, triggers, revisions, invalidations, blockers, or failed
-      gates.
+    message: Final validation cannot pass with unresolved reports, triggers, revisions, invalidations, blockers, or failed gates.
     severity: error

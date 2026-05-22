@@ -1,5 +1,5 @@
-package: sync_conventions_system_executor_routing_model
-yaml_files_checked: 152
+package: sync_conventions_system_executor_cleanup_model
+yaml_files_checked: 150
 yaml_parse_errors: []
 semantic_depth_errors: []
 status: passed
@@ -12,15 +12,6 @@ index_checks:
   mode: lightweight_router
   contains_full_concept_lookup: false
   contains_authority_registry_entries: false
-authority_registry_checks:
-  registry_file: core/conventions.authority-registry.yaml
-  mode: generated_from_distributed_ownership_declarations
-  manual_concept_authority_table_present: false
-  owned_concepts_discovered: 856
-  duplicate_owned_concepts: *id001
-  generic_concept_collision_policy_present: true
-  single_owner_policy: enforced_by_generated_authority_topology
-  preferred_output_name: authority_topology
 executor_system_checks:
   executor_entrypoint_exists: true
   central_route_file_exists: true
@@ -33,3 +24,11 @@ notes:
 - Executor subsystem added using central executor routing plus local route requirements.
 - Standalone compiler system file removed; compiler is now an executor route type.
 - Scripts are centralized under scripts/ and selected only through executor routes.
+- Obsolete authority registry and authority boundary convention files removed; generated authority topology is produced through executor routing.
+generated_authority_artifact_checks:
+  manual_authority_registry_file_present: false
+  manual_authority_boundary_file_present: false
+  authority_truth_source: distributed_local_ownership_declarations
+  executor_route: compile_authority_topology
+  generated_output: .ai/topologies/authority-topology.yaml
+  duplicate_owned_concepts: *id001

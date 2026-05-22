@@ -4,17 +4,14 @@ file:
   path: core/conventions.core.yaml
   role: core_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lightweight routing index,
-  authority boundaries, generated authority topology contract, pipeline laws, output schemas, semantic completeness, validation,
-  integration, and script-delegation policy.'
+purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lightweight routing index, pipeline laws, output
+  schemas, semantic completeness, validation, integration, and script-delegation policy.'
 ownership:
   owns:
   - core_subsystem_metadata
   - core_file_index
   - core_local_execution_order
-  - core_authority_boundary_summary
   - system_integration_contract
-  - core_authority_registry_contract
   does_not_own:
   - subsystem_local_rules
   - phase_agent_work
@@ -37,8 +34,6 @@ dependencies:
   optional_files:
   - core/conventions.file-contract.yaml
   - core/conventions.index.yaml
-  - core/conventions.authority-boundaries.yaml
-  - core/conventions.authority-registry.yaml
   - core/conventions.integration-contract.yaml
   - core/conventions.pipeline-contract.yaml
   - core/conventions.output-schema.yaml
@@ -70,17 +65,10 @@ sections:
   - load_semantic_completeness
   - load_validation
   - load_script_delegation_policy
-  core_authority_boundary_summary:
-    core_owns: global contracts, source lookup, canonical authority registry, cross-subsystem invariants, semantic quality
-      standard, validation aggregation
-    subsystems_own: their local vocabularies, decisions, algorithms, schemas, and validators
-    alpha_owns: runtime scheduling, phase activation, prompt injection, mission-state mutation, and gate/handoff/trigger/revision
-      orchestration
-    phase_agents_own: phase-specific reasoning and required report production only
   system_integration_contract:
     all_subsystems_must:
     - follow core file contract
-    - declare ownership boundaries
+    - declare local ownership and relationship fields
     - consume other subsystems by reference
     - not duplicate external authority
     - emit outputs through report registry when phase-facing
@@ -88,13 +76,6 @@ sections:
     - perform local subsystem decisions
     - override specialized validators
     - act as Alpha runtime
-  authority_registry_policy:
-    authority_contract_file: core/conventions.authority-registry.yaml
-    preferred_output_name: authority_topology
-    mode: generated_from_distributed_ownership_declarations
-    index_overlap_policy: index routes to files; authority topology governs/generated-validates ownership; neither duplicates
-      the other
-    executor_routes: executors/conventions.executor-routes.yaml
 validation:
   required_checks:
   - id: CORE-ENTRY-CHECK-001

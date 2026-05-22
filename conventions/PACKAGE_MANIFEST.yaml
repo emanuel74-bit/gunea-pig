@@ -1,27 +1,20 @@
-package: sync_conventions_system_executor_routing_model
-generated_from: Step 4 executor-driven script system design
-yaml_file_count: 152
-folder_count: 24
+package: sync_conventions_system_executor_cleanup_model
+generated_from: 'Executor routing cleanup: obsolete authority registry and boundary files removed'
+yaml_file_count: 150
+folder_count: 25
 notes:
 - Regular YAML convention files only.
 - Standalone compiler subsystem direction has been collapsed into executor route types.
 - Agents must not call scripts directly; scripts are resolved through central executor routes.
 - Local files declare required_executor_routes; central executor routing maps route IDs to scripts.
-- Compiler remains only an executor_type for routes that derive topology, plan, or report artifacts.
+- Obsolete authority registry and authority boundary convention files removed; authority truth is produced only by executor-routed scripts as
+  generated artifacts.
 stabilization_summary:
   stale_agent_paths_fixed: true
   executability_enum_expanded: true
   duplicate_ownership_resolved: true
   runtime_artifact_registry_added: true
   generic_selection_algorithm_split: true
-authority_registry_summary:
-  registry_file: core/conventions.authority-registry.yaml
-  mode: generated_from_distributed_ownership_declarations
-  manual_concept_authority_table_present: false
-  owned_concepts_discovered: 856
-  duplicate_owned_concepts_detected: 0
-  duplicate_ownership_policy: forbidden
-  preferred_output_name: authority_topology
 index_summary:
   index_file: core/conventions.index.yaml
   mode: lightweight_router
@@ -37,3 +30,11 @@ executor_system_summary:
   unknown_route_behavior: fail_closed
   script_folder: scripts/
   direct_script_calls_by_agents: forbidden
+generated_authority_artifact_summary:
+  manual_authority_registry_file_present: false
+  manual_authority_boundary_file_present: false
+  source_of_truth: distributed ownership and relationship declarations in local convention files
+  executor_route: compile_authority_topology
+  script: scripts/compile-authority-topology.ts
+  generated_output: .ai/topologies/authority-topology.yaml
+  duplicate_ownership_policy: forbidden
