@@ -209,6 +209,10 @@ sections:
     - bundle_missing_required_executor_route
     - bundle_allows_invalidated_input
     - bundle_missing_required_output_template
+  required_executor_routes:
+    before_phase_start:
+    - generate_phase_bundle
+    - validate_phase_bundle
 validation:
   required_checks:
   - id: BUNDLE-CHECK-001

@@ -40,6 +40,7 @@ dependencies:
   - handoffs/conventions.handoff-schema.yaml
   - handoffs/conventions.handoff-consumption-policy.yaml
   - handoffs/conventions.handoff-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files:
   - gates/conventions.gate-validation.yaml
   - reports/conventions.report-artifacts.yaml
@@ -88,6 +89,9 @@ sections:
     - id: HANDOFFS-SYSTEM-ABS-004
       rule: Invalidated, blocked, failed, or replaced-without-replacement handoffs must block downstream consumption.
       fail_condition: blocked_handoff_allowed_downstream_consumption
+  required_executor_routes:
+    before_handoff:
+    - prepare_agent_handoff
 validation:
   required_checks:
   - id: HANDOFFS-SYSTEM-CHECK-001

@@ -1,29 +1,16 @@
-package: sync_conventions_system_phase_bundle_routes
-generated_from: Phase bundle generation and validation integrated into executor routing; no standalone scripts or validation
-  subsystem.
+package: sync_conventions_system_executor_pivot_reconciled
+generated_from: Executor Pivot Reconciliation Pass applied to accepted phase bundle routing milestone.
 yaml_file_count: 149
 folder_count: 23
 notes:
-- Regular YAML convention files only.
-- Standalone compiler subsystem direction has been collapsed into executor route types.
-- Agents must not call scripts directly; scripts are resolved through central executor routes.
-- Local files declare required_executor_routes; central executor routing maps route IDs to scripts.
-- Obsolete authority registry and authority boundary convention files removed; authority truth is produced only by executor-routed
-  scripts as generated artifacts.
-- No scripts convention subsystem; scripts/ is reserved for actual runnable implementation files only.
-- Foundational validation is modeled as executor routes backed by centralized scripts, not as a separate validation subsystem.
+- Milestone baseline was conventions_phase_bundle_routes.zip.
+- Central executor routing with local script requirements is the active runtime automation model.
+- Agents must not call scripts directly; scripts are resolved only through declared executor routes.
+- No standalone compiler, validation, scripts convention, manual authority registry, or manual authority boundary subsystem
+  is active.
+- Compiler and validation behaviors are executor route types backed by centralized scripts/ implementation files.
 - Phase bundles are generated and validated through executor routes before phase-agent consumption.
-- generate_phase_bundle and validate_phase_bundle are resolved centrally through executor routing.
-stabilization_summary:
-  stale_agent_paths_fixed: true
-  executability_enum_expanded: true
-  duplicate_ownership_resolved: true
-  runtime_artifact_registry_added: true
-  generic_selection_algorithm_split: true
-index_summary:
-  index_file: core/conventions.index.yaml
-  mode: lightweight_router
-  semantic_concept_lookup_present: false
+- Executor pivot reconciliation removed stale authority/script convention references and wired local lifecycle hooks to required_executor_routes.
 executor_system_summary:
   executor_entrypoint: executors/conventions.executors.yaml
   central_route_file: executors/conventions.executor-routes.yaml
@@ -33,24 +20,37 @@ executor_system_summary:
   execution_order: declared_order
   unknown_route_behavior: fail_closed
   script_folder: scripts/
+  script_folder_meaning: centralized runnable implementation path only
   direct_script_calls_by_agents: forbidden
-  script_folder_meaning: centralized runnable implementation path, not a convention subsystem
-  foundational_validation_routes:
-  - validate_executor_routes
-  - validate_authority_topology
-  - validate_references
-  - validate_changed_files
-  - validate_phase_bundle
-  standalone_validation_subsystem: forbidden
-  phase_bundle_routes:
-  - generate_phase_bundle
-  - validate_phase_bundle
-  phase_bundle_consumption_rule: phase agents may consume a bundle only after validate_phase_bundle succeeds
-generated_authority_artifact_summary:
-  manual_authority_registry_file_present: false
-  manual_authority_boundary_file_present: false
-  source_of_truth: distributed ownership and relationship declarations in local convention files
-  executor_route: compile_authority_topology
-  script: scripts/compile-authority-topology.ts
-  generated_output: .ai/topologies/authority-topology.yaml
-  duplicate_ownership_policy: forbidden
+reconciliation_summary:
+  stale_authority_registry_references_removed: true
+  stale_script_convention_references_removed: true
+  core_validation_delegates_to_executor_routes: true
+  runtime_artifact_validation_route_added: true
+  local_required_executor_route_files:
+  - execution/conventions.execution.yaml
+  - gates/conventions.gates.yaml
+  - handoffs/conventions.handoffs.yaml
+  - missions/conventions.missions.yaml
+  - multi-agent/conventions.multi-agent.yaml
+  - multi-agent/conventions.phase-bundle-policy.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - reports/conventions.reports.yaml
+  - revisions/conventions.revisions.yaml
+  local_required_executor_route_file_count: 9
+foundational_routes:
+- collect_phase_report
+- compile_authority_topology
+- compile_runtime_artifact_topology
+- create_revision_task
+- generate_mission_bundle
+- generate_phase_bundle
+- prepare_agent_handoff
+- run_gate_check
+- validate_authority_topology
+- validate_changed_files
+- validate_executor_routes
+- validate_phase_bundle
+- validate_phase_output
+- validate_references
+- validate_runtime_artifacts

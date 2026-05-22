@@ -55,6 +55,7 @@ dependencies:
   - triggers/conventions.trigger-validation.yaml
   - handoffs/conventions.handoff-validation.yaml
   - revisions/conventions.revision-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files: []
 sections:
   multi_agent_validation_policy:
@@ -147,11 +148,12 @@ sections:
     target: runtime_invariant_checks
     fail_when:
     - runtime_invariant_failed
-  - step_id: VALIDATE_AUTHORITY_BOUNDARIES
-    action: for_each
-    target: authority_boundary_checks
+  - step_id: VALIDATE_AUTHORITY_TOPOLOGY
+    action: execute_route
     fail_when:
+    - authority_topology_validation_failed
     - authority_boundary_violation
+    input: validate_authority_topology
   - step_id: VALIDATE_ACTIVE_MISSION_STATE
     action: validate
     fail_when:

@@ -30,6 +30,7 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files: []
 sections:
   script_first_policy:
@@ -45,6 +46,10 @@ sections:
     - id: SCRIPT-FIRST-ABS-003
       rule: Phase agents must consume generated phase bundles when available.
       fail_condition: phase_agent_loaded_full_system_instead_of_bundle
+    - id: SCRIPT-FIRST-ABS-004
+      rule: Agents must invoke script-backed deterministic work only through declared executor routes resolved by the central
+        executor route map.
+      fail_condition: agent_called_script_directly_or_bypassed_executor_route
   script_delegation_categories:
   - yaml_parse_validation
   - file_contract_validation
@@ -70,6 +75,7 @@ sections:
     mechanical_checks: script_result_is_authoritative
     semantic_judgment: agent_may_decide_inside_phase_contract
     conflict: raise_revision_or_block_do_not_ignore
+    route_resolution: executor_route_result_is_the_only_valid_script_invocation_source
   future_executable_feature_policy: When adding new executable-like behavior, prefer scripts or deterministic validators over
     additional prose instructions.
 validation:

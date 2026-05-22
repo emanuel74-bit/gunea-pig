@@ -40,6 +40,7 @@ dependencies:
   - revisions/conventions.invalidation-policy.yaml
   - revisions/conventions.rerun-policy.yaml
   - revisions/conventions.revision-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files: []
 sections:
   revisions_file_index:
@@ -87,6 +88,9 @@ sections:
     - may create revision requests through trigger resolution
     final_validation:
     - must fail with open revisions or consumed invalidated outputs
+  required_executor_routes:
+    on_validation_failure:
+    - create_revision_task
 validation:
   required_checks:
   - id: CONVENTIONS-REVISIONS-YAML-CHECK-001

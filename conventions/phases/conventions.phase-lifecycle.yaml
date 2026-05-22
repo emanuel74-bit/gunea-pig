@@ -30,6 +30,7 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files:
   - missions/conventions.mission-state.yaml
   - gates/conventions.gate-validation.yaml
@@ -199,6 +200,15 @@ sections:
     - block_record
     - invalidation_record
     - rerun_record
+  required_executor_routes:
+    before_phase_start:
+    - generate_phase_bundle
+    - validate_phase_bundle
+    after_phase_output:
+    - validate_phase_output
+    - collect_phase_report
+    on_gate_check:
+    - run_gate_check
 validation:
   required_checks:
   - id: PHASE-LIFECYCLE-CHECK-001

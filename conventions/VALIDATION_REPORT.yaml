@@ -1,42 +1,46 @@
-validation_report: sync_conventions_system_phase_bundle_routes
+validation_report: sync_conventions_system_executor_pivot_reconciled
 status: pass
 yaml_file_count: 149
 folder_count: 23
 checks:
   yaml_parse_errors: 0
   missing_required_dependencies: 0
+  missing_index_loading_group_files: 0
   duplicate_owned_concepts: 0
   undeclared_executability_values: 0
-  manual_authority_registry_file_present: false
-  manual_authority_boundary_file_present: false
-  phase_bundle_generation_route_present: true
-  phase_bundle_validation_route_present: true
   executor_route_contract_errors: 0
+  unknown_local_executor_route_references: 0
+  stale_removed_authority_references: 0
+  stale_removed_script_convention_references: 0
+  stale_authority_boundary_validation_steps: 0
+  runtime_artifact_validation_route_present: true
+  local_required_executor_route_file_count: 9
 errors:
   parse_errors: []
   missing_required_dependencies: []
+  missing_index_loading_group_files: []
   duplicate_owned_concepts: {}
   undeclared_executability_values: []
   executor_route_contract_errors: []
-executor_script_contract_validation:
-  script_convention_subsystem_present: false
-  centralized_script_folder_policy: scripts/
-  script_folder_meaning: actual runnable implementation files only
-  script_selection_source: executors/conventions.executor-routes.yaml
-  direct_script_calls_by_agents: forbidden
-foundational_validation_routes:
-  standalone_validation_subsystem_present: false
-  routes:
-  - validate_executor_routes
-  - validate_authority_topology
-  - validate_references
-  - validate_changed_files
-  - validate_phase_bundle
-  script_selection_source: executors/conventions.executor-routes.yaml
-  unknown_route_behavior: fail_closed
-phase_bundle_route_validation:
-  generation_route: generate_phase_bundle
-  validation_route: validate_phase_bundle
-  route_order: generate_phase_bundle before validate_phase_bundle
-  agent_consumption_rule: phase agent cannot consume phase bundle until validate_phase_bundle succeeds
-  direct_script_selection: forbidden
+  unknown_local_executor_route_references: []
+  stale_references:
+    authority-registry.yaml: []
+    authority-boundaries.yaml: []
+    scripts/conventions.: []
+    VALIDATE_AUTHORITY_BOUNDARIES: []
+executor_pivot_reconciliation:
+  core_validation_model: executor_route_delegated
+  authority_model: distributed_ownership_compiled_by_executor_route
+  script_invocation_model: central_executor_route_map_only
+  local_lifecycle_hook_model: required_executor_routes
+  runtime_artifact_validation_route: validate_runtime_artifacts
+  local_required_executor_route_files:
+  - execution/conventions.execution.yaml
+  - gates/conventions.gates.yaml
+  - handoffs/conventions.handoffs.yaml
+  - missions/conventions.missions.yaml
+  - multi-agent/conventions.multi-agent.yaml
+  - multi-agent/conventions.phase-bundle-policy.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - reports/conventions.reports.yaml
+  - revisions/conventions.revisions.yaml

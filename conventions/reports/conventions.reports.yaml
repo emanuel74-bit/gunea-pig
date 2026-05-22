@@ -4,8 +4,8 @@ file:
   path: reports/conventions.reports.yaml
   role: reports_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the report subsystem entrypoint, file index, local execution order,
-  and authority boundaries for durable phase outputs.
+purpose: Provide the report subsystem entrypoint, file index, local execution order, and authority boundaries for durable
+  phase outputs.
 ownership:
   owns:
   - reports_file_index
@@ -42,6 +42,7 @@ dependencies:
   - reports/conventions.report-consumption-policy.yaml
   - reports/conventions.report-templates.yaml
   - reports/conventions.report-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files: []
 sections:
   reports_file_index:
@@ -64,31 +65,31 @@ sections:
   reports_subsystem_contract:
     absolute_rules:
     - id: REPORTS-SYSTEM-ABS-001
-      rule: Reports are durable phase outputs and must be written as files at declared
-        paths.
+      rule: Reports are durable phase outputs and must be written as files at declared paths.
       fail_condition: required_report_only_printed_to_console
     - id: REPORTS-SYSTEM-ABS-002
-      rule: Report subsystem defines report contracts and validation but does not
-        decide phase scheduling.
+      rule: Report subsystem defines report contracts and validation but does not decide phase scheduling.
       fail_condition: report_subsystem_performed_phase_scheduling
     - id: REPORTS-SYSTEM-ABS-003
       rule: Every required phase output report must be declared in the report registry.
       fail_condition: phase_output_report_missing_from_registry
     - id: REPORTS-SYSTEM-ABS-004
-      rule: Downstream phases may consume reports only through report consumption
-        policy and handoff policy.
+      rule: Downstream phases may consume reports only through report consumption policy and handoff policy.
       fail_condition: downstream_consumed_report_without_policy_pass
   report_integration_contracts:
-    phases: phase contracts declare required output paths; report registry binds those
-      paths to schemas, owners, lifecycle, and templates.
-    agents: agents write only reports allowed by their phase contract and permission
-      profile.
-    gates: output gates require report existence and schema validity before phase
-      completion.
+    phases: phase contracts declare required output paths; report registry binds those paths to schemas, owners, lifecycle,
+      and templates.
+    agents: agents write only reports allowed by their phase contract and permission profile.
+    gates: output gates require report existence and schema validity before phase completion.
     handoffs: handoffs validate whether target phases may consume source reports.
     revisions: revisions may invalidate, replace, or require rerun of report outputs.
-    missions: mission profiles choose required reports through selected phase plan
-      and explicit profile requirements.
+    missions: mission profiles choose required reports through selected phase plan and explicit profile requirements.
+  required_executor_routes:
+    after_phase_output:
+    - collect_phase_report
+    before_mission_start:
+    - compile_runtime_artifact_topology
+    - validate_runtime_artifacts
 validation:
   required_checks:
   - id: REPORTS-SYSTEM-CHECK-001

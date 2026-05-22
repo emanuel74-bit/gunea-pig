@@ -42,6 +42,7 @@ dependencies:
   - gates/conventions.gate-taxonomy.yaml
   - gates/conventions.gate-templates.yaml
   - gates/conventions.gate-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files:
   - phases/conventions.phase-contracts.yaml
   - missions/conventions.mission-state.yaml
@@ -104,6 +105,9 @@ sections:
     - trigger taxonomy and trigger resolution policy
     handoffs_own:
     - handoff schema and handoff validation semantics
+  required_executor_routes:
+    on_gate_check:
+    - run_gate_check
 validation:
   required_checks:
   - id: GATES-ENTRY-CHECK-001

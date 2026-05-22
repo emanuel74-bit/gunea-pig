@@ -41,6 +41,7 @@ dependencies:
   - missions/conventions.active-phase-plan.yaml
   - missions/conventions.mission-state.yaml
   - missions/conventions.mission-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files:
   - phases/conventions.phase-taxonomy.yaml
   - reports/conventions.report-registry.yaml
@@ -94,6 +95,15 @@ sections:
     - revision invalidation rules
     - report schemas
     - agent permissions
+  required_executor_routes:
+    before_mission_start:
+    - generate_mission_bundle
+    - validate_executor_routes
+    - compile_authority_topology
+    - validate_authority_topology
+    - validate_references
+    - compile_runtime_artifact_topology
+    - validate_runtime_artifacts
 validation:
   required_checks:
   - id: MISSIONS-SYSTEM-CHECK-001

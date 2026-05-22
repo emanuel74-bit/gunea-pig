@@ -4,8 +4,8 @@ file:
   path: core/conventions.validation.yaml
   role: global_validation_aggregation_contract
   executability: validator
-purpose: Aggregate global validation categories, route validation to subsystem validators, define final package/mission validation
-  gates, and enforce fail-closed severity semantics.
+purpose: Aggregate global validation expectations and delegate mechanical validation to executor routes/scripts instead of
+  manual authority registries.
 ownership:
   owns:
   - validation_taxonomy
@@ -19,6 +19,9 @@ ownership:
   - specialized_local_validation_logic
   - runtime_state_mutation
   - report_content_generation
+  - executor_route_implementation
+  - manual_authority_registry
+  - manual_authority_boundary_files
 activation:
   mode: always
   activates_when: []
@@ -35,6 +38,8 @@ dependencies:
   - core/conventions.file-contract.yaml
   - core/conventions.index.yaml
   - core/conventions.semantic-completeness.yaml
+  - executors/conventions.executor-routes.yaml
+  - executors/conventions.executor-contract.yaml
   optional_files: []
 sections:
   validation_status_enum:
@@ -125,22 +130,43 @@ sections:
     input:
     - file_contract
     - index
-    - authority_boundaries
     - semantic_completeness
+    - executor_routes
+  - step_id: VALIDATE_EXECUTOR_ROUTES
+    action: execute_route
+    input: validate_executor_routes
+    fail_when:
+    - executor_route_validation_failed
+  - step_id: COMPILE_AUTHORITY_TOPOLOGY
+    action: execute_route
+    input: compile_authority_topology
+    fail_when:
+    - authority_topology_compilation_failed
+  - step_id: VALIDATE_AUTHORITY_TOPOLOGY
+    action: execute_route
+    input: validate_authority_topology
+    fail_when:
+    - authority_topology_validation_failed
+  - step_id: VALIDATE_REFERENCES
+    action: execute_route
+    input: validate_references
+    fail_when:
+    - reference_validation_failed
+  - step_id: COMPILE_RUNTIME_ARTIFACT_TOPOLOGY
+    action: execute_route
+    input: compile_runtime_artifact_topology
+    fail_when:
+    - runtime_artifact_topology_compilation_failed
+  - step_id: VALIDATE_RUNTIME_ARTIFACTS
+    action: execute_route
+    input: validate_runtime_artifacts
+    fail_when:
+    - runtime_artifact_validation_failed
   - step_id: VALIDATE_FILE_CONTRACTS
     action: for_each
     target: all_convention_files
     decision_rules:
     - file_contract_required_sections
-  - step_id: VALIDATE_INDEX_REFERENCES
-    action: for_each
-    target: core_index.file_index
-    fail_when:
-    - indexed_file_missing
-  - step_id: VALIDATE_AUTHORITY_BOUNDARIES
-    action: evaluate
-    decision_rules:
-    - authority_boundaries.duplicate_authority_rules
   - step_id: RUN_SPECIALIZED_VALIDATORS
     action: route
     input: validation_routing_matrix
@@ -157,8 +183,10 @@ sections:
     must_pass:
     - yaml_parse
     - file_contract
-    - index_references
-    - authority_boundaries
+    - executor_routes
+    - authority_topology
+    - references
+    - runtime_artifacts
     - semantic_completeness
     - subsystem_validation_routing
     fail_closed: true
@@ -174,6 +202,20 @@ sections:
     - phases
     - risk
     final_validation_requires: no_errors_no_blocking_failures_no_unresolved_state
+  executor_route_validation_policy:
+    mechanical_validation_must_use_executor_routes: true
+    forbidden:
+    - manual_authority_registry_validation
+    - manual_authority_boundary_validation
+    - direct_script_selection_by_agents
+    required_routes:
+    - validate_executor_routes
+    - compile_authority_topology
+    - validate_authority_topology
+    - validate_references
+    - compile_runtime_artifact_topology
+    - validate_runtime_artifacts
+    - validate_changed_files
 validation:
   required_checks:
   - id: GLOBAL-VALIDATION-CHECK-001
@@ -188,4 +230,8 @@ validation:
   - id: GLOBAL-VALIDATION-002
     condition: global_validation_passed_with_blocking_failure
     message: Global validation cannot pass with any blocking failure.
+    severity: error
+  - id: GLOBAL-VALIDATION-003
+    condition: required_executor_route_missing
+    message: Global validation requires all foundational executor routes to exist and resolve centrally.
     severity: error

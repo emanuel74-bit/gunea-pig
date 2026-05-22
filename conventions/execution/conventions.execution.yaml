@@ -4,9 +4,8 @@ file:
   path: execution/conventions.execution.yaml
   role: execution_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the execution subsystem entrypoint, execution order, ownership boundaries, and integration contract
-  for deterministic implementation planning and controlled execution. Script-backed runtime actions are resolved
-  through the executors subsystem.
+purpose: Provide the execution subsystem entrypoint, execution order, ownership boundaries, and integration contract for deterministic
+  implementation planning and controlled execution. Script-backed runtime actions are resolved through the executors subsystem.
 ownership:
   owns:
   - execution_subsystem_metadata
@@ -45,6 +44,7 @@ dependencies:
   - phases/conventions.phase-contracts.yaml
   - reports/conventions.report-registry.yaml
   - gates/conventions.gate-validation.yaml
+  - executors/conventions.executor-routes.yaml
   optional_files:
   - testing/conventions.test-validation.yaml
   - risk/conventions.risk-escalation.yaml
@@ -122,6 +122,9 @@ sections:
     - required_input_invalidated
     - checkpoint_plan_missing
     - required_compiled_topology_missing
+  required_executor_routes:
+    after_file_change:
+    - validate_changed_files
 validation:
   required_checks:
   - id: EXECUTION-ENTRY-CHECK-001

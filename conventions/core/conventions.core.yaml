@@ -4,8 +4,8 @@ file:
   path: core/conventions.core.yaml
   role: core_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lightweight routing index, pipeline laws, output
-  schemas, semantic completeness, validation, integration, and script-delegation policy.'
+purpose: 'Provide the authoritative entrypoint for the convention system core: file contracts, lightweight routing index,
+  pipeline laws, output schemas, semantic completeness, validation, integration, and script-delegation policy.'
 ownership:
   owns:
   - core_subsystem_metadata
@@ -46,19 +46,16 @@ sections:
     conventions.core.yaml: core/conventions.core.yaml
     conventions.file-contract.yaml: core/conventions.file-contract.yaml
     conventions.index.yaml: core/conventions.index.yaml
-    conventions.authority-boundaries.yaml: core/conventions.authority-boundaries.yaml
     conventions.integration-contract.yaml: core/conventions.integration-contract.yaml
     conventions.pipeline-contract.yaml: core/conventions.pipeline-contract.yaml
     conventions.output-schema.yaml: core/conventions.output-schema.yaml
     conventions.semantic-completeness.yaml: core/conventions.semantic-completeness.yaml
     conventions.validation.yaml: core/conventions.validation.yaml
     conventions.script-delegation-policy.yaml: core/conventions.script-delegation-policy.yaml
-    conventions.authority-registry.yaml: core/conventions.authority-registry.yaml
   core_local_execution_order:
   - load_file_contract
   - load_index
-  - load_authority_boundaries
-  - load_authority_registry
+  - load_executor_routes
   - load_integration_contract
   - load_pipeline_contract
   - load_output_schema
@@ -72,10 +69,12 @@ sections:
     - consume other subsystems by reference
     - not duplicate external authority
     - emit outputs through report registry when phase-facing
+    - declare required executor routes instead of direct script paths when runtime automation is required
     core_must_not:
     - perform local subsystem decisions
     - override specialized validators
     - act as Alpha runtime
+    - maintain manual authority registry or authority boundary convention files
 validation:
   required_checks:
   - id: CORE-ENTRY-CHECK-001

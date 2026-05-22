@@ -177,6 +177,31 @@ sections:
         - execution
         - reports
         executor_type: validation
+      validate_runtime_artifacts:
+        description: Validate runtime artifact declarations, paths, producers, consumers, lifecycle, and write modes.
+        script: scripts/validate-runtime-artifacts.ts
+        required_inputs:
+        - runtime_artifact_topology
+        - runtime_artifact_declarations
+        - runtime_artifact_references
+        produced_outputs:
+        - runtime_artifact_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts:
+        - runtime_artifact_topology
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - reports
+        - gates
+        - handoffs
+        - revisions
+        - multi-agent
+        executor_type: validation
     compiler:
       compile_authority_topology:
         description: Compile distributed ownership declarations into an authority topology and conflict report.
@@ -374,6 +399,8 @@ validation:
   - phase_bundle_generation_route_present
   - phase_bundle_validation_route_present
   - phase_bundle_generation_followed_by_validation_before_agent_consumption
+  - runtime_artifact_validation_route_present
+  - local_lifecycle_hooks_declare_required_executor_routes
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -384,3 +411,5 @@ validation:
   - missing_phase_bundle_generation_route
   - missing_phase_bundle_validation_route
   - agent_consumes_unvalidated_phase_bundle
+  - missing_runtime_artifact_validation_route
+  - lifecycle_hook_missing_required_executor_routes
