@@ -7,7 +7,9 @@
     "compile:authority-topology": "tsx compile-authority-topology.ts",
     "validate:authority-topology": "tsx validate-authority-topology.ts",
     "validate:references": "tsx validate-references.ts",
-    "validate:changed-files": "tsx validate-changed-files.ts"
+    "validate:changed-files": "tsx validate-changed-files.ts",
+    "compile:runtime-artifact-topology": "tsx compile-runtime-artifact-topology.ts",
+    "validate:runtime-artifacts": "tsx validate-runtime-artifacts.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

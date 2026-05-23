@@ -1,51 +1,44 @@
-package: sync_conventions_system_first_scripts
-generated_from: Phase 2 First Real Script Implementation applied to executor pivot reconciled milestone.
+package: sync_conventions_system_runtime_artifact_enforcement
+generated_from: Phase 3 Runtime Artifact Enforcement applied to conventions_first_scripts_runnable_no_lock
+  baseline.
 yaml_file_count: 149
 folder_count: 24
 script_file_count: 16
 notes:
-- Milestone baseline was conventions_executor_pivot_reconciled.zip.
-- Central executor routing with local script requirements remains the active runtime automation model.
-- Agents must not call scripts directly; scripts are resolved only through declared executor routes.
-- No standalone compiler, validation, scripts convention, manual authority registry, or manual authority boundary
-  subsystem is active.
-- Compiler and validation behaviors remain executor route types backed by centralized scripts/ implementation files.
-- Phase 2 adds the first runnable TypeScript script implementations under scripts/ without creating a scripts convention
-  subsystem.
+- Milestone architecture remains centralized executor routing with local script requirements.
+- Agents must not call scripts directly; scripts are resolved only through declared
+  executor routes.
+- No standalone compiler, validation, scripts convention, manual authority registry,
+  or manual authority boundary subsystem is active.
+- Phase 3 strengthens runtime artifact enforcement through compile_runtime_artifact_topology
+  and validate_runtime_artifacts routes.
+- package-lock.json and node_modules are intentionally excluded; installs use the
+  user environment registry configuration.
 executor_system_summary:
   executor_entrypoint: executors/conventions.executors.yaml
   central_route_file: executors/conventions.executor-routes.yaml
-  route_namespace: global_with_optional_subsystem_prefix
-  route_grouping: by_executor_type
-  route_naming: verb_noun
-  execution_order: declared_order
   unknown_route_behavior: fail_closed
   script_folder: scripts/
   script_folder_meaning: centralized runnable implementation path only
   direct_script_calls_by_agents: forbidden
-phase_2_script_summary:
-  primary_foundational_scripts:
-  - scripts/validate-executor-routes.ts
-  - scripts/compile-authority-topology.ts
-  - scripts/validate-references.ts
-  - scripts/validate-changed-files.ts
-  supporting_route_scripts:
-  - scripts/collect-phase-report.ts
+phase_3_runtime_artifact_enforcement:
+  compiler_route: compile_runtime_artifact_topology
+  validation_route: validate_runtime_artifacts
+  enforces:
+  - runtime artifact path normalization
+  - declared artifact coverage
+  - same-path/different-id conflict detection
+  - same-id/different-path conflict detection
+  - required identity fields
+  - route-backed producer inference
+  - consumer list validation
+  - scope/lifecycle/write_mode validation
+  primary_files:
+  - reports/conventions.runtime-artifacts.yaml
+  - executors/conventions.executor-routes.yaml
   - scripts/compile-runtime-artifact-topology.ts
-  - scripts/create-revision-task.ts
-  - scripts/generate-mission-bundle.ts
-  - scripts/generate-phase-bundle.ts
-  - scripts/prepare-agent-handoff.ts
-  - scripts/run-gate-check.ts
-  - scripts/validate-authority-topology.ts
-  - scripts/validate-phase-bundle.ts
-  - scripts/validate-phase-output.ts
   - scripts/validate-runtime-artifacts.ts
-  script_support_files:
   - scripts/lib/common.ts
-  - scripts/package.json
-  - scripts/tsconfig.json
-  route_script_paths_all_exist: true
 foundational_routes:
 - collect_phase_report
 - compile_authority_topology

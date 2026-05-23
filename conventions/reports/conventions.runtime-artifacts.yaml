@@ -4,8 +4,9 @@ file:
   path: reports/conventions.runtime-artifacts.yaml
   role: runtime_artifact_identity_registry
   executability: registry
-purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules for runtime artifacts such
-  as .ai reports, manifests, validation summaries, and phase outputs.
+purpose: Define canonical identity, path normalization, ownership, lifecycle, and
+  conflict rules for runtime artifacts such as .ai reports, manifests, validation
+  summaries, and phase outputs.
 ownership:
   owns:
   - runtime_artifact_identity_model
@@ -69,6 +70,78 @@ sections:
     condition: same_artifact_id_has_multiple_producers
     result: invalid_unless_write_mode_is_append_or_aggregate
   runtime_artifact_registry:
+  - artifact_id: ai_bundles_glob
+    path: .ai/bundles/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes: []
+    consumers:
+    - multi-agent/conventions.phase-bundle-policy.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_validation_glob
+    path: .ai/validation/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes: []
+    consumers:
+    - executors/conventions.executor-routes.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_topologies_glob
+    path: .ai/topologies/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes: []
+    consumers:
+    - executors/conventions.executor-routes.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_gates_glob
+    path: .ai/gates/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes: []
+    consumers:
+    - gates/conventions.gates.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_handoffs_glob
+    path: .ai/handoffs/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes: []
+    consumers:
+    - handoffs/conventions.handoffs.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_revisions_glob
+    path: .ai/revisions/**
+    artifact_type: glob
+    schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes: []
+    consumers:
+    - revisions/conventions.revisions.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   - artifact_id: ai_logs
     path: .ai/logs/**
     artifact_type: glob
@@ -116,7 +189,7 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
-  - artifact_id: ai_reports
+  - artifact_id: ai_reports_directory
     path: .ai/reports
     artifact_type: runtime_artifact
     schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
@@ -127,7 +200,7 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
-  - artifact_id: ai_reports
+  - artifact_id: ai_reports_glob
     path: .ai/reports/**
     artifact_type: glob
     schema: declared_by_producing_subsystem_or_runtime_artifact_registry_extension
@@ -1588,12 +1661,48 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  runtime_artifact_enforcement_model:
+    route_backed_generation: runtime artifacts must be produced by declared executor
+      routes or explicitly marked as runtime-context generated
+    required_validation_sequence:
+    - compile_runtime_artifact_topology
+    - validate_runtime_artifacts
+    path_authority: runtime artifact paths are normalized and validated by runtime
+      artifact topology scripts
+    script_selection: agents never call artifact scripts directly; they use executor
+      routes
+  runtime_artifact_allowed_values:
+    scope:
+    - mission_runtime
+    - phase_runtime
+    - package_runtime
+    - execution_runtime
+    - context_dependent
+    lifecycle:
+    - generated_runtime_output
+    - generated_validation_output
+    - generated_report_output
+    - generated_bundle_output
+    - runtime_state
+    - context_dependent
+    write_mode:
+    - single_writer
+    - append
+    - aggregate
+    - single_writer_unless_append_or_aggregate_declared
+    - context_dependent
 validation:
   required_checks:
   - id: RUNTIME-ARTIFACT-CHECK-001
     check: runtime_artifact_paths_normalized
   - id: RUNTIME-ARTIFACT-CHECK-002
     check: runtime_artifact_identity_conflicts_detected
+  - runtime_artifact_topology_compiled_before_validation
+  - runtime_artifact_paths_normalized
+  - runtime_artifact_same_path_different_id_blocked
+  - runtime_artifact_same_id_different_path_blocked
+  - runtime_artifact_required_identity_fields_present
+  - runtime_artifact_routes_resolved_through_executor_map
   fail_conditions:
   - id: RUNTIME-ARTIFACT-001
     condition: same_path_declared_for_different_artifacts
@@ -1603,3 +1712,7 @@ validation:
     condition: runtime_artifact_path_contains_trailing_punctuation
     message: Runtime artifact path must be normalized before validation.
     severity: error
+  - runtime_artifact_path_conflict
+  - runtime_artifact_identity_conflict
+  - runtime_artifact_missing_required_identity_field
+  - runtime_artifact_validation_route_missing

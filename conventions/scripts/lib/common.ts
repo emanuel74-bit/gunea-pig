@@ -180,6 +180,90 @@ export function finish(scriptId: string, issues: Issue[], outputs: string[] = []
   process.exit(errors.length ? 1 : 0);
 }
 
+
+export function globToRegExp(glob: string): RegExp {
+  const normalized = normalizeRelPath(glob);
+  let regex = "";
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    const next = normalized[index + 1];
+    if (char === "*" && next === "*") {
+      regex += ".*";
+      index += 1;
+    } else if (char === "*") {
+      regex += "[^/]*";
+    } else if (char === "?") {
+      regex += ".";
+    } else if (".+^${}()|[]\\".includes(char)) {
+      regex += `\\${char}`;
+    } else {
+      regex += char;
+    }
+  }
+  return new RegExp(`^${regex}$`);
+}
+
+export function globMatches(glob: string, candidate: string): boolean {
+  return globToRegExp(glob).test(normalizeRelPath(candidate));
+}
+
+export function isRuntimeArtifactPath(value: string): boolean {
+  return normalizeRelPath(value).startsWith(".ai/");
+}
+
+export function isGlobPath(value: string): boolean {
+  return value.includes("*") || value.includes("{") || value.includes("}");
+}
+
+export interface RuntimeArtifactDeclaration {
+  artifact_id: string;
+  path: string;
+  artifact_type?: string;
+  schema?: string;
+  producer?: string;
+  producer_routes?: string[];
+  consumers?: string[];
+  scope?: string;
+  lifecycle?: string;
+  write_mode?: string;
+  required?: string | boolean;
+  declared_by: string;
+}
+
+export function collectRuntimeArtifactDeclarations(root: string): RuntimeArtifactDeclaration[] {
+  const declarations: RuntimeArtifactDeclaration[] = [];
+  for (const file of conventionYamlFiles(root)) {
+    const parsed = readYamlFile(file);
+    const registry = parsed?.sections?.runtime_artifact_registry;
+    if (!Array.isArray(registry)) continue;
+    for (const entry of registry) {
+      if (!entry || typeof entry !== "object") continue;
+      const artifactId = typeof entry.artifact_id === "string" ? entry.artifact_id.trim() : "";
+      const artifactPath = typeof entry.path === "string" ? normalizeRelPath(entry.path) : "";
+      if (!artifactId || !artifactPath) continue;
+      declarations.push({
+        ...(entry as JsonMap),
+        artifact_id: artifactId,
+        path: artifactPath,
+        producer_routes: asArray((entry as JsonMap).producer_routes),
+        consumers: asArray((entry as JsonMap).consumers),
+        declared_by: rel(root, file),
+      });
+    }
+  }
+  return declarations.sort((a, b) => a.artifact_id.localeCompare(b.artifact_id));
+}
+
+export function routeAllowsArtifact(route: JsonMap, artifactPath: string): boolean {
+  const allowed = asArray(route.allowed_write_paths);
+  return allowed.some(pattern => globMatches(pattern, artifactPath) || normalizeRelPath(pattern) === normalizeRelPath(artifactPath));
+}
+
+export function extractRawAiArtifactPathsFromText(text: string): string[] {
+  const matches = text.match(/["']?\.ai\/[A-Za-z0-9_./{}*?\-]+[A-Za-z0-9_./{}*?\-]*[;,]?["']?/g) ?? [];
+  return [...new Set(matches)].sort();
+}
+
 export function extractAiArtifactPathsFromText(text: string): string[] {
   const matches = text.match(/\.ai\/[A-Za-z0-9_./{}*?\-]+[A-Za-z0-9_./{}*?\-]*/g) ?? [];
   return [...new Set(matches.map(normalizeRelPath))].sort();
