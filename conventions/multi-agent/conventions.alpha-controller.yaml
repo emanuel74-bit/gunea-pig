@@ -72,7 +72,7 @@ sections:
     - invoke_gate_validation
     - request_handoff_validation
     - register_trigger_outputs
-    - process_revision_requests
+    - invoke_revision_executor_routes
     - mutate_mission_state
     - block_or_continue_runtime
     forbidden_authority:

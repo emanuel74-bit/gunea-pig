@@ -140,7 +140,7 @@ sections:
   - condition: revision_requires_rerun_from_phase_forward
     action: insert_rerun_sequence_before_downstream_consumers
     reject_when:
-    - revision_not_approved_by_alpha
+    - revision_task_not_script_produced_or_validated
   scheduling_output_schema:
     required_fields:
     - decision_id

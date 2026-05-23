@@ -94,6 +94,7 @@ sections:
       fail_condition: handoff_validation_mutated_contract_or_policy
       severity: error
       blocking: hard_blocking
+    script_provenance_required: generated_by must equal prepare-agent-handoff
   handoff_validation_check_catalog:
   - check_id: handoff_record_schema_valid
     description: Handoff record satisfies handoff schema before any decision is applied.

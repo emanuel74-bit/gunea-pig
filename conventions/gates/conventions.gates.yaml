@@ -4,8 +4,8 @@ file:
   path: gates/conventions.gates.yaml
   role: gates_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the strict runtime gate subsystem entrypoint, file index, local execution
-  order, and authority boundaries for gate taxonomy, templates, and validation.
+purpose: Provide the strict runtime gate subsystem entrypoint, file index, local execution order, and authority boundaries
+  for gate taxonomy, templates, and validation.
 ownership:
   owns:
   - gates_file_index
@@ -70,19 +70,22 @@ sections:
       fail_condition: phase_missing_required_gate
       severity: error
     - id: GATES-SYSTEM-ABS-003
-      rule: A failed blocking gate must stop the target transition until remediated,
-        rerun, or explicitly blocked.
+      rule: A failed blocking gate must stop the target transition until remediated, rerun, or explicitly blocked.
       fail_condition: blocking_gate_failure_ignored
       severity: error
     - id: GATES-SYSTEM-ABS-004
-      rule: Gate definitions may tighten phase contracts but must never weaken phase
-        contracts, agent permissions, report schemas, or mission profile requirements.
+      rule: Gate definitions may tighten phase contracts but must never weaken phase contracts, agent permissions, report
+        schemas, or mission profile requirements.
       fail_condition: gate_weakened_authoritative_contract
       severity: error
     - id: GATES-SYSTEM-ABS-005
-      rule: Gate output must be machine-readable and written into mission state or
-        the declared gate-result report.
+      rule: Gate output must be machine-readable and written into mission state or the declared gate-result report.
       fail_condition: gate_result_not_persisted
+      severity: error
+    - id: GATES-SYSTEM-ABS-006
+      rule: Gate pass/fail decisions must be produced only by the run_gate_check executor route script; agents and Alpha may
+        invoke or consume the route result but must not manually author or override gate results.
+      fail_condition: manual_gate_result_authored_or_overridden
       severity: error
   subsystem_authority_boundaries:
     gates_own:
@@ -95,7 +98,8 @@ sections:
     - runtime scheduling
     - invoking phase agents
     - updating mission state after gate results
-    - deciding next phase from valid gate result
+    - invoking gate executor routes
+    - updating mission state from validated script-produced gate results
     phase_contracts_own:
     - declared phase inputs
     - declared phase outputs
@@ -111,6 +115,16 @@ sections:
     on_gate_check:
     - run_gate_check
     - validate_gate_result
+  gate_script_authority:
+    authoritative_producer_route: run_gate_check
+    authoritative_validator_route: validate_gate_result
+    agent_may: provide phase outputs and validation evidence consumed by the route
+    agent_must_not:
+    - write gate_result artifacts directly
+    - declare gates passed or failed in prose
+    - override blocking script-produced gate results
+    alpha_may: invoke routes and consume validated gate results for scheduling
+    alpha_must_not: manually approve failed or missing gate results
 validation:
   required_checks:
   - id: GATES-ENTRY-CHECK-001
@@ -129,4 +143,8 @@ validation:
   - id: GATES-ENTRY-002
     condition: gate_result_not_persisted
     message: Gate results must be persisted before Alpha continues.
+    severity: error
+  - id: GATES-ENTRY-003
+    condition: manual_gate_result_authored_or_overridden
+    message: Gate pass/fail decisions must come from run_gate_check and be validated before Alpha continues.
     severity: error

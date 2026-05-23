@@ -1,5 +1,5 @@
 validation_report:
-  milestone: phase_6_gate_handoff_revision_executor_routes
+  milestone: phase_6_1_transition_authority_tightening
   status: pass
   summary:
     yaml_files: 149
@@ -14,10 +14,13 @@ validation_report:
     gate_result_validation_route_present: true
     handoff_validation_route_present: true
     revision_task_validation_route_present: true
-    script_verification_declared_test_count: 61
-    script_verification_live_test_count: 22
+    script_verification_declared_test_count: 64
+    script_verification_live_test_count: 25
     script_verification_failed_test_count: 0
     transition_routes_script_backed: true
+    transition_artifacts_script_produced_only: true
+    manual_transition_artifacts_rejected_by_validation_scripts: true
+    alpha_orchestrates_but_does_not_author_transition_decisions: true
   checks:
     yaml_parse_errors: []
     missing_required_dependencies: []

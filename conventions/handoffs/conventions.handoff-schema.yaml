@@ -196,6 +196,9 @@ sections:
     - validation_status
     - evidence_refs
     - blocking_status
+    - generated_by
+    - source_output
+    - target_agent
     optional_fields:
     - target_optional_inputs
     - source_report_refs
@@ -208,6 +211,7 @@ sections:
     - created_by
     - validated_by
     - notes
+    required_generated_by: prepare-agent-handoff
   handoff_record_shape:
     handoff_id: ''
     handoff_kind: direct_report_handoff

@@ -4,8 +4,7 @@ file:
   path: executors/conventions.executor-routes.yaml
   role: central_executor_route_map
   executability: router
-purpose: Define the central route map that agents use to resolve declared executor
-  route IDs into script-backed runtime actions.
+purpose: Define the central route map that agents use to resolve declared executor route IDs into script-backed runtime actions.
 ownership:
   owns:
   - central_executor_route_map
@@ -72,8 +71,7 @@ sections:
         - execution
         executor_type: validation
       validate_authority_topology:
-        description: Validate compiled authority topology against distributed ownership
-          declarations and single-owner rules.
+        description: Validate compiled authority topology against distributed ownership declarations and single-owner rules.
         script: scripts/validate-authority-topology.ts
         required_inputs:
         - authority_topology
@@ -95,8 +93,7 @@ sections:
         - reports
         executor_type: validation
       validate_phase_output:
-        description: Validate produced phase output against phase contracts and required
-          evidence.
+        description: Validate produced phase output against phase contracts and required evidence.
         script: scripts/validate-phase-output.ts
         required_inputs:
         - phase_output
@@ -116,8 +113,7 @@ sections:
         - reports
         executor_type: validation
       validate_phase_bundle:
-        description: Validate generated phase context bundle before an agent consumes
-          it.
+        description: Validate generated phase context bundle before an agent consumes it.
         script: scripts/validate-phase-bundle.ts
         required_inputs:
         - phase_context_bundle
@@ -161,8 +157,7 @@ sections:
         - reports
         executor_type: validation
       validate_references:
-        description: Validate file, subsystem, contract, route, and runtime artifact
-          references.
+        description: Validate file, subsystem, contract, route, and runtime artifact references.
         script: scripts/validate-references.ts
         required_inputs:
         - parsed_convention_files
@@ -183,9 +178,8 @@ sections:
         - reports
         executor_type: validation
       validate_runtime_artifacts:
-        description: Validate runtime artifact topology, declarations, normalized
-          paths, required identity fields, producer-route coverage, consumer lists,
-          lifecycle, scope, and write modes.
+        description: Validate runtime artifact topology, declarations, normalized paths, required identity fields, producer-route
+          coverage, consumer lists, lifecycle, scope, and write modes.
         script: scripts/validate-runtime-artifacts.ts
         required_inputs:
         - runtime_artifact_topology
@@ -212,9 +206,8 @@ sections:
         - multi-agent
         executor_type: validation
       validate_script_execution:
-        description: Verify executor route scripts with fixture-based valid and invalid
-          input cases, output shape checks, exit-code checks, and allowed-write-path
-          checks.
+        description: Verify executor route scripts with fixture-based valid and invalid input cases, output shape checks,
+          exit-code checks, and allowed-write-path checks.
         script: scripts/verify-scripts.ts
         required_inputs:
         - central_executor_route_map
@@ -237,9 +230,8 @@ sections:
         - reports
         executor_type: validation
       validate_semantic_completeness:
-        description: Validate semantic completeness of convention declarations, phase
-          bundles, and phase outputs so work cannot pass with placeholders, vague
-          executable content, missing required evidence, or shallow completion claims.
+        description: Validate semantic completeness of convention declarations, phase bundles, and phase outputs so work cannot
+          pass with placeholders, vague executable content, missing required evidence, or shallow completion claims.
         script: scripts/validate-semantic-completeness.ts
         required_inputs:
         - semantic_completeness_contract
@@ -264,8 +256,8 @@ sections:
         - missions
         executor_type: validation
       validate_gate_result:
-        description: Validate a generated gate result before Alpha or a downstream
-          phase consumes it.
+        description: Validate a script-produced gate result before Alpha or a downstream phase consumes it; reject manually
+          authored gate decisions.
         script: scripts/validate-gate-result.ts
         required_inputs:
         - gate_result
@@ -288,8 +280,8 @@ sections:
         - phases
         executor_type: validation
       validate_handoff:
-        description: Validate a prepared handoff packet before the target agent or
-          phase consumes it.
+        description: Validate a script-produced handoff packet before the target agent or phase consumes it; reject manually
+          authored handoff packets.
         script: scripts/validate-handoff.ts
         required_inputs:
         - agent_handoff_packet
@@ -313,8 +305,8 @@ sections:
         - phases
         executor_type: validation
       validate_revision_task:
-        description: Validate a generated revision task before revision work starts
-          or mission state records it as actionable.
+        description: Validate a script-produced revision task before revision work starts or mission state records it as actionable;
+          reject manually authored revision decisions.
         script: scripts/validate-revision-task.ts
         required_inputs:
         - revision_task
@@ -338,8 +330,7 @@ sections:
         executor_type: validation
     compiler:
       compile_authority_topology:
-        description: Compile distributed ownership declarations into an authority
-          topology and conflict report.
+        description: Compile distributed ownership declarations into an authority topology and conflict report.
         script: scripts/compile-authority-topology.ts
         required_inputs:
         - parsed_convention_files
@@ -361,9 +352,8 @@ sections:
         - execution
         executor_type: compiler
       compile_runtime_artifact_topology:
-        description: Compile runtime artifact declarations and .ai usages into an
-          artifact topology with path normalization, declaration coverage, producer-route
-          inference, and conflict reporting.
+        description: Compile runtime artifact declarations and .ai usages into an artifact topology with path normalization,
+          declaration coverage, producer-route inference, and conflict reporting.
         script: scripts/compile-runtime-artifact-topology.ts
         required_inputs:
         - runtime_artifact_declarations
@@ -388,8 +378,8 @@ sections:
         executor_type: compiler
     generator:
       generate_phase_bundle:
-        description: Generate minimal phase context bundle from active mission, phase
-          contract, owner agent, executor routes, and relevant convention slices.
+        description: Generate minimal phase context bundle from active mission, phase contract, owner agent, executor routes,
+          and relevant convention slices.
         script: scripts/generate-phase-bundle.ts
         required_inputs:
         - mission_context
@@ -419,8 +409,8 @@ sections:
         executor_type: generator
     gate:
       run_gate_check:
-        description: Run declared gate checks and write a machine-readable gate result
-          that passes only when required validation inputs are present and passing.
+        description: Run declared gate checks and write the only authoritative machine-readable gate result; agents and Alpha
+          may not manually decide gate pass/fail.
         script: scripts/run-gate-check.ts
         required_inputs:
         - gate_id
@@ -443,8 +433,8 @@ sections:
         executor_type: gate
     handoff:
       prepare_agent_handoff:
-        description: Prepare a handoff packet from a source phase output and target
-          agent requirements; fail closed when required inputs are missing.
+        description: Generate the only authoritative handoff packet from a source phase output and target agent requirements;
+          agents may not manually author handoff packets.
         script: scripts/prepare-agent-handoff.ts
         required_inputs:
         - source_phase_output
@@ -465,8 +455,8 @@ sections:
         executor_type: handoff
     revision:
       create_revision_task:
-        description: Convert a failed validation or gate result into a deterministic
-          revision task; fail closed when no concrete failure is provided.
+        description: Generate the only authoritative revision task/decision from a failed validation or gate result; agents
+          and Alpha may trigger this route but may not manually author revision decisions.
         script: scripts/create-revision-task.ts
         required_inputs:
         - failure_result
@@ -488,8 +478,7 @@ sections:
         executor_type: revision
     report:
       collect_phase_report:
-        description: Collect phase evidence, validation results, gate outcomes, and
-          unresolved issues into a phase report.
+        description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase report.
         script: scripts/collect-phase-report.ts
         required_inputs:
         - phase_output
@@ -559,6 +548,10 @@ validation:
   - revision_task_validation_route_present
   - gate_handoff_revision_routes_are_script_backed
   - transition_artifacts_are_validated_before_consumption
+  - handoff_packets_are_script_produced_only
+  - gate_pass_fail_results_are_script_produced_only
+  - revision_decisions_are_script_produced_only
+  - transition_artifacts_reject_manual_authoring
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -586,3 +579,7 @@ validation:
   - missing_revision_task_validation_route
   - transition_artifact_consumed_without_validation
   - gate_handoff_revision_route_not_script_backed
+  - manual_handoff_packet_authored_by_agent
+  - manual_gate_result_authored_by_agent
+  - manual_revision_decision_authored_by_agent
+  - transition_decision_not_script_produced

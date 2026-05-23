@@ -1,6 +1,6 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_6_gate_handoff_revision_executor_routes
+  milestone: phase_6_1_transition_authority_tightening
   yaml_file_count: 149
   typescript_script_file_count: 21
   total_file_count: 173
@@ -9,12 +9,13 @@ package_manifest:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
-  - phase 6 strengthens gate, handoff, and revision transitions as route-backed script
-    flows
-  - transition artifacts are generated and then validated through executor routes
-    before consumption
+  - phase 6 strengthens gate, handoff, and revision transitions as route-backed script flows
+  - transition artifacts are generated and then validated through executor routes before consumption
   - 'new validation routes: validate_gate_result, validate_handoff, validate_revision_task'
   - script verification includes live gate, handoff, and revision route tests
+  - phase 6.1 tightens transition authority so handoff packets, gate results, and revision tasks are script-produced only
+  - agents and Alpha may invoke or consume transition routes but must not manually author transition artifacts
+  - validation scripts reject manually authored gate, handoff, and revision artifacts
   files:
   - PACKAGE_MANIFEST.yaml
   - README.md
