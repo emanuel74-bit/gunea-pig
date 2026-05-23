@@ -23,6 +23,18 @@ for (const file of conventionYamlFiles(root)) {
   if (["PACKAGE_MANIFEST.yaml", "VALIDATION_REPORT.yaml"].includes(relative)) continue;
   const parsed = readYamlFile(file);
   const ownership = parsed.ownership ?? {};
+  if (!ownership || typeof ownership !== "object" || Array.isArray(ownership)) {
+    issues.push(issue("error", "MALFORMED_OWNERSHIP_BLOCK", `Ownership block must be an object`, relative));
+    files[relative] = { owns: [] };
+    continue;
+  }
+  for (const key of Object.keys(ownership)) {
+    if (!relationshipKeys.includes(key)) {
+      issues.push(issue("error", "UNKNOWN_OWNERSHIP_RELATIONSHIP", `Unknown ownership relationship key: ${key}`, relative));
+    } else if (!Array.isArray(ownership[key])) {
+      issues.push(issue("error", "MALFORMED_OWNERSHIP_RELATIONSHIP", `Ownership relationship ${key} must be a list`, relative));
+    }
+  }
   files[relative] = { owns: asArray(ownership.owns) };
   for (const key of relationshipKeys) {
     for (const concept of asArray(ownership[key])) {

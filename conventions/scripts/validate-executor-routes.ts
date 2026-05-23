@@ -28,6 +28,19 @@ const requiredFields = [
 ];
 const allowedTypes = new Set(["validation", "compiler", "generator", "gate", "handoff", "revision", "report", "bundle"]);
 const allowedFailure = new Set(["block", "warn", "retry", "revise", "report_only"]);
+const allowedHooks = new Set([
+  "before_mission_start",
+  "before_phase_start",
+  "before_file_change",
+  "after_file_change",
+  "after_phase_output",
+  "before_handoff",
+  "after_handoff",
+  "on_gate_check",
+  "on_validation_failure",
+  "before_mission_complete",
+]);
+const listFields = new Set(["required_inputs", "produced_outputs", "allowed_write_paths", "required_artifacts", "lifecycle_hooks", "consumers"]);
 
 for (const [routeId, route] of routes.entries()) {
   if (!routeIdLooksValid(routeId)) {
@@ -36,6 +49,11 @@ for (const [routeId, route] of routes.entries()) {
   for (const field of requiredFields) {
     if (!(field in route)) {
       issues.push(issue("error", "ROUTE_MISSING_FIELD", `Route ${routeId} is missing required field ${field}`));
+    }
+  }
+  for (const field of listFields) {
+    if (field in route && !Array.isArray(route[field])) {
+      issues.push(issue("error", "ROUTE_FIELD_NOT_LIST", `Route ${routeId} field ${field} must be a list`));
     }
   }
   if ("blocking" in route) issues.push(issue("error", "FORBIDDEN_BLOCKING_FIELD", `Route ${routeId} uses forbidden blocking field`));
@@ -48,6 +66,13 @@ for (const [routeId, route] of routes.entries()) {
   }
   if (!allowedFailure.has(route.failure_behavior)) {
     issues.push(issue("error", "UNKNOWN_FAILURE_BEHAVIOR", `Route ${routeId} has unknown failure_behavior ${route.failure_behavior}`));
+  }
+  if (Array.isArray(route.lifecycle_hooks)) {
+    for (const hook of route.lifecycle_hooks) {
+      if (!allowedHooks.has(String(hook))) {
+        issues.push(issue("error", "UNKNOWN_LIFECYCLE_HOOK", `Route ${routeId} has unknown lifecycle hook ${hook}`));
+      }
+    }
   }
   if (typeof route.script !== "string" || !route.script.startsWith("scripts/")) {
     issues.push(issue("error", "INVALID_SCRIPT_PATH", `Route ${routeId} must point to centralized scripts/ path`));

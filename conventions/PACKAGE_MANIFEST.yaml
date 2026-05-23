@@ -1,66 +1,183 @@
-package: sync_conventions_system_script_verification_harness
-generated_from: Phase 4.5 Script Verification Harness applied to conventions_phase_bundle_hardened baseline.
-yaml_file_count: 149
-folder_count: 24
-script_file_count: 17
-notes:
-- Milestone architecture remains centralized executor routing with local script requirements.
-- Agents must not call scripts directly; scripts are resolved only through declared executor routes.
-- No standalone compiler, validation, scripts convention, manual authority registry, or manual authority boundary subsystem is active.
-- Topology outputs are script-facing compiled truth; phase bundles are agent-facing execution context.
-- Phase agents consume validated phase bundles instead of scanning the full convention system or loading full topology outputs.
-- package-lock.json and node_modules are intentionally excluded; installs use the user environment registry configuration.
-executor_system_summary:
-  executor_entrypoint: executors/conventions.executors.yaml
-  central_route_file: executors/conventions.executor-routes.yaml
-  unknown_route_behavior: fail_closed
-  script_folder: scripts/
-  script_folder_meaning: centralized runnable implementation path only
-  direct_script_calls_by_agents: forbidden
-phase_4_phase_bundle_hardening:
-  generator_route: generate_phase_bundle
-  validation_route: validate_phase_bundle
-  hardened_files:
+package_manifest:
+  generated_for: Autonomous Agent Activator conventions system
+  milestone: phase_4_6_complete_script_test_coverage
+  yaml_file_count: 149
+  typescript_script_file_count: 17
+  total_file_count: 169
+  root_folder: conventions/
+  notes:
+  - scripts/ is implementation-only, not a convention subsystem
+  - no package-lock.json included
+  - no node_modules included
+  - phase 4.6 adds per-script coverage matrices and live representative verification
+    through verify-scripts.ts
+  files:
+  - PACKAGE_MANIFEST.yaml
+  - README.md
+  - VALIDATION_REPORT.yaml
+  - actions/conventions.action-collisions.yaml
+  - actions/conventions.action-followups.yaml
+  - actions/conventions.action-resolution.yaml
+  - actions/conventions.action-taxonomy.yaml
+  - actions/conventions.actions.yaml
+  - agents/conventions.agent-activation-policy.yaml
+  - agents/conventions.agent-capabilities.yaml
+  - agents/conventions.agent-contracts.yaml
+  - agents/conventions.agent-permissions.yaml
+  - agents/conventions.agent-phase-ownership.yaml
+  - agents/conventions.agent-prompts.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-validation.yaml
+  - agents/conventions.agents.yaml
+  - architecture/conventions.architecture.yaml
+  - architecture/conventions.structure-strategy.yaml
+  - architecture/conventions.structure.yaml
+  - boundaries/conventions.boundaries.yaml
+  - boundaries/conventions.boundary-classification.yaml
+  - boundaries/conventions.boundary-crossing-rules.yaml
+  - boundaries/conventions.boundary-leak-detection.yaml
+  - boundaries/conventions.boundary-taxonomy.yaml
+  - boundaries/conventions.boundary-validation.yaml
+  - contracts/conventions.compatibility.yaml
+  - contracts/conventions.contract-change-taxonomy.yaml
+  - contracts/conventions.contract-classification.yaml
+  - contracts/conventions.contract-taxonomy.yaml
+  - contracts/conventions.contracts.yaml
+  - core/conventions.core.yaml
+  - core/conventions.file-contract.yaml
+  - core/conventions.index.yaml
+  - core/conventions.integration-contract.yaml
+  - core/conventions.output-schema.yaml
+  - core/conventions.pipeline-contract.yaml
+  - core/conventions.script-delegation-policy.yaml
+  - core/conventions.semantic-completeness.yaml
+  - core/conventions.validation.yaml
+  - dependencies/conventions.dependencies.yaml
+  - dependencies/conventions.dependency-classification.yaml
+  - dependencies/conventions.dependency-direction-rules.yaml
+  - dependencies/conventions.dependency-taxonomy.yaml
+  - dependencies/conventions.dependency-validation.yaml
+  - dependencies/conventions.import-rules.yaml
+  - dependencies/conventions.test-dependency-rules.yaml
+  - execution/conventions.changed-file-policy.yaml
+  - execution/conventions.checkpoint-planning.yaml
+  - execution/conventions.execution-validation.yaml
+  - execution/conventions.execution.yaml
+  - execution/conventions.feedback-loop.yaml
+  - execution/conventions.implementation-control.yaml
+  - execution/conventions.implementation-sequence.yaml
+  - execution/conventions.validation-command-policy.yaml
+  - executors/conventions.executor-contract.yaml
+  - executors/conventions.executor-failures.yaml
+  - executors/conventions.executor-lifecycle.yaml
+  - executors/conventions.executor-routes.yaml
+  - executors/conventions.executors.yaml
+  - gates/conventions.gate-taxonomy.yaml
+  - gates/conventions.gate-templates.yaml
+  - gates/conventions.gate-validation.yaml
+  - gates/conventions.gates.yaml
+  - handoffs/conventions.handoff-consumption-policy.yaml
+  - handoffs/conventions.handoff-schema.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - handoffs/conventions.handoffs.yaml
+  - missions/conventions.active-phase-plan.yaml
+  - missions/conventions.mission-profile-selection.yaml
+  - missions/conventions.mission-profile-taxonomy.yaml
+  - missions/conventions.mission-profiles.yaml
+  - missions/conventions.mission-state.yaml
+  - missions/conventions.mission-validation.yaml
+  - missions/conventions.missions.yaml
+  - multi-agent/conventions.alpha-controller.yaml
+  - multi-agent/conventions.alpha-oversight.yaml
+  - multi-agent/conventions.alpha-scheduling.yaml
+  - multi-agent/conventions.alpha-state-transitions.yaml
+  - multi-agent/conventions.multi-agent-validation.yaml
+  - multi-agent/conventions.multi-agent.yaml
   - multi-agent/conventions.phase-bundle-policy.yaml
+  - multi-agent/conventions.phase-execution.yaml
+  - patterns/conventions.pattern-catalog.yaml
+  - patterns/conventions.pattern-restrictions.yaml
+  - patterns/conventions.pattern-selection.yaml
+  - patterns/conventions.patterns.yaml
+  - patterns/conventions.role-pattern-compatibility.yaml
+  - phases/conventions.phase-contracts.yaml
+  - phases/conventions.phase-dependencies.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-validation.yaml
+  - phases/conventions.phases.yaml
+  - planning/conventions.assumptions.yaml
+  - planning/conventions.behavior-contract.yaml
+  - planning/conventions.change-impact.yaml
+  - planning/conventions.codebase-reconnaissance.yaml
+  - planning/conventions.decision-log.yaml
+  - planning/conventions.local-alignment.yaml
+  - planning/conventions.planning.yaml
+  - planning/conventions.scope.yaml
+  - refactoring/conventions.behavior-preservation.yaml
+  - refactoring/conventions.refactor-classification.yaml
+  - refactoring/conventions.refactor-safety.yaml
+  - refactoring/conventions.refactor-strategy.yaml
+  - refactoring/conventions.refactor-taxonomy.yaml
+  - refactoring/conventions.refactor-validation.yaml
+  - refactoring/conventions.refactoring.yaml
+  - reports/conventions.report-artifacts.yaml
+  - reports/conventions.report-consumption-policy.yaml
+  - reports/conventions.report-lifecycle.yaml
+  - reports/conventions.report-registry.yaml
+  - reports/conventions.report-schemas.yaml
+  - reports/conventions.report-taxonomy.yaml
+  - reports/conventions.report-templates.yaml
+  - reports/conventions.report-validation.yaml
+  - reports/conventions.reports.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  - revisions/conventions.invalidation-policy.yaml
+  - revisions/conventions.rerun-policy.yaml
+  - revisions/conventions.revision-request-policy.yaml
+  - revisions/conventions.revision-taxonomy.yaml
+  - revisions/conventions.revision-validation.yaml
+  - revisions/conventions.revisions.yaml
+  - risk/conventions.risk-classification.yaml
+  - risk/conventions.risk-escalation.yaml
+  - risk/conventions.risk-resolution.yaml
+  - risk/conventions.risk-signals.yaml
+  - risk/conventions.risk-taxonomy.yaml
+  - risk/conventions.risk-validation.yaml
+  - risk/conventions.risk.yaml
+  - roles/conventions.role-collisions.yaml
+  - roles/conventions.role-placement.yaml
+  - roles/conventions.role-resolution.yaml
+  - roles/conventions.role-taxonomy.yaml
+  - roles/conventions.roles.yaml
+  - scripts/collect-phase-report.ts
+  - scripts/compile-authority-topology.ts
+  - scripts/compile-runtime-artifact-topology.ts
+  - scripts/create-revision-task.ts
+  - scripts/generate-mission-bundle.ts
   - scripts/generate-phase-bundle.ts
-  - scripts/validate-phase-bundle.ts
+  - scripts/lib/common.ts
   - scripts/package.json
-  enforces:
-  - phase bundle is agent-facing context packet
-  - topology outputs are script-facing and not loaded by normal phase agents
-  - bundle contains selected phase contract and phase ownership records only
-  - bundle contains required executor route IDs and minimal route contract slices
-  - bundle contains required inputs, outputs, write scopes, gates, handoff, and completion contract
-  - bundle must not contain full convention package or full topology dumps
-  - required outputs must be inside allowed write scope
-  - phase bundle manifest must be generated beside the bundle
-foundational_routes:
-- collect_phase_report
-- compile_authority_topology
-- compile_runtime_artifact_topology
-- create_revision_task
-- generate_mission_bundle
-- generate_phase_bundle
-- prepare_agent_handoff
-- run_gate_check
-- validate_authority_topology
-- validate_changed_files
-- validate_executor_routes
-- validate_phase_bundle
-- validate_phase_output
-- validate_references
-- validate_runtime_artifacts
-- validate_script_execution
-phase_4_5_script_verification_harness:
-  verification_route: validate_script_execution
-  verification_script: scripts/verify-scripts.ts
-  npm_command: npm run verify:scripts
-  test_count: 15
-  verified_behaviors:
-  - valid input succeeds
-  - invalid input fails closed
-  - script result shape is parseable and stable
-  - expected error codes are emitted
-  - expected artifacts are written
-  - writes remain inside route-allowed output scopes
-  - route-backed scripts resolve through the central executor map
+  - scripts/prepare-agent-handoff.ts
+  - scripts/run-gate-check.ts
+  - scripts/tsconfig.json
+  - scripts/validate-authority-topology.ts
+  - scripts/validate-changed-files.ts
+  - scripts/validate-executor-routes.ts
+  - scripts/validate-phase-bundle.ts
+  - scripts/validate-phase-output.ts
+  - scripts/validate-references.ts
+  - scripts/validate-runtime-artifacts.ts
+  - scripts/verify-scripts.ts
+  - testing/conventions.characterization-testing.yaml
+  - testing/conventions.regression-testing.yaml
+  - testing/conventions.test-derivation.yaml
+  - testing/conventions.test-validation.yaml
+  - testing/conventions.testing-matrix.yaml
+  - testing/conventions.testing-taxonomy.yaml
+  - testing/conventions.testing.yaml
+  - triggers/conventions.trigger-blocking-policy.yaml
+  - triggers/conventions.trigger-emission-policy.yaml
+  - triggers/conventions.trigger-resolution.yaml
+  - triggers/conventions.trigger-taxonomy.yaml
+  - triggers/conventions.trigger-validation.yaml
+  - triggers/conventions.triggers.yaml

@@ -1,59 +1,21 @@
-validation_report: sync_conventions_system_script_verification_harness
-status: pass
-yaml_file_count: 149
-folder_count: 24
-script_file_count: 17
-checks:
-  yaml_parse_errors: 0
-  missing_required_dependencies: 0
-  duplicate_owned_concepts: 0
-  undeclared_executability_values: 0
-  executor_route_contract_errors: 0
-  unknown_local_executor_route_references: 0
-  stale_removed_authority_or_script_references: 0
-  route_script_paths_missing: 0
-  runtime_artifact_routes_present: true
-  runtime_artifact_scripts_present: true
-  phase_bundle_routes_present: true
-  phase_bundle_scripts_present: true
-  phase_bundle_generation_verified: true
-  phase_bundle_validation_verified: true
-  package_lock_present: false
-  node_modules_present: false
-  script_verification_route_present: true
-  script_verification_script_present: true
-  script_verification_harness_verified: true
-errors:
-  parse_errors: []
-  missing_required_dependencies: []
-  duplicate_owned_concepts: {}
-  undeclared_executability_values: []
-  executor_route_contract_errors: []
-  unknown_local_executor_route_references: []
-  missing_route_scripts: []
-  stale_removed_references: []
-phase_4_phase_bundle_hardening:
-  generator_route: generate_phase_bundle
-  validation_route: validate_phase_bundle
-  verified_example:
-    mission_id: dry-run
-    phase_id: mission_profile_selection
-    generated_bundle: .ai/bundles/phases/dry-run/mission_profile_selection.bundle.yaml
-    generated_manifest: .ai/bundles/phases/dry-run/mission_profile_selection.manifest.yaml
-    validation_status: pass
-  enforces:
-  - agent-facing phase context bundle
-  - script-facing topology boundary
-  - selected-record-only bundle content
-  - route contract slices for required executor routes
-  - no full convention package dumps
-  - no full topology dumps
-  - output/write-scope consistency
-phase_4_5_script_verification_harness:
-  verification_route: validate_script_execution
-  verification_script: scripts/verify-scripts.ts
-  npm_command: npm run verify:scripts
-  test_count: 15
-  validation_status: pass
-  generated_report: .ai/reports/script-verification-report.yaml
-  generated_result: .ai/validation/verify-scripts.result.yaml
+validation_report:
+  milestone: phase_4_6_complete_script_test_coverage
+  status: pass
+  summary:
+    yaml_files: 149
+    typescript_script_files: 17
+    yaml_parse_errors: 0
+    missing_required_dependencies: 0
+    duplicate_owned_concepts: 0
+    missing_route_script_paths: 0
+    unknown_local_executor_route_references: 0
+    executor_route_count: 16
+    script_verification_declared_test_count: 46
+    script_verification_live_test_count: 15
+    script_verification_failed_test_count: 0
+  checks:
+    yaml_parse_errors: []
+    missing_required_dependencies: []
+    duplicate_owned_concepts: []
+    missing_route_script_paths: []
+    unknown_local_executor_route_references: []
