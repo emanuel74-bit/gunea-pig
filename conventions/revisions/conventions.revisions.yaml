@@ -4,8 +4,8 @@ file:
   path: revisions/conventions.revisions.yaml
   role: revisions_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the source of truth entrypoint, file index, local execution order, and ownership boundaries for revision,
-  invalidation, and rerun policy.
+purpose: Provide the source of truth entrypoint, file index, local execution order,
+  and ownership boundaries for revision, invalidation, and rerun policy.
 ownership:
   owns:
   - revisions_file_index
@@ -59,10 +59,12 @@ sections:
   subsystem_contract:
     absolute_rules:
     - id: REVISIONS-SYSTEM-ABS-001
-      rule: Revisions correct unsafe prior outputs; they do not perform phase work directly.
+      rule: Revisions correct unsafe prior outputs; they do not perform phase work
+        directly.
       fail_condition: revision_subsystem_performed_phase_work
     - id: REVISIONS-SYSTEM-ABS-002
-      rule: Revisions may invalidate and schedule reruns but must not redefine phase contracts.
+      rule: Revisions may invalidate and schedule reruns but must not redefine phase
+        contracts.
       fail_condition: revision_subsystem_redefined_phase_contract
     - id: REVISIONS-SYSTEM-ABS-003
       rule: Alpha is the decision authority for approving/rejecting revision requests.
@@ -91,6 +93,7 @@ sections:
   required_executor_routes:
     on_validation_failure:
     - create_revision_task
+    - validate_revision_task
 validation:
   required_checks:
   - id: CONVENTIONS-REVISIONS-YAML-CHECK-001
@@ -104,5 +107,6 @@ validation:
   fail_conditions:
   - id: REVISIONS-SYSTEM-001
     condition: revision_subsystem_performed_phase_work
-    message: Revision subsystem must correct runtime state and outputs, not execute phase work directly.
+    message: Revision subsystem must correct runtime state and outputs, not execute
+      phase work directly.
     severity: error

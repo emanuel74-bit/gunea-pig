@@ -1,0 +1,32 @@
+import fs from "node:fs";
+import path from "node:path";
+import { finish, getArg, issue, readYamlFile, resolveConventionsRoot, type Issue } from "./lib/common.js";
+
+const SCRIPT_ID = "validate-revision-task";
+const root = resolveConventionsRoot();
+const revisionRel = getArg("revision-task");
+const issues: Issue[] = [];
+
+if (!revisionRel) {
+  issues.push(issue("error", "REVISION_TASK_INPUT_MISSING", "Revision task validation requires --revision-task."));
+} else if (!fs.existsSync(path.join(root, revisionRel))) {
+  issues.push(issue("error", "REVISION_TASK_MISSING", "Revision task artifact does not exist.", revisionRel));
+} else {
+  try {
+    const task = readYamlFile(path.join(root, revisionRel));
+    if (task.artifact !== "revision_task") issues.push(issue("error", "REVISION_TASK_ARTIFACT_INVALID", "Revision task artifact field must be revision_task.", revisionRel));
+    if (task.status !== "created") issues.push(issue("error", "REVISION_TASK_STATUS_INVALID", "Revision task status must be created before execution.", revisionRel));
+    if (!task.failure && !task.failure_result) issues.push(issue("error", "REVISION_TASK_FAILURE_REF_MISSING", "Revision task must include failure or failure_result.", revisionRel));
+    if (!task.required_action) issues.push(issue("error", "REVISION_TASK_ACTION_MISSING", "Revision task must include required_action.", revisionRel));
+    if (!Array.isArray(task.validation_required_routes) || !task.validation_required_routes.includes("validate_changed_files")) {
+      issues.push(issue("error", "REVISION_TASK_REVALIDATION_ROUTE_MISSING", "Revision task must include validate_changed_files in validation_required_routes.", revisionRel));
+    }
+    if (task.failure_result && !fs.existsSync(path.join(root, task.failure_result))) {
+      issues.push(issue("error", "REVISION_TASK_FAILURE_RESULT_MISSING", "Revision task failure_result does not exist.", revisionRel, { failure_result: task.failure_result }));
+    }
+  } catch (error) {
+    issues.push(issue("error", "REVISION_TASK_UNREADABLE", "Revision task could not be parsed.", revisionRel, { error: String(error) }));
+  }
+}
+
+finish(SCRIPT_ID, issues, [".ai/validation/validate-revision-task.result.yaml"], { revision_task: revisionRel ?? null });

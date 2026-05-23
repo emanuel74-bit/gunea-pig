@@ -1,24 +1,23 @@
 validation_report:
-  milestone: phase_5_1_semantic_vocabulary_policy_enforcement
+  milestone: phase_6_gate_handoff_revision_executor_routes
   status: pass
   summary:
     yaml_files: 149
-    typescript_script_files: 18
+    typescript_script_files: 21
     yaml_parse_errors: 0
     missing_required_dependencies: 0
     duplicate_owned_concepts: 0
     missing_route_script_paths: 0
     unknown_local_executor_route_references: 0
     direct_script_references_from_local_routes: 0
-    executor_route_count: 17
-    semantic_completeness_route_present: true
-    script_verification_declared_test_count: 52
-    script_verification_live_test_count: 19
+    executor_route_count: 20
+    gate_result_validation_route_present: true
+    handoff_validation_route_present: true
+    revision_task_validation_route_present: true
+    script_verification_declared_test_count: 61
+    script_verification_live_test_count: 22
     script_verification_failed_test_count: 0
-    semantic_policy_driven: true
-    semantic_forbidden_phrase_count: 36
-    semantic_exact_forbidden_count: 3
-    semantic_warning_phrase_count: 3
+    transition_routes_script_backed: true
   checks:
     yaml_parse_errors: []
     missing_required_dependencies: []

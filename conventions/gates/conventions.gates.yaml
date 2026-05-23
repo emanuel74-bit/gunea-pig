@@ -4,8 +4,8 @@ file:
   path: gates/conventions.gates.yaml
   role: gates_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the strict runtime gate subsystem entrypoint, file index, local execution order, and authority boundaries
-  for gate taxonomy, templates, and validation.
+purpose: Provide the strict runtime gate subsystem entrypoint, file index, local execution
+  order, and authority boundaries for gate taxonomy, templates, and validation.
 ownership:
   owns:
   - gates_file_index
@@ -70,16 +70,18 @@ sections:
       fail_condition: phase_missing_required_gate
       severity: error
     - id: GATES-SYSTEM-ABS-003
-      rule: A failed blocking gate must stop the target transition until remediated, rerun, or explicitly blocked.
+      rule: A failed blocking gate must stop the target transition until remediated,
+        rerun, or explicitly blocked.
       fail_condition: blocking_gate_failure_ignored
       severity: error
     - id: GATES-SYSTEM-ABS-004
-      rule: Gate definitions may tighten phase contracts but must never weaken phase contracts, agent permissions, report
-        schemas, or mission profile requirements.
+      rule: Gate definitions may tighten phase contracts but must never weaken phase
+        contracts, agent permissions, report schemas, or mission profile requirements.
       fail_condition: gate_weakened_authoritative_contract
       severity: error
     - id: GATES-SYSTEM-ABS-005
-      rule: Gate output must be machine-readable and written into mission state or the declared gate-result report.
+      rule: Gate output must be machine-readable and written into mission state or
+        the declared gate-result report.
       fail_condition: gate_result_not_persisted
       severity: error
   subsystem_authority_boundaries:
@@ -108,6 +110,7 @@ sections:
   required_executor_routes:
     on_gate_check:
     - run_gate_check
+    - validate_gate_result
 validation:
   required_checks:
   - id: GATES-ENTRY-CHECK-001

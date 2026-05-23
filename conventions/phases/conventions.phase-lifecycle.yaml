@@ -4,7 +4,8 @@ file:
   path: phases/conventions.phase-lifecycle.yaml
   role: phase_lifecycle_contract
   executability: state_machine
-purpose: Define phase status vocabulary, allowed transitions, lifecycle invariants, and phase status record requirements.
+purpose: Define phase status vocabulary, allowed transitions, lifecycle invariants,
+  and phase status record requirements.
 ownership:
   owns:
   - phase_status_enum
@@ -70,7 +71,8 @@ sections:
       transition_allowed_to:
       - invalidated
     skipped:
-      definition: The phase was not run because the selected mission profile or trigger state explicitly allowed it.
+      definition: The phase was not run because the selected mission profile or trigger
+        state explicitly allowed it.
       choose_when:
       - skip is allowed by mission profile or condition
       - skip record includes reason, evidence, and downstream risk review
@@ -81,8 +83,8 @@ sections:
       - pending
       - blocked
     blocked:
-      definition: The phase cannot proceed because a required gate, input, permission, report, trigger, or approval is missing
-        or invalid.
+      definition: The phase cannot proceed because a required gate, input, permission,
+        report, trigger, or approval is missing or invalid.
       choose_when:
       - blocking condition is present and no valid fallback exists
       reject_when:
@@ -92,7 +94,8 @@ sections:
       - deferred
       - invalidated
     deferred:
-      definition: The phase is intentionally postponed until a trigger, dependency, approval, or prerequisite phase is resolved.
+      definition: The phase is intentionally postponed until a trigger, dependency,
+        approval, or prerequisite phase is resolved.
       choose_when:
       - phase is conditionally required but prerequisite evidence is not ready
       reject_when:
@@ -102,8 +105,8 @@ sections:
       - blocked
       - skipped
     invalidated:
-      definition: The phase output was previously valid but can no longer be consumed because an upstream revision, rerun,
-        or contradiction invalidated it.
+      definition: The phase output was previously valid but can no longer be consumed
+        because an upstream revision, rerun, or contradiction invalidated it.
       choose_when:
       - mission_state.invalidated_outputs references this phase output
       - replacement or rerun is required
@@ -176,16 +179,20 @@ sections:
   phase_lifecycle_absolute_rules:
     absolute_rules:
     - id: PHASE-LIFECYCLE-ABS-001
-      rule: A phase may be marked executed only after its output gate passes and required outputs exist.
+      rule: A phase may be marked executed only after its output gate passes and required
+        outputs exist.
       fail_condition: phase_marked_executed_without_output_gate
     - id: PHASE-LIFECYCLE-ABS-002
-      rule: A skipped phase requires an explicit skip gate result, skip reason, evidence, and downstream risk review.
+      rule: A skipped phase requires an explicit skip gate result, skip reason, evidence,
+        and downstream risk review.
       fail_condition: phase_skipped_without_valid_skip_record
     - id: PHASE-LIFECYCLE-ABS-003
-      rule: Invalidated phase outputs cannot be consumed by downstream phases until replaced or revalidated.
+      rule: Invalidated phase outputs cannot be consumed by downstream phases until
+        replaced or revalidated.
       fail_condition: downstream_consumed_invalidated_phase_output
     - id: PHASE-LIFECYCLE-ABS-004
-      rule: Blocked phases must preserve blocker reason and required resolution; silent blocking is forbidden.
+      rule: Blocked phases must preserve blocker reason and required resolution; silent
+        blocking is forbidden.
       fail_condition: phase_blocked_without_block_record
   phase_status_record_schema:
     required_fields:
@@ -210,6 +217,13 @@ sections:
     - collect_phase_report
     on_gate_check:
     - run_gate_check
+    - validate_gate_result
+    before_handoff:
+    - prepare_agent_handoff
+    - validate_handoff
+    on_validation_failure:
+    - create_revision_task
+    - validate_revision_task
 validation:
   required_checks:
   - id: PHASE-LIFECYCLE-CHECK-001

@@ -4,7 +4,8 @@ file:
   path: handoffs/conventions.handoffs.yaml
   role: handoffs_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the entrypoint, local execution order, ownership contract, and lookup index for phase-to-phase handoffs.
+purpose: Provide the entrypoint, local execution order, ownership contract, and lookup
+  index for phase-to-phase handoffs.
 ownership:
   owns:
   - handoffs_file_index
@@ -80,18 +81,23 @@ sections:
       rule: Every downstream phase consumption must be backed by a valid handoff record.
       fail_condition: downstream_consumption_without_handoff_record
     - id: HANDOFFS-SYSTEM-ABS-002
-      rule: A handoff validates consumability; it must not rewrite source reports or target phase contracts.
+      rule: A handoff validates consumability; it must not rewrite source reports
+        or target phase contracts.
       fail_condition: handoff_mutated_source_or_target_contract
     - id: HANDOFFS-SYSTEM-ABS-003
-      rule: Handoff validation must fail closed when source output, target input declaration, permissions, lifecycle state,
-        or evidence is missing.
+      rule: Handoff validation must fail closed when source output, target input declaration,
+        permissions, lifecycle state, or evidence is missing.
       fail_condition: handoff_validation_failed_open
     - id: HANDOFFS-SYSTEM-ABS-004
-      rule: Invalidated, blocked, failed, or replaced-without-replacement handoffs must block downstream consumption.
+      rule: Invalidated, blocked, failed, or replaced-without-replacement handoffs
+        must block downstream consumption.
       fail_condition: blocked_handoff_allowed_downstream_consumption
   required_executor_routes:
     before_handoff:
     - prepare_agent_handoff
+    - validate_handoff
+    after_handoff:
+    - validate_handoff
 validation:
   required_checks:
   - id: HANDOFFS-SYSTEM-CHECK-001
@@ -105,5 +111,6 @@ validation:
     severity: error
   - id: HANDOFFS-SYSTEM-002
     condition: handoff_validation_failed_open
-    message: Handoff validation must fail closed when required handoff evidence is missing.
+    message: Handoff validation must fail closed when required handoff evidence is
+      missing.
     severity: error

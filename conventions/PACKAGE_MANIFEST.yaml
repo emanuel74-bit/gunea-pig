@@ -1,19 +1,20 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_5_1_semantic_vocabulary_policy_enforcement
+  milestone: phase_6_gate_handoff_revision_executor_routes
   yaml_file_count: 149
-  typescript_script_file_count: 18
-  total_file_count: 170
+  typescript_script_file_count: 21
+  total_file_count: 173
   root_folder: conventions/
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
-  - phase 5 adds route-backed semantic completeness validation through validate_semantic_completeness
-  - semantic completeness is enforced by executor route and script, not by agent self-certification
-  - phase 5.1 makes semantic completeness policy-driven from core/conventions.semantic-completeness.yaml
-  - semantic validation now expands vague delegation/completeness/authority/execution/output phrase enforcement
-  - verify-scripts now includes semantic policy-loading, dynamic policy phrase, and decision rejection logic tests
+  - phase 6 strengthens gate, handoff, and revision transitions as route-backed script
+    flows
+  - transition artifacts are generated and then validated through executor routes
+    before consumption
+  - 'new validation routes: validate_gate_result, validate_handoff, validate_revision_task'
+  - script verification includes live gate, handoff, and revision route tests
   files:
   - PACKAGE_MANIFEST.yaml
   - README.md
@@ -166,9 +167,12 @@ package_manifest:
   - scripts/validate-authority-topology.ts
   - scripts/validate-changed-files.ts
   - scripts/validate-executor-routes.ts
+  - scripts/validate-gate-result.ts
+  - scripts/validate-handoff.ts
   - scripts/validate-phase-bundle.ts
   - scripts/validate-phase-output.ts
   - scripts/validate-references.ts
+  - scripts/validate-revision-task.ts
   - scripts/validate-runtime-artifacts.ts
   - scripts/validate-semantic-completeness.ts
   - scripts/verify-scripts.ts

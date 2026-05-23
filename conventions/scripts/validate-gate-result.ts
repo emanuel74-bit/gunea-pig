@@ -1,0 +1,30 @@
+import fs from "node:fs";
+import path from "node:path";
+import { finish, getArg, issue, readYamlFile, resolveConventionsRoot, type Issue } from "./lib/common.js";
+
+const SCRIPT_ID = "validate-gate-result";
+const root = resolveConventionsRoot();
+const gateId = getArg("gate-id");
+const explicitResult = getArg("gate-result");
+const issues: Issue[] = [];
+
+const resultRel = explicitResult ?? (gateId ? `.ai/gates/${gateId.replace(/[^a-zA-Z0-9_.-]+/g, "_")}.gate-result.yaml` : undefined);
+if (!resultRel) {
+  issues.push(issue("error", "GATE_RESULT_INPUT_MISSING", "Gate result validation requires --gate-result or --gate-id."));
+} else if (!fs.existsSync(path.join(root, resultRel))) {
+  issues.push(issue("error", "GATE_RESULT_MISSING", "Gate result artifact does not exist.", resultRel));
+} else {
+  try {
+    const result = readYamlFile(path.join(root, resultRel));
+    if (result.artifact !== "gate_result") issues.push(issue("error", "GATE_RESULT_ARTIFACT_INVALID", "Gate result artifact field must be gate_result.", resultRel));
+    if (!result.gate_id) issues.push(issue("error", "GATE_RESULT_ID_MISSING", "Gate result must include gate_id.", resultRel));
+    if (!["pass", "blocked"].includes(String(result.status))) issues.push(issue("error", "GATE_RESULT_STATUS_INVALID", "Gate result status must be pass or blocked.", resultRel));
+    if (!["allow_transition", "block_transition"].includes(String(result.decision))) issues.push(issue("error", "GATE_RESULT_DECISION_INVALID", "Gate result decision must be allow_transition or block_transition.", resultRel));
+    if (result.status === "pass" && result.decision !== "allow_transition") issues.push(issue("error", "GATE_RESULT_STATUS_DECISION_MISMATCH", "Passing gate results must allow transition.", resultRel));
+    if (result.status === "blocked" && result.decision !== "block_transition") issues.push(issue("error", "GATE_RESULT_STATUS_DECISION_MISMATCH", "Blocked gate results must block transition.", resultRel));
+  } catch (error) {
+    issues.push(issue("error", "GATE_RESULT_UNREADABLE", "Gate result could not be parsed.", resultRel, { error: String(error) }));
+  }
+}
+
+finish(SCRIPT_ID, issues, [".ai/validation/validate-gate-result.result.yaml"], { gate_result: resultRel ?? null });
