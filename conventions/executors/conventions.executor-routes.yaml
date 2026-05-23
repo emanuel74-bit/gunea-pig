@@ -4,8 +4,7 @@ file:
   path: executors/conventions.executor-routes.yaml
   role: central_executor_route_map
   executability: router
-purpose: Define the central route map that agents use to resolve declared executor
-  route IDs into script-backed runtime actions.
+purpose: Define the central route map that agents use to resolve declared executor route IDs into script-backed runtime actions.
 ownership:
   owns:
   - central_executor_route_map
@@ -72,8 +71,7 @@ sections:
         - execution
         executor_type: validation
       validate_authority_topology:
-        description: Validate compiled authority topology against distributed ownership
-          declarations and single-owner rules.
+        description: Validate compiled authority topology against distributed ownership declarations and single-owner rules.
         script: scripts/validate-authority-topology.ts
         required_inputs:
         - authority_topology
@@ -95,8 +93,7 @@ sections:
         - reports
         executor_type: validation
       validate_phase_output:
-        description: Validate produced phase output against phase contracts and required
-          evidence.
+        description: Validate produced phase output against phase contracts and required evidence.
         script: scripts/validate-phase-output.ts
         required_inputs:
         - phase_output
@@ -116,8 +113,7 @@ sections:
         - reports
         executor_type: validation
       validate_phase_bundle:
-        description: Validate generated phase context bundle before an agent consumes
-          it.
+        description: Validate generated phase context bundle before an agent consumes it.
         script: scripts/validate-phase-bundle.ts
         required_inputs:
         - phase_context_bundle
@@ -161,8 +157,7 @@ sections:
         - reports
         executor_type: validation
       validate_references:
-        description: Validate file, subsystem, contract, route, and runtime artifact
-          references.
+        description: Validate file, subsystem, contract, route, and runtime artifact references.
         script: scripts/validate-references.ts
         required_inputs:
         - parsed_convention_files
@@ -183,9 +178,7 @@ sections:
         - reports
         executor_type: validation
       validate_runtime_artifacts:
-        description: Validate runtime artifact topology, declarations, normalized
-          paths, required identity fields, producer-route coverage, consumer lists,
-          lifecycle, scope, and write modes.
+        description: Validate runtime artifact topology, declarations, normalized paths, required identity fields, producer-route coverage, consumer lists, lifecycle, scope, and write modes.
         script: scripts/validate-runtime-artifacts.ts
         required_inputs:
         - runtime_artifact_topology
@@ -211,10 +204,32 @@ sections:
         - revisions
         - multi-agent
         executor_type: validation
+      validate_script_execution:
+        description: Verify executor route scripts with fixture-based valid and invalid input cases, output shape checks, exit-code checks, and allowed-write-path checks.
+        script: scripts/verify-scripts.ts
+        required_inputs:
+        - central_executor_route_map
+        - script_implementations
+        - script_test_fixtures
+        produced_outputs:
+        - script_verification_result
+        - script_verification_report
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - executors
+        - testing
+        - reports
+        executor_type: validation
     compiler:
       compile_authority_topology:
-        description: Compile distributed ownership declarations into an authority
-          topology and conflict report.
+        description: Compile distributed ownership declarations into an authority topology and conflict report.
         script: scripts/compile-authority-topology.ts
         required_inputs:
         - parsed_convention_files
@@ -236,9 +251,7 @@ sections:
         - execution
         executor_type: compiler
       compile_runtime_artifact_topology:
-        description: Compile runtime artifact declarations and .ai usages into an
-          artifact topology with path normalization, declaration coverage, producer-route
-          inference, and conflict reporting.
+        description: Compile runtime artifact declarations and .ai usages into an artifact topology with path normalization, declaration coverage, producer-route inference, and conflict reporting.
         script: scripts/compile-runtime-artifact-topology.ts
         required_inputs:
         - runtime_artifact_declarations
@@ -263,8 +276,7 @@ sections:
         executor_type: compiler
     generator:
       generate_phase_bundle:
-        description: Generate minimal phase context bundle from active mission, phase
-          contract, owner agent, executor routes, and relevant convention slices.
+        description: Generate minimal phase context bundle from active mission, phase contract, owner agent, executor routes, and relevant convention slices.
         script: scripts/generate-phase-bundle.ts
         required_inputs:
         - mission_context
@@ -338,8 +350,7 @@ sections:
         executor_type: handoff
     revision:
       create_revision_task:
-        description: Convert failed validation or gate result into a deterministic
-          revision task.
+        description: Convert failed validation or gate result into a deterministic revision task.
         script: scripts/create-revision-task.ts
         required_inputs:
         - failure_result
@@ -361,8 +372,7 @@ sections:
         executor_type: revision
     report:
       collect_phase_report:
-        description: Collect phase evidence, validation results, gate outcomes, and
-          unresolved issues into a phase report.
+        description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase report.
         script: scripts/collect-phase-report.ts
         required_inputs:
         - phase_output
@@ -419,6 +429,11 @@ validation:
   - runtime_artifact_topology_compilation_route_present
   - runtime_artifact_validation_route_blocks_conflicts
   - runtime_artifact_validation_consumes_compiled_topology
+  - script_execution_verification_route_present
+  - script_execution_verification_is_route_backed
+  - scripts_return_standard_result_shape
+  - scripts_fail_invalid_input_cases
+  - scripts_write_only_allowed_outputs
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -433,3 +448,8 @@ validation:
   - lifecycle_hook_missing_required_executor_routes
   - runtime_artifact_topology_conflict_unblocked
   - runtime_artifact_validation_not_route_backed
+  - missing_script_execution_verification_route
+  - script_verification_not_route_backed
+  - script_invalid_input_silently_passes
+  - script_result_shape_invalid
+  - script_write_path_violation

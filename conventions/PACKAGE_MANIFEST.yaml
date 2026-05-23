@@ -1,8 +1,8 @@
-package: sync_conventions_system_phase_bundle_hardening
-generated_from: Phase 4 Phase Bundle Hardening applied to conventions_runtime_artifact_enforcement baseline.
+package: sync_conventions_system_script_verification_harness
+generated_from: Phase 4.5 Script Verification Harness applied to conventions_phase_bundle_hardened baseline.
 yaml_file_count: 149
 folder_count: 24
-script_file_count: 16
+script_file_count: 17
 notes:
 - Milestone architecture remains centralized executor routing with local script requirements.
 - Agents must not call scripts directly; scripts are resolved only through declared executor routes.
@@ -50,3 +50,17 @@ foundational_routes:
 - validate_phase_output
 - validate_references
 - validate_runtime_artifacts
+- validate_script_execution
+phase_4_5_script_verification_harness:
+  verification_route: validate_script_execution
+  verification_script: scripts/verify-scripts.ts
+  npm_command: npm run verify:scripts
+  test_count: 15
+  verified_behaviors:
+  - valid input succeeds
+  - invalid input fails closed
+  - script result shape is parseable and stable
+  - expected error codes are emitted
+  - expected artifacts are written
+  - writes remain inside route-allowed output scopes
+  - route-backed scripts resolve through the central executor map

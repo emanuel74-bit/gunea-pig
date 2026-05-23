@@ -176,7 +176,9 @@ export function finish(scriptId: string, issues: Issue[], outputs: string[] = []
   };
   const root = resolveConventionsRoot();
   writeYamlFile(path.join(root, ".ai", "validation", `${scriptId}.result.yaml`), result);
-  console.log(YAML.stringify(result));
+  if (process.env.SCRIPT_RESULT_STDOUT !== "suppress") {
+    console.log(YAML.stringify(result));
+  }
   process.exit(errors.length ? 1 : 0);
 }
 

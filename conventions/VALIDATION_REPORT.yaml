@@ -1,8 +1,8 @@
-validation_report: sync_conventions_system_phase_bundle_hardening
+validation_report: sync_conventions_system_script_verification_harness
 status: pass
 yaml_file_count: 149
 folder_count: 24
-script_file_count: 16
+script_file_count: 17
 checks:
   yaml_parse_errors: 0
   missing_required_dependencies: 0
@@ -20,6 +20,9 @@ checks:
   phase_bundle_validation_verified: true
   package_lock_present: false
   node_modules_present: false
+  script_verification_route_present: true
+  script_verification_script_present: true
+  script_verification_harness_verified: true
 errors:
   parse_errors: []
   missing_required_dependencies: []
@@ -46,3 +49,11 @@ phase_4_phase_bundle_hardening:
   - no full convention package dumps
   - no full topology dumps
   - output/write-scope consistency
+phase_4_5_script_verification_harness:
+  verification_route: validate_script_execution
+  verification_script: scripts/verify-scripts.ts
+  npm_command: npm run verify:scripts
+  test_count: 15
+  validation_status: pass
+  generated_report: .ai/reports/script-verification-report.yaml
+  generated_result: .ai/validation/verify-scripts.result.yaml
