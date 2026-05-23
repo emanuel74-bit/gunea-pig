@@ -36,7 +36,19 @@ export function normalizeRelPath(value: string): string {
 export function resolveConventionsRoot(): string {
   const explicit = getArg("root");
   const base = explicit ? path.resolve(explicit) : process.cwd();
-  if (fs.existsSync(path.join(base, "conventions"))) return path.join(base, "conventions");
+
+  if (fs.existsSync(path.join(base, "conventions", "executors"))) {
+    return path.join(base, "conventions");
+  }
+
+  if (fs.existsSync(path.join(base, "executors"))) {
+    return base;
+  }
+
+  if (path.basename(base) === "scripts" && fs.existsSync(path.join(base, "..", "executors"))) {
+    return path.resolve(base, "..");
+  }
+
   return base;
 }
 
