@@ -1,16 +1,16 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_4_6_complete_script_test_coverage
+  milestone: phase_5_semantic_completeness
   yaml_file_count: 149
-  typescript_script_file_count: 17
-  total_file_count: 169
+  typescript_script_file_count: 18
+  total_file_count: 170
   root_folder: conventions/
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
-  - phase 4.6 adds per-script coverage matrices and live representative verification
-    through verify-scripts.ts
+  - phase 5 adds route-backed semantic completeness validation through validate_semantic_completeness
+  - semantic completeness is enforced by executor route and script, not by agent self-certification
   files:
   - PACKAGE_MANIFEST.yaml
   - README.md
@@ -167,6 +167,7 @@ package_manifest:
   - scripts/validate-phase-output.ts
   - scripts/validate-references.ts
   - scripts/validate-runtime-artifacts.ts
+  - scripts/validate-semantic-completeness.ts
   - scripts/verify-scripts.ts
   - testing/conventions.characterization-testing.yaml
   - testing/conventions.regression-testing.yaml

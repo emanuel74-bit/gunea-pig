@@ -104,6 +104,7 @@ sections:
     - validate_references
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
+    - validate_semantic_completeness
 validation:
   required_checks:
   - id: MISSIONS-SYSTEM-CHECK-001

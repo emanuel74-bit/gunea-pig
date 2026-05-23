@@ -86,6 +86,7 @@ sections:
     missions: mission profiles choose required reports through selected phase plan and explicit profile requirements.
   required_executor_routes:
     after_phase_output:
+    - validate_semantic_completeness
     - collect_phase_report
     before_mission_start:
     - compile_runtime_artifact_topology

@@ -83,7 +83,7 @@ for (const routeId of requiredRoutes) {
   }
 }
 
-for (const requiredRoute of ["generate_phase_bundle", "validate_phase_bundle", "validate_phase_output"]) {
+for (const requiredRoute of ["generate_phase_bundle", "validate_phase_bundle", "validate_phase_output", "validate_semantic_completeness"]) {
   if (!requiredRoutes.includes(requiredRoute)) {
     issues.push(issue("error", "PHASE_BUNDLE_MISSING_REQUIRED_ROUTE", `Phase bundle must include ${requiredRoute}`));
   }

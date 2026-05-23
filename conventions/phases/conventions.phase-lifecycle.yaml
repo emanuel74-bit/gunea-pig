@@ -206,6 +206,7 @@ sections:
     - validate_phase_bundle
     after_phase_output:
     - validate_phase_output
+    - validate_semantic_completeness
     - collect_phase_report
     on_gate_check:
     - run_gate_check

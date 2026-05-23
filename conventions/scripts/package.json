@@ -12,7 +12,8 @@
     "validate:runtime-artifacts": "tsx validate-runtime-artifacts.ts",
     "generate:phase-bundle": "tsx generate-phase-bundle.ts",
     "validate:phase-bundle": "tsx validate-phase-bundle.ts",
-    "verify:scripts": "tsx verify-scripts.ts"
+    "verify:scripts": "tsx verify-scripts.ts",
+    "validate:semantic-completeness": "tsx validate-semantic-completeness.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

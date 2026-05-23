@@ -1,17 +1,19 @@
 validation_report:
-  milestone: phase_4_6_complete_script_test_coverage
+  milestone: phase_5_semantic_completeness
   status: pass
   summary:
     yaml_files: 149
-    typescript_script_files: 17
+    typescript_script_files: 18
     yaml_parse_errors: 0
     missing_required_dependencies: 0
     duplicate_owned_concepts: 0
     missing_route_script_paths: 0
     unknown_local_executor_route_references: 0
-    executor_route_count: 16
-    script_verification_declared_test_count: 46
-    script_verification_live_test_count: 15
+    direct_script_references_from_local_routes: 0
+    executor_route_count: 17
+    semantic_completeness_route_present: true
+    script_verification_declared_test_count: 49
+    script_verification_live_test_count: 16
     script_verification_failed_test_count: 0
   checks:
     yaml_parse_errors: []
@@ -19,3 +21,4 @@ validation_report:
     duplicate_owned_concepts: []
     missing_route_script_paths: []
     unknown_local_executor_route_references: []
+    direct_script_references_from_local_routes: []

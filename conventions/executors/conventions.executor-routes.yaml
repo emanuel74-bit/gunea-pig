@@ -178,7 +178,8 @@ sections:
         - reports
         executor_type: validation
       validate_runtime_artifacts:
-        description: Validate runtime artifact topology, declarations, normalized paths, required identity fields, producer-route coverage, consumer lists, lifecycle, scope, and write modes.
+        description: Validate runtime artifact topology, declarations, normalized paths, required identity fields, producer-route
+          coverage, consumer lists, lifecycle, scope, and write modes.
         script: scripts/validate-runtime-artifacts.ts
         required_inputs:
         - runtime_artifact_topology
@@ -205,7 +206,8 @@ sections:
         - multi-agent
         executor_type: validation
       validate_script_execution:
-        description: Verify executor route scripts with fixture-based valid and invalid input cases, output shape checks, exit-code checks, and allowed-write-path checks.
+        description: Verify executor route scripts with fixture-based valid and invalid input cases, output shape checks,
+          exit-code checks, and allowed-write-path checks.
         script: scripts/verify-scripts.ts
         required_inputs:
         - central_executor_route_map
@@ -226,6 +228,32 @@ sections:
         - executors
         - testing
         - reports
+        executor_type: validation
+      validate_semantic_completeness:
+        description: Validate semantic completeness of convention declarations, phase bundles, and phase outputs so work cannot
+          pass with placeholders, vague executable content, missing required evidence, or shallow completion claims.
+        script: scripts/validate-semantic-completeness.ts
+        required_inputs:
+        - semantic_completeness_contract
+        - parsed_convention_files
+        produced_outputs:
+        - semantic_completeness_validation_result
+        - semantic_completeness_report
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - core
+        - phases
+        - multi-agent
+        - reports
+        - missions
         executor_type: validation
     compiler:
       compile_authority_topology:
@@ -251,7 +279,8 @@ sections:
         - execution
         executor_type: compiler
       compile_runtime_artifact_topology:
-        description: Compile runtime artifact declarations and .ai usages into an artifact topology with path normalization, declaration coverage, producer-route inference, and conflict reporting.
+        description: Compile runtime artifact declarations and .ai usages into an artifact topology with path normalization,
+          declaration coverage, producer-route inference, and conflict reporting.
         script: scripts/compile-runtime-artifact-topology.ts
         required_inputs:
         - runtime_artifact_declarations
@@ -276,7 +305,8 @@ sections:
         executor_type: compiler
     generator:
       generate_phase_bundle:
-        description: Generate minimal phase context bundle from active mission, phase contract, owner agent, executor routes, and relevant convention slices.
+        description: Generate minimal phase context bundle from active mission, phase contract, owner agent, executor routes,
+          and relevant convention slices.
         script: scripts/generate-phase-bundle.ts
         required_inputs:
         - mission_context
@@ -434,6 +464,9 @@ validation:
   - scripts_return_standard_result_shape
   - scripts_fail_invalid_input_cases
   - scripts_write_only_allowed_outputs
+  - semantic_completeness_validation_route_present
+  - semantic_completeness_validation_is_route_backed
+  - semantic_completeness_blocks_placeholder_or_shallow_outputs
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -453,3 +486,6 @@ validation:
   - script_invalid_input_silently_passes
   - script_result_shape_invalid
   - script_write_path_violation
+  - missing_semantic_completeness_validation_route
+  - semantic_completeness_validation_not_route_backed
+  - semantic_completeness_violation_unblocked

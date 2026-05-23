@@ -4,8 +4,8 @@ file:
   path: core/conventions.semantic-completeness.yaml
   role: semantic_completeness_quality_contract
   executability: validator
-purpose: Define strict semantic completeness tiers so convention files cannot pass with vague definitions, placeholder references,
-  or non-executable decision/rule content.
+purpose: Define route-enforced semantic completeness rules so convention files, phase bundles, and phase outputs cannot pass
+  with placeholders, vague executable content, missing evidence, or shallow completion claims.
 ownership:
   owns:
   - semantic_completeness_tiers
@@ -29,7 +29,8 @@ outputs:
 dependencies:
   required_files:
   - core/conventions.file-contract.yaml
-  optional_files: []
+  optional_files:
+  - executors/conventions.executor-routes.yaml
 sections:
   semantic_completeness_tiers:
     enum_value:
@@ -116,12 +117,40 @@ sections:
   - id: SEMANTIC-INV-004
     rule: No restored/canonical side sections may coexist with active sections.
     fail_condition: side_by_side_restored_content_detected
+  semantic_completeness_enforcement_model:
+    runtime_model: executor_route_backed_validation
+    required_route: validate_semantic_completeness
+    script: scripts/validate-semantic-completeness.ts
+    agents_must_not_self_certify_semantic_completeness: true
+    phase_bundles_must_surface_completion_contract: true
+    phase_outputs_must_provide_evidence_for_completion_claims: true
+    topologies_remain_script_facing_not_agent_context: true
+  semantic_completion_claim_contract:
+    required_when:
+    - phase_output_created
+    - handoff_prepared
+    - mission_completion_requested
+    minimum_evidence_fields:
+    - completed_requirements
+    - evidence_refs
+    - validation_refs
+    - known_gaps
+    fail_when:
+    - completion_claim_without_evidence
+    - required_output_missing
+    - validation_reference_missing
+    - known_gap_hidden_or_omitted
+    - placeholder_or_todo_content_present
 validation:
   required_checks:
   - id: SEMANTIC-CHECK-001
     check: semantic_completeness_tiers_satisfied
     applies_when:
       convention_package_validated: true
+  - id: SEMANTIC-CHECK-002
+    check: semantic_completeness_executor_route_present
+    applies_when:
+      executor_routing_enabled: true
   fail_conditions:
   - id: SEMANTIC-001
     condition: active_vocabulary_value_undefined
@@ -134,4 +163,12 @@ validation:
   - id: SEMANTIC-003
     condition: vague_executable_wording_without_conditions
     message: Executable rule contains vague wording without structured conditions.
+    severity: error
+  - id: SEMANTIC-004
+    condition: semantic_completeness_route_missing
+    message: Semantic completeness must be enforced by the validate_semantic_completeness executor route.
+    severity: error
+  - id: SEMANTIC-005
+    condition: completion_claim_without_evidence
+    message: Phase or mission completion claims require evidence, validation references, and explicit known-gap disclosure.
     severity: error

@@ -172,9 +172,10 @@ sections:
     input: validation_routing_matrix
     output: subsystem_validation_results
   - step_id: VALIDATE_SEMANTIC_COMPLETENESS
-    action: evaluate
-    decision_rules:
-    - semantic_completeness_tiers
+    action: execute_route
+    input: validate_semantic_completeness
+    fail_when:
+    - semantic_completeness_validation_failed
   - step_id: AGGREGATE_RESULTS
     action: calculate
     fail_when:
@@ -216,6 +217,7 @@ sections:
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
     - validate_changed_files
+    - validate_semantic_completeness
 validation:
   required_checks:
   - id: GLOBAL-VALIDATION-CHECK-001

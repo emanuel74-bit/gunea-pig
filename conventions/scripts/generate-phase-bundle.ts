@@ -69,7 +69,7 @@ if (!ownershipRecord) {
 
 const ownerAgent = phaseContract?.owner_agent ?? ownershipRecord?.owner_agent ?? getArg("owner-agent") ?? "unknown_agent";
 const beforePhaseRoutes = asArray(bundlePolicyFile?.sections?.required_executor_routes?.before_phase_start);
-const phaseRuntimeRoutes = ["validate_phase_output", "run_gate_check", "prepare_agent_handoff", "collect_phase_report"];
+const phaseRuntimeRoutes = ["validate_phase_output", "validate_semantic_completeness", "run_gate_check", "prepare_agent_handoff", "collect_phase_report"];
 const requiredExecutorRoutes = unique([...beforePhaseRoutes, ...phaseRuntimeRoutes]);
 
 for (const routeId of requiredExecutorRoutes) {

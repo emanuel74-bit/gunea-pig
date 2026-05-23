@@ -254,6 +254,11 @@ function testCases(): TestCase[] {
     { name: "phase bundle validation fails weak agent context boundary", routeId: "validate_phase_bundle", script: "scripts/validate-phase-bundle.ts", category: "invalid_state", args: ["--mission-id", "verify", "--phase-id", "mission_profile_selection"], preRun: r => writePhaseBundleFixture(r, bundle => { bundle.agent_consumption_model.agent_reads_full_topologies = true; }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["PHASE_BUNDLE_AGENT_CONTEXT_BOUNDARY_WEAK"] },
     { name: "phase bundle validation fails missing manifest", routeId: "validate_phase_bundle", script: "scripts/validate-phase-bundle.ts", category: "invalid_state", args: ["--mission-id", "verify", "--phase-id", "mission_profile_selection"], preRun: r => writePhaseBundleFixture(r, undefined, false), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["PHASE_BUNDLE_MANIFEST_MISSING"] },
 
+    // semantic completeness validator
+    { name: "semantic completeness validation passes current conventions", routeId: "validate_semantic_completeness", script: "scripts/validate-semantic-completeness.ts", category: "valid_input", expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/validation/validate-semantic-completeness.result.yaml", ".ai/reports/semantic-completeness-report.yaml"] },
+    { name: "semantic completeness validation fails placeholder content", routeId: "validate_semantic_completeness", script: "scripts/validate-semantic-completeness.ts", category: "invalid_state", setup: r => addFixtureConvention(r, "phases/conventions.semantic-placeholder-fixture.yaml", validConvention("phases/conventions.semantic-placeholder-fixture.yaml", "semantic_placeholder_fixture", { sections: { executable_rule: "TODO" } })), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["SEMANTIC_PLACEHOLDER_TEXT"] },
+    { name: "semantic completeness validation fails weak phase output claim", routeId: "validate_semantic_completeness", script: "scripts/validate-semantic-completeness.ts", category: "missing_input", args: ["--phase-output", ".ai/phase/weak-output.yaml"], setup: r => writeYamlFile(path.join(r, ".ai", "phase", "weak-output.yaml"), { artifact: "phase_output", completion_claim: { completed_requirements: [] } }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["SEMANTIC_COMPLETION_EVIDENCE_FIELD_MISSING"] },
+
     // script placeholders / runtime action scripts are still route-backed and contract-checked.
     { name: "phase output validation passes advisory missing output", routeId: "validate_phase_output", script: "scripts/validate-phase-output.ts", category: "missing_input", expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/validation/validate-phase-output.result.yaml"] },
     { name: "phase output validation passes existing output", routeId: "validate_phase_output", script: "scripts/validate-phase-output.ts", category: "valid_input", setup: r => writeYamlFile(path.join(r, ".ai", "phase", "phase-output.yaml"), { artifact: "phase_output" }), expectedExit: 0, expectedStatus: "pass" },
@@ -276,6 +281,7 @@ const liveTestNames = new Set([
   "runtime artifact validation fails without topology",
   "phase bundle generation passes known phase",
   "phase bundle validation fails missing bundle",
+  "semantic completeness validation passes current conventions",
   "phase output validation passes advisory missing output",
   "mission bundle generation passes",
   "gate check writes gate result",
