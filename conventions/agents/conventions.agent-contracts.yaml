@@ -1065,7 +1065,7 @@ sections:
     - classify failure type
     - assign owner phase
     - select next action
-    - request revision when needed
+    - request revision when validation failure or blocker conditions are present
     - read generated phase bundle
     - write required reports
     - record evidence refs

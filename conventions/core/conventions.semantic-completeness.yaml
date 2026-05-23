@@ -104,6 +104,91 @@ sections:
     - TODO
     - placeholder
     allowed_only_when: backed by structured applies_when/pass_when/fail_when/choose_when/reject_when fields
+    vague_delegation_phrases:
+    - someone should
+    - agent should figure out
+    - left to the agent
+    - handled by another file
+    - external process decides
+    - owner decides later
+    vague_completeness_phrases:
+    - complete enough
+    - properly
+    - fully handled
+    - good enough
+    - production ready
+    - comprehensive
+    vague_authority_phrases:
+    - defined elsewhere
+    - source of truth elsewhere
+    - comes from another subsystem
+    - owned by the relevant file
+    - canonical owner decides
+    vague_execution_phrases:
+    - run validation
+    - perform validation
+    - execute checks
+    - call script
+    - use script
+    - run the script
+    vague_output_phrases:
+    - generate report
+    - write artifact
+    - produce output
+    - emit result
+    - save evidence
+    warning_only_phrases:
+    - may
+    - can
+    - should consider
+    executable_path_signals:
+    - rules
+    - rule
+    - must
+    - must_not
+    - required
+    - forbidden
+    - validation
+    - fail_conditions
+    - required_checks
+    - required_executor_routes
+    - executor_routes
+    - lifecycle_hooks
+    - pipeline
+    - algorithm
+    - decision
+    - selector
+    - selection
+    - gate
+    - handoff
+    - revision
+    - outputs
+    - inputs
+    - dependencies
+    - enforcement
+    - contract
+    - completion_contract
+    context_allowance_keys:
+    - recommended
+    - warning
+    - message
+    - definition
+    - purpose
+    - description
+    - examples
+    - non_examples
+    - positive_signals
+    - negative_signals
+    - risk_signals
+    - notes
+    - rationale
+    script_enforcement:
+      mode: policy_driven
+      script_must_load_policy_from: core/conventions.semantic-completeness.yaml
+      hardcoded_phrase_lists_allowed: false
+      must_distinguish_executable_sections_from_explanatory_sections: true
+      must_fail_vague_executable_content: true
+      may_warn_for_non_executable_weak_wording: true
   semantic_quality_invariants:
   - id: SEMANTIC-INV-001
     rule: Every active vocabulary value must be defined in the active section that owns it.

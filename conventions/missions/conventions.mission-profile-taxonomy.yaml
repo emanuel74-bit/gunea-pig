@@ -190,12 +190,12 @@ sections:
       required:
       - regression-test-plan
     strict_on_no_behavior_change:
-      definition: Behavior-preservation mode requiring behavior locks and characterization when needed.
+      definition: Behavior-preservation mode requiring behavior locks and characterization when behavior preservation requires baseline evidence.
       required:
       - behavior-preservation-requirements
     strict_on_compatibility:
       definition: Contract-change mode requiring compatibility decision, consumer impact, and migration/deprecation obligations
-        when needed.
+        when behavior preservation requires baseline evidence.
       required:
       - compatibility-decision
       - consumer-impact

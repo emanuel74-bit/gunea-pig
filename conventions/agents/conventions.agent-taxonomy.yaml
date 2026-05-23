@@ -758,7 +758,7 @@ sections:
       - classify failure type
       - assign owner phase
       - select next action
-      - request revision when needed
+      - request revision when validation failure or blocker conditions are present
       must_not:
       - repair code
       - override validation

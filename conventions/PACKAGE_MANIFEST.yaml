@@ -1,6 +1,6 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_5_semantic_completeness
+  milestone: phase_5_1_semantic_vocabulary_policy_enforcement
   yaml_file_count: 149
   typescript_script_file_count: 18
   total_file_count: 170
@@ -11,6 +11,9 @@ package_manifest:
   - no node_modules included
   - phase 5 adds route-backed semantic completeness validation through validate_semantic_completeness
   - semantic completeness is enforced by executor route and script, not by agent self-certification
+  - phase 5.1 makes semantic completeness policy-driven from core/conventions.semantic-completeness.yaml
+  - semantic validation now expands vague delegation/completeness/authority/execution/output phrase enforcement
+  - verify-scripts now includes semantic policy-loading, dynamic policy phrase, and decision rejection logic tests
   files:
   - PACKAGE_MANIFEST.yaml
   - README.md

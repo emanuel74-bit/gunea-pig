@@ -723,7 +723,7 @@ sections:
       required_preconditions:
       - replacement rationale
       - compatibility decision when public
-      - migration or deprecation plan when needed
+      - migration or deprecation plan when migration/deprecation impact is detected
       must:
       - record selected action with reason
       - record evidence references

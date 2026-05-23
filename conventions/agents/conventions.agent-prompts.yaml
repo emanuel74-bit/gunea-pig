@@ -913,7 +913,7 @@ sections:
       - Fail closed when required inputs are missing, invalidated, contradictory, or outside your authority.
 
 
-      Primary must-do responsibilities: classify failure type, assign owner phase, select next action, request revision when needed.
+      Primary must-do responsibilities: classify failure type, assign owner phase, select next action, request revision when validation failure or blocker conditions are present.
 
       Forbidden responsibilities: repair code, override validation, ignore evidence, mark mission passed.'
     hard_constraints:
