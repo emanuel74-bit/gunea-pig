@@ -9,7 +9,9 @@
     "validate:references": "tsx validate-references.ts",
     "validate:changed-files": "tsx validate-changed-files.ts",
     "compile:runtime-artifact-topology": "tsx compile-runtime-artifact-topology.ts",
-    "validate:runtime-artifacts": "tsx validate-runtime-artifacts.ts"
+    "validate:runtime-artifacts": "tsx validate-runtime-artifacts.ts",
+    "generate:phase-bundle": "tsx generate-phase-bundle.ts",
+    "validate:phase-bundle": "tsx validate-phase-bundle.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

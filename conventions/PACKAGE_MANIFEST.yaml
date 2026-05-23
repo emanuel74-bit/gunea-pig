@@ -1,19 +1,15 @@
-package: sync_conventions_system_runtime_artifact_enforcement
-generated_from: Phase 3 Runtime Artifact Enforcement applied to conventions_first_scripts_runnable_no_lock
-  baseline.
+package: sync_conventions_system_phase_bundle_hardening
+generated_from: Phase 4 Phase Bundle Hardening applied to conventions_runtime_artifact_enforcement baseline.
 yaml_file_count: 149
 folder_count: 24
 script_file_count: 16
 notes:
 - Milestone architecture remains centralized executor routing with local script requirements.
-- Agents must not call scripts directly; scripts are resolved only through declared
-  executor routes.
-- No standalone compiler, validation, scripts convention, manual authority registry,
-  or manual authority boundary subsystem is active.
-- Phase 3 strengthens runtime artifact enforcement through compile_runtime_artifact_topology
-  and validate_runtime_artifacts routes.
-- package-lock.json and node_modules are intentionally excluded; installs use the
-  user environment registry configuration.
+- Agents must not call scripts directly; scripts are resolved only through declared executor routes.
+- No standalone compiler, validation, scripts convention, manual authority registry, or manual authority boundary subsystem is active.
+- Topology outputs are script-facing compiled truth; phase bundles are agent-facing execution context.
+- Phase agents consume validated phase bundles instead of scanning the full convention system or loading full topology outputs.
+- package-lock.json and node_modules are intentionally excluded; installs use the user environment registry configuration.
 executor_system_summary:
   executor_entrypoint: executors/conventions.executors.yaml
   central_route_file: executors/conventions.executor-routes.yaml
@@ -21,24 +17,23 @@ executor_system_summary:
   script_folder: scripts/
   script_folder_meaning: centralized runnable implementation path only
   direct_script_calls_by_agents: forbidden
-phase_3_runtime_artifact_enforcement:
-  compiler_route: compile_runtime_artifact_topology
-  validation_route: validate_runtime_artifacts
+phase_4_phase_bundle_hardening:
+  generator_route: generate_phase_bundle
+  validation_route: validate_phase_bundle
+  hardened_files:
+  - multi-agent/conventions.phase-bundle-policy.yaml
+  - scripts/generate-phase-bundle.ts
+  - scripts/validate-phase-bundle.ts
+  - scripts/package.json
   enforces:
-  - runtime artifact path normalization
-  - declared artifact coverage
-  - same-path/different-id conflict detection
-  - same-id/different-path conflict detection
-  - required identity fields
-  - route-backed producer inference
-  - consumer list validation
-  - scope/lifecycle/write_mode validation
-  primary_files:
-  - reports/conventions.runtime-artifacts.yaml
-  - executors/conventions.executor-routes.yaml
-  - scripts/compile-runtime-artifact-topology.ts
-  - scripts/validate-runtime-artifacts.ts
-  - scripts/lib/common.ts
+  - phase bundle is agent-facing context packet
+  - topology outputs are script-facing and not loaded by normal phase agents
+  - bundle contains selected phase contract and phase ownership records only
+  - bundle contains required executor route IDs and minimal route contract slices
+  - bundle contains required inputs, outputs, write scopes, gates, handoff, and completion contract
+  - bundle must not contain full convention package or full topology dumps
+  - required outputs must be inside allowed write scope
+  - phase bundle manifest must be generated beside the bundle
 foundational_routes:
 - collect_phase_report
 - compile_authority_topology

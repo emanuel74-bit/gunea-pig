@@ -1,4 +1,4 @@
-validation_report: sync_conventions_system_runtime_artifact_enforcement
+validation_report: sync_conventions_system_phase_bundle_hardening
 status: pass
 yaml_file_count: 149
 folder_count: 24
@@ -14,6 +14,10 @@ checks:
   route_script_paths_missing: 0
   runtime_artifact_routes_present: true
   runtime_artifact_scripts_present: true
+  phase_bundle_routes_present: true
+  phase_bundle_scripts_present: true
+  phase_bundle_generation_verified: true
+  phase_bundle_validation_verified: true
   package_lock_present: false
   node_modules_present: false
 errors:
@@ -25,21 +29,20 @@ errors:
   unknown_local_executor_route_references: []
   missing_route_scripts: []
   stale_removed_references: []
-phase_3_runtime_artifact_enforcement:
-  compiler_route: compile_runtime_artifact_topology
-  validation_route: validate_runtime_artifacts
+phase_4_phase_bundle_hardening:
+  generator_route: generate_phase_bundle
+  validation_route: validate_phase_bundle
+  verified_example:
+    mission_id: dry-run
+    phase_id: mission_profile_selection
+    generated_bundle: .ai/bundles/phases/dry-run/mission_profile_selection.bundle.yaml
+    generated_manifest: .ai/bundles/phases/dry-run/mission_profile_selection.manifest.yaml
+    validation_status: pass
   enforces:
-  - runtime artifact path normalization
-  - declared artifact coverage
-  - same-path/different-id conflict detection
-  - same-id/different-path conflict detection
-  - required identity fields
-  - route-backed producer inference
-  - consumer list validation
-  - scope/lifecycle/write_mode validation
-  primary_files:
-  - reports/conventions.runtime-artifacts.yaml
-  - executors/conventions.executor-routes.yaml
-  - scripts/compile-runtime-artifact-topology.ts
-  - scripts/validate-runtime-artifacts.ts
-  - scripts/lib/common.ts
+  - agent-facing phase context bundle
+  - script-facing topology boundary
+  - selected-record-only bundle content
+  - route contract slices for required executor routes
+  - no full convention package dumps
+  - no full topology dumps
+  - output/write-scope consistency

@@ -15,6 +15,9 @@ ownership:
   - phase_bundle_executor_integration
   - phase_bundle_context_minimization_rules
   - phase_bundle_consumption_gate
+  - phase_bundle_agent_consumption_boundary
+  - topology_to_bundle_usage_model
+  - hardened_phase_bundle_validation_rules
   does_not_own:
   - phase_contracts
   - agent_prompts
@@ -43,6 +46,7 @@ outputs:
   - runtime_pack_manifest
   - phase_bundle_manifest
   - phase_bundle_validation_requirement
+  - validated_phase_context_bundle
 dependencies:
   required_files:
   - phases/conventions.phase-contracts.yaml
@@ -213,6 +217,64 @@ sections:
     before_phase_start:
     - generate_phase_bundle
     - validate_phase_bundle
+  agent_consumption_boundary:
+    rule: Phase agents consume validated phase bundles, not full convention packages or full topology outputs.
+    must:
+    - agent_reads_phase_context_bundle_before_work
+    - agent_uses_required_executor_routes_declared_in_bundle
+    - agent_treats_topology_outputs_as_script_facing_compiled_metadata
+    - agent_requests_missing_context_through_route_or_bundle_regeneration_not_manual_system_scan
+    must_not:
+    - agent_scans_full_convention_system_to_discover_applicable_rules
+    - agent_loads_full_authority_topology_for_normal_phase_execution
+    - agent_loads_full_runtime_artifact_topology_for_normal_phase_execution
+    - agent_selects_scripts_directly
+    fail_conditions:
+    - phase_agent_started_without_valid_bundle
+    - phase_agent_consumed_full_topology_instead_of_bundle
+    - phase_agent_discovered_scripts_without_executor_route
+  topology_to_bundle_usage_model:
+    topologies_are: script_facing_compiled_truth
+    phase_bundles_are: agent_facing_execution_context
+    flow:
+    - convention_yaml_declarations
+    - topology_compilation_routes_when_system_metadata_changes
+    - phase_bundle_generation_route_before_phase_start
+    - phase_bundle_validation_route_before_agent_consumption
+    - agent_executes_using_validated_bundle
+    bundle_generator_may_consume:
+    - authority_topology
+    - runtime_artifact_topology
+    - reference_topology
+    - phase_contract_registry
+    - agent_phase_ownership_records
+    - executor_route_map
+    agent_bundle_must_contain_only:
+    - selected_phase_contract_record
+    - selected_phase_ownership_record
+    - required_executor_route_ids
+    - minimal_route_contract_slices
+    - required_inputs_outputs
+    - allowed_and_forbidden_write_scopes
+    - gate_handoff_trigger_revision_refs
+    - directly_relevant_convention_refs
+  hardened_bundle_validation_rules:
+  - id: PHASE-BUNDLE-HARDEN-001
+    rule: Bundle must include selected phase contract and phase ownership records only, not whole source registries.
+    fail_condition: bundle_contains_full_source_registry
+  - id: PHASE-BUNDLE-HARDEN-002
+    rule: Bundle must include route IDs and minimal route contract slices for required executor routes.
+    fail_condition: bundle_missing_route_contract_slice
+  - id: PHASE-BUNDLE-HARDEN-003
+    rule: Bundle must explicitly forbid agents from scanning full conventions or loading full topologies during normal phase
+      work.
+    fail_condition: bundle_missing_agent_consumption_boundary
+  - id: PHASE-BUNDLE-HARDEN-004
+    rule: Required outputs must be inside allowed write scope.
+    fail_condition: bundle_output_outside_write_scope
+  - id: PHASE-BUNDLE-HARDEN-005
+    rule: Phase bundle manifest must be generated beside the bundle.
+    fail_condition: bundle_manifest_missing
 validation:
   required_checks:
   - id: BUNDLE-CHECK-001
