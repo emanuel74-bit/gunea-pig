@@ -218,12 +218,19 @@ sections:
     - validate_runtime_artifacts
     - validate_changed_files
     - validate_semantic_completeness
+  required_executor_routes:
+    before_mission_complete:
+    - collect_evidence
+    - validate_report_evidence
+    - generate_final_mission_report
 validation:
   required_checks:
   - id: GLOBAL-VALIDATION-CHECK-001
     check: validation_routing_targets_exist
     applies_when:
       validation_run: true
+  - report_generation_routes_are_present
+  - final_report_is_evidence_backed
   fail_conditions:
   - id: GLOBAL-VALIDATION-001
     condition: validation_route_missing_validator

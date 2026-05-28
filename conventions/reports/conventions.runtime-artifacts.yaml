@@ -4,9 +4,8 @@ file:
   path: reports/conventions.runtime-artifacts.yaml
   role: runtime_artifact_identity_registry
   executability: registry
-purpose: Define canonical identity, path normalization, ownership, lifecycle, and
-  conflict rules for runtime artifacts such as .ai reports, manifests, validation
-  summaries, and phase outputs.
+purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules for runtime artifacts such
+  as .ai reports, manifests, validation summaries, and phase outputs.
 ownership:
   owns:
   - runtime_artifact_identity_model
@@ -1661,16 +1660,69 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_reports_evidence_index_yaml
+    path: .ai/reports/evidence-index.yaml
+    artifact_type: report_output
+    schema: evidence_index_schema
+    producer: collect_evidence
+    producer_routes:
+    - collect_evidence
+    consumers:
+    - reports/conventions.report-validation.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: before_final_mission_report
+  - artifact_id: ai_reports_evidence_collection_report_yaml
+    path: .ai/reports/evidence-collection-report.yaml
+    artifact_type: report_output
+    schema: evidence_collection_report_schema
+    producer: collect_evidence
+    producer_routes:
+    - collect_evidence
+    consumers:
+    - reports/conventions.report-validation.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: when_collect_evidence_runs
+  - artifact_id: ai_reports_report_evidence_validation_yaml
+    path: .ai/reports/report-evidence-validation.yaml
+    artifact_type: report_output
+    schema: report_evidence_validation_schema
+    producer: validate_report_evidence
+    producer_routes:
+    - validate_report_evidence
+    consumers:
+    - reports/conventions.reports.yaml
+    - missions/conventions.missions.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: before_final_mission_report
+  - artifact_id: ai_reports_final_mission_report_yaml
+    path: .ai/reports/final-mission-report.yaml
+    artifact_type: report_output
+    schema: final_mission_report_schema
+    producer: generate_final_mission_report
+    producer_routes:
+    - generate_final_mission_report
+    consumers:
+    - missions/conventions.missions.yaml
+    - multi-agent/conventions.alpha-controller.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: before_mission_complete
   runtime_artifact_enforcement_model:
-    route_backed_generation: runtime artifacts must be produced by declared executor
-      routes or explicitly marked as runtime-context generated
+    route_backed_generation: runtime artifacts must be produced by declared executor routes or explicitly marked as runtime-context
+      generated
     required_validation_sequence:
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
-    path_authority: runtime artifact paths are normalized and validated by runtime
-      artifact topology scripts
-    script_selection: agents never call artifact scripts directly; they use executor
-      routes
+    path_authority: runtime artifact paths are normalized and validated by runtime artifact topology scripts
+    script_selection: agents never call artifact scripts directly; they use executor routes
   runtime_artifact_allowed_values:
     scope:
     - mission_runtime

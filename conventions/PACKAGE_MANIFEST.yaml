@@ -1,21 +1,20 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_6_1_transition_authority_tightening
+  milestone: phase_7_report_generation_and_evidence_collection
   yaml_file_count: 149
-  typescript_script_file_count: 21
-  total_file_count: 173
+  typescript_script_file_count: 24
+  total_file_count: 176
   root_folder: conventions/
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
-  - phase 6 strengthens gate, handoff, and revision transitions as route-backed script flows
-  - transition artifacts are generated and then validated through executor routes before consumption
-  - 'new validation routes: validate_gate_result, validate_handoff, validate_revision_task'
-  - script verification includes live gate, handoff, and revision route tests
-  - phase 6.1 tightens transition authority so handoff packets, gate results, and revision tasks are script-produced only
-  - agents and Alpha may invoke or consume transition routes but must not manually author transition artifacts
-  - validation scripts reject manually authored gate, handoff, and revision artifacts
+  - phase 7 adds report generation and evidence collection from script/executor outputs
+  - reports are generated from collected evidence artifacts, not agent-written claims
+  - 'new executor routes: collect_evidence, validate_report_evidence, generate_final_mission_report'
+  - final mission report generation is blocked when evidence index is missing or invalid
+  - script verification includes live evidence collection, report evidence validation, and final mission report generation
+    tests
   files:
   - PACKAGE_MANIFEST.yaml
   - README.md
@@ -154,10 +153,12 @@ package_manifest:
   - roles/conventions.role-resolution.yaml
   - roles/conventions.role-taxonomy.yaml
   - roles/conventions.roles.yaml
+  - scripts/collect-evidence.ts
   - scripts/collect-phase-report.ts
   - scripts/compile-authority-topology.ts
   - scripts/compile-runtime-artifact-topology.ts
   - scripts/create-revision-task.ts
+  - scripts/generate-final-mission-report.ts
   - scripts/generate-mission-bundle.ts
   - scripts/generate-phase-bundle.ts
   - scripts/lib/common.ts
@@ -173,6 +174,7 @@ package_manifest:
   - scripts/validate-phase-bundle.ts
   - scripts/validate-phase-output.ts
   - scripts/validate-references.ts
+  - scripts/validate-report-evidence.ts
   - scripts/validate-revision-task.ts
   - scripts/validate-runtime-artifacts.ts
   - scripts/validate-semantic-completeness.ts

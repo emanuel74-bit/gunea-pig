@@ -1,26 +1,26 @@
 validation_report:
-  milestone: phase_6_1_transition_authority_tightening
+  milestone: phase_7_report_generation_and_evidence_collection
   status: pass
   summary:
     yaml_files: 149
-    typescript_script_files: 21
+    typescript_script_files: 24
     yaml_parse_errors: 0
     missing_required_dependencies: 0
     duplicate_owned_concepts: 0
     missing_route_script_paths: 0
     unknown_local_executor_route_references: 0
     direct_script_references_from_local_routes: 0
-    executor_route_count: 20
-    gate_result_validation_route_present: true
-    handoff_validation_route_present: true
-    revision_task_validation_route_present: true
-    script_verification_declared_test_count: 64
-    script_verification_live_test_count: 25
+    executor_route_count: 23
+    report_evidence_collection_route_present: true
+    report_evidence_validation_route_present: true
+    final_mission_report_generation_route_present: true
+    reports_generated_from_script_evidence: true
+    script_verification_declared_test_count: 69
+    script_verification_live_test_count: 30
     script_verification_failed_test_count: 0
-    transition_routes_script_backed: true
-    transition_artifacts_script_produced_only: true
-    manual_transition_artifacts_rejected_by_validation_scripts: true
-    alpha_orchestrates_but_does_not_author_transition_decisions: true
+    no_package_lock_included: true
+    no_node_modules_included: true
+    no_generated_ai_artifacts_included: true
   checks:
     yaml_parse_errors: []
     missing_required_dependencies: []

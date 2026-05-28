@@ -282,6 +282,11 @@ function testCases(): TestCase[] {
     { name: "revision task validation fails missing task", routeId: "validate_revision_task", script: "scripts/validate-revision-task.ts", category: "missing_input", args: ["--revision-task", ".ai/revisions/missing.yaml"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["REVISION_TASK_MISSING"] },
     { name: "revision task validation rejects manual task", routeId: "validate_revision_task", script: "scripts/validate-revision-task.ts", category: "invalid_state", args: ["--revision-task", ".ai/revisions/manual.yaml"], setup: r => writeYamlFile(path.join(r, ".ai", "revisions", "manual.yaml"), { artifact: "revision_task", revision_id: "manual", status: "created", failure: "manual_failure", required_action: "resolve_blocking_failure_and_revalidate", validation_required_routes: ["validate_revision_task", "validate_changed_files"] }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["REVISION_TASK_NOT_SCRIPT_PRODUCED"] },
     { name: "phase report collection writes report", routeId: "collect_phase_report", script: "scripts/collect-phase-report.ts", category: "valid_input", expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/reports/phase-report.yaml"] },
+    { name: "evidence collection writes evidence index", routeId: "collect_evidence", script: "scripts/collect-evidence.ts", category: "valid_input", preRun: r => { runScript(r, "scripts/validate-executor-routes.ts"); runScript(r, "scripts/run-gate-check.ts", ["--gate-id", "evidence_gate"]); runScript(r, "scripts/prepare-agent-handoff.ts", ["--source-output", ".ai/phase/source-output.yaml", "--target-agent", "builder_agent", "--handoff-id", "evidence_handoff"]); }, setup: r => writeYamlFile(path.join(r, ".ai", "phase", "source-output.yaml"), { artifact: "phase_output", status: "complete" }), expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/reports/evidence-index.yaml", ".ai/reports/evidence-collection-report.yaml"] },
+    { name: "report evidence validation fails missing evidence index", routeId: "validate_report_evidence", script: "scripts/validate-report-evidence.ts", category: "missing_input", expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["EVIDENCE_INDEX_MISSING"] },
+    { name: "report evidence validation passes collected evidence", routeId: "validate_report_evidence", script: "scripts/validate-report-evidence.ts", category: "valid_input", preRun: r => { runScript(r, "scripts/validate-executor-routes.ts"); runScript(r, "scripts/collect-evidence.ts"); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/reports/report-evidence-validation.yaml"] },
+    { name: "final mission report generation fails missing evidence", routeId: "generate_final_mission_report", script: "scripts/generate-final-mission-report.ts", category: "missing_input", expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["EVIDENCE_INDEX_MISSING"] },
+    { name: "final mission report generation writes evidence backed report", routeId: "generate_final_mission_report", script: "scripts/generate-final-mission-report.ts", category: "valid_input", preRun: r => { runScript(r, "scripts/validate-executor-routes.ts"); runScript(r, "scripts/collect-evidence.ts"); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/reports/final-mission-report.yaml", ".ai/reports/mission-evidence-summary.yaml"] },
   ];
 }
 
@@ -312,6 +317,11 @@ const liveTestNames = new Set([
   "revision task validation passes valid task",
   "revision task validation rejects manual task",
   "phase report collection writes report",
+  "evidence collection writes evidence index",
+  "report evidence validation fails missing evidence index",
+  "report evidence validation passes collected evidence",
+  "final mission report generation fails missing evidence",
+  "final mission report generation writes evidence backed report",
 ]);
 const declaredTests = process.env.TEST_FILTER ? testCases().filter(test => test.name.includes(process.env.TEST_FILTER!)) : testCases();
 const tests = declaredTests.filter(test => liveTestNames.has(test.name));

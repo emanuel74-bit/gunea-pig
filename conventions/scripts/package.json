@@ -20,7 +20,10 @@
     "validate:handoff": "tsx validate-handoff.ts",
     "create:revision-task": "tsx create-revision-task.ts",
     "validate:revision-task": "tsx validate-revision-task.ts",
-    "collect:phase-report": "tsx collect-phase-report.ts"
+    "collect:phase-report": "tsx collect-phase-report.ts",
+    "collect:evidence": "tsx collect-evidence.ts",
+    "validate:report-evidence": "tsx validate-report-evidence.ts",
+    "generate:final-mission-report": "tsx generate-final-mission-report.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

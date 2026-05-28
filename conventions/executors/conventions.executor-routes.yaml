@@ -328,6 +328,31 @@ sections:
         - multi-agent
         - reports
         executor_type: validation
+      validate_report_evidence:
+        description: Validate that generated reports are backed by script-produced evidence records instead of agent-written
+          claims.
+        script: scripts/validate-report-evidence.ts
+        required_inputs:
+        - evidence_index
+        - report_outputs
+        - runtime_artifact_topology
+        produced_outputs:
+        - report_evidence_validation_result
+        - report_evidence_validation_report
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts:
+        - evidence_index
+        lifecycle_hooks:
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - reports
+        - multi-agent
+        - missions
+        executor_type: validation
     compiler:
       compile_authority_topology:
         description: Compile distributed ownership declarations into an authority topology and conflict report.
@@ -498,6 +523,64 @@ sections:
         - phases
         - multi-agent
         executor_type: report
+      collect_evidence:
+        description: Collect script-produced validation, changed-file, gate, handoff, revision, bundle, topology, and phase-report
+          evidence into a canonical evidence index.
+        script: scripts/collect-evidence.ts
+        required_inputs:
+        - validation_results
+        - changed_file_results
+        - gate_results
+        - handoff_packets
+        - revision_tasks
+        - phase_reports
+        - runtime_artifact_topology
+        produced_outputs:
+        - evidence_index
+        - evidence_collection_report
+        allowed_write_paths:
+        - .ai/reports/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - reports
+        - multi-agent
+        - missions
+        - gates
+        - handoffs
+        - revisions
+        executor_type: report
+      generate_final_mission_report:
+        description: Generate the final mission report from collected executor/script evidence, validation results, transition
+          artifacts, and unresolved issue records.
+        script: scripts/generate-final-mission-report.ts
+        required_inputs:
+        - evidence_index
+        - phase_reports
+        - validation_results
+        - gate_results
+        - handoff_packets
+        - revision_tasks
+        - unresolved_issues
+        produced_outputs:
+        - final_mission_report
+        - mission_evidence_summary
+        allowed_write_paths:
+        - .ai/reports/**
+        required_artifacts:
+        - evidence_index
+        lifecycle_hooks:
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - reports
+        - missions
+        - multi-agent
+        - agents
+        executor_type: report
     bundle:
       generate_mission_bundle:
         description: Generate mission-level context bundle and execution route list.
@@ -552,6 +635,10 @@ validation:
   - gate_pass_fail_results_are_script_produced_only
   - revision_decisions_are_script_produced_only
   - transition_artifacts_reject_manual_authoring
+  - report_evidence_collection_route_present
+  - report_evidence_validation_route_present
+  - final_mission_report_generation_route_present
+  - reports_are_generated_from_script_evidence_not_agent_claims
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -583,3 +670,8 @@ validation:
   - manual_gate_result_authored_by_agent
   - manual_revision_decision_authored_by_agent
   - transition_decision_not_script_produced
+  - missing_report_evidence_collection_route
+  - missing_report_evidence_validation_route
+  - missing_final_mission_report_generation_route
+  - agent_authored_final_report_without_evidence_index
+  - report_generated_without_script_evidence
