@@ -1,59 +1,92 @@
-version: "1.0"
+version: '1.0'
 file:
   name: conventions.claude-project-files.yaml
   path: claude-code/conventions.claude-project-files.yaml
   role: claude_project_file_inventory
   executability: registry
-purpose: >
-  Declare the project-level Claude Code files that expose the convention system
-  to Claude Code without requiring full convention-package loading.
+purpose: 'Declare the project-level Claude Code files that expose the convention system to Claude Code without requiring full
+  convention-package loading.
+
+  '
 ownership:
   owns:
-    - claude_project_file_inventory
-    - claude_native_file_locations
+  - claude_project_file_inventory
+  - claude_native_file_locations
   does_not_own:
-    - executor_route_map
-    - script_implementation_code
+  - executor_route_map
+  - script_implementation_code
 activation:
   mode: on_demand
   activates_when:
-    - claude_code_native_integration_required
+  - claude_code_native_integration_required
   skips_when: []
 inputs:
   required: []
   optional: []
 outputs:
   produces:
-    - claude_project_file_inventory
+  - claude_project_file_inventory
   does_not_produce: []
 dependencies:
   required_files:
-    - claude-code/conventions.claude-native-integration.yaml
+  - claude-code/conventions.claude-native-integration.yaml
   optional_files: []
 sections:
   project_files:
     memory:
-      - CLAUDE.md
+    - CLAUDE.md
     settings:
-      - .claude/settings.json
+    - .claude/settings.json
     skills:
-      - .claude/skills/start-mission/SKILL.md
-      - .claude/skills/run-phase/SKILL.md
-      - .claude/skills/validate-phase/SKILL.md
-      - .claude/skills/complete-mission/SKILL.md
+    - .claude/skills/start-mission/SKILL.md
+    - .claude/skills/run-alpha-cycle/SKILL.md
+    - .claude/skills/activate-agent/SKILL.md
+    - .claude/skills/run-phase/SKILL.md
+    - .claude/skills/validate-phase/SKILL.md
+    - .claude/skills/run-gate/SKILL.md
+    - .claude/skills/prepare-handoff/SKILL.md
+    - .claude/skills/transition-phase/SKILL.md
+    - .claude/skills/revision-loop/SKILL.md
+    - .claude/skills/generate-artifact/SKILL.md
+    - .claude/skills/collect-report-evidence/SKILL.md
+    - .claude/skills/complete-mission/SKILL.md
     agents:
-      - .claude/agents/alpha.md
-      - .claude/agents/phase-agent.md
-      - .claude/agents/reviewer.md
+    - .claude/agents/alpha-controller.md
+    - .claude/agents/behavior-agent.md
+    - .claude/agents/reconnaissance-agent.md
+    - .claude/agents/classification-agent.md
+    - .claude/agents/architecture-agent.md
+    - .claude/agents/role-agent.md
+    - .claude/agents/pattern-agent.md
+    - .claude/agents/artifact-action-agent.md
+    - .claude/agents/refactor-strategy-agent.md
+    - .claude/agents/impact-agent.md
+    - .claude/agents/structure-agent.md
+    - .claude/agents/testing-agent.md
+    - .claude/agents/execution-planning-agent.md
+    - .claude/agents/pre-implementation-gate-agent.md
+    - .claude/agents/implementation-agent.md
+    - .claude/agents/validation-agent.md
+    - .claude/agents/failure-analysis-agent.md
+    - .claude/agents/repair-agent.md
     hook_helpers:
-      - .claude/hooks/README.md
+    - .claude/hooks/README.md
+    commands:
+    - .claude/commands/start-mission.md
+    - .claude/commands/run-alpha-cycle.md
+    - .claude/commands/activate-agent.md
+    - .claude/commands/run-phase.md
+    - .claude/commands/validate-phase.md
+    - .claude/commands/transition-phase.md
+    - .claude/commands/revision-loop.md
+    - .claude/commands/complete-mission.md
   normal_invocation:
     command: npm --prefix conventions/scripts run executor -- --route <route_id>
     direct_script_path_invocation: forbidden
 validation:
   required_checks:
-    - declared_claude_project_files_exist_in_package
-    - declared_commands_use_executor_route_wrapper
+  - declared_claude_project_files_exist_in_package
+  - declared_commands_use_executor_route_wrapper
   fail_conditions:
-    - missing_declared_claude_project_file
-    - direct_script_path_used_as_normal_command
+  - missing_declared_claude_project_file
+  - direct_script_path_used_as_normal_command

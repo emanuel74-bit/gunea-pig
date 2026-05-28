@@ -1,0 +1,255 @@
+version: '1.0'
+file:
+  name: conventions.claude-subsystem-engagement.yaml
+  path: claude-code/conventions.claude-subsystem-engagement.yaml
+  role: claude_subsystem_engagement_map
+  executability: mapping
+purpose: Provide Claude Code with a compact map from workflow lanes to subsystems, native agents, executor routes, and artifacts
+  so Claude engages the whole system without scanning the full convention tree.
+ownership:
+  owns:
+  - claude_subsystem_engagement_map
+  - claude_workflow_lane_map
+  does_not_own:
+  - subsystem_rules
+  - executor_route_definitions
+  - agent_taxonomy
+activation:
+  mode: conditional
+  activates_when:
+  - claude_code_needs_subsystem_guidance
+  - phase_bundle_requires_subsystem_slice
+  skips_when: []
+inputs:
+  required:
+  - phase_bundle
+  - mission_profile
+  - agent_activation_map
+  optional:
+  - runtime_topologies
+outputs:
+  produces:
+  - workflow_lane_subsystem_map
+  - subsystem_route_agent_artifact_map
+dependencies:
+  required_files:
+  - claude-code/conventions.claude-agent-activation-map.yaml
+  - executors/conventions.executor-routes.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  optional_files: []
+sections:
+  workflow_lanes:
+    mission_control:
+      subsystems:
+      - core
+      - missions
+      - multi-agent
+      - agents
+      - phases
+      - executors
+      - execution
+      skills:
+      - start-mission
+      - run-alpha-cycle
+      - activate-agent
+      routes:
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+      - generate_phase_bundle
+      - validate_phase_bundle
+      agents:
+      - alpha_controller
+      artifacts:
+      - .ai/claude/execution-plan.yaml
+      - .ai/bundles/**
+    planning_scope_and_evidence:
+      subsystems:
+      - planning
+      - risk
+      - reports
+      - testing
+      - triggers
+      skills:
+      - run-phase
+      - validate-phase
+      - collect-report-evidence
+      routes:
+      - validate_phase_output
+      - validate_semantic_completeness
+      - collect_phase_report
+      - collect_evidence
+      agents:
+      - behavior_agent
+      - reconnaissance_agent
+      - classification_agent
+      - testing_agent
+      artifacts:
+      - declared_phase_reports
+      - .ai/reports/evidence-index.yaml
+    architecture_design:
+      subsystems:
+      - architecture
+      - structure
+      - roles
+      - patterns
+      - boundaries
+      - dependencies
+      - contracts
+      - actions
+      skills:
+      - run-phase
+      - generate-artifact
+      - validate-phase
+      routes:
+      - validate_phase_output
+      - validate_semantic_completeness
+      - collect_phase_report
+      agents:
+      - architecture_agent
+      - role_agent
+      - pattern_agent
+      - artifact_action_agent
+      - structure_agent
+      - impact_agent
+      artifacts:
+      - architecture_blueprint
+      - structure_plan
+      - role_assignments
+      - pattern_decisions
+    implementation_and_refactoring:
+      subsystems:
+      - execution
+      - refactoring
+      - dependencies
+      - boundaries
+      - contracts
+      - testing
+      - risk
+      skills:
+      - run-phase
+      - validate-phase
+      - revision-loop
+      routes:
+      - validate_changed_files
+      - validate_phase_output
+      - validate_semantic_completeness
+      agents:
+      - execution_planning_agent
+      - implementation_agent
+      - refactor_strategy_agent
+      - repair_agent
+      artifacts:
+      - changed_file_manifest
+      - implementation_report
+      - refactor_plan
+    transition_control:
+      subsystems:
+      - gates
+      - handoffs
+      - revisions
+      - reports
+      - missions
+      - multi-agent
+      skills:
+      - transition-phase
+      - run-gate
+      - prepare-handoff
+      - revision-loop
+      routes:
+      - run_gate_check
+      - validate_gate_result
+      - prepare_agent_handoff
+      - validate_handoff
+      - create_revision_task
+      - validate_revision_task
+      agents:
+      - alpha_controller
+      - pre_implementation_gate_agent
+      - validation_agent
+      - failure_analysis_agent
+      - repair_agent
+      artifacts:
+      - .ai/gates/**
+      - .ai/handoffs/**
+      - .ai/revisions/**
+    validation_reporting_completion:
+      subsystems:
+      - reports
+      - execution
+      - executors
+      - core
+      - testing
+      - missions
+      skills:
+      - validate-phase
+      - collect-report-evidence
+      - complete-mission
+      routes:
+      - collect_evidence
+      - validate_report_evidence
+      - generate_final_mission_report
+      - validate_executor_routes
+      - validate_references
+      agents:
+      - validation_agent
+      - testing_agent
+      - alpha_controller
+      artifacts:
+      - .ai/reports/evidence-index.yaml
+      - .ai/reports/final-mission-report.yaml
+    claude_native_runtime:
+      subsystems:
+      - claude-code
+      - executors
+      - agents
+      - multi-agent
+      skills:
+      - start-mission
+      - run-alpha-cycle
+      - activate-agent
+      - complete-mission
+      routes:
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+      - validate_claude_native_integration
+      agents:
+      - alpha_controller
+      artifacts:
+      - CLAUDE.md
+      - .claude/**
+      - claude_execution_plan
+  all_subsystems_covered:
+  - actions
+  - agents
+  - architecture
+  - boundaries
+  - claude-code
+  - contracts
+  - core
+  - dependencies
+  - execution
+  - executors
+  - gates
+  - handoffs
+  - missions
+  - multi-agent
+  - patterns
+  - phases
+  - planning
+  - refactoring
+  - reports
+  - revisions
+  - risk
+  - roles
+  - structure
+  - testing
+  - triggers
+validation:
+  required_checks:
+  - all_convention_subsystems_mapped_to_at_least_one_workflow_lane
+  - workflow_routes_exist
+  - workflow_agents_exist
+  fail_conditions:
+  - unmapped_subsystem
+  - unknown_workflow_route
+  - unknown_workflow_agent

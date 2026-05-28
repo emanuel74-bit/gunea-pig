@@ -6,17 +6,19 @@ allowed-tools:
   - Grep
   - Glob
   - Bash
+  - Task
 ---
 
 # Complete Mission
 
 
-Use this skill when all phases have completed and transition artifacts are valid.
+Use this skill only after all phases are complete and no blocking revision task remains.
 
 Run:
+
 1. `npm --prefix conventions/scripts run executor -- --route collect_evidence`
 2. `npm --prefix conventions/scripts run executor -- --route validate_report_evidence`
 3. `npm --prefix conventions/scripts run executor -- --route generate_final_mission_report`
 
-Final mission reports must be generated from script evidence. Do not manually write the final report as prose.
+The final mission report is script-produced only. Do not manually write it as prose.
 

@@ -24,3 +24,13 @@ This package includes project-level Claude Code integration files:
 Claude Code should invoke runtime automation through executor routes only:
 
 `npm --prefix conventions/scripts run executor -- --route <route_id>`
+
+## Phase 8.2 — Claude Native Workflow Engine
+
+Claude Code integration is now workflow-native rather than folder-discovery based:
+
+- every convention agent in `agents/conventions.agent-taxonomy.yaml` has a matching `.claude/agents/<agent>.md` subagent;
+- Alpha orchestration is exposed through `run-alpha-cycle` and `activate-agent` skills;
+- gates, handoffs, revisions, reports, phase bundles, validation, and artifact generation are exposed through route-backed workflow skills;
+- `claude-code/conventions.claude-subsystem-engagement.yaml` maps workflow lanes to every convention subsystem so Claude knows where to look and what to activate without scanning the full package;
+- transition and report artifacts remain script-produced only.

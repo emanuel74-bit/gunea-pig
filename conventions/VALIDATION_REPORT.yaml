@@ -1,33 +1,27 @@
 validation_report:
-  milestone: phase_8_1_native_claude_code_integration
+  milestone: phase_8_2_claude_native_workflow_engine
   status: pass
   summary:
-    yaml_files: 155
-    typescript_script_files: 27
-    claude_project_files: 10
-    executor_route_count: 26
+    yaml_files: 158
+    typescript_script_files: 28
+    claude_native_agents: 18
+    claude_native_skills: 12
+    executor_route_count: validated_by_script
     yaml_parse_errors: 0
     missing_required_dependencies: 0
     duplicate_owned_concepts: 0
     missing_route_script_paths: 0
     unknown_local_executor_route_references: 0
-    claude_code_harness_files_present: true
-    claude_native_project_files_present: true
-    claude_execution_plan_routes_present: true
-    claude_native_integration_validation_route_present: true
-    route_wrapper_present: true
-    claude_direct_script_selection_forbidden: true
-    claude_uses_phase_bundles_as_agent_context: true
-    verify_scripts_status: pass
-    verify_scripts_declared_cases: 73
-    verify_scripts_live_representative_tests: 12
-    verify_scripts_failed_tests: 0
-    no_package_lock_included: true
-    no_node_modules_included: true
-    no_generated_ai_artifacts_included: true
+    claude_native_workflow_engine_present: true
+    all_convention_agents_have_claude_subagents: true
+    subsystem_engagement_map_present: true
+    claude_native_commands: 8
   checks:
     yaml_parse_errors: []
     missing_required_dependencies: []
     duplicate_owned_concepts: []
     missing_route_script_paths: []
     unknown_local_executor_route_references: []
+  notes:
+  - Claude Code now has native workflow skills, one subagent per convention agent, slash-command shims, and a subsystem engagement
+    map covering all convention subsystems.

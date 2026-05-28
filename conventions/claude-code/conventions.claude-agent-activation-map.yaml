@@ -1,0 +1,279 @@
+version: '1.0'
+file:
+  name: conventions.claude-agent-activation-map.yaml
+  path: claude-code/conventions.claude-agent-activation-map.yaml
+  role: claude_native_agent_activation_map
+  executability: mapping
+purpose: Map every Autonomous Agent Activator convention agent to a native Claude Code subagent file and declare direct activation
+  rules.
+ownership:
+  owns:
+  - claude_native_agent_activation_map
+  does_not_own:
+  - agent_taxonomy
+  - agent_permissions
+  - agent_phase_ownership
+activation:
+  mode: conditional
+  activates_when:
+  - native_agent_activation_required
+  skips_when: []
+inputs:
+  required:
+  - agent_taxonomy
+  - phase_bundle
+  optional: []
+outputs:
+  produces:
+  - native_agent_activation_records
+dependencies:
+  required_files:
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-phase-ownership.yaml
+  optional_files: []
+sections:
+  activation_algorithm:
+  - read_owner_agent_from_validated_phase_bundle
+  - resolve_owner_agent_to_claude_subagent
+  - activate_matching_subagent
+  - stop_if_no_matching_subagent
+  native_agents:
+    alpha_controller:
+      claude_agent_file: .claude/agents/alpha-controller.md
+      claude_agent_name: alpha-controller
+      owned_phases:
+      - mission_profile_selection
+      - mission_initialization
+      - active_context_manifest
+      - phase_accounting
+      - trigger_review
+      - report_artifact_validation
+      integration_subsystems:
+      - core
+      - missions
+      - phases
+      - agents
+      - gates
+      - triggers
+      - handoffs
+      - revisions
+      - reports
+    behavior_agent:
+      claude_agent_file: .claude/agents/behavior-agent.md
+      claude_agent_name: behavior-agent
+      owned_phases:
+      - behavior_contract
+      integration_subsystems:
+      - planning
+      - reports
+      - risk
+      - triggers
+      - testing
+    reconnaissance_agent:
+      claude_agent_file: .claude/agents/reconnaissance-agent.md
+      claude_agent_name: reconnaissance-agent
+      owned_phases:
+      - codebase_reconnaissance
+      - local_alignment
+      integration_subsystems:
+      - planning
+      - reports
+      - dependencies
+      - boundaries
+      - risk
+    classification_agent:
+      claude_agent_file: .claude/agents/classification-agent.md
+      claude_agent_name: classification-agent
+      owned_phases:
+      - risk_classification
+      - boundary_contract_classification
+      - dependency_classification
+      integration_subsystems:
+      - risk
+      - boundaries
+      - contracts
+      - dependencies
+      - triggers
+      - reports
+    architecture_agent:
+      claude_agent_file: .claude/agents/architecture-agent.md
+      claude_agent_name: architecture-agent
+      owned_phases:
+      - architecture_decomposition
+      integration_subsystems:
+      - architecture
+      - planning
+      - risk
+      - boundaries
+      - dependencies
+      - reports
+    role_agent:
+      claude_agent_file: .claude/agents/role-agent.md
+      claude_agent_name: role-agent
+      owned_phases:
+      - draft_role_pass
+      - final_role_assignment
+      integration_subsystems:
+      - roles
+      - architecture
+      - actions
+      - patterns
+      - reports
+    pattern_agent:
+      claude_agent_file: .claude/agents/pattern-agent.md
+      claude_agent_name: pattern-agent
+      owned_phases:
+      - pattern_pressure_detection
+      - pattern_selection
+      integration_subsystems:
+      - patterns
+      - roles
+      - architecture
+      - actions
+      - reports
+    artifact_action_agent:
+      claude_agent_file: .claude/agents/artifact-action-agent.md
+      claude_agent_name: artifact-action-agent
+      owned_phases:
+      - artifact_reuse_analysis
+      - artifact_action_resolution
+      integration_subsystems:
+      - actions
+      - roles
+      - patterns
+      - architecture
+      - risk
+      - triggers
+      - reports
+    refactor_strategy_agent:
+      claude_agent_file: .claude/agents/refactor-strategy-agent.md
+      claude_agent_name: refactor-strategy-agent
+      owned_phases:
+      - refactor_strategy_selection
+      integration_subsystems:
+      - refactoring
+      - actions
+      - planning
+      - testing
+      - risk
+      - triggers
+      - reports
+    impact_agent:
+      claude_agent_file: .claude/agents/impact-agent.md
+      claude_agent_name: impact-agent
+      owned_phases:
+      - call_site_impact_analysis
+      - change_impact_analysis
+      integration_subsystems:
+      - planning
+      - contracts
+      - dependencies
+      - boundaries
+      - risk
+      - testing
+      - reports
+    structure_agent:
+      claude_agent_file: .claude/agents/structure-agent.md
+      claude_agent_name: structure-agent
+      owned_phases:
+      - structure_rendering
+      integration_subsystems:
+      - architecture
+      - roles
+      - patterns
+      - actions
+      - boundaries
+      - dependencies
+      - reports
+    testing_agent:
+      claude_agent_file: .claude/agents/testing-agent.md
+      claude_agent_name: testing-agent
+      owned_phases:
+      - test_derivation
+      integration_subsystems:
+      - testing
+      - planning
+      - risk
+      - contracts
+      - boundaries
+      - dependencies
+      - actions
+      - refactoring
+      - reports
+    execution_planning_agent:
+      claude_agent_file: .claude/agents/execution-planning-agent.md
+      claude_agent_name: execution-planning-agent
+      owned_phases:
+      - implementation_sequence
+      - checkpoint_validation_plan
+      integration_subsystems:
+      - execution
+      - testing
+      - risk
+      - reports
+      - gates
+    pre_implementation_gate_agent:
+      claude_agent_file: .claude/agents/pre-implementation-gate-agent.md
+      claude_agent_name: pre-implementation-gate-agent
+      owned_phases:
+      - pre_implementation_gate
+      integration_subsystems:
+      - gates
+      - missions
+      - reports
+      - triggers
+      - handoffs
+      - revisions
+      - execution
+    implementation_agent:
+      claude_agent_file: .claude/agents/implementation-agent.md
+      claude_agent_name: implementation-agent
+      owned_phases:
+      - implementation
+      integration_subsystems:
+      - execution
+      - reports
+      - testing
+    validation_agent:
+      claude_agent_file: .claude/agents/validation-agent.md
+      claude_agent_name: validation-agent
+      owned_phases:
+      - post_implementation_validation
+      - final_validation
+      integration_subsystems:
+      - execution
+      - reports
+      - gates
+      - triggers
+      - handoffs
+      - revisions
+      - missions
+      - testing
+    failure_analysis_agent:
+      claude_agent_file: .claude/agents/failure-analysis-agent.md
+      claude_agent_name: failure-analysis-agent
+      owned_phases:
+      - failure_classification
+      integration_subsystems:
+      - execution
+      - reports
+      - revisions
+      - triggers
+      - risk
+    repair_agent:
+      claude_agent_file: .claude/agents/repair-agent.md
+      claude_agent_name: repair-agent
+      owned_phases:
+      - feedback_repair
+      integration_subsystems:
+      - execution
+      - revisions
+      - reports
+      - testing
+validation:
+  required_checks:
+  - every_agent_taxonomy_value_has_native_agent_file
+  - native_agent_files_reference_valid_agent_ids
+  fail_conditions:
+  - missing_native_agent_file
+  - unknown_native_agent_id

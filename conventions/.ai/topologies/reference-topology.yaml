@@ -1,0 +1,3339 @@
+files:
+  PACKAGE_MANIFEST.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  VALIDATION_REPORT.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  actions/conventions.action-collisions.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - actions/conventions.action-taxonomy.yaml
+      - actions/conventions.action-resolution.yaml
+    optional_files:
+      - contracts/conventions.compatibility.yaml
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    runtime_artifacts: []
+  actions/conventions.action-followups.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - actions/conventions.action-taxonomy.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    optional_files:
+      - phases/conventions.phase-taxonomy.yaml
+      - reports/conventions.report-artifacts.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    runtime_artifacts: []
+  actions/conventions.action-resolution.yaml:
+    required_files:
+      - actions/conventions.action-taxonomy.yaml
+      - planning/conventions.behavior-contract.yaml
+      - planning/conventions.codebase-reconnaissance.yaml
+      - roles/conventions.role-taxonomy.yaml
+      - actions/conventions.action-collisions.yaml
+      - actions/conventions.action-followups.yaml
+    optional_files:
+      - risk/conventions.risk-taxonomy.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - patterns/conventions.pattern-selection.yaml
+    runtime_artifacts: []
+  actions/conventions.action-taxonomy.yaml:
+    required_files: []
+    optional_files:
+      - roles/conventions.role-taxonomy.yaml
+      - patterns/conventions.pattern-catalog.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    runtime_artifacts: []
+  actions/conventions.actions.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - actions/conventions.action-taxonomy.yaml
+      - actions/conventions.action-resolution.yaml
+      - actions/conventions.action-collisions.yaml
+      - actions/conventions.action-followups.yaml
+    optional_files: []
+    runtime_artifacts: []
+  agents/conventions.agent-activation-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-contracts.yaml
+      - agents/conventions.agent-permissions.yaml
+      - agents/conventions.agent-prompts.yaml
+      - phases/conventions.phase-contracts.yaml
+      - gates/conventions.gate-validation.yaml
+      - reports/conventions.report-registry.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.revision-request-policy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  agents/conventions.agent-capabilities.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  agents/conventions.agent-contracts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-capabilities.yaml
+      - phases/conventions.phase-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+  agents/conventions.agent-permissions.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-contracts.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/logs/**
+      - .ai/mission-state.yaml
+      - .ai/phase-bundles/**
+      - .ai/reports/**
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+      - .ai/runtime-packs/**
+  agents/conventions.agent-phase-ownership.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - phases/conventions.phase-taxonomy.yaml
+      - phases/conventions.phase-contracts.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+  agents/conventions.agent-prompts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-contracts.yaml
+      - agents/conventions.agent-permissions.yaml
+      - phases/conventions.phase-contracts.yaml
+    optional_files: []
+    runtime_artifacts: []
+  agents/conventions.agent-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  agents/conventions.agent-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-contracts.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+      - agents/conventions.agent-permissions.yaml
+      - agents/conventions.agent-prompts.yaml
+      - agents/conventions.agent-activation-policy.yaml
+      - phases/conventions.phase-contracts.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files: []
+    runtime_artifacts: []
+  agents/conventions.agents.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.index.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-capabilities.yaml
+      - agents/conventions.agent-contracts.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+      - agents/conventions.agent-permissions.yaml
+      - agents/conventions.agent-prompts.yaml
+      - agents/conventions.agent-activation-policy.yaml
+      - agents/conventions.agent-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  architecture/conventions.architecture.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - planning/conventions.behavior-contract.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - dependencies/conventions.dependency-taxonomy.yaml
+    optional_files:
+      - roles/conventions.role-taxonomy.yaml
+      - patterns/conventions.pattern-catalog.yaml
+    runtime_artifacts:
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/risk-classification.yaml
+  architecture/conventions.structure-strategy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - architecture/conventions.architecture.yaml
+      - roles/conventions.role-placement.yaml
+      - actions/conventions.action-taxonomy.yaml
+    optional_files:
+      - patterns/conventions.pattern-selection.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+    runtime_artifacts:
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/pattern-decision-log.yaml
+  architecture/conventions.structure.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - architecture/conventions.architecture.yaml
+      - architecture/conventions.structure-strategy.yaml
+      - roles/conventions.role-placement.yaml
+      - actions/conventions.action-taxonomy.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+      - dependencies/conventions.import-rules.yaml
+    optional_files:
+      - patterns/conventions.pattern-selection.yaml
+      - boundaries/conventions.boundary-crossing-rules.yaml
+    runtime_artifacts:
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/structure-plan.yaml
+  boundaries/conventions.boundaries.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - boundaries/conventions.boundary-classification.yaml
+      - boundaries/conventions.boundary-crossing-rules.yaml
+      - boundaries/conventions.boundary-leak-detection.yaml
+      - boundaries/conventions.boundary-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  boundaries/conventions.boundary-classification.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+    optional_files:
+      - contracts/conventions.contract-classification.yaml
+      - dependencies/conventions.dependency-classification.yaml
+    runtime_artifacts: []
+  boundaries/conventions.boundary-crossing-rules.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+    optional_files:
+      - dependencies/conventions.dependency-direction-rules.yaml
+      - contracts/conventions.contract-classification.yaml
+    runtime_artifacts: []
+  boundaries/conventions.boundary-leak-detection.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - boundaries/conventions.boundary-classification.yaml
+    optional_files:
+      - dependencies/conventions.dependency-classification.yaml
+      - dependencies/conventions.import-rules.yaml
+    runtime_artifacts: []
+  boundaries/conventions.boundary-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  boundaries/conventions.boundary-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - boundaries/conventions.boundary-classification.yaml
+      - boundaries/conventions.boundary-crossing-rules.yaml
+      - boundaries/conventions.boundary-leak-detection.yaml
+    optional_files:
+      - contracts/conventions.compatibility.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+    runtime_artifacts: []
+  claude-code/conventions.claude-agent-activation-map.yaml:
+    required_files:
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-code.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-routes.yaml
+      - executors/conventions.executor-lifecycle.yaml
+      - multi-agent/conventions.alpha-controller.yaml
+      - multi-agent/conventions.phase-bundle-policy.yaml
+      - claude-code/conventions.claude-execution-harness.yaml
+      - claude-code/conventions.claude-route-invocation.yaml
+      - claude-code/conventions.claude-stop-conditions.yaml
+      - claude-code/conventions.claude-native-integration.yaml
+      - claude-code/conventions.claude-project-files.yaml
+      - claude-code/conventions.claude-native-workflow-engine.yaml
+      - claude-code/conventions.claude-agent-activation-map.yaml
+      - claude-code/conventions.claude-subsystem-engagement.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-execution-harness.yaml:
+    required_files:
+      - executors/conventions.executor-routes.yaml
+      - missions/conventions.missions.yaml
+      - multi-agent/conventions.alpha-controller.yaml
+      - multi-agent/conventions.phase-bundle-policy.yaml
+      - reports/conventions.reports.yaml
+      - claude-code/conventions.claude-route-invocation.yaml
+      - claude-code/conventions.claude-stop-conditions.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-native-integration.yaml:
+    required_files:
+      - claude-code/conventions.claude-code.yaml
+      - claude-code/conventions.claude-execution-harness.yaml
+      - claude-code/conventions.claude-route-invocation.yaml
+      - claude-code/conventions.claude-stop-conditions.yaml
+      - executors/conventions.executor-routes.yaml
+      - claude-code/conventions.claude-native-workflow-engine.yaml
+      - claude-code/conventions.claude-agent-activation-map.yaml
+      - claude-code/conventions.claude-subsystem-engagement.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-native-workflow-engine.yaml:
+    required_files:
+      - claude-code/conventions.claude-subsystem-engagement.yaml
+      - claude-code/conventions.claude-agent-activation-map.yaml
+      - executors/conventions.executor-routes.yaml
+      - multi-agent/conventions.alpha-controller.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-project-files.yaml:
+    required_files:
+      - claude-code/conventions.claude-native-integration.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-route-invocation.yaml:
+    required_files:
+      - executors/conventions.executor-routes.yaml
+      - executors/conventions.executor-contract.yaml
+      - executors/conventions.executor-lifecycle.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/validation/{script_id}.result.yaml
+  claude-code/conventions.claude-stop-conditions.yaml:
+    required_files:
+      - executors/conventions.executor-failures.yaml
+      - gates/conventions.gate-validation.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.revision-validation.yaml
+      - reports/conventions.report-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  claude-code/conventions.claude-subsystem-engagement.yaml:
+    required_files:
+      - claude-code/conventions.claude-agent-activation-map.yaml
+      - executors/conventions.executor-routes.yaml
+      - agents/conventions.agent-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/bundles/**
+      - .ai/claude/execution-plan.yaml
+      - .ai/gates/**
+      - .ai/handoffs/**
+      - .ai/reports/evidence-index.yaml
+      - .ai/reports/final-mission-report.yaml
+      - .ai/revisions/**
+  contracts/conventions.compatibility.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+      - contracts/conventions.contract-classification.yaml
+      - contracts/conventions.contract-change-taxonomy.yaml
+    optional_files:
+      - risk/conventions.risk-taxonomy.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+    runtime_artifacts:
+      - .ai/reports/compatibility-decision.yaml
+  contracts/conventions.contract-change-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+    optional_files:
+      - contracts/conventions.contract-classification.yaml
+    runtime_artifacts: []
+  contracts/conventions.contract-classification.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+      - contracts/conventions.contract-change-taxonomy.yaml
+    optional_files:
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - risk/conventions.risk-taxonomy.yaml
+      - dependencies/conventions.dependency-taxonomy.yaml
+    runtime_artifacts: []
+  contracts/conventions.contract-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    runtime_artifacts: []
+  contracts/conventions.contracts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+      - contracts/conventions.contract-classification.yaml
+      - contracts/conventions.contract-change-taxonomy.yaml
+      - contracts/conventions.compatibility.yaml
+    optional_files: []
+    runtime_artifacts: []
+  core/conventions.core.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.index.yaml
+      - core/conventions.integration-contract.yaml
+      - core/conventions.pipeline-contract.yaml
+      - core/conventions.output-schema.yaml
+      - core/conventions.semantic-completeness.yaml
+      - core/conventions.validation.yaml
+      - core/conventions.script-delegation-policy.yaml
+      - executors/conventions.executor-routes.yaml
+    runtime_artifacts: []
+  core/conventions.file-contract.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  core/conventions.index.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - reports/conventions.runtime-artifacts.yaml
+      - executors/conventions.executors.yaml
+    runtime_artifacts: []
+  core/conventions.integration-contract.yaml:
+    required_files:
+      - core/conventions.index.yaml
+    optional_files: []
+    runtime_artifacts: []
+  core/conventions.output-schema.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  core/conventions.pipeline-contract.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  core/conventions.script-delegation-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  core/conventions.semantic-completeness.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - executors/conventions.executor-routes.yaml
+    runtime_artifacts: []
+  core/conventions.validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.index.yaml
+      - core/conventions.semantic-completeness.yaml
+      - executors/conventions.executor-routes.yaml
+      - executors/conventions.executor-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  dependencies/conventions.dependencies.yaml:
+    required_files:
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - dependencies/conventions.dependency-classification.yaml
+      - dependencies/conventions.import-rules.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+      - dependencies/conventions.test-dependency-rules.yaml
+    optional_files: []
+    runtime_artifacts: []
+  dependencies/conventions.dependency-classification.yaml:
+    required_files:
+      - dependencies/conventions.dependency-taxonomy.yaml
+    optional_files:
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+    runtime_artifacts: []
+  dependencies/conventions.dependency-direction-rules.yaml:
+    required_files:
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - dependencies/conventions.dependency-classification.yaml
+    optional_files:
+      - roles/conventions.role-taxonomy.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - architecture/conventions.structure.yaml
+    runtime_artifacts: []
+  dependencies/conventions.dependency-taxonomy.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  dependencies/conventions.dependency-validation.yaml:
+    required_files:
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - dependencies/conventions.dependency-classification.yaml
+      - dependencies/conventions.import-rules.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+      - dependencies/conventions.test-dependency-rules.yaml
+    optional_files:
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - roles/conventions.role-taxonomy.yaml
+    runtime_artifacts: []
+  dependencies/conventions.import-rules.yaml:
+    required_files:
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - dependencies/conventions.dependency-classification.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+    optional_files:
+      - boundaries/conventions.boundary-taxonomy.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+    runtime_artifacts: []
+  dependencies/conventions.test-dependency-rules.yaml:
+    required_files:
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - dependencies/conventions.dependency-classification.yaml
+    optional_files:
+      - testing/conventions.testing-taxonomy.yaml
+      - contracts/conventions.contract-taxonomy.yaml
+    runtime_artifacts: []
+  execution/conventions.changed-file-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.mission-state.yaml
+      - reports/conventions.report-registry.yaml
+      - gates/conventions.gate-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  execution/conventions.checkpoint-planning.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.test-validation.yaml
+      - risk/conventions.risk-escalation.yaml
+      - gates/conventions.gate-templates.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files: []
+    runtime_artifacts: []
+  execution/conventions.execution-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - gates/conventions.gate-validation.yaml
+      - reports/conventions.report-validation.yaml
+      - handoffs/conventions.handoff-consumption-policy.yaml
+      - revisions/conventions.revision-validation.yaml
+      - missions/conventions.mission-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  execution/conventions.execution.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - phases/conventions.phase-contracts.yaml
+      - reports/conventions.report-registry.yaml
+      - gates/conventions.gate-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files:
+      - testing/conventions.test-validation.yaml
+      - risk/conventions.risk-escalation.yaml
+      - revisions/conventions.revision-validation.yaml
+      - core/conventions.script-delegation-policy.yaml
+      - executors/conventions.executors.yaml
+      - executors/conventions.executor-routes.yaml
+      - core/conventions.script-delegation-policy.yaml
+    runtime_artifacts: []
+  execution/conventions.feedback-loop.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - revisions/conventions.revision-request-policy.yaml
+      - gates/conventions.gate-validation.yaml
+      - reports/conventions.report-lifecycle.yaml
+    optional_files: []
+    runtime_artifacts: []
+  execution/conventions.implementation-control.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - agents/conventions.agent-permissions.yaml
+      - missions/conventions.mission-state.yaml
+      - gates/conventions.gate-validation.yaml
+      - reports/conventions.report-registry.yaml
+      - revisions/conventions.revision-request-policy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  execution/conventions.implementation-sequence.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - actions/conventions.action-resolution.yaml
+      - actions/conventions.action-followups.yaml
+      - architecture/conventions.structure.yaml
+      - testing/conventions.test-derivation.yaml
+      - risk/conventions.risk-escalation.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files:
+      - contracts/conventions.compatibility.yaml
+      - boundaries/conventions.boundary-validation.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      - refactoring/conventions.behavior-preservation.yaml
+    runtime_artifacts: []
+  execution/conventions.validation-command-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.test-validation.yaml
+      - reports/conventions.report-registry.yaml
+      - gates/conventions.gate-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  executors/conventions.executor-contract.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/validation/**
+  executors/conventions.executor-failures.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  executors/conventions.executor-lifecycle.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  executors/conventions.executor-routes.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-contract.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/bundles/**
+      - .ai/claude/**
+      - .ai/gates/**
+      - .ai/handoffs/**
+      - .ai/reports/**
+      - .ai/revisions/**
+      - .ai/topologies/**
+      - .ai/validation/**
+  executors/conventions.executors.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-contract.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files:
+      - executors/conventions.executor-lifecycle.yaml
+      - executors/conventions.executor-failures.yaml
+    runtime_artifacts: []
+  gates/conventions.gate-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  gates/conventions.gate-templates.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - gates/conventions.gate-taxonomy.yaml
+    optional_files:
+      - phases/conventions.phase-contracts.yaml
+      - reports/conventions.report-artifacts.yaml
+      - missions/conventions.mission-state.yaml
+    runtime_artifacts: []
+  gates/conventions.gate-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - gates/conventions.gate-taxonomy.yaml
+      - gates/conventions.gate-templates.yaml
+      - missions/conventions.mission-state.yaml
+    optional_files:
+      - reports/conventions.report-artifacts.yaml
+      - agents/conventions.agent-permissions.yaml
+      - phases/conventions.phase-contracts.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.invalidation-policy.yaml
+    runtime_artifacts:
+      - .ai/mission-state.yaml
+      - .ai/reports/report-registry.yaml
+  gates/conventions.gates.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - gates/conventions.gate-taxonomy.yaml
+      - gates/conventions.gate-templates.yaml
+      - gates/conventions.gate-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files:
+      - phases/conventions.phase-contracts.yaml
+      - missions/conventions.mission-state.yaml
+    runtime_artifacts: []
+  handoffs/conventions.handoff-consumption-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - handoffs/conventions.handoff-schema.yaml
+      - missions/conventions.mission-state.yaml
+      - phases/conventions.phase-contracts.yaml
+      - agents/conventions.agent-permissions.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+      - revisions/conventions.invalidation-policy.yaml
+      - reports/conventions.report-artifacts.yaml
+    runtime_artifacts: []
+  handoffs/conventions.handoff-schema.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - reports/conventions.report-artifacts.yaml
+      - missions/conventions.mission-state.yaml
+      - phases/conventions.phase-contracts.yaml
+    runtime_artifacts:
+      - .ai/mission-state.yaml
+  handoffs/conventions.handoff-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - handoffs/conventions.handoff-schema.yaml
+      - handoffs/conventions.handoff-consumption-policy.yaml
+      - missions/conventions.mission-state.yaml
+      - phases/conventions.phase-contracts.yaml
+      - agents/conventions.agent-permissions.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - revisions/conventions.invalidation-policy.yaml
+      - reports/conventions.report-artifacts.yaml
+    runtime_artifacts:
+      - .ai/reports/handoffs.yaml
+  handoffs/conventions.handoffs.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - handoffs/conventions.handoff-schema.yaml
+      - handoffs/conventions.handoff-consumption-policy.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+      - reports/conventions.report-artifacts.yaml
+      - missions/conventions.mission-state.yaml
+    runtime_artifacts: []
+  missions/conventions.active-phase-plan.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.mission-profiles.yaml
+      - phases/conventions.phase-taxonomy.yaml
+      - phases/conventions.phase-dependencies.yaml
+    optional_files:
+      - triggers/conventions.trigger-resolution.yaml
+      - revisions/conventions.rerun-policy.yaml
+    runtime_artifacts: []
+  missions/conventions.mission-profile-selection.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.mission-profile-taxonomy.yaml
+      - phases/conventions.phase-taxonomy.yaml
+    optional_files:
+      - planning/conventions.behavior-contract.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    runtime_artifacts:
+      - .ai/reports/00-mission-profile.yaml
+  missions/conventions.mission-profile-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - phases/conventions.phase-taxonomy.yaml
+    runtime_artifacts: []
+  missions/conventions.mission-profiles.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.mission-profile-taxonomy.yaml
+      - phases/conventions.phase-taxonomy.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files:
+      - gates/conventions.gate-taxonomy.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    runtime_artifacts: []
+  missions/conventions.mission-state.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.active-phase-plan.yaml
+      - phases/conventions.phase-lifecycle.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files:
+      - triggers/conventions.trigger-taxonomy.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+      - gates/conventions.gate-taxonomy.yaml
+    runtime_artifacts:
+      - .ai/reports/report-registry.yaml
+  missions/conventions.mission-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.mission-profile-taxonomy.yaml
+      - missions/conventions.mission-profiles.yaml
+      - missions/conventions.active-phase-plan.yaml
+      - missions/conventions.mission-state.yaml
+      - phases/conventions.phase-validation.yaml
+      - reports/conventions.report-validation.yaml
+    optional_files:
+      - agents/conventions.agent-permissions.yaml
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-validation.yaml
+      - revisions/conventions.revision-validation.yaml
+    runtime_artifacts: []
+  missions/conventions.missions.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - missions/conventions.mission-profile-taxonomy.yaml
+      - missions/conventions.mission-profile-selection.yaml
+      - missions/conventions.mission-profiles.yaml
+      - missions/conventions.active-phase-plan.yaml
+      - missions/conventions.mission-state.yaml
+      - missions/conventions.mission-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files:
+      - phases/conventions.phase-taxonomy.yaml
+      - reports/conventions.report-registry.yaml
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - revisions/conventions.revision-validation.yaml
+    runtime_artifacts: []
+  multi-agent/conventions.alpha-controller.yaml:
+    required_files:
+      - core/conventions.pipeline-contract.yaml
+      - missions/conventions.mission-state.yaml
+      - missions/conventions.active-phase-plan.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+      - agents/conventions.agent-prompts.yaml
+      - agents/conventions.agent-permissions.yaml
+      - phases/conventions.phase-contracts.yaml
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.revision-request-policy.yaml
+      - reports/conventions.report-validation.yaml
+      - multi-agent/conventions.alpha-scheduling.yaml
+      - multi-agent/conventions.phase-execution.yaml
+      - multi-agent/conventions.alpha-state-transitions.yaml
+    optional_files: []
+    runtime_artifacts: []
+  multi-agent/conventions.alpha-oversight.yaml:
+    required_files:
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-validation.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.revision-validation.yaml
+      - reports/conventions.report-validation.yaml
+      - risk/conventions.risk-escalation.yaml
+      - testing/conventions.test-validation.yaml
+      - execution/conventions.execution-validation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  multi-agent/conventions.alpha-scheduling.yaml:
+    required_files:
+      - missions/conventions.active-phase-plan.yaml
+      - missions/conventions.mission-state.yaml
+      - phases/conventions.phase-dependencies.yaml
+      - phases/conventions.phase-lifecycle.yaml
+      - triggers/conventions.trigger-blocking-policy.yaml
+      - revisions/conventions.rerun-policy.yaml
+      - gates/conventions.gate-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  multi-agent/conventions.alpha-state-transitions.yaml:
+    required_files:
+      - missions/conventions.mission-state.yaml
+      - missions/conventions.active-phase-plan.yaml
+      - phases/conventions.phase-lifecycle.yaml
+      - reports/conventions.report-lifecycle.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  multi-agent/conventions.multi-agent-validation.yaml:
+    required_files:
+      - multi-agent/conventions.alpha-controller.yaml
+      - multi-agent/conventions.alpha-scheduling.yaml
+      - multi-agent/conventions.phase-execution.yaml
+      - multi-agent/conventions.phase-bundle-policy.yaml
+      - multi-agent/conventions.alpha-oversight.yaml
+      - multi-agent/conventions.alpha-state-transitions.yaml
+      - agents/conventions.agent-validation.yaml
+      - phases/conventions.phase-validation.yaml
+      - missions/conventions.mission-validation.yaml
+      - reports/conventions.report-validation.yaml
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-validation.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.revision-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  multi-agent/conventions.multi-agent.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.pipeline-contract.yaml
+      - agents/conventions.agent-taxonomy.yaml
+      - agents/conventions.agent-phase-ownership.yaml
+      - phases/conventions.phase-contracts.yaml
+      - missions/conventions.mission-state.yaml
+      - reports/conventions.report-registry.yaml
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - handoffs/conventions.handoff-validation.yaml
+      - revisions/conventions.revision-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  multi-agent/conventions.phase-bundle-policy.yaml:
+    required_files:
+      - phases/conventions.phase-contracts.yaml
+      - agents/conventions.agent-contracts.yaml
+      - agents/conventions.agent-prompts.yaml
+      - agents/conventions.agent-permissions.yaml
+      - reports/conventions.report-registry.yaml
+      - reports/conventions.report-templates.yaml
+      - missions/conventions.mission-state.yaml
+      - executors/conventions.executor-routes.yaml
+      - executors/conventions.executor-contract.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/bundles/phases/{mission_id}/{phase_id}.bundle.yaml
+      - .ai/bundles/phases/{mission_id}/{phase_id}.manifest.yaml
+  multi-agent/conventions.phase-execution.yaml:
+    required_files:
+      - multi-agent/conventions.phase-bundle-policy.yaml
+      - agents/conventions.agent-prompts.yaml
+      - agents/conventions.agent-permissions.yaml
+      - agents/conventions.agent-activation-policy.yaml
+      - reports/conventions.report-validation.yaml
+      - triggers/conventions.trigger-emission-policy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  patterns/conventions.pattern-catalog.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  patterns/conventions.pattern-restrictions.yaml:
+    required_files:
+      - patterns/conventions.pattern-catalog.yaml
+    optional_files: []
+    runtime_artifacts: []
+  patterns/conventions.pattern-selection.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - patterns/conventions.pattern-catalog.yaml
+      - patterns/conventions.pattern-restrictions.yaml
+      - patterns/conventions.role-pattern-compatibility.yaml
+      - roles/conventions.role-taxonomy.yaml
+    optional_files:
+      - architecture/conventions.architecture.yaml
+      - planning/conventions.change-impact.yaml
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+    runtime_artifacts:
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/structure-plan.yaml
+  patterns/conventions.patterns.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  patterns/conventions.role-pattern-compatibility.yaml:
+    required_files:
+      - roles/conventions.role-taxonomy.yaml
+      - patterns/conventions.pattern-catalog.yaml
+      - patterns/conventions.pattern-selection.yaml
+      - patterns/conventions.pattern-restrictions.yaml
+    optional_files: []
+    runtime_artifacts: []
+  phases/conventions.phase-contracts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - phases/conventions.phase-taxonomy.yaml
+      - phases/conventions.phase-lifecycle.yaml
+    optional_files:
+      - agents/conventions.agent-taxonomy.yaml
+      - reports/conventions.report-artifacts.yaml
+      - gates/conventions.gate-taxonomy.yaml
+      - handoffs/conventions.handoff-schema.yaml
+    runtime_artifacts:
+      - .ai/mission-state.yaml
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+  phases/conventions.phase-dependencies.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - phases/conventions.phase-taxonomy.yaml
+    optional_files:
+      - core/conventions.pipeline-contract.yaml
+      - missions/conventions.mission-profiles.yaml
+      - triggers/conventions.trigger-resolution.yaml
+    runtime_artifacts: []
+  phases/conventions.phase-lifecycle.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files:
+      - missions/conventions.mission-state.yaml
+      - gates/conventions.gate-validation.yaml
+      - revisions/conventions.invalidation-policy.yaml
+    runtime_artifacts: []
+  phases/conventions.phase-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+  phases/conventions.phase-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - phases/conventions.phase-taxonomy.yaml
+      - phases/conventions.phase-lifecycle.yaml
+      - phases/conventions.phase-contracts.yaml
+      - phases/conventions.phase-dependencies.yaml
+    optional_files:
+      - agents/conventions.agent-taxonomy.yaml
+      - reports/conventions.report-artifacts.yaml
+      - gates/conventions.gate-taxonomy.yaml
+      - missions/conventions.mission-state.yaml
+    runtime_artifacts: []
+  phases/conventions.phases.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - phases/conventions.phase-taxonomy.yaml
+      - phases/conventions.phase-lifecycle.yaml
+      - phases/conventions.phase-contracts.yaml
+      - phases/conventions.phase-dependencies.yaml
+      - phases/conventions.phase-validation.yaml
+    runtime_artifacts: []
+  planning/conventions.assumptions.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    optional_files:
+      - revisions/conventions.invalidation-policy.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    runtime_artifacts: []
+  planning/conventions.behavior-contract.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files:
+      - missions/conventions.mission-state.yaml
+      - risk/conventions.risk-taxonomy.yaml
+      - testing/conventions.testing-taxonomy.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    runtime_artifacts: []
+  planning/conventions.change-impact.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    optional_files:
+      - risk/conventions.risk-escalation.yaml
+      - contracts/conventions.compatibility.yaml
+      - dependencies/conventions.dependency-validation.yaml
+    runtime_artifacts: []
+  planning/conventions.codebase-reconnaissance.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+    optional_files:
+      - dependencies/conventions.dependency-classification.yaml
+      - boundaries/conventions.boundary-classification.yaml
+    runtime_artifacts: []
+  planning/conventions.decision-log.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+      - reports/conventions.report-lifecycle.yaml
+    optional_files:
+      - revisions/conventions.invalidation-policy.yaml
+      - revisions/conventions.revision-request-policy.yaml
+    runtime_artifacts: []
+  planning/conventions.local-alignment.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+    optional_files:
+      - roles/conventions.role-taxonomy.yaml
+      - architecture/conventions.architecture.yaml
+      - boundaries/conventions.boundary-validation.yaml
+      - dependencies/conventions.dependency-direction-rules.yaml
+    runtime_artifacts: []
+  planning/conventions.planning.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files:
+      - phases/conventions.phase-contracts.yaml
+      - reports/conventions.report-registry.yaml
+      - risk/conventions.risk-classification.yaml
+    runtime_artifacts: []
+  planning/conventions.scope.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-schemas.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    optional_files:
+      - revisions/conventions.revision-request-policy.yaml
+      - phases/conventions.phase-contracts.yaml
+    runtime_artifacts: []
+  refactoring/conventions.behavior-preservation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - planning/conventions.behavior-contract.yaml
+      - refactoring/conventions.refactor-classification.yaml
+      - testing/conventions.characterization-testing.yaml
+      - testing/conventions.regression-testing.yaml
+    optional_files:
+      - contracts/conventions.compatibility.yaml
+      - risk/conventions.risk-classification.yaml
+    runtime_artifacts: []
+  refactoring/conventions.refactor-classification.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - refactoring/conventions.refactor-taxonomy.yaml
+      - actions/conventions.action-taxonomy.yaml
+      - planning/conventions.behavior-contract.yaml
+    optional_files:
+      - roles/conventions.role-collisions.yaml
+      - boundaries/conventions.boundary-validation.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      - risk/conventions.risk-classification.yaml
+    runtime_artifacts: []
+  refactoring/conventions.refactor-safety.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - refactoring/conventions.refactor-strategy.yaml
+      - refactoring/conventions.behavior-preservation.yaml
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    optional_files:
+      - contracts/conventions.compatibility.yaml
+      - boundaries/conventions.boundary-validation.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      - testing/conventions.test-validation.yaml
+    runtime_artifacts: []
+  refactoring/conventions.refactor-strategy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - refactoring/conventions.refactor-taxonomy.yaml
+      - refactoring/conventions.refactor-classification.yaml
+      - refactoring/conventions.behavior-preservation.yaml
+      - actions/conventions.action-resolution.yaml
+      - risk/conventions.risk-classification.yaml
+    optional_files:
+      - contracts/conventions.compatibility.yaml
+      - boundaries/conventions.boundary-validation.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      - testing/conventions.testing-matrix.yaml
+    runtime_artifacts: []
+  refactoring/conventions.refactor-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - actions/conventions.action-taxonomy.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    optional_files:
+      - contracts/conventions.contract-taxonomy.yaml
+      - dependencies/conventions.dependency-taxonomy.yaml
+      - boundaries/conventions.boundary-taxonomy.yaml
+    runtime_artifacts: []
+  refactoring/conventions.refactor-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - refactoring/conventions.refactor-classification.yaml
+      - refactoring/conventions.refactor-strategy.yaml
+      - refactoring/conventions.behavior-preservation.yaml
+      - refactoring/conventions.refactor-safety.yaml
+      - reports/conventions.report-validation.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+      - triggers/conventions.trigger-validation.yaml
+      - revisions/conventions.revision-validation.yaml
+    runtime_artifacts: []
+  refactoring/conventions.refactoring.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - refactoring/conventions.refactor-taxonomy.yaml
+      - refactoring/conventions.refactor-classification.yaml
+      - refactoring/conventions.behavior-preservation.yaml
+      - refactoring/conventions.refactor-strategy.yaml
+      - refactoring/conventions.refactor-safety.yaml
+      - refactoring/conventions.refactor-validation.yaml
+    optional_files:
+      - actions/conventions.action-resolution.yaml
+      - planning/conventions.behavior-contract.yaml
+      - planning/conventions.change-impact.yaml
+      - risk/conventions.risk-classification.yaml
+      - testing/conventions.test-derivation.yaml
+    runtime_artifacts: []
+  reports/conventions.report-artifacts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+      - reports/conventions.report-schemas.yaml
+      - reports/conventions.report-registry.yaml
+      - reports/conventions.report-validation.yaml
+    optional_files:
+      - reports/conventions.report-lifecycle.yaml
+      - reports/conventions.report-consumption-policy.yaml
+      - reports/conventions.report-templates.yaml
+    runtime_artifacts: []
+  reports/conventions.report-consumption-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+      - reports/conventions.report-registry.yaml
+      - phases/conventions.phase-contracts.yaml
+    optional_files:
+      - handoffs/conventions.handoff-consumption-policy.yaml
+      - agents/conventions.agent-permissions.yaml
+    runtime_artifacts: []
+  reports/conventions.report-lifecycle.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files:
+      - revisions/conventions.invalidation-policy.yaml
+      - handoffs/conventions.handoff-consumption-policy.yaml
+    runtime_artifacts: []
+  reports/conventions.report-registry.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+      - reports/conventions.report-schemas.yaml
+      - phases/conventions.phase-contracts.yaml
+    optional_files:
+      - missions/conventions.mission-profiles.yaml
+    runtime_artifacts:
+      - .ai/reports
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+      - .ai/templates/reports/00-mission-profile.template.yaml
+      - .ai/templates/reports/01-active-context-manifest.template.yaml
+      - .ai/templates/reports/02-behavior-contract.template.yaml
+      - .ai/templates/reports/03-codebase-reconnaissance.template.yaml
+      - .ai/templates/reports/04-draft-role-signals.template.yaml
+      - .ai/templates/reports/05-artifact-actions.template.yaml
+      - .ai/templates/reports/06-refactor-strategy.template.yaml
+      - .ai/templates/reports/07-change-impact.template.yaml
+      - .ai/templates/reports/08-final-role-assignment.template.yaml
+      - .ai/templates/reports/09-test-plan.template.yaml
+      - .ai/templates/reports/10-implementation-sequence.template.yaml
+      - .ai/templates/reports/99-validation-summary.template.yaml
+      - .ai/templates/reports/architecture-blueprint.template.yaml
+      - .ai/templates/reports/artifact-candidates.template.yaml
+      - .ai/templates/reports/artifact-reuse-analysis.template.yaml
+      - .ai/templates/reports/assumptions.template.yaml
+      - .ai/templates/reports/behavior-preservation-requirements.template.yaml
+      - .ai/templates/reports/boundary-contract-classification.template.yaml
+      - .ai/templates/reports/call-site-impact.template.yaml
+      - .ai/templates/reports/changed-file-manifest.template.yaml
+      - .ai/templates/reports/characterization-test-plan.template.yaml
+      - .ai/templates/reports/checkpoint-groups.template.yaml
+      - .ai/templates/reports/checkpoint-results.template.yaml
+      - .ai/templates/reports/checkpoint-validation-plan.template.yaml
+      - .ai/templates/reports/compatibility-decision.template.yaml
+      - .ai/templates/reports/consumer-impact.template.yaml
+      - .ai/templates/reports/dependency-classification.template.yaml
+      - .ai/templates/reports/dependency-validation.template.yaml
+      - .ai/templates/reports/failure-classification.template.yaml
+      - .ai/templates/reports/failure-report.template.yaml
+      - .ai/templates/reports/feedback-repair-result.template.yaml
+      - .ai/templates/reports/final-file-tree.template.yaml
+      - .ai/templates/reports/final-unresolved-items.template.yaml
+      - .ai/templates/reports/implementation-result.template.yaml
+      - .ai/templates/reports/local-alignment.template.yaml
+      - .ai/templates/reports/local-convention-candidates.template.yaml
+      - .ai/templates/reports/pattern-decision-log.template.yaml
+      - .ai/templates/reports/pattern-pressure.template.yaml
+      - .ai/templates/reports/phase-accounting.template.yaml
+      - .ai/templates/reports/post-action-artifact-candidates.template.yaml
+      - .ai/templates/reports/post-implementation-validation.template.yaml
+      - .ai/templates/reports/pre-implementation-gate.template.yaml
+      - .ai/templates/reports/refactor-required-followups.template.yaml
+      - .ai/templates/reports/regression-test-plan.template.yaml
+      - .ai/templates/reports/repair-plan.template.yaml
+      - .ai/templates/reports/report-artifact-validation.template.yaml
+      - .ai/templates/reports/report-registry.template.yaml
+      - .ai/templates/reports/risk-classification.template.yaml
+      - .ai/templates/reports/role-collision-resolution.template.yaml
+      - .ai/templates/reports/structure-plan.template.yaml
+      - .ai/templates/reports/trigger-review.template.yaml
+  reports/conventions.report-schemas.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  reports/conventions.report-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  reports/conventions.report-templates.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-registry.yaml
+      - reports/conventions.report-schemas.yaml
+    optional_files: []
+    runtime_artifacts:
+      - .ai/templates/reports/*.template.yaml
+  reports/conventions.report-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+      - reports/conventions.report-schemas.yaml
+      - reports/conventions.report-registry.yaml
+      - reports/conventions.report-lifecycle.yaml
+      - reports/conventions.report-consumption-policy.yaml
+      - reports/conventions.report-templates.yaml
+      - executors/conventions.executor-routes.yaml
+      - reports/conventions.runtime-artifacts.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+      - revisions/conventions.invalidation-policy.yaml
+    runtime_artifacts: []
+  reports/conventions.reports.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - reports/conventions.report-taxonomy.yaml
+      - reports/conventions.report-schemas.yaml
+      - reports/conventions.report-registry.yaml
+      - reports/conventions.report-lifecycle.yaml
+      - reports/conventions.report-consumption-policy.yaml
+      - reports/conventions.report-templates.yaml
+      - reports/conventions.report-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  reports/conventions.runtime-artifacts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - core/conventions.output-schema.yaml
+    optional_files:
+      - reports/conventions.report-registry.yaml
+    runtime_artifacts:
+      - .ai/bundles/**
+      - .ai/claude/**
+      - .ai/claude/execution-plan.yaml
+      - .ai/gates/**
+      - .ai/handoffs/**
+      - .ai/logs/**
+      - .ai/mission-state.yaml
+      - .ai/phase-bundles/**
+      - .ai/phase-bundles/{phase_id}.input.yaml
+      - .ai/reports
+      - .ai/reports/**
+      - .ai/reports/00-mission-profile.yaml
+      - .ai/reports/01-active-context-manifest.yaml
+      - .ai/reports/02-behavior-contract.yaml
+      - .ai/reports/03-codebase-reconnaissance.yaml
+      - .ai/reports/04-draft-role-signals.yaml
+      - .ai/reports/05-artifact-actions.yaml
+      - .ai/reports/06-refactor-strategy.yaml
+      - .ai/reports/07-change-impact.yaml
+      - .ai/reports/08-final-role-assignment.yaml
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/10-implementation-sequence.yaml
+      - .ai/reports/99-validation-summary.yaml
+      - .ai/reports/architecture-blueprint.yaml
+      - .ai/reports/artifact-candidates.yaml
+      - .ai/reports/artifact-reuse-analysis.yaml
+      - .ai/reports/assumptions.yaml
+      - .ai/reports/behavior-preservation-requirements.yaml
+      - .ai/reports/boundary-contract-classification.yaml
+      - .ai/reports/call-site-impact.yaml
+      - .ai/reports/changed-file-manifest.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/checkpoint-groups.yaml
+      - .ai/reports/checkpoint-results.yaml
+      - .ai/reports/checkpoint-validation-plan.yaml
+      - .ai/reports/claude-execution-plan-validation.yaml
+      - .ai/reports/compatibility-decision.yaml
+      - .ai/reports/consumer-impact.yaml
+      - .ai/reports/dependency-classification.yaml
+      - .ai/reports/dependency-validation.yaml
+      - .ai/reports/evidence-collection-report.yaml
+      - .ai/reports/evidence-index.yaml
+      - .ai/reports/failure-classification.yaml
+      - .ai/reports/failure-report.yaml
+      - .ai/reports/feedback-repair-result.yaml
+      - .ai/reports/final-file-tree.yaml
+      - .ai/reports/final-mission-report.yaml
+      - .ai/reports/final-unresolved-items.yaml
+      - .ai/reports/handoffs.yaml
+      - .ai/reports/implementation-result.yaml
+      - .ai/reports/local-alignment.yaml
+      - .ai/reports/local-convention-candidates.yaml
+      - .ai/reports/pattern-decision-log.yaml
+      - .ai/reports/pattern-pressure.yaml
+      - .ai/reports/phase-accounting.yaml
+      - .ai/reports/post-action-artifact-candidates.yaml
+      - .ai/reports/post-implementation-validation.yaml
+      - .ai/reports/pre-implementation-gate.yaml
+      - .ai/reports/refactor-required-followups.yaml
+      - .ai/reports/regression-test-plan.yaml
+      - .ai/reports/repair-plan.yaml
+      - .ai/reports/report-artifact-validation.yaml
+      - .ai/reports/report-evidence-validation.yaml
+      - .ai/reports/report-registry.yaml
+      - .ai/reports/risk-classification.yaml
+      - .ai/reports/role-collision-resolution.yaml
+      - .ai/reports/structure-plan.yaml
+      - .ai/reports/trigger-review.yaml
+      - .ai/revisions/**
+      - .ai/runtime-packs/**
+      - .ai/templates/reports/*.template.yaml
+      - .ai/templates/reports/00-mission-profile.template.yaml
+      - .ai/templates/reports/01-active-context-manifest.template.yaml
+      - .ai/templates/reports/02-behavior-contract.template.yaml
+      - .ai/templates/reports/03-codebase-reconnaissance.template.yaml
+      - .ai/templates/reports/04-draft-role-signals.template.yaml
+      - .ai/templates/reports/05-artifact-actions.template.yaml
+      - .ai/templates/reports/06-refactor-strategy.template.yaml
+      - .ai/templates/reports/07-change-impact.template.yaml
+      - .ai/templates/reports/08-final-role-assignment.template.yaml
+      - .ai/templates/reports/09-test-plan.template.yaml
+      - .ai/templates/reports/10-implementation-sequence.template.yaml
+      - .ai/templates/reports/99-validation-summary.template.yaml
+      - .ai/templates/reports/architecture-blueprint.template.yaml
+      - .ai/templates/reports/artifact-candidates.template.yaml
+      - .ai/templates/reports/artifact-reuse-analysis.template.yaml
+      - .ai/templates/reports/assumptions.template.yaml
+      - .ai/templates/reports/behavior-preservation-requirements.template.yaml
+      - .ai/templates/reports/boundary-contract-classification.template.yaml
+      - .ai/templates/reports/call-site-impact.template.yaml
+      - .ai/templates/reports/changed-file-manifest.template.yaml
+      - .ai/templates/reports/characterization-test-plan.template.yaml
+      - .ai/templates/reports/checkpoint-groups.template.yaml
+      - .ai/templates/reports/checkpoint-results.template.yaml
+      - .ai/templates/reports/checkpoint-validation-plan.template.yaml
+      - .ai/templates/reports/compatibility-decision.template.yaml
+      - .ai/templates/reports/consumer-impact.template.yaml
+      - .ai/templates/reports/dependency-classification.template.yaml
+      - .ai/templates/reports/dependency-validation.template.yaml
+      - .ai/templates/reports/failure-classification.template.yaml
+      - .ai/templates/reports/failure-report.template.yaml
+      - .ai/templates/reports/feedback-repair-result.template.yaml
+      - .ai/templates/reports/final-file-tree.template.yaml
+      - .ai/templates/reports/final-unresolved-items.template.yaml
+      - .ai/templates/reports/implementation-result.template.yaml
+      - .ai/templates/reports/local-alignment.template.yaml
+      - .ai/templates/reports/local-convention-candidates.template.yaml
+      - .ai/templates/reports/pattern-decision-log.template.yaml
+      - .ai/templates/reports/pattern-pressure.template.yaml
+      - .ai/templates/reports/phase-accounting.template.yaml
+      - .ai/templates/reports/post-action-artifact-candidates.template.yaml
+      - .ai/templates/reports/post-implementation-validation.template.yaml
+      - .ai/templates/reports/pre-implementation-gate.template.yaml
+      - .ai/templates/reports/refactor-required-followups.template.yaml
+      - .ai/templates/reports/regression-test-plan.template.yaml
+      - .ai/templates/reports/repair-plan.template.yaml
+      - .ai/templates/reports/report-artifact-validation.template.yaml
+      - .ai/templates/reports/report-registry.template.yaml
+      - .ai/templates/reports/risk-classification.template.yaml
+      - .ai/templates/reports/role-collision-resolution.template.yaml
+      - .ai/templates/reports/structure-plan.template.yaml
+      - .ai/templates/reports/trigger-review.template.yaml
+      - .ai/topologies/**
+      - .ai/validation/**
+  revisions/conventions.invalidation-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+      - reports/conventions.report-lifecycle.yaml
+      - handoffs/conventions.handoff-consumption-policy.yaml
+    optional_files:
+      - phases/conventions.phase-dependencies.yaml
+    runtime_artifacts: []
+  revisions/conventions.rerun-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+      - phases/conventions.phase-dependencies.yaml
+      - phases/conventions.phase-lifecycle.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+    runtime_artifacts: []
+  revisions/conventions.revision-request-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+      - missions/conventions.mission-state.yaml
+    optional_files:
+      - triggers/conventions.trigger-resolution.yaml
+      - reports/conventions.report-registry.yaml
+    runtime_artifacts: []
+  revisions/conventions.revision-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  revisions/conventions.revision-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+      - revisions/conventions.revision-request-policy.yaml
+      - revisions/conventions.invalidation-policy.yaml
+      - revisions/conventions.rerun-policy.yaml
+      - missions/conventions.mission-state.yaml
+    optional_files:
+      - handoffs/conventions.handoff-consumption-policy.yaml
+      - reports/conventions.report-lifecycle.yaml
+    runtime_artifacts: []
+  revisions/conventions.revisions.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - revisions/conventions.revision-taxonomy.yaml
+      - revisions/conventions.revision-request-policy.yaml
+      - revisions/conventions.invalidation-policy.yaml
+      - revisions/conventions.rerun-policy.yaml
+      - revisions/conventions.revision-validation.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  risk/conventions.risk-classification.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - risk/conventions.risk-taxonomy.yaml
+      - risk/conventions.risk-signals.yaml
+    optional_files: []
+    runtime_artifacts: []
+  risk/conventions.risk-escalation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - risk/conventions.risk-taxonomy.yaml
+      - risk/conventions.risk-classification.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+      - reports/conventions.report-registry.yaml
+    optional_files: []
+    runtime_artifacts: []
+  risk/conventions.risk-resolution.yaml:
+    required_files:
+      - risk/conventions.risk-taxonomy.yaml
+    optional_files:
+      - refactoring/conventions.refactor-taxonomy.yaml
+    runtime_artifacts: []
+  risk/conventions.risk-signals.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - risk/conventions.risk-taxonomy.yaml
+    optional_files:
+      - reports/conventions.report-registry.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    runtime_artifacts: []
+  risk/conventions.risk-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  risk/conventions.risk-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - risk/conventions.risk-taxonomy.yaml
+      - risk/conventions.risk-signals.yaml
+      - risk/conventions.risk-classification.yaml
+      - risk/conventions.risk-escalation.yaml
+    optional_files: []
+    runtime_artifacts: []
+  risk/conventions.risk.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  roles/conventions.role-collisions.yaml:
+    required_files:
+      - roles/conventions.role-taxonomy.yaml
+      - roles/conventions.role-resolution.yaml
+    optional_files: []
+    runtime_artifacts: []
+  roles/conventions.role-placement.yaml:
+    required_files:
+      - roles/conventions.role-taxonomy.yaml
+    optional_files: []
+    runtime_artifacts: []
+  roles/conventions.role-resolution.yaml:
+    required_files:
+      - roles/conventions.role-taxonomy.yaml
+    optional_files:
+      - roles/conventions.role-collisions.yaml
+      - actions/conventions.action-taxonomy.yaml
+    runtime_artifacts: []
+  roles/conventions.role-taxonomy.yaml:
+    required_files: []
+    optional_files: []
+    runtime_artifacts: []
+  roles/conventions.roles.yaml:
+    required_files:
+      - roles/conventions.role-taxonomy.yaml
+      - roles/conventions.role-resolution.yaml
+      - roles/conventions.role-collisions.yaml
+      - roles/conventions.role-placement.yaml
+    optional_files: []
+    runtime_artifacts: []
+  scripts/conventions.scripts.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - executors/conventions.executor-routes.yaml
+    optional_files: []
+    runtime_artifacts: []
+  testing/conventions.characterization-testing.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.testing-taxonomy.yaml
+      - refactoring/conventions.behavior-preservation.yaml
+    optional_files:
+      - testing/conventions.test-derivation.yaml
+    runtime_artifacts:
+      - .ai/reports/characterization-test-plan.yaml
+  testing/conventions.regression-testing.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.testing-taxonomy.yaml
+    optional_files:
+      - testing/conventions.test-derivation.yaml
+    runtime_artifacts:
+      - .ai/reports/regression-test-plan.yaml
+  testing/conventions.test-derivation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.testing-taxonomy.yaml
+      - testing/conventions.testing-matrix.yaml
+    optional_files:
+      - testing/conventions.regression-testing.yaml
+      - testing/conventions.characterization-testing.yaml
+    runtime_artifacts:
+      - .ai/reports/09-test-plan.yaml
+  testing/conventions.test-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.testing-taxonomy.yaml
+      - testing/conventions.test-derivation.yaml
+    optional_files:
+      - testing/conventions.regression-testing.yaml
+      - testing/conventions.characterization-testing.yaml
+      - reports/conventions.report-validation.yaml
+      - gates/conventions.gate-validation.yaml
+    runtime_artifacts: []
+  testing/conventions.testing-matrix.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.testing-taxonomy.yaml
+    optional_files:
+      - roles/conventions.role-taxonomy.yaml
+      - risk/conventions.risk-classification.yaml
+      - contracts/conventions.contract-classification.yaml
+      - boundaries/conventions.boundary-validation.yaml
+      - dependencies/conventions.dependency-validation.yaml
+      - actions/conventions.action-resolution.yaml
+    runtime_artifacts: []
+  testing/conventions.testing-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  testing/conventions.testing.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - testing/conventions.testing-taxonomy.yaml
+      - testing/conventions.testing-matrix.yaml
+      - testing/conventions.test-derivation.yaml
+      - testing/conventions.test-validation.yaml
+    optional_files:
+      - testing/conventions.regression-testing.yaml
+      - testing/conventions.characterization-testing.yaml
+    runtime_artifacts:
+      - .ai/reports/09-test-plan.yaml
+      - .ai/reports/characterization-test-plan.yaml
+      - .ai/reports/regression-test-plan.yaml
+  triggers/conventions.trigger-blocking-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - missions/conventions.mission-state.yaml
+    optional_files:
+      - gates/conventions.gate-validation.yaml
+    runtime_artifacts: []
+  triggers/conventions.trigger-emission-policy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+    optional_files:
+      - reports/conventions.report-validation.yaml
+      - gates/conventions.gate-validation.yaml
+    runtime_artifacts: []
+  triggers/conventions.trigger-resolution.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+      - triggers/conventions.trigger-emission-policy.yaml
+      - missions/conventions.mission-state.yaml
+    optional_files:
+      - phases/conventions.phase-contracts.yaml
+      - reports/conventions.report-registry.yaml
+    runtime_artifacts:
+      - .ai/reports/trigger-review.yaml
+  triggers/conventions.trigger-taxonomy.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+    optional_files: []
+    runtime_artifacts: []
+  triggers/conventions.trigger-validation.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+      - triggers/conventions.trigger-emission-policy.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - triggers/conventions.trigger-blocking-policy.yaml
+    optional_files:
+      - missions/conventions.mission-state.yaml
+      - reports/conventions.report-registry.yaml
+    runtime_artifacts: []
+  triggers/conventions.triggers.yaml:
+    required_files:
+      - core/conventions.file-contract.yaml
+      - triggers/conventions.trigger-taxonomy.yaml
+      - triggers/conventions.trigger-emission-policy.yaml
+      - triggers/conventions.trigger-resolution.yaml
+      - triggers/conventions.trigger-blocking-policy.yaml
+      - triggers/conventions.trigger-validation.yaml
+    optional_files:
+      - missions/conventions.mission-state.yaml
+    runtime_artifacts: []
+route_references:
+  - file: claude-code/conventions.claude-code.yaml
+    hookPath: sections.required_executor_routes.before_mission_start
+    routes:
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.mission_start_sequence.1.required_executor_routes
+    routes:
+      - generate_claude_execution_plan
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.mission_start_sequence.2.required_executor_routes
+    routes:
+      - validate_claude_execution_plan
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.mission_start_sequence.3.required_executor_routes
+    routes:
+      - generate_mission_bundle
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.mission_start_sequence.4.required_executor_routes
+    routes:
+      - validate_executor_routes
+      - compile_authority_topology
+      - validate_authority_topology
+      - validate_references
+      - compile_runtime_artifact_topology
+      - validate_runtime_artifacts
+      - validate_script_execution
+      - validate_semantic_completeness
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.phase_execution_sequence.0.required_executor_routes
+    routes:
+      - generate_phase_bundle
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.phase_execution_sequence.1.required_executor_routes
+    routes:
+      - validate_phase_bundle
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.phase_execution_sequence.2.required_executor_routes
+    routes:
+      - run_gate_check
+      - validate_gate_result
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.phase_execution_sequence.4.required_executor_routes
+    routes:
+      - validate_phase_output
+      - validate_semantic_completeness
+      - collect_phase_report
+      - collect_evidence
+      - validate_report_evidence
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.phase_execution_sequence.5.required_executor_routes
+    routes:
+      - run_gate_check
+      - validate_gate_result
+      - prepare_agent_handoff
+      - validate_handoff
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.completion_sequence.0.required_executor_routes
+    routes:
+      - collect_evidence
+      - validate_report_evidence
+  - file: claude-code/conventions.claude-execution-harness.yaml
+    hookPath: sections.completion_sequence.1.required_executor_routes
+    routes:
+      - generate_final_mission_report
+  - file: claude-code/conventions.claude-native-integration.yaml
+    hookPath: sections.required_executor_routes.before_mission_start
+    routes:
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+      - validate_executor_routes
+      - validate_references
+  - file: claude-code/conventions.claude-native-integration.yaml
+    hookPath: sections.required_executor_routes.after_file_change
+    routes:
+      - validate_changed_files
+  - file: claude-code/conventions.claude-native-integration.yaml
+    hookPath: sections.required_executor_routes.before_phase_start
+    routes:
+      - generate_phase_bundle
+      - validate_phase_bundle
+  - file: claude-code/conventions.claude-native-integration.yaml
+    hookPath: sections.required_executor_routes.before_mission_complete
+    routes:
+      - collect_evidence
+      - validate_report_evidence
+      - generate_final_mission_report
+  - file: core/conventions.validation.yaml
+    hookPath: sections.required_executor_routes.before_mission_complete
+    routes:
+      - collect_evidence
+      - validate_report_evidence
+      - generate_final_mission_report
+  - file: core/conventions.validation.yaml
+    hookPath: sections.required_executor_routes.before_mission_start
+    routes:
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+  - file: execution/conventions.execution.yaml
+    hookPath: sections.required_executor_routes.after_file_change
+    routes:
+      - validate_changed_files
+  - file: gates/conventions.gates.yaml
+    hookPath: sections.required_executor_routes.on_gate_check
+    routes:
+      - run_gate_check
+      - validate_gate_result
+  - file: handoffs/conventions.handoffs.yaml
+    hookPath: sections.required_executor_routes.before_handoff
+    routes:
+      - prepare_agent_handoff
+      - validate_handoff
+  - file: handoffs/conventions.handoffs.yaml
+    hookPath: sections.required_executor_routes.after_handoff
+    routes:
+      - validate_handoff
+  - file: missions/conventions.missions.yaml
+    hookPath: sections.required_executor_routes.before_mission_start
+    routes:
+      - generate_mission_bundle
+      - validate_executor_routes
+      - compile_authority_topology
+      - validate_authority_topology
+      - validate_references
+      - compile_runtime_artifact_topology
+      - validate_runtime_artifacts
+      - validate_semantic_completeness
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+  - file: multi-agent/conventions.multi-agent.yaml
+    hookPath: sections.required_executor_routes.before_mission_start
+    routes:
+      - generate_mission_bundle
+      - validate_executor_routes
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+  - file: multi-agent/conventions.multi-agent.yaml
+    hookPath: sections.required_executor_routes.before_phase_start
+    routes:
+      - generate_phase_bundle
+      - validate_phase_bundle
+  - file: multi-agent/conventions.multi-agent.yaml
+    hookPath: sections.required_executor_routes.after_phase_output
+    routes:
+      - validate_phase_output
+      - validate_semantic_completeness
+      - collect_phase_report
+  - file: multi-agent/conventions.multi-agent.yaml
+    hookPath: sections.required_executor_routes.before_handoff
+    routes:
+      - prepare_agent_handoff
+  - file: multi-agent/conventions.multi-agent.yaml
+    hookPath: sections.required_executor_routes.on_gate_check
+    routes:
+      - run_gate_check
+  - file: multi-agent/conventions.multi-agent.yaml
+    hookPath: sections.required_executor_routes.on_validation_failure
+    routes:
+      - create_revision_task
+  - file: multi-agent/conventions.phase-bundle-policy.yaml
+    hookPath: sections.required_executor_routes.before_phase_start
+    routes:
+      - generate_phase_bundle
+      - validate_phase_bundle
+  - file: phases/conventions.phase-lifecycle.yaml
+    hookPath: sections.required_executor_routes.before_phase_start
+    routes:
+      - generate_phase_bundle
+      - validate_phase_bundle
+  - file: phases/conventions.phase-lifecycle.yaml
+    hookPath: sections.required_executor_routes.after_phase_output
+    routes:
+      - validate_phase_output
+      - validate_semantic_completeness
+      - collect_phase_report
+  - file: phases/conventions.phase-lifecycle.yaml
+    hookPath: sections.required_executor_routes.on_gate_check
+    routes:
+      - run_gate_check
+      - validate_gate_result
+  - file: phases/conventions.phase-lifecycle.yaml
+    hookPath: sections.required_executor_routes.before_handoff
+    routes:
+      - prepare_agent_handoff
+      - validate_handoff
+  - file: phases/conventions.phase-lifecycle.yaml
+    hookPath: sections.required_executor_routes.on_validation_failure
+    routes:
+      - create_revision_task
+      - validate_revision_task
+  - file: reports/conventions.reports.yaml
+    hookPath: sections.required_executor_routes.after_phase_output
+    routes:
+      - validate_semantic_completeness
+      - collect_phase_report
+      - collect_evidence
+      - validate_report_evidence
+  - file: reports/conventions.reports.yaml
+    hookPath: sections.required_executor_routes.before_mission_start
+    routes:
+      - compile_runtime_artifact_topology
+      - validate_runtime_artifacts
+  - file: reports/conventions.reports.yaml
+    hookPath: sections.required_executor_routes.before_mission_complete
+    routes:
+      - collect_evidence
+      - validate_report_evidence
+      - generate_final_mission_report
+  - file: revisions/conventions.revisions.yaml
+    hookPath: sections.required_executor_routes.on_validation_failure
+    routes:
+      - create_revision_task
+      - validate_revision_task
+runtime_artifact_references:
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: agents/conventions.agent-contracts.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/logs/**
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/mission-state.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/phase-bundles/**
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/**
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: agents/conventions.agent-permissions.yaml
+    path: .ai/runtime-packs/**
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: agents/conventions.agent-phase-ownership.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: architecture/conventions.architecture.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: architecture/conventions.architecture.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: architecture/conventions.architecture.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: architecture/conventions.architecture.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: architecture/conventions.architecture.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: architecture/conventions.architecture.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: architecture/conventions.structure-strategy.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: architecture/conventions.structure-strategy.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: architecture/conventions.structure-strategy.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: architecture/conventions.structure-strategy.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: architecture/conventions.structure-strategy.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: architecture/conventions.structure.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: claude-code/conventions.claude-route-invocation.yaml
+    path: .ai/validation/{script_id}.result.yaml
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/bundles/**
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/claude/execution-plan.yaml
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/gates/**
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/handoffs/**
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/reports/evidence-index.yaml
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/reports/final-mission-report.yaml
+  - file: claude-code/conventions.claude-subsystem-engagement.yaml
+    path: .ai/revisions/**
+  - file: contracts/conventions.compatibility.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: executors/conventions.executor-contract.yaml
+    path: .ai/validation/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/bundles/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/claude/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/gates/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/handoffs/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/reports/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/revisions/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/topologies/**
+  - file: executors/conventions.executor-routes.yaml
+    path: .ai/validation/**
+  - file: gates/conventions.gate-validation.yaml
+    path: .ai/mission-state.yaml
+  - file: gates/conventions.gate-validation.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: handoffs/conventions.handoff-schema.yaml
+    path: .ai/mission-state.yaml
+  - file: handoffs/conventions.handoff-validation.yaml
+    path: .ai/reports/handoffs.yaml
+  - file: missions/conventions.mission-profile-selection.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: missions/conventions.mission-state.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: multi-agent/conventions.phase-bundle-policy.yaml
+    path: .ai/bundles/phases/{mission_id}/{phase_id}.bundle.yaml
+  - file: multi-agent/conventions.phase-bundle-policy.yaml
+    path: .ai/bundles/phases/{mission_id}/{phase_id}.manifest.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: patterns/conventions.pattern-selection.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/mission-state.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: phases/conventions.phase-contracts.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: phases/conventions.phase-taxonomy.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/00-mission-profile.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/01-active-context-manifest.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/02-behavior-contract.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/03-codebase-reconnaissance.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/04-draft-role-signals.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/05-artifact-actions.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/06-refactor-strategy.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/07-change-impact.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/08-final-role-assignment.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/09-test-plan.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/10-implementation-sequence.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/99-validation-summary.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/architecture-blueprint.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/artifact-candidates.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/artifact-reuse-analysis.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/assumptions.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/behavior-preservation-requirements.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/boundary-contract-classification.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/call-site-impact.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/changed-file-manifest.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/characterization-test-plan.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/checkpoint-groups.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/checkpoint-results.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/checkpoint-validation-plan.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/compatibility-decision.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/consumer-impact.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/dependency-classification.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/dependency-validation.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/failure-classification.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/failure-report.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/feedback-repair-result.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/final-file-tree.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/final-unresolved-items.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/implementation-result.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/local-alignment.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/local-convention-candidates.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/pattern-decision-log.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/pattern-pressure.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/phase-accounting.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/post-action-artifact-candidates.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/post-implementation-validation.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/pre-implementation-gate.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/refactor-required-followups.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/regression-test-plan.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/repair-plan.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/report-artifact-validation.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/report-registry.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/risk-classification.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/role-collision-resolution.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/structure-plan.template.yaml
+  - file: reports/conventions.report-registry.yaml
+    path: .ai/templates/reports/trigger-review.template.yaml
+  - file: reports/conventions.report-templates.yaml
+    path: .ai/templates/reports/*.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/bundles/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/claude/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/claude/execution-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/gates/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/handoffs/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/logs/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/mission-state.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/phase-bundles/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/phase-bundles/{phase_id}.input.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/00-mission-profile.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/02-behavior-contract.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/05-artifact-actions.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/07-change-impact.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/99-validation-summary.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/architecture-blueprint.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/artifact-candidates.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/assumptions.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/call-site-impact.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/changed-file-manifest.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/checkpoint-groups.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/checkpoint-results.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/claude-execution-plan-validation.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/compatibility-decision.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/consumer-impact.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/dependency-classification.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/dependency-validation.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/evidence-collection-report.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/evidence-index.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/failure-classification.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/failure-report.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/feedback-repair-result.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/final-file-tree.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/final-mission-report.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/final-unresolved-items.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/handoffs.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/implementation-result.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/local-alignment.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/local-convention-candidates.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/pattern-decision-log.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/pattern-pressure.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/phase-accounting.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/post-implementation-validation.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/refactor-required-followups.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/repair-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/report-artifact-validation.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/report-evidence-validation.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/report-registry.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/risk-classification.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/role-collision-resolution.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/structure-plan.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/reports/trigger-review.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/revisions/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/runtime-packs/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/*.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/00-mission-profile.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/01-active-context-manifest.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/02-behavior-contract.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/03-codebase-reconnaissance.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/04-draft-role-signals.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/05-artifact-actions.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/06-refactor-strategy.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/07-change-impact.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/08-final-role-assignment.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/09-test-plan.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/10-implementation-sequence.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/99-validation-summary.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/architecture-blueprint.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/artifact-candidates.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/artifact-reuse-analysis.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/assumptions.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/behavior-preservation-requirements.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/boundary-contract-classification.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/call-site-impact.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/changed-file-manifest.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/characterization-test-plan.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/checkpoint-groups.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/checkpoint-results.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/checkpoint-validation-plan.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/compatibility-decision.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/consumer-impact.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/dependency-classification.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/dependency-validation.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/failure-classification.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/failure-report.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/feedback-repair-result.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/final-file-tree.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/final-unresolved-items.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/implementation-result.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/local-alignment.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/local-convention-candidates.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/pattern-decision-log.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/pattern-pressure.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/phase-accounting.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/post-action-artifact-candidates.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/post-implementation-validation.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/pre-implementation-gate.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/refactor-required-followups.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/regression-test-plan.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/repair-plan.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/report-artifact-validation.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/report-registry.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/risk-classification.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/role-collision-resolution.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/structure-plan.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/templates/reports/trigger-review.template.yaml
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/topologies/**
+  - file: reports/conventions.runtime-artifacts.yaml
+    path: .ai/validation/**
+  - file: testing/conventions.characterization-testing.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: testing/conventions.regression-testing.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: testing/conventions.test-derivation.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: testing/conventions.testing.yaml
+    path: .ai/reports/09-test-plan.yaml
+  - file: testing/conventions.testing.yaml
+    path: .ai/reports/characterization-test-plan.yaml
+  - file: testing/conventions.testing.yaml
+    path: .ai/reports/regression-test-plan.yaml
+  - file: triggers/conventions.trigger-resolution.yaml
+    path: .ai/reports/trigger-review.yaml

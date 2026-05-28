@@ -8,7 +8,10 @@
       "Bash(npm --prefix conventions/scripts run claude:*)",
       "Read(conventions/**)",
       "Read(.claude/**)",
-      "Read(CLAUDE.md)"
+      "Read(CLAUDE.md)",
+      "Read(.claude/commands/**)",
+      "Read(.claude/agents/**)",
+      "Read(.claude/skills/**)"
     ],
     "deny": [
       "Bash(npx tsx conventions/scripts/*.ts *)",
@@ -31,6 +34,11 @@
           {
             "type": "command",
             "command": "npm --prefix conventions/scripts run executor -- --route validate_references",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "npm --prefix conventions/scripts run executor -- --route validate_runtime_artifacts",
             "timeout": 120
           }
         ]

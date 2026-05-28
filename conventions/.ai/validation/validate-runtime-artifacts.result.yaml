@@ -1,0 +1,13 @@
+script_id: validate-runtime-artifacts
+status: fail
+errors:
+  - severity: critical
+    code: RUNTIME_ARTIFACT_TOPOLOGY_MISSING
+    message: runtime_artifact_topology is missing; run
+      compile_runtime_artifact_topology first
+warnings: []
+info: []
+outputs:
+  - .ai/validation/validate-runtime-artifacts.result.yaml
+summary:
+  topology_present: false

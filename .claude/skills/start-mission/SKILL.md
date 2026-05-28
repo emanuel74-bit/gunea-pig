@@ -1,11 +1,12 @@
 ---
 name: start-mission
-description: Start an Autonomous Agent Activator mission with validated Claude execution planning and initial context generation.
+description: Start an Autonomous Agent Activator mission through Alpha, system integrity routes, Claude execution planning, and first phase bundle generation.
 allowed-tools:
   - Read
   - Grep
   - Glob
   - Bash
+  - Task
 ---
 
 # Start Mission
@@ -13,14 +14,18 @@ allowed-tools:
 
 Use this skill when the user starts a new mission.
 
-Steps:
-1. Run `npm --prefix conventions/scripts run executor -- --route generate_claude_execution_plan`.
-2. Run `npm --prefix conventions/scripts run executor -- --route validate_claude_execution_plan`.
-3. Run `npm --prefix conventions/scripts run executor -- --route validate_executor_routes`.
-4. Run `npm --prefix conventions/scripts run executor -- --route validate_references`.
-5. Generate the first phase bundle with `npm --prefix conventions/scripts run executor -- --route generate_phase_bundle`.
-6. Validate it with `npm --prefix conventions/scripts run executor -- --route validate_phase_bundle`.
-7. Continue only from the validated phase bundle.
+Run in order:
 
-Do not inspect the full convention package unless a route result or bundle requires it.
+1. `npm --prefix conventions/scripts run executor -- --route validate_executor_routes`
+2. `npm --prefix conventions/scripts run executor -- --route validate_references`
+3. `npm --prefix conventions/scripts run executor -- --route validate_runtime_artifacts`
+4. `npm --prefix conventions/scripts run executor -- --route validate_script_execution`
+5. `npm --prefix conventions/scripts run executor -- --route generate_claude_execution_plan`
+6. `npm --prefix conventions/scripts run executor -- --route validate_claude_execution_plan`
+7. `npm --prefix conventions/scripts run executor -- --route generate_phase_bundle`
+8. `npm --prefix conventions/scripts run executor -- --route validate_phase_bundle`
+
+Then invoke `run-alpha-cycle`.
+
+Do not select a phase agent manually before the validated phase bundle identifies the owner agent.
 

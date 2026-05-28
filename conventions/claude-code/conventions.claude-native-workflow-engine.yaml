@@ -1,0 +1,107 @@
+version: '1.0'
+file:
+  name: conventions.claude-native-workflow-engine.yaml
+  path: claude-code/conventions.claude-native-workflow-engine.yaml
+  role: claude_native_workflow_engine_contract
+  executability: runtime_policy
+purpose: Define the Claude-native Autonomous Agent Activator workflow engine so Claude Code knows the Alpha loop, agent activation
+  flow, route ladder, transition flow, and report/evidence lifecycle without manually discovering the convention package.
+ownership:
+  owns:
+  - claude_native_workflow_engine
+  - claude_alpha_cycle
+  - claude_agent_activation_flow
+  - claude_phase_transition_flow
+  does_not_own:
+  - executor_route_definitions
+  - script_implementation_code
+  - phase_agent_output_content
+  - transition_decision_artifacts
+activation:
+  mode: conditional
+  activates_when:
+  - claude_code_mission_execution_requested
+  skips_when:
+  - non_claude_runtime
+inputs:
+  required:
+  - mission_request
+  - phase_bundle
+  - central_executor_route_map
+  - agent_phase_ownership
+  optional:
+  - runtime_topologies
+  - evidence_index
+outputs:
+  produces:
+  - claude_workflow_ladder
+  - native_agent_activation_map
+  - route_backed_transition_flow
+dependencies:
+  required_files:
+  - claude-code/conventions.claude-subsystem-engagement.yaml
+  - claude-code/conventions.claude-agent-activation-map.yaml
+  - executors/conventions.executor-routes.yaml
+  - multi-agent/conventions.alpha-controller.yaml
+  - agents/conventions.agent-taxonomy.yaml
+  - agents/conventions.agent-phase-ownership.yaml
+  optional_files: []
+sections:
+  workflow_ladder:
+  - start-mission
+  - run-alpha-cycle
+  - activate-agent
+  - run-phase
+  - validate-phase
+  - transition-phase
+  - repeat_until_no_active_phase
+  - complete-mission
+  alpha_cycle_rules:
+    alpha_reads:
+    - validated_phase_bundle
+    - active_phase_plan
+    - agent_phase_ownership
+    alpha_invokes:
+    - generate_phase_bundle
+    - validate_phase_bundle
+    - validate_changed_files
+    - validate_phase_output
+    - run_gate_check
+    - prepare_agent_handoff
+    - create_revision_task
+    - collect_evidence
+    alpha_must_not:
+    - perform_phase_agent_work
+    - manually_author_transition_artifacts
+    - manually_decide_gate_or_revision_content
+  native_activation_rule: Every owner_agent in the phase bundle must map to one .claude/agents/<agent>.md file and must be
+    activated before phase work begins.
+  transition_flow:
+  - validate-phase
+  - run-gate
+  - prepare-handoff
+  - generate_next_phase_bundle
+  - validate_next_phase_bundle
+  - run-alpha-cycle
+  revision_flow:
+  - create_revision_task
+  - validate_revision_task
+  - activate_repair_agent_if_authorized
+  - validate-phase
+  - transition-phase
+  report_flow:
+  - collect_phase_report
+  - collect_evidence
+  - validate_report_evidence
+  - generate_final_mission_report
+validation:
+  required_checks:
+  - all_agent_ids_have_native_subagents
+  - all_workflow_skills_exist
+  - all_workflow_routes_exist
+  - subsystem_engagement_covers_all_subsystems
+  fail_conditions:
+  - missing_native_agent
+  - missing_workflow_skill
+  - unknown_workflow_route
+  - unmapped_subsystem

@@ -1,8 +1,8 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_8_1_native_claude_code_integration
-  yaml_file_count: 155
-  typescript_script_file_count: 27
+  milestone: phase_8_2_claude_native_workflow_engine
+  yaml_file_count: 158
+  typescript_script_file_count: 28
   claude_project_file_count: 10
   total_file_count: 195
   root_folder: conventions/
@@ -11,11 +11,9 @@ package_manifest:
   - no package-lock.json included
   - no node_modules included
   - no generated .ai artifacts included
-  - phase 8.1 adds native Claude Code project integration files
-  - Claude Code uses CLAUDE.md, .claude/settings.json hooks, .claude/skills, and .claude/agents
-  - Claude Code must invoke scripts through central executor routes only
-  - 'new executor route: validate_claude_native_integration'
-  - 'new route wrapper script: scripts/run-executor-route.ts'
+  - phase 8.2 replaces shallow/full-system engagement branch with Claude-native workflow engine
+  - one Claude subagent per convention agent
+  - workflow lanes engage every subsystem through compact map
   files:
   - PACKAGE_MANIFEST.yaml
   - VALIDATION_REPORT.yaml
@@ -42,12 +40,15 @@ package_manifest:
   - boundaries/conventions.boundary-leak-detection.yaml
   - boundaries/conventions.boundary-taxonomy.yaml
   - boundaries/conventions.boundary-validation.yaml
+  - claude-code/conventions.claude-agent-activation-map.yaml
   - claude-code/conventions.claude-code.yaml
   - claude-code/conventions.claude-execution-harness.yaml
   - claude-code/conventions.claude-native-integration.yaml
+  - claude-code/conventions.claude-native-workflow-engine.yaml
   - claude-code/conventions.claude-project-files.yaml
   - claude-code/conventions.claude-route-invocation.yaml
   - claude-code/conventions.claude-stop-conditions.yaml
+  - claude-code/conventions.claude-subsystem-engagement.yaml
   - contracts/conventions.compatibility.yaml
   - contracts/conventions.contract-change-taxonomy.yaml
   - contracts/conventions.contract-classification.yaml
@@ -211,3 +212,7 @@ package_manifest:
   - .claude/skills/run-phase/SKILL.md
   - .claude/skills/start-mission/SKILL.md
   - .claude/skills/validate-phase/SKILL.md
+  claude_native_agent_count: 18
+  claude_native_skill_count: 12
+  latest_package: conventions_claude_native_workflow_engine.zip
+  claude_native_command_count: 8
