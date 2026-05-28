@@ -1,0 +1,59 @@
+version: "1.0"
+file:
+  name: conventions.claude-project-files.yaml
+  path: claude-code/conventions.claude-project-files.yaml
+  role: claude_project_file_inventory
+  executability: registry
+purpose: >
+  Declare the project-level Claude Code files that expose the convention system
+  to Claude Code without requiring full convention-package loading.
+ownership:
+  owns:
+    - claude_project_file_inventory
+    - claude_native_file_locations
+  does_not_own:
+    - executor_route_map
+    - script_implementation_code
+activation:
+  mode: on_demand
+  activates_when:
+    - claude_code_native_integration_required
+  skips_when: []
+inputs:
+  required: []
+  optional: []
+outputs:
+  produces:
+    - claude_project_file_inventory
+  does_not_produce: []
+dependencies:
+  required_files:
+    - claude-code/conventions.claude-native-integration.yaml
+  optional_files: []
+sections:
+  project_files:
+    memory:
+      - CLAUDE.md
+    settings:
+      - .claude/settings.json
+    skills:
+      - .claude/skills/start-mission/SKILL.md
+      - .claude/skills/run-phase/SKILL.md
+      - .claude/skills/validate-phase/SKILL.md
+      - .claude/skills/complete-mission/SKILL.md
+    agents:
+      - .claude/agents/alpha.md
+      - .claude/agents/phase-agent.md
+      - .claude/agents/reviewer.md
+    hook_helpers:
+      - .claude/hooks/README.md
+  normal_invocation:
+    command: npm --prefix conventions/scripts run executor -- --route <route_id>
+    direct_script_path_invocation: forbidden
+validation:
+  required_checks:
+    - declared_claude_project_files_exist_in_package
+    - declared_commands_use_executor_route_wrapper
+  fail_conditions:
+    - missing_declared_claude_project_file
+    - direct_script_path_used_as_normal_command

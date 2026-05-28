@@ -1,0 +1,116 @@
+version: "1.0"
+file:
+  name: conventions.claude-native-integration.yaml
+  path: claude-code/conventions.claude-native-integration.yaml
+  role: claude_code_native_integration_contract
+  executability: runtime_contract
+purpose: >
+  Define how the Autonomous Agent Activator is exposed to Claude Code through
+  project memory, skills, subagents, hooks, and route-backed command execution.
+ownership:
+  owns:
+    - claude_native_integration_contract
+    - claude_project_memory_contract
+    - claude_skill_mapping
+    - claude_subagent_mapping
+    - claude_hook_mapping
+  does_not_own:
+    - executor_route_definitions
+    - script_implementation_code
+    - mission_phase_authority
+activation:
+  mode: on_demand
+  activates_when:
+    - claude_code_project_execution_required
+    - native_claude_integration_required
+  skips_when:
+    - non_claude_runtime_execution
+inputs:
+  required:
+    - central_executor_route_map
+    - claude_execution_harness_contract
+  optional:
+    - phase_bundle
+    - mission_context
+outputs:
+  produces:
+    - claude_project_memory_rules
+    - claude_skill_entrypoints
+    - claude_subagent_definitions
+    - claude_hook_configuration
+    - route_backed_command_usage
+  does_not_produce:
+    - script_outputs
+    - transition_artifacts
+dependencies:
+  required_files:
+    - claude-code/conventions.claude-code.yaml
+    - claude-code/conventions.claude-execution-harness.yaml
+    - claude-code/conventions.claude-route-invocation.yaml
+    - claude-code/conventions.claude-stop-conditions.yaml
+    - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  integration_model:
+    claude_memory:
+      file: CLAUDE.md
+      purpose: minimal always-loaded project rules
+      must_include:
+        - agents_never_call_scripts_directly
+        - work_from_validated_phase_bundle
+        - resolve_automation_through_executor_routes
+        - stop_on_failed_route_gate_or_revision_validation
+    skills:
+      location: .claude/skills/*/SKILL.md
+      purpose: load mission procedures only when invoked or relevant
+      required_skills:
+        - start-mission
+        - run-phase
+        - validate-phase
+        - complete-mission
+    subagents:
+      location: .claude/agents/*.md
+      purpose: expose Alpha and phase-agent behavior as project-scoped Claude Code subagents
+      required_agents:
+        - alpha
+        - phase-agent
+        - reviewer
+    hooks:
+      file: .claude/settings.json
+      purpose: run route-backed validation at Claude Code lifecycle events
+      required_events:
+        - SessionStart
+        - PostToolUse
+        - Stop
+        - StopFailure
+    command_wrapper:
+      npm_command: npm --prefix conventions/scripts run executor -- --route <route_id>
+      direct_script_invocation: forbidden
+  required_executor_routes:
+    before_mission_start:
+      - generate_claude_execution_plan
+      - validate_claude_execution_plan
+      - validate_executor_routes
+      - validate_references
+    after_file_change:
+      - validate_changed_files
+    before_phase_start:
+      - generate_phase_bundle
+      - validate_phase_bundle
+    before_mission_complete:
+      - collect_evidence
+      - validate_report_evidence
+      - generate_final_mission_report
+validation:
+  required_checks:
+    - claude_project_files_exist
+    - claude_skills_use_route_wrapper
+    - claude_subagents_are_bundle_driven
+    - claude_hooks_use_executor_routes_not_direct_scripts
+    - direct_script_invocation_not_documented_as_normal_path
+  fail_conditions:
+    - missing_claude_project_memory_file
+    - missing_required_claude_skill
+    - missing_required_claude_agent
+    - hook_invokes_script_directly
+    - skill_invokes_script_directly

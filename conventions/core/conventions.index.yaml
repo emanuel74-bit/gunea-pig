@@ -203,6 +203,13 @@ sections:
     - claude-code/conventions.claude-stop-conditions.yaml
     - executors/conventions.executor-routes.yaml
     - multi-agent/conventions.phase-bundle-policy.yaml
+    claude_code_native_integration:
+      required_files:
+      - claude-code/conventions.claude-native-integration.yaml
+      - claude-code/conventions.claude-project-files.yaml
+      - claude-code/conventions.claude-code.yaml
+      - executors/conventions.executor-routes.yaml
+      load_policy: on_demand
   dependency_route_hints:
     required_dependency_edges_count: 533
     rule: Dependency edges are discovered from each file dependencies.required_files

@@ -1,34 +1,76 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm --prefix conventions/scripts run executor -- --route *)",
+      "Bash(npm --prefix conventions/scripts run validate:*)",
+      "Bash(npm --prefix conventions/scripts run verify:scripts)",
+      "Bash(npm --prefix conventions/scripts run claude:*)",
+      "Read(conventions/**)",
+      "Read(.claude/**)",
+      "Read(CLAUDE.md)"
+    ],
+    "deny": [
+      "Bash(npx tsx conventions/scripts/*.ts *)",
+      "Bash(node conventions/scripts/*.ts *)",
+      "Bash(tsx conventions/scripts/*.ts *)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(secrets/**)"
+    ]
+  },
   "hooks": {
-    "PreToolUse": [
+    "SessionStart": [
       {
-        "matcher": "Bash|Edit|MultiEdit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/sync_pretool_guard.py\""
+            "command": "npm --prefix conventions/scripts run executor -- --route validate_executor_routes",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "npm --prefix conventions/scripts run executor -- --route validate_references",
+            "timeout": 120
           }
         ]
       }
     ],
-    "SubagentStart": [
+    "PostToolUse": [
       {
-        "matcher": "*",
+        "matcher": "Write|Edit|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/sync_subagent_logger.py\" start"
+            "command": "npm --prefix conventions/scripts run executor -- --route validate_changed_files",
+            "timeout": 120
           }
         ]
       }
     ],
-    "SubagentStop": [
+    "Stop": [
       {
-        "matcher": "*",
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/sync_subagent_logger.py\" stop"
+            "command": "npm --prefix conventions/scripts run executor -- --route collect_evidence",
+            "timeout": 120
+          },
+          {
+            "type": "command",
+            "command": "npm --prefix conventions/scripts run executor -- --route validate_report_evidence",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm --prefix conventions/scripts run executor -- --route collect_evidence",
+            "timeout": 120
           }
         ]
       }

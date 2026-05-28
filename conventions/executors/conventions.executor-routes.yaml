@@ -386,6 +386,29 @@ sections:
         - multi-agent
         - reports
         executor_type: validation
+      validate_claude_native_integration:
+        description: Validate Claude Code native integration files, skills, subagents,
+          hooks, and route-backed command usage.
+        script: scripts/validate-claude-native-integration.ts
+        required_inputs:
+        - claude_project_files
+        - central_executor_route_map
+        - claude_native_integration_contract
+        produced_outputs:
+        - claude_native_integration_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        failure_behavior: block
+        consumers:
+        - claude-code
+        - executors
+        - reports
+        executor_type: validation
     compiler:
       compile_authority_topology:
         description: Compile distributed ownership declarations into an authority
@@ -702,6 +725,7 @@ validation:
   - report_evidence_validation_route_present
   - final_mission_report_generation_route_present
   - reports_are_generated_from_script_evidence_not_agent_claims
+  - claude_native_integration_validation_route_present
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -738,3 +762,4 @@ validation:
   - missing_final_mission_report_generation_route
   - agent_authored_final_report_without_evidence_index
   - report_generated_without_script_evidence
+  - missing_claude_native_integration_validation_route

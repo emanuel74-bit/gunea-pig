@@ -1,24 +1,23 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_8_claude_code_execution_harness
-  yaml_file_count: 153
-  typescript_script_file_count: 26
-  total_file_count: 182
+  milestone: phase_8_1_native_claude_code_integration
+  yaml_file_count: 155
+  typescript_script_file_count: 27
+  claude_project_file_count: 10
+  total_file_count: 195
   root_folder: conventions/
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
   - no generated .ai artifacts included
-  - phase 8 adds Claude Code execution harness conventions and route-backed execution
-    plan generation/validation
-  - Claude Code must use validated mission/phase bundles and central executor routes
-  - Claude Code must not call scripts directly or manually author transition/report
-    artifacts
-  - 'new executor routes: generate_claude_execution_plan, validate_claude_execution_plan'
+  - phase 8.1 adds native Claude Code project integration files
+  - Claude Code uses CLAUDE.md, .claude/settings.json hooks, .claude/skills, and .claude/agents
+  - Claude Code must invoke scripts through central executor routes only
+  - 'new executor route: validate_claude_native_integration'
+  - 'new route wrapper script: scripts/run-executor-route.ts'
   files:
   - PACKAGE_MANIFEST.yaml
-  - README.md
   - VALIDATION_REPORT.yaml
   - actions/conventions.action-collisions.yaml
   - actions/conventions.action-followups.yaml
@@ -45,6 +44,8 @@ package_manifest:
   - boundaries/conventions.boundary-validation.yaml
   - claude-code/conventions.claude-code.yaml
   - claude-code/conventions.claude-execution-harness.yaml
+  - claude-code/conventions.claude-native-integration.yaml
+  - claude-code/conventions.claude-project-files.yaml
   - claude-code/conventions.claude-route-invocation.yaml
   - claude-code/conventions.claude-stop-conditions.yaml
   - contracts/conventions.compatibility.yaml
@@ -158,34 +159,6 @@ package_manifest:
   - roles/conventions.role-resolution.yaml
   - roles/conventions.role-taxonomy.yaml
   - roles/conventions.roles.yaml
-  - scripts/collect-evidence.ts
-  - scripts/collect-phase-report.ts
-  - scripts/compile-authority-topology.ts
-  - scripts/compile-runtime-artifact-topology.ts
-  - scripts/create-revision-task.ts
-  - scripts/generate-claude-execution-plan.ts
-  - scripts/generate-final-mission-report.ts
-  - scripts/generate-mission-bundle.ts
-  - scripts/generate-phase-bundle.ts
-  - scripts/lib/common.ts
-  - scripts/package.json
-  - scripts/prepare-agent-handoff.ts
-  - scripts/run-gate-check.ts
-  - scripts/tsconfig.json
-  - scripts/validate-authority-topology.ts
-  - scripts/validate-changed-files.ts
-  - scripts/validate-claude-execution-plan.ts
-  - scripts/validate-executor-routes.ts
-  - scripts/validate-gate-result.ts
-  - scripts/validate-handoff.ts
-  - scripts/validate-phase-bundle.ts
-  - scripts/validate-phase-output.ts
-  - scripts/validate-references.ts
-  - scripts/validate-report-evidence.ts
-  - scripts/validate-revision-task.ts
-  - scripts/validate-runtime-artifacts.ts
-  - scripts/validate-semantic-completeness.ts
-  - scripts/verify-scripts.ts
   - testing/conventions.characterization-testing.yaml
   - testing/conventions.regression-testing.yaml
   - testing/conventions.test-derivation.yaml
@@ -199,3 +172,42 @@ package_manifest:
   - triggers/conventions.trigger-taxonomy.yaml
   - triggers/conventions.trigger-validation.yaml
   - triggers/conventions.triggers.yaml
+  typescript_scripts:
+  - scripts/collect-evidence.ts
+  - scripts/collect-phase-report.ts
+  - scripts/compile-authority-topology.ts
+  - scripts/compile-runtime-artifact-topology.ts
+  - scripts/create-revision-task.ts
+  - scripts/generate-claude-execution-plan.ts
+  - scripts/generate-final-mission-report.ts
+  - scripts/generate-mission-bundle.ts
+  - scripts/generate-phase-bundle.ts
+  - scripts/prepare-agent-handoff.ts
+  - scripts/run-executor-route.ts
+  - scripts/run-gate-check.ts
+  - scripts/validate-authority-topology.ts
+  - scripts/validate-changed-files.ts
+  - scripts/validate-claude-execution-plan.ts
+  - scripts/validate-claude-native-integration.ts
+  - scripts/validate-executor-routes.ts
+  - scripts/validate-gate-result.ts
+  - scripts/validate-handoff.ts
+  - scripts/validate-phase-bundle.ts
+  - scripts/validate-phase-output.ts
+  - scripts/validate-references.ts
+  - scripts/validate-report-evidence.ts
+  - scripts/validate-revision-task.ts
+  - scripts/validate-runtime-artifacts.ts
+  - scripts/validate-semantic-completeness.ts
+  - scripts/verify-scripts.ts
+  claude_project_files:
+  - CLAUDE.md
+  - .claude/agents/alpha.md
+  - .claude/agents/phase-agent.md
+  - .claude/agents/reviewer.md
+  - .claude/hooks/README.md
+  - .claude/settings.json
+  - .claude/skills/complete-mission/SKILL.md
+  - .claude/skills/run-phase/SKILL.md
+  - .claude/skills/start-mission/SKILL.md
+  - .claude/skills/validate-phase/SKILL.md
