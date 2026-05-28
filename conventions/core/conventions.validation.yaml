@@ -4,8 +4,8 @@ file:
   path: core/conventions.validation.yaml
   role: global_validation_aggregation_contract
   executability: validator
-purpose: Aggregate global validation expectations and delegate mechanical validation to executor routes/scripts instead of
-  manual authority registries.
+purpose: Aggregate global validation expectations and delegate mechanical validation
+  to executor routes/scripts instead of manual authority registries.
 ownership:
   owns:
   - validation_taxonomy
@@ -223,6 +223,9 @@ sections:
     - collect_evidence
     - validate_report_evidence
     - generate_final_mission_report
+    before_mission_start:
+    - generate_claude_execution_plan
+    - validate_claude_execution_plan
 validation:
   required_checks:
   - id: GLOBAL-VALIDATION-CHECK-001
@@ -242,5 +245,6 @@ validation:
     severity: error
   - id: GLOBAL-VALIDATION-003
     condition: required_executor_route_missing
-    message: Global validation requires all foundational executor routes to exist and resolve centrally.
+    message: Global validation requires all foundational executor routes to exist
+      and resolve centrally.
     severity: error

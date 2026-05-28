@@ -1,0 +1,102 @@
+version: '1.0'
+file:
+  name: conventions.claude-stop-conditions.yaml
+  path: claude-code/conventions.claude-stop-conditions.yaml
+  role: claude_code_fail_closed_stop_policy
+  executability: runtime_policy
+purpose: Define fail-closed stop conditions for Claude Code during mission, phase,
+  route, gate, handoff, revision, and report execution.
+ownership:
+  owns:
+  - claude_code_stop_conditions
+  - claude_code_blocking_response_policy
+  - claude_code_revision_response_policy
+  does_not_own:
+  - gate_decision_logic
+  - revision_task_generation_logic
+  - report_generation_logic
+activation:
+  mode: conditional
+  activates_when:
+  - route_execution_failed
+  - gate_blocked
+  - handoff_invalid
+  - revision_task_open
+  - required_artifact_missing
+  skips_when:
+  - all_runtime_checks_passed
+inputs:
+  required:
+  - route_result
+  - failure_behavior
+  - mission_state
+  optional:
+  - gate_result
+  - handoff_packet
+  - revision_task
+  - report_evidence_validation
+outputs:
+  produces:
+  - claude_runtime_block_record
+  - claude_revision_invocation_request
+  - claude_stop_reason
+dependencies:
+  required_files:
+  - executors/conventions.executor-failures.yaml
+  - gates/conventions.gate-validation.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.revision-validation.yaml
+  - reports/conventions.report-validation.yaml
+  optional_files: []
+sections:
+  stop_conditions:
+  - id: CLAUDE-STOP-001
+    stop_when:
+    - unknown_executor_route
+    - route_script_missing
+    - script_result_missing
+    required_response: stop_and_report_runtime_configuration_failure
+  - id: CLAUDE-STOP-002
+    stop_when:
+    - route_failure_behavior_block
+    - route_result_status_fail
+    required_response: stop_before_downstream_consumption
+  - id: CLAUDE-STOP-003
+    stop_when:
+    - gate_result_status_blocked
+    - gate_result_not_script_produced
+    required_response: do_not_invoke_downstream_phase
+  - id: CLAUDE-STOP-004
+    stop_when:
+    - handoff_invalid
+    - handoff_not_script_produced
+    required_response: do_not_allow_target_agent_consumption
+  - id: CLAUDE-STOP-005
+    stop_when:
+    - revision_task_created
+    - blocking_revision_open
+    required_response: execute_revision_flow_before_continuation
+  - id: CLAUDE-STOP-006
+    stop_when:
+    - final_report_missing
+    - final_report_not_script_generated
+    - evidence_invalid
+    required_response: do_not_mark_mission_complete
+  continue_conditions:
+  - validated_phase_bundle_exists
+  - required_gate_results_script_produced_and_valid
+  - required_handoffs_script_produced_and_valid
+  - no_blocking_revision_open
+  - report_evidence_valid
+  - final_mission_report_script_generated_when_completing
+  agent_message_policy:
+    on_stop: report exact route id, script result artifact, error codes, and next
+      required executor route
+    forbidden: hide blocking failure or continue with assumptions
+validation:
+  required_checks:
+  - all_stop_conditions_have_required_response
+  - completion_requires_final_report_evidence
+  fail_conditions:
+  - claude_stop_policy_allows_assumption_after_failure
+  - claude_stop_policy_missing_transition_block

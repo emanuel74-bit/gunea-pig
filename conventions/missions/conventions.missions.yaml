@@ -4,8 +4,9 @@ file:
   path: missions/conventions.missions.yaml
   role: missions_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the missions subsystem entrypoint, file index, execution order, ownership boundaries, and integration contract
-  for mission profiles, active phase plans, and mission state.
+purpose: Provide the missions subsystem entrypoint, file index, execution order, ownership
+  boundaries, and integration contract for mission profiles, active phase plans, and
+  mission state.
 ownership:
   owns:
   - missions_file_index
@@ -66,13 +67,15 @@ sections:
   missions_subsystem_contract:
     absolute_rules:
     - id: MISSIONS-SYSTEM-ABS-001
-      rule: Mission profiles configure global phases but must not create, redefine, or weaken phase contracts.
+      rule: Mission profiles configure global phases but must not create, redefine,
+        or weaken phase contracts.
       fail_condition: mission_profile_redefined_phase_contract
     - id: MISSIONS-SYSTEM-ABS-002
       rule: Mission state stores runtime truth but only Alpha may mutate it.
       fail_condition: non_alpha_updates_mission_state
     - id: MISSIONS-SYSTEM-ABS-003
-      rule: Mission validation is fail-closed for unknown phases, reports, triggers, revisions, agents, or gate strictness.
+      rule: Mission validation is fail-closed for unknown phases, reports, triggers,
+        revisions, agents, or gate strictness.
       fail_condition: mission_validation_allowed_unknown_reference
   missions_integration_contract:
     consumes_from:
@@ -105,6 +108,8 @@ sections:
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
     - validate_semantic_completeness
+    - generate_claude_execution_plan
+    - validate_claude_execution_plan
 validation:
   required_checks:
   - id: MISSIONS-SYSTEM-CHECK-001
@@ -114,5 +119,6 @@ validation:
   fail_conditions:
   - id: MISSIONS-SYSTEM-001
     condition: missions_subsystem_authority_violation
-    message: Missions subsystem must not override phase, gate, report, trigger, revision, or agent authority.
+    message: Missions subsystem must not override phase, gate, report, trigger, revision,
+      or agent authority.
     severity: error

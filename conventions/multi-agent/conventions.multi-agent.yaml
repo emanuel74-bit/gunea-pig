@@ -4,8 +4,8 @@ file:
   path: multi-agent/conventions.multi-agent.yaml
   role: multi_agent_runtime_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Provide the entrypoint, file index, local execution order, authority boundaries, and integration contract for Alpha-controlled
-  fixed-agent execution.
+purpose: Provide the entrypoint, file index, local execution order, authority boundaries,
+  and integration contract for Alpha-controlled fixed-agent execution.
 ownership:
   owns:
   - multi_agent_file_index
@@ -99,36 +99,50 @@ sections:
     - downstream consumption approval
     - final mission completion
   integration_contract:
-    phases: Alpha reads phase contracts and phase dependencies but may not redefine phases.
-    agents: Alpha resolves owner agents, prompts, contracts, and permissions from the agents subsystem.
+    phases: Alpha reads phase contracts and phase dependencies but may not redefine
+      phases.
+    agents: Alpha resolves owner agents, prompts, contracts, and permissions from
+      the agents subsystem.
     missions: Alpha mutates mission state according to mission-state rules only.
-    reports: Alpha requires durable report files and validates them through report subsystem contracts.
-    gates: Alpha invokes gates and obeys their pass/fail results; gates own validation semantics.
-    triggers: Alpha registers emitted triggers and applies trigger resolution outputs; triggers own routing semantics.
-    handoffs: Alpha requests handoff validation before downstream consumption; handoffs own consumability.
-    revisions: Alpha processes approved revision/rerun/invalidation actions; revisions own correction policy.
-    risk: Alpha tightens gate strictness and blocks when risk escalation requires it.
-    execution: Alpha allows implementation only after pre-implementation gate and execution preconditions pass.
+    reports: Alpha requires durable report files and validates them through report
+      subsystem contracts.
+    gates: Alpha invokes gates and obeys their pass/fail results; gates own validation
+      semantics.
+    triggers: Alpha registers emitted triggers and applies trigger resolution outputs;
+      triggers own routing semantics.
+    handoffs: Alpha requests handoff validation before downstream consumption; handoffs
+      own consumability.
+    revisions: Alpha processes approved revision/rerun/invalidation actions; revisions
+      own correction policy.
+    risk: Alpha tightens gate strictness and blocks when risk escalation requires
+      it.
+    execution: Alpha allows implementation only after pre-implementation gate and
+      execution preconditions pass.
   absolute_rules:
   - id: MULTI-AGENT-ABS-001
     rule: Alpha is the only runtime controller that may mutate mission state.
     fail_condition: non_alpha_runtime_control
   - id: MULTI-AGENT-ABS-002
-    rule: Every phase invocation must resolve exactly one owner agent from agent-phase ownership.
+    rule: Every phase invocation must resolve exactly one owner agent from agent-phase
+      ownership.
     fail_condition: phase_owner_missing_or_ambiguous
   - id: MULTI-AGENT-ABS-003
     rule: Every phase agent invocation must use a generated phase bundle.
     fail_condition: phase_invoked_without_phase_bundle
   - id: MULTI-AGENT-ABS-004
-    rule: No downstream phase may consume outputs until output gate and handoff validation pass.
+    rule: No downstream phase may consume outputs until output gate and handoff validation
+      pass.
     fail_condition: downstream_consumption_without_valid_handoff
   - id: MULTI-AGENT-ABS-005
-    rule: Implementation must remain blocked until pre-implementation gate passes and no blocking triggers/revisions remain.
+    rule: Implementation must remain blocked until pre-implementation gate passes
+      and no blocking triggers/revisions remain.
     fail_condition: implementation_started_before_runtime_clearance
   required_executor_routes:
     before_mission_start:
     - generate_mission_bundle
     - validate_executor_routes
+    - generate_claude_execution_plan
+    - validate_claude_execution_plan
     before_phase_start:
     - generate_phase_bundle
     - validate_phase_bundle

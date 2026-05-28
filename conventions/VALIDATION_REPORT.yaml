@@ -1,23 +1,20 @@
 validation_report:
-  milestone: phase_7_report_generation_and_evidence_collection
+  milestone: phase_8_claude_code_execution_harness
   status: pass
   summary:
-    yaml_files: 149
-    typescript_script_files: 24
+    yaml_files: 153
+    typescript_script_files: 26
     yaml_parse_errors: 0
     missing_required_dependencies: 0
     duplicate_owned_concepts: 0
     missing_route_script_paths: 0
     unknown_local_executor_route_references: 0
-    direct_script_references_from_local_routes: 0
-    executor_route_count: 23
-    report_evidence_collection_route_present: true
-    report_evidence_validation_route_present: true
-    final_mission_report_generation_route_present: true
-    reports_generated_from_script_evidence: true
-    script_verification_declared_test_count: 69
-    script_verification_live_test_count: 30
-    script_verification_failed_test_count: 0
+    executor_route_count: 25
+    claude_code_harness_files_present: true
+    claude_execution_plan_routes_present: true
+    claude_execution_plan_scripts_present: true
+    claude_direct_script_selection_forbidden: true
+    claude_uses_phase_bundles_as_agent_context: true
     no_package_lock_included: true
     no_node_modules_included: true
     no_generated_ai_artifacts_included: true
@@ -27,4 +24,3 @@ validation_report:
     duplicate_owned_concepts: []
     missing_route_script_paths: []
     unknown_local_executor_route_references: []
-    direct_script_references_from_local_routes: []

@@ -1,0 +1,168 @@
+version: '1.0'
+file:
+  name: conventions.claude-execution-harness.yaml
+  path: claude-code/conventions.claude-execution-harness.yaml
+  role: claude_code_execution_harness_contract
+  executability: runtime_policy
+purpose: Define the deterministic mission execution loop Claude Code must follow when
+  running the convention system.
+ownership:
+  owns:
+  - claude_code_execution_harness_contract
+  - claude_code_mission_start_sequence
+  - claude_code_phase_execution_sequence
+  - claude_code_completion_sequence
+  does_not_own:
+  - executor_route_map
+  - script_implementations
+  - phase_agent_work_content
+  - transition_decision_authority
+activation:
+  mode: conditional
+  activates_when:
+  - claude_code_starts_mission
+  - claude_code_executes_phase
+  skips_when:
+  - mission_not_executed_by_claude_code
+inputs:
+  required:
+  - mission_request
+  - central_executor_route_map
+  - mission_context_bundle
+  - phase_context_bundle
+  optional:
+  - authority_topology
+  - runtime_artifact_topology
+  - evidence_index
+outputs:
+  produces:
+  - claude_execution_plan
+  - claude_runtime_step_log
+  - claude_completion_status
+dependencies:
+  required_files:
+  - executors/conventions.executor-routes.yaml
+  - missions/conventions.missions.yaml
+  - multi-agent/conventions.alpha-controller.yaml
+  - multi-agent/conventions.phase-bundle-policy.yaml
+  - reports/conventions.reports.yaml
+  - claude-code/conventions.claude-route-invocation.yaml
+  - claude-code/conventions.claude-stop-conditions.yaml
+  optional_files: []
+sections:
+  mission_start_sequence:
+  - step_id: LOAD_EXECUTOR_ROUTES
+    action: read
+    input: executors/conventions.executor-routes.yaml
+    fail_when:
+    - executor_route_map_missing
+    - route_contract_invalid
+  - step_id: GENERATE_CLAUDE_EXECUTION_PLAN
+    action: invoke_executor_route
+    required_executor_routes:
+    - generate_claude_execution_plan
+    fail_when:
+    - claude_execution_plan_missing
+  - step_id: VALIDATE_CLAUDE_EXECUTION_PLAN
+    action: invoke_executor_route
+    required_executor_routes:
+    - validate_claude_execution_plan
+    fail_when:
+    - claude_execution_plan_invalid
+  - step_id: GENERATE_MISSION_BUNDLE
+    action: invoke_executor_route
+    required_executor_routes:
+    - generate_mission_bundle
+    fail_when:
+    - mission_bundle_missing_or_invalid
+  - step_id: RUN_SYSTEM_INTEGRITY_ROUTES
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - validate_executor_routes
+    - compile_authority_topology
+    - validate_authority_topology
+    - validate_references
+    - compile_runtime_artifact_topology
+    - validate_runtime_artifacts
+    - validate_script_execution
+    - validate_semantic_completeness
+    fail_when:
+    - any_route_returns_blocking_failure
+  phase_execution_sequence:
+  - step_id: GENERATE_PHASE_BUNDLE
+    action: invoke_executor_route
+    required_executor_routes:
+    - generate_phase_bundle
+    fail_when:
+    - phase_bundle_missing
+  - step_id: VALIDATE_PHASE_BUNDLE
+    action: invoke_executor_route
+    required_executor_routes:
+    - validate_phase_bundle
+    fail_when:
+    - phase_bundle_invalid
+  - step_id: RUN_ENTRY_GATE
+    action: invoke_executor_route
+    required_executor_routes:
+    - run_gate_check
+    - validate_gate_result
+    fail_when:
+    - entry_gate_blocked_or_invalid
+  - step_id: INVOKE_PHASE_AGENT_WITH_BUNDLE
+    action: use_validated_phase_bundle
+    fail_when:
+    - agent_attempted_full_convention_scan
+    - agent_missing_required_bundle_context
+  - step_id: VALIDATE_PHASE_OUTPUT
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - validate_phase_output
+    - validate_semantic_completeness
+    - collect_phase_report
+    - collect_evidence
+    - validate_report_evidence
+    fail_when:
+    - phase_output_invalid
+    - semantic_completeness_failed
+    - report_evidence_invalid
+  - step_id: RUN_OUTPUT_GATE_AND_HANDOFF
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - run_gate_check
+    - validate_gate_result
+    - prepare_agent_handoff
+    - validate_handoff
+    fail_when:
+    - output_gate_blocked
+    - handoff_invalid
+  completion_sequence:
+  - step_id: COLLECT_FINAL_EVIDENCE
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - collect_evidence
+    - validate_report_evidence
+    fail_when:
+    - final_evidence_invalid
+  - step_id: GENERATE_FINAL_REPORT
+    action: invoke_executor_route
+    required_executor_routes:
+    - generate_final_mission_report
+    fail_when:
+    - final_report_missing_or_invalid
+  - step_id: COMPLETE_ONLY_WITH_VALID_REPORT
+    action: complete_runtime
+    fail_when:
+    - blocking_revision_open
+    - gate_result_invalid
+    - handoff_invalid
+    - final_report_not_script_generated
+validation:
+  required_checks:
+  - mission_start_routes_declared
+  - phase_execution_routes_declared
+  - completion_routes_declared
+  - direct_script_invocation_forbidden
+  fail_conditions:
+  - claude_harness_missing_route
+  - claude_harness_allows_manual_transition_decision
+  - claude_harness_uses_full_topology_as_agent_context

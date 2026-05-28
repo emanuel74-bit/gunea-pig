@@ -4,8 +4,8 @@ file:
   path: core/conventions.index.yaml
   role: lightweight_convention_routing_index
   executability: router
-purpose: Provide lightweight discovery, routing, and loading metadata for the convention package without duplicating concept
-  ownership or semantic authority.
+purpose: Provide lightweight discovery, routing, and loading metadata for the convention
+  package without duplicating concept ownership or semantic authority.
 ownership:
   owns:
   - convention_routing_index
@@ -196,16 +196,32 @@ sections:
     - executors/conventions.executor-routes.yaml
     - executors/conventions.executor-lifecycle.yaml
     - executors/conventions.executor-failures.yaml
+    claude_code_runtime_minimal:
+    - claude-code/conventions.claude-code.yaml
+    - claude-code/conventions.claude-execution-harness.yaml
+    - claude-code/conventions.claude-route-invocation.yaml
+    - claude-code/conventions.claude-stop-conditions.yaml
+    - executors/conventions.executor-routes.yaml
+    - multi-agent/conventions.phase-bundle-policy.yaml
   dependency_route_hints:
     required_dependency_edges_count: 533
-    rule: Dependency edges are discovered from each file dependencies.required_files and should not be expanded into a full
-      semantic graph inside the index.
+    rule: Dependency edges are discovered from each file dependencies.required_files
+      and should not be expanded into a full semantic graph inside the index.
   authority_boundary:
-    concept_ownership_source: distributed ownership.owns declarations inside individual convention files
-    compiled_authority_topology: generated artifact produced by compile_authority_topology executor route and validated by
-      validate_authority_topology
-    index_relationship: index may reference executor routing and loading groups but must not duplicate authority entries or
-      generated topology content
+    concept_ownership_source: distributed ownership.owns declarations inside individual
+      convention files
+    compiled_authority_topology: generated artifact produced by compile_authority_topology
+      executor route and validated by validate_authority_topology
+    index_relationship: index may reference executor routing and loading groups but
+      must not duplicate authority entries or generated topology content
+  subsystem_index:
+    claude-code:
+      entrypoint: claude-code/conventions.claude-code.yaml
+      files:
+      - claude-code/conventions.claude-code.yaml
+      - claude-code/conventions.claude-execution-harness.yaml
+      - claude-code/conventions.claude-route-invocation.yaml
+      - claude-code/conventions.claude-stop-conditions.yaml
 validation:
   must_pass:
   - all_entrypoints_exist

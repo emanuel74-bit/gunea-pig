@@ -1,0 +1,105 @@
+version: '1.0'
+file:
+  name: conventions.claude-route-invocation.yaml
+  path: claude-code/conventions.claude-route-invocation.yaml
+  role: claude_code_executor_route_invocation_policy
+  executability: runtime_policy
+purpose: Define how Claude Code resolves and invokes executor routes without directly
+  selecting scripts.
+ownership:
+  owns:
+  - claude_route_invocation_policy
+  - claude_route_resolution_sequence
+  - claude_script_invocation_boundary
+  does_not_own:
+  - central_executor_route_map
+  - script_implementation_code
+  - route_contract_schema
+activation:
+  mode: conditional
+  activates_when:
+  - claude_code_needs_runtime_action
+  - executor_route_required_by_bundle_or_harness
+  skips_when:
+  - no_runtime_action_required
+inputs:
+  required:
+  - route_id
+  - central_executor_route_map
+  - route_required_inputs
+  optional:
+  - phase_bundle
+  - mission_bundle
+  - runtime_artifacts
+outputs:
+  produces:
+  - route_invocation_result
+  - route_output_artifact_refs
+  - blocking_status
+dependencies:
+  required_files:
+  - executors/conventions.executor-routes.yaml
+  - executors/conventions.executor-contract.yaml
+  - executors/conventions.executor-lifecycle.yaml
+  optional_files: []
+sections:
+  route_invocation_algorithm:
+  - step_id: READ_DECLARED_ROUTE_ID
+    action: read
+    source: required_executor_routes
+    fail_when:
+    - route_id_missing
+    - script_path_supplied_instead_of_route_id
+  - step_id: RESOLVE_ROUTE_CONTRACT
+    action: lookup
+    source: executors/conventions.executor-routes.yaml
+    fail_when:
+    - unknown_executor_route
+    - route_missing_required_field
+  - step_id: VERIFY_REQUIRED_INPUTS
+    action: validate
+    source: route.required_inputs
+    fail_when:
+    - required_input_missing
+    - required_artifact_missing
+  - step_id: INVOKE_DECLARED_SCRIPT
+    action: execute_resolved_script
+    source: route.script
+    fail_when:
+    - script_missing
+    - script_exit_nonzero_with_blocking_failure
+  - step_id: READ_SCRIPT_RESULT
+    action: read
+    source: .ai/validation/{script_id}.result.yaml
+    fail_when:
+    - script_result_missing
+    - script_result_malformed
+  - step_id: APPLY_FAILURE_BEHAVIOR
+    action: branch
+    source: route.failure_behavior
+    fail_when:
+    - blocking_failure_ignored
+    - retry_or_revision_not_routed
+  forbidden_claude_actions:
+  - direct_script_path_invocation_without_route_resolution
+  - manual_gate_pass_or_fail
+  - manual_handoff_packet_authoring
+  - manual_revision_decision_authoring
+  - manual_final_report_authoring
+  - loading_full_topology_as_phase_context_when_phase_bundle_exists
+  allowed_claude_actions:
+  - read_validated_phase_bundle
+  - resolve_route_id_through_central_map
+  - execute_script_from_resolved_route
+  - consume_script_result_artifact
+  - stop_on_blocking_failure
+  - request_revision_route_after_failure
+validation:
+  required_checks:
+  - route_id_used_instead_of_script_path
+  - route_result_read_after_script_execution
+  - failure_behavior_applied
+  fail_conditions:
+  - claude_invoked_unresolved_script
+  - claude_ignored_blocking_failure
+  - claude_consumed_missing_script_output

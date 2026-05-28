@@ -23,7 +23,9 @@
     "collect:phase-report": "tsx collect-phase-report.ts",
     "collect:evidence": "tsx collect-evidence.ts",
     "validate:report-evidence": "tsx validate-report-evidence.ts",
-    "generate:final-mission-report": "tsx generate-final-mission-report.ts"
+    "generate:final-mission-report": "tsx generate-final-mission-report.ts",
+    "generate:claude-execution-plan": "tsx generate-claude-execution-plan.ts",
+    "validate:claude-execution-plan": "tsx validate-claude-execution-plan.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

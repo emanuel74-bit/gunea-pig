@@ -1,20 +1,21 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_7_report_generation_and_evidence_collection
-  yaml_file_count: 149
-  typescript_script_file_count: 24
-  total_file_count: 176
+  milestone: phase_8_claude_code_execution_harness
+  yaml_file_count: 153
+  typescript_script_file_count: 26
+  total_file_count: 182
   root_folder: conventions/
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
-  - phase 7 adds report generation and evidence collection from script/executor outputs
-  - reports are generated from collected evidence artifacts, not agent-written claims
-  - 'new executor routes: collect_evidence, validate_report_evidence, generate_final_mission_report'
-  - final mission report generation is blocked when evidence index is missing or invalid
-  - script verification includes live evidence collection, report evidence validation, and final mission report generation
-    tests
+  - no generated .ai artifacts included
+  - phase 8 adds Claude Code execution harness conventions and route-backed execution
+    plan generation/validation
+  - Claude Code must use validated mission/phase bundles and central executor routes
+  - Claude Code must not call scripts directly or manually author transition/report
+    artifacts
+  - 'new executor routes: generate_claude_execution_plan, validate_claude_execution_plan'
   files:
   - PACKAGE_MANIFEST.yaml
   - README.md
@@ -42,6 +43,10 @@ package_manifest:
   - boundaries/conventions.boundary-leak-detection.yaml
   - boundaries/conventions.boundary-taxonomy.yaml
   - boundaries/conventions.boundary-validation.yaml
+  - claude-code/conventions.claude-code.yaml
+  - claude-code/conventions.claude-execution-harness.yaml
+  - claude-code/conventions.claude-route-invocation.yaml
+  - claude-code/conventions.claude-stop-conditions.yaml
   - contracts/conventions.compatibility.yaml
   - contracts/conventions.contract-change-taxonomy.yaml
   - contracts/conventions.contract-classification.yaml
@@ -158,6 +163,7 @@ package_manifest:
   - scripts/compile-authority-topology.ts
   - scripts/compile-runtime-artifact-topology.ts
   - scripts/create-revision-task.ts
+  - scripts/generate-claude-execution-plan.ts
   - scripts/generate-final-mission-report.ts
   - scripts/generate-mission-bundle.ts
   - scripts/generate-phase-bundle.ts
@@ -168,6 +174,7 @@ package_manifest:
   - scripts/tsconfig.json
   - scripts/validate-authority-topology.ts
   - scripts/validate-changed-files.ts
+  - scripts/validate-claude-execution-plan.ts
   - scripts/validate-executor-routes.ts
   - scripts/validate-gate-result.ts
   - scripts/validate-handoff.ts

@@ -4,8 +4,9 @@ file:
   path: reports/conventions.runtime-artifacts.yaml
   role: runtime_artifact_identity_registry
   executability: registry
-purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules for runtime artifacts such
-  as .ai reports, manifests, validation summaries, and phase outputs.
+purpose: Define canonical identity, path normalization, ownership, lifecycle, and
+  conflict rules for runtime artifacts such as .ai reports, manifests, validation
+  summaries, and phase outputs.
 ownership:
   owns:
   - runtime_artifact_identity_model
@@ -1715,14 +1716,59 @@ sections:
     lifecycle: generated_report_output
     write_mode: single_writer
     required: before_mission_complete
+  - artifact_id: ai_claude_glob
+    path: .ai/claude/**
+    artifact_type: glob
+    schema: declared_by_claude_code_harness
+    producer: executor_route_allowed_write_path
+    producer_routes:
+    - generate_claude_execution_plan
+    consumers:
+    - claude-code/conventions.claude-code.yaml
+    - claude-code/conventions.claude-execution-harness.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_claude_execution_plan_yaml
+    path: .ai/claude/execution-plan.yaml
+    artifact_type: runtime_artifact
+    schema: claude_execution_plan_schema
+    producer: generate_claude_execution_plan
+    producer_routes:
+    - generate_claude_execution_plan
+    consumers:
+    - claude-code/conventions.claude-code.yaml
+    - claude-code/conventions.claude-execution-harness.yaml
+    - claude-code/conventions.claude-route-invocation.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: before_mission_start
+  - artifact_id: ai_reports_claude_execution_plan_validation_yaml
+    path: .ai/reports/claude-execution-plan-validation.yaml
+    artifact_type: validation_report
+    schema: claude_execution_plan_validation_schema
+    producer: validate_claude_execution_plan
+    producer_routes:
+    - validate_claude_execution_plan
+    consumers:
+    - reports/conventions.reports.yaml
+    - claude-code/conventions.claude-stop-conditions.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: before_mission_start
   runtime_artifact_enforcement_model:
-    route_backed_generation: runtime artifacts must be produced by declared executor routes or explicitly marked as runtime-context
-      generated
+    route_backed_generation: runtime artifacts must be produced by declared executor
+      routes or explicitly marked as runtime-context generated
     required_validation_sequence:
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
-    path_authority: runtime artifact paths are normalized and validated by runtime artifact topology scripts
-    script_selection: agents never call artifact scripts directly; they use executor routes
+    path_authority: runtime artifact paths are normalized and validated by runtime
+      artifact topology scripts
+    script_selection: agents never call artifact scripts directly; they use executor
+      routes
   runtime_artifact_allowed_values:
     scope:
     - mission_runtime

@@ -1,0 +1,78 @@
+version: '1.0'
+file:
+  name: conventions.claude-code.yaml
+  path: claude-code/conventions.claude-code.yaml
+  role: claude_code_harness_entrypoint
+  executability: advisory_entrypoint
+purpose: Define the Claude Code execution harness entrypoint that adapts the Autonomous
+  Agent Activator runtime to deterministic Claude Code mission execution.
+ownership:
+  owns:
+  - claude_code_harness_metadata
+  - claude_code_harness_file_index
+  - claude_code_execution_model
+  does_not_own:
+  - executor_route_definitions
+  - script_implementation_code
+  - phase_contracts
+  - mission_state_authority
+  - gate_handoff_revision_decisions
+activation:
+  mode: conditional
+  activates_when:
+  - claude_code_execution_requested
+  - mission_execution_requested_from_claude_code
+  skips_when:
+  - non_claude_runtime
+inputs:
+  required:
+  - mission_request
+  - executor_route_map
+  - mission_bundle
+  - phase_bundle
+  optional:
+  - runtime_topologies
+  - prior_validation_results
+outputs:
+  produces:
+  - claude_code_execution_harness_contract
+  - claude_code_execution_plan_requirement
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  - executors/conventions.executor-lifecycle.yaml
+  - multi-agent/conventions.alpha-controller.yaml
+  - multi-agent/conventions.phase-bundle-policy.yaml
+  - claude-code/conventions.claude-execution-harness.yaml
+  - claude-code/conventions.claude-route-invocation.yaml
+  - claude-code/conventions.claude-stop-conditions.yaml
+  optional_files: []
+sections:
+  claude_code_file_index:
+    execution_harness: claude-code/conventions.claude-execution-harness.yaml
+    route_invocation: claude-code/conventions.claude-route-invocation.yaml
+    stop_conditions: claude-code/conventions.claude-stop-conditions.yaml
+  harness_model:
+    primary_rule: Claude Code executes missions only from validated bundles and executor
+      routes.
+    script_selection_rule: Claude Code MUST NOT select scripts by memory or ad hoc
+      path. It resolves route IDs through executors/conventions.executor-routes.yaml
+      before script invocation.
+    bundle_rule: Claude Code consumes mission and phase bundles as agent-facing context;
+      full topologies remain script-facing compiled truth.
+    transition_rule: Claude Code consumes script-produced gate, handoff, revision,
+      validation, and report artifacts; it does not author transition decisions.
+  required_executor_routes:
+    before_mission_start:
+    - generate_claude_execution_plan
+    - validate_claude_execution_plan
+validation:
+  required_checks:
+  - claude_execution_plan_generated_before_mission_execution
+  - claude_execution_plan_validated_before_phase_execution
+  - claude_uses_executor_routes_not_direct_scripts
+  fail_conditions:
+  - claude_execution_without_validated_plan
+  - claude_direct_script_invocation_detected
+  - claude_continued_after_blocking_route_failure

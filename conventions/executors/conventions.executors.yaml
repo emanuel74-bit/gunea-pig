@@ -4,8 +4,9 @@ file:
   path: executors/conventions.executors.yaml
   role: executor_subsystem_entrypoint
   executability: advisory_entrypoint
-purpose: Define the executor subsystem entrypoint for central executor routing, local route requirements, route contracts,
-  lifecycle hooks, and script-backed runtime enforcement, including foundational validation routes.
+purpose: Define the executor subsystem entrypoint for central executor routing, local
+  route requirements, route contracts, lifecycle hooks, and script-backed runtime
+  enforcement, including foundational validation routes.
 ownership:
   owns:
   - executor_subsystem_metadata
@@ -53,15 +54,18 @@ sections:
     executor_failures: executors/conventions.executor-failures.yaml
   core_model:
     routing_model: central_executor_routing_plus_local_route_requirements
-    agent_rule: Agents MUST NOT call scripts directly. Agents MUST execute scripts only through declared executor routes.
-    local_file_rule: Local files declare required_executor_routes by route_id and never hardcode script paths.
-    central_route_rule: Executor routes resolve route_id to executor_type, script, inputs, outputs, lifecycle hooks, write
-      permissions, and failure behavior.
-    script_implementation_rule: All route scripts MUST resolve to centralized implementation paths under scripts/, but scripts/
-      is not a convention subsystem.
-    foundational_validation_model: Validation is handled as executor routes backed by scripts; no standalone validation subsystem
-      is required.
-    phase_bundle_model: Phase bundles are generated and validated through executor routes before phase-agent work begins.
+    agent_rule: Agents MUST NOT call scripts directly. Agents MUST execute scripts
+      only through declared executor routes.
+    local_file_rule: Local files declare required_executor_routes by route_id and
+      never hardcode script paths.
+    central_route_rule: Executor routes resolve route_id to executor_type, script,
+      inputs, outputs, lifecycle hooks, write permissions, and failure behavior.
+    script_implementation_rule: All route scripts MUST resolve to centralized implementation
+      paths under scripts/, but scripts/ is not a convention subsystem.
+    foundational_validation_model: Validation is handled as executor routes backed
+      by scripts; no standalone validation subsystem is required.
+    phase_bundle_model: Phase bundles are generated and validated through executor
+      routes before phase-agent work begins.
   route_namespace_policy:
     namespace: global_route_namespace_with_optional_subsystem_prefix
     global_route_examples:
@@ -80,7 +84,8 @@ sections:
     unknown_route_behavior: fail_closed
     script_location: centralized_scripts_folder
   foundational_validation_routes:
-    purpose: Provide the first script-backed validation routes required to keep executor routing and generated truth reliable.
+    purpose: Provide the first script-backed validation routes required to keep executor
+      routing and generated truth reliable.
     routes:
     - validate_executor_routes
     - validate_authority_topology
@@ -89,13 +94,24 @@ sections:
     - validate_phase_bundle
     standalone_validation_subsystem: forbidden
   phase_bundle_routes:
-    purpose: Provide the executor routes that generate and validate minimized phase context before an agent starts phase work.
+    purpose: Provide the executor routes that generate and validate minimized phase
+      context before an agent starts phase work.
     required_routes_in_declared_order:
     - generate_phase_bundle
     - validate_phase_bundle
-    agent_consumption_rule: Agents may consume a phase bundle only after validate_phase_bundle succeeds.
-    script_selection_rule: Agents never choose bundle scripts directly; they execute required_executor_routes and resolve
-      scripts through the central route map.
+    agent_consumption_rule: Agents may consume a phase bundle only after validate_phase_bundle
+      succeeds.
+    script_selection_rule: Agents never choose bundle scripts directly; they execute
+      required_executor_routes and resolve scripts through the central route map.
+  claude_code_harness_routes:
+    purpose: Provide route-backed Claude Code execution harness generation and validation.
+    required_routes_in_declared_order:
+    - generate_claude_execution_plan
+    - validate_claude_execution_plan
+    agent_consumption_rule: Claude Code may begin mission execution only after validate_claude_execution_plan
+      succeeds.
+    script_selection_rule: Claude Code resolves route IDs through the central route
+      map and never invokes harness scripts directly.
 validation:
   required_checks:
   - required_executor_route_fields_present
