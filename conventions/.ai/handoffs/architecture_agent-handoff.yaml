@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: architecture_agent-handoff
-status: prepared
-source_output: .ai/reports/dependency-classification.yaml
-target_agent: architecture_agent
-evidence_refs:
-  - .ai/reports/dependency-classification.yaml
-source_summary: {}

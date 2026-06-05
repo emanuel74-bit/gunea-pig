@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: pre_implementation_gate_agent-handoff
-status: prepared
-source_output: .ai/reports/checkpoint-validation-plan.yaml
-target_agent: pre_implementation_gate_agent
-evidence_refs:
-  - .ai/reports/checkpoint-validation-plan.yaml
-source_summary: {}

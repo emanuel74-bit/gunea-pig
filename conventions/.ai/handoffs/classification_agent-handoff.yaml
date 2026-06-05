@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: classification_agent-handoff
-status: prepared
-source_output: .ai/reports/boundary-contract-classification.yaml
-target_agent: classification_agent
-evidence_refs:
-  - .ai/reports/boundary-contract-classification.yaml
-source_summary: {}

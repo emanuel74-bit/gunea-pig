@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: testing_agent-handoff
-status: prepared
-source_output: .ai/reports/structure-plan.yaml
-target_agent: testing_agent
-evidence_refs:
-  - .ai/reports/structure-plan.yaml
-source_summary: {}

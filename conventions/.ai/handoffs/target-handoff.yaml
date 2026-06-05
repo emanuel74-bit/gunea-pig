@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: target-handoff
-status: invalid
-source_output: .ai/reports/04-draft-role-signals.yaml
-target_agent: null
-evidence_refs:
-  - .ai/reports/04-draft-role-signals.yaml
-source_summary: {}
