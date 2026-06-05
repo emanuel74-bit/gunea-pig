@@ -2,14 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VideoDocument, SimilarityStatus } from '@gunea-pig/shared';
+import { IVideoSimilarityRepository, VideoGroupMembership } from '../interfaces/i-video-similarity-repository.port';
 
-export interface VideoGroupMembership {
-  videoId: string;
-  similarityGroupId?: string;
-}
+export { VideoGroupMembership };
 
 @Injectable()
-export class VideoSimilarityRepository {
+export class VideoSimilarityRepository implements IVideoSimilarityRepository {
   constructor(
     @InjectModel(VideoDocument.name)
     private readonly videoModel: Model<VideoDocument>,

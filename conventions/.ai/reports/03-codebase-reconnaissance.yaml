@@ -1,0 +1,852 @@
+report_id: "03-codebase-reconnaissance"
+phase_id: codebase_reconnaissance
+status: complete
+summary: >
+  Full inspection of a TypeScript NestJS monorepo comprising five packages: shared,
+  staging-service, grouping-service, vdf-scan-service, and pipeline-service.
+  The pipeline-service is a near-verbatim copy of the three standalone services
+  composed into one NestJS application — the duplication is confirmed and is the
+  largest structural violation in the codebase. No test files exist anywhere in
+  the monorepo (ASSUMP-003 is false). No REST or gRPC API surface was found;
+  only RabbitMQ consumers and a scheduled timer (ASSUMP-004 confirmed). Drizzle
+  ORM is NOT used — the DB layer uses Mongoose/NestJS Mongoose with @Schema
+  decorators (the behavior-contract references to Drizzle are inaccurate; the
+  actual ORM is Mongoose). No pending migration files were found. The shared
+  package exports Mongoose schema classes, which carry @nestjs/mongoose decorator
+  dependencies — this is an SRP violation at the shared layer. Application-layer
+  handlers depend directly on concrete infrastructure classes (no interfaces/ports),
+  which is a DIP and ISP violation throughout all services. Domain policy classes
+  are clean (no framework imports). The codebase has a layered folder structure
+  (domain, application, infrastructure, transport) but lacks interface abstractions
+  at layer boundaries.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/02-behavior-contract.yaml
+    artifact: behavior_contract
+    fields_used:
+      - scope
+      - acceptance_criteria
+      - preserved_behaviors
+      - assumptions
+  - source: conventions/.ai/reports/assumptions.yaml
+    artifact: assumptions
+    fields_used:
+      - assumptions
+      - non_blocking_assumptions
+
+decisions:
+  - id: DECISION-RECON-001
+    decision: >
+      Confirm that no test files exist anywhere in the monorepo. ASSUMP-003
+      (existing test suite provides behavioral baseline) is FALSE.
+    rationale: >
+      A complete recursive search of all packages excluding node_modules produced
+      zero *.spec.ts or *.test.ts files. No jest.config or vitest.config file was
+      found. No package.json contains a test script beyond the root workspace
+      passthrough that itself calls sub-package scripts — none of which define
+      a test command.
+    evidence:
+      - source: bash_find
+        field: find packages -name "*.spec.ts" -o -name "*.test.ts" (excluding node_modules)
+        value: "No test files found"
+
+  - id: DECISION-RECON-002
+    decision: >
+      Correct the ORM reference in the behavior contract: the codebase uses
+      Mongoose with NestJS @Schema/@Prop decorators, NOT Drizzle ORM. The
+      behavior contract's references to "Drizzle ORM" are inaccurate but the
+      protection intent (preserve table/collection schemas) remains valid —
+      apply it to Mongoose collection definitions instead.
+    rationale: >
+      All four database schema files (video.schema.ts, scan-batch.schema.ts,
+      similarity-edge.schema.ts, similarity-group.schema.ts) use @nestjs/mongoose
+      SchemaFactory.createForClass. No drizzle-orm imports exist anywhere in the
+      source tree.
+    evidence:
+      - source: packages/shared/src/db/video.schema.ts
+        field: imports
+        value: "import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'"
+      - source: packages/shared/src/db/scan-batch.schema.ts
+        field: imports
+        value: "import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'"
+
+  - id: DECISION-RECON-003
+    decision: >
+      Confirm ASSUMP-004 (RabbitMQ is the only external contract; no REST/gRPC).
+      No HTTP controllers, no gRPC transport, no Swagger decorators found.
+    rationale: >
+      All four package main.ts files initialize NestJS either as a microservice
+      (Transport.RMQ) or a standalone application with scheduled timers
+      (vdf-scan-service). No app.listen() on an HTTP port, no @Get/@Post
+      decorators, no gRPC transport options found in any file.
+    evidence:
+      - source: packages/staging-service/src/main.ts
+        field: transport
+        value: "Transport.RMQ — NestFactory.createMicroservice"
+      - source: packages/vdf-scan-service/src/main.ts
+        field: transport
+        value: "NestFactory.create standalone, no HTTP listen"
+      - source: packages/pipeline-service/src/main.ts
+        field: transport
+        value: "connectMicroservice x2 (RMQ), startAllMicroservices"
+
+  - id: DECISION-RECON-004
+    decision: >
+      Confirm pipeline-service is a near-verbatim code duplication of the three
+      standalone services. The duplication is pervasive and is the primary
+      consolidation target for the SOLID refactor.
+    rationale: >
+      Line-by-line comparison of key files confirms identical logic:
+      staging-service StageVideoHandler == pipeline-service staging StageVideoHandler,
+      grouping-service ProcessScanHandler == pipeline-service grouping ProcessScanHandler,
+      vdf-scan-service ScanOrchestrator == pipeline-service scanning ScanOrchestrator.
+      The only structural difference is pipeline-service adds a SharedInfraModule
+      (@Global) that provides S3Adapter and RabbitMQPublisher to all submodules,
+      and uses a unified PipelineConfig instead of per-service config interfaces.
+    evidence:
+      - source: packages/staging-service/src/application/stage-video.handler.ts
+        field: handle() method body
+        value: "identical to packages/pipeline-service/src/staging/application/stage-video.handler.ts"
+      - source: packages/grouping-service/src/application/process-scan.handler.ts
+        field: handle() and applyGroupMerge() method bodies
+        value: "identical to packages/pipeline-service/src/grouping/application/process-scan.handler.ts"
+      - source: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+        field: processPendingBatch() method body
+        value: "identical to packages/pipeline-service/src/scanning/application/scan.orchestrator.ts"
+
+  - id: DECISION-RECON-005
+    decision: >
+      Classify the shared package's Mongoose schema classes as an SRP violation.
+      The @Schema/@Prop decorators tie the shared data contract to the NestJS
+      framework, which means domain consumers must have NestJS/Mongoose as a
+      dependency to use them.
+    rationale: >
+      The shared package exports VideoDocument, ScanBatchDocument,
+      SimilarityEdgeDocument, and SimilarityGroupDocument — all decorated with
+      NestJS Mongoose decorators. Service packages use @InjectModel(VideoDocument.name)
+      directly against these classes. This means the shared package exports are
+      infrastructure-coupled, not plain data contracts.
+    evidence:
+      - source: packages/shared/src/db/video.schema.ts
+        field: class declaration
+        value: "@Schema({ collection: 'videos' }) export class VideoDocument"
+      - source: packages/staging-service/src/infrastructure/video.repository.ts
+        field: constructor injection
+        value: "@InjectModel(VideoDocument.name) private readonly videoModel: Model<VideoDocument>"
+
+  - id: DECISION-RECON-006
+    decision: >
+      Identify DIP violation in all application-layer handlers: they depend on
+      concrete infrastructure classes directly, with no interface/port abstraction
+      between layers.
+    rationale: >
+      StageVideoHandler directly imports and injects VideoRepository and
+      FileStagingAdapter (both concrete classes). ProcessScanHandler directly
+      injects ScanResultClient, SimilarityEdgeRepository, SimilarityGroupRepository,
+      VideoSimilarityRepository, ScanBatchRepository, and RabbitMQPublisher — all
+      concrete. ScanOrchestrator directly injects BatchClaimerService, VdfRunnerAdapter,
+      ScanPurgerService, VdfManifestNormalizer, VideoScanRepository, S3Adapter, and
+      RabbitMQPublisher — all concrete. No TypeScript interface exists between any
+      application handler and its dependencies.
+    evidence:
+      - source: packages/staging-service/src/application/stage-video.handler.ts
+        field: constructor parameters
+        value: "VideoRepository, FileStagingAdapter — both concrete classes, no interface"
+      - source: packages/grouping-service/src/application/process-scan.handler.ts
+        field: constructor parameters
+        value: "ScanResultClient, SimilarityEdgeRepository, SimilarityGroupRepository, VideoSimilarityRepository, ScanBatchRepository, RabbitMQPublisher — all concrete"
+
+  - id: DECISION-RECON-007
+    decision: >
+      Identify ISP violation: repository classes expose wide, mixed-concern
+      interfaces. No read/write/query separation exists.
+    rationale: >
+      VideoRepository in staging-service mixes staging-specific writes
+      (upsertPendingStaging, markStaged, markStagingFailed) with a read query
+      (isAlreadyStaged, findByVideoId). VideoSimilarityRepository mixes
+      group membership reads (findGroupMemberships) with multiple write operations
+      (reassignGroup, markInGroup, markHasMatches, markNoMatches). The application
+      handlers import the full repository class when they only need a subset of
+      operations.
+    evidence:
+      - source: packages/staging-service/src/infrastructure/video.repository.ts
+        field: exported methods
+        value: "findByVideoId, upsertPendingStaging, markStaged, markStagingFailed, isAlreadyStaged — mixed concerns in one class"
+      - source: packages/grouping-service/src/infrastructure/video-similarity.repository.ts
+        field: exported methods
+        value: "findGroupMemberships, reassignGroup, markInGroup, markHasMatches, markNoMatches"
+
+  - id: DECISION-RECON-008
+    decision: >
+      Identify SRP violation in ScanOrchestrator and ProcessScanHandler:
+      both orchestrate multiple concerns that could be separated.
+    rationale: >
+      ScanOrchestrator handles batch claiming, VDF execution, manifest normalization,
+      S3 upload, batch status transitions, and event publication — at least six
+      distinct responsibilities. ProcessScanHandler handles scan result loading,
+      threshold filtering, edge persistence, group merge orchestration, batch status
+      update, and event publication — six responsibilities. Neither class has
+      a single reason to change.
+    evidence:
+      - source: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+        field: processPendingBatch() method
+        value: "claims batch, runs VDF, normalizes, uploads to S3, transitions status x3, publishes event"
+      - source: packages/grouping-service/src/application/process-scan.handler.ts
+        field: handle() method
+        value: "loads scan result, filters thresholds, persists edges, applies group merge, updates batch, publishes event"
+
+  - id: DECISION-RECON-009
+    decision: >
+      Classify RabbitMQPublisher as a concrete infrastructure class with no port
+      interface, directly injected into application-layer classes — a DIP violation.
+    rationale: >
+      RabbitMQPublisher is defined in packages/shared/src/queue/rabbitmq.client.ts
+      as a concrete class with amqplib implementation details. It is injected
+      directly into ProcessScanHandler and ScanOrchestrator via NestJS DI using
+      the class itself as the token. No IEventPublisher or IQueuePublisher interface
+      exists to abstract the publishing behavior.
+    evidence:
+      - source: packages/grouping-service/src/app.module.ts
+        field: providers
+        value: "{ provide: RabbitMQPublisher, useFactory: async () => new RabbitMQPublisher(...) }"
+      - source: packages/grouping-service/src/application/process-scan.handler.ts
+        field: constructor
+        value: "private readonly publisher: RabbitMQPublisher"
+
+  - id: DECISION-RECON-010
+    decision: >
+      Classify S3Adapter as a concrete infrastructure class with no port interface,
+      directly injected — a DIP violation.
+    rationale: >
+      S3Adapter is defined in packages/shared/src/storage/s3.client.ts as a
+      concrete class wrapping AWS SDK v3. It is injected by class token into
+      FileStagingAdapter, ScanResultClient, and ScanOrchestrator. No IS3Client
+      or IStorageAdapter interface exists.
+    evidence:
+      - source: packages/staging-service/src/app.module.ts
+        field: providers
+        value: "{ provide: S3Adapter, useFactory: () => new S3Adapter(...) }"
+      - source: packages/staging-service/src/infrastructure/file-staging.adapter.ts
+        field: constructor
+        value: "constructor(private readonly s3: S3Adapter, private readonly scanPath: string)"
+
+  - id: DECISION-RECON-011
+    decision: >
+      Confirm no pending Mongoose migrations exist. ASSUMP-006 is validated.
+    rationale: >
+      No migration files, drizzle config, or pending-schema files found in the
+      repository. The shared/src/db directory contains only four schema files
+      and an index barrel. Collection schemas are stable.
+    evidence:
+      - source: bash_find
+        field: find root for drizzle.config, *.migration* (excluding node_modules)
+        value: "no files found"
+      - source: packages/shared/src/db/
+        field: directory listing
+        value: "index.ts, video.schema.ts, scan-batch.schema.ts, similarity-edge.schema.ts, similarity-group.schema.ts"
+
+  - id: DECISION-RECON-012
+    decision: >
+      Confirm that the shared package is a soft internal contract (ASSUMP-005
+      validated). No evidence of the shared package being published to npm or
+      consumed by external systems. All consumers are workspace-local via wildcard
+      version "*".
+    rationale: >
+      All service package.json files reference "@gunea-pig/shared": "*" (workspace
+      wildcard). The shared package.json is marked "private": true. No publishConfig
+      or npm registry references found.
+    evidence:
+      - source: packages/staging-service/package.json
+        field: dependencies
+        value: '"@gunea-pig/shared": "*"'
+      - source: packages/shared/package.json
+        field: private
+        value: '"private": true'
+
+  - id: DECISION-RECON-013
+    decision: >
+      Identify inline event validation in ScanCompletedConsumer as a duplication
+      and misplacement. The consumer inlines its own validation rather than
+      delegating to a dedicated validator module, and the logic is duplicated
+      identically in both grouping-service and pipeline-service grouping submodule.
+    rationale: >
+      grouping-service/src/consumers/scan-completed.consumer.ts contains a private
+      validateEvent() method that duplicates the logic in the standalone
+      scan-result.validator.ts in the validators folder. In pipeline-service,
+      the same consumer pattern is repeated. No reuse occurs.
+    evidence:
+      - source: packages/grouping-service/src/consumers/scan-completed.consumer.ts
+        field: validateEvent() private method
+        value: "inline field validation for ScanCompletedEvent, not reusing scan-result.validator"
+      - source: packages/grouping-service/src/validators/scan-result.validator.ts
+        field: validateScanResult() function
+        value: "separate validator for NormalizedScanResult; no shared boundary validator for the queue event itself"
+
+evidence_refs:
+  - ref: packages/shared/src/index.ts
+    section: exports
+    consumed_by: shared_package_surface_analysis
+  - ref: packages/shared/src/types/queue.types.ts
+    section: QUEUE_EXCHANGES, ROUTING_KEYS, QUEUE_NAMES, event interfaces
+    consumed_by: external_contract_identification
+  - ref: packages/shared/src/db/video.schema.ts
+    section: VideoDocument schema
+    consumed_by: orm_identification_and_schema_contract
+  - ref: packages/staging-service/src/application/stage-video.handler.ts
+    section: handle() method, dependencies
+    consumed_by: dip_violation_analysis
+  - ref: packages/grouping-service/src/application/process-scan.handler.ts
+    section: handle() and applyGroupMerge()
+    consumed_by: srp_and_dip_violation_analysis
+  - ref: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    section: processPendingBatch()
+    consumed_by: srp_violation_analysis
+  - ref: packages/pipeline-service/src/app.module.ts
+    section: imports
+    consumed_by: pipeline_consolidation_structure
+  - ref: packages/pipeline-service/src/shared-infra.module.ts
+    section: providers and exports
+    consumed_by: pipeline_global_infra_pattern
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.codebase_reconnaissance.output
+  status: pending
+  note: Gate result is produced by the gate subsystem via run_gate_check route — not authored here.
+
+relevant_artifacts:
+  - path: packages/shared/src/index.ts
+    role: shared_package_barrel
+    responsibility: >
+      Re-exports all shared types, DB schemas, queue client, S3 client, and logger.
+      All service packages import from this single entry point via '@gunea-pig/shared'.
+    solid_violations:
+      - "SRP: re-exports infrastructure classes (RabbitMQPublisher, S3Adapter) alongside domain types, mixing domain and infrastructure concerns in one export surface"
+
+  - path: packages/shared/src/types/queue.types.ts
+    role: external_contract
+    responsibility: >
+      Defines the three RabbitMQ event interfaces (NewVideoReadyEvent, ScanCompletedEvent,
+      ScanPersistedEvent) and the exchange/routing-key/queue-name constants. This is
+      the immutable external contract for the entire pipeline.
+    solid_violations: []
+
+  - path: packages/shared/src/types/video.types.ts
+    role: domain_enums_and_interfaces
+    responsibility: >
+      Defines ScanState, SimilarityStatus, ScanBatchStatus enums and IVideoDocument,
+      IScanBatch, ISimilarityEdge, ISimilarityGroup plain interfaces.
+    solid_violations: []
+
+  - path: packages/shared/src/types/scan.types.ts
+    role: domain_types
+    responsibility: >
+      Defines NormalizedScanResult, ScanResultMatch (the S3-stored scan output schema),
+      and SimilarityThresholdPolicy interface.
+    solid_violations: []
+
+  - path: packages/shared/src/db/video.schema.ts
+    role: infrastructure_schema
+    responsibility: >
+      Mongoose @Schema decorated class for the videos MongoDB collection.
+      Shared across all services via the shared package export.
+    solid_violations:
+      - "SRP: Mongoose @Schema decorator couples the shared data contract to the NestJS Mongoose infrastructure"
+      - "DIP: Services import this concrete ORM class directly; no plain interface separates the document shape from the Mongoose decorator system"
+
+  - path: packages/shared/src/db/scan-batch.schema.ts
+    role: infrastructure_schema
+    responsibility: >
+      Mongoose @Schema decorated class for the scan_batches MongoDB collection.
+    solid_violations:
+      - "SRP: same as video.schema.ts — ORM decorator coupling"
+
+  - path: packages/shared/src/db/similarity-edge.schema.ts
+    role: infrastructure_schema
+    responsibility: >
+      Mongoose @Schema decorated class for the similarity_edges MongoDB collection.
+    solid_violations:
+      - "SRP: same as video.schema.ts — ORM decorator coupling"
+
+  - path: packages/shared/src/db/similarity-group.schema.ts
+    role: infrastructure_schema
+    responsibility: >
+      Mongoose @Schema decorated class for the similarity_groups MongoDB collection.
+    solid_violations:
+      - "SRP: same as video.schema.ts — ORM decorator coupling"
+
+  - path: packages/shared/src/queue/rabbitmq.client.ts
+    role: infrastructure_client
+    responsibility: >
+      Concrete amqplib wrapper providing connect, publish, and close operations.
+      Also asserts the full RabbitMQ topology on connect (exchanges, queues, bindings).
+    solid_violations:
+      - "SRP: topology assertion embedded in the client class — topology setup is a separate concern from message publishing"
+      - "OCP: topology is hardcoded — adding a new exchange requires modifying this class"
+      - "DIP: exported as a concrete class with no IQueuePublisher interface; application handlers depend on this concretion directly"
+
+  - path: packages/shared/src/storage/s3.client.ts
+    role: infrastructure_client
+    responsibility: >
+      Concrete AWS SDK v3 S3 wrapper providing headObject, downloadToFile, putJson, getJson, uploadFile.
+    solid_violations:
+      - "DIP: no IS3Client or IStorageAdapter interface; application-layer classes depend on this concrete class"
+
+  - path: packages/staging-service/src/transport/video-ready.consumer.ts
+    role: transport_consumer
+    responsibility: >
+      NestJS @Controller listening on 'video.ready-for-scan' routing key.
+      Deserializes and validates the raw RabbitMQ payload, delegates to StageVideoHandler,
+      ack/nacks based on outcome.
+    solid_violations: []
+
+  - path: packages/staging-service/src/application/stage-video.handler.ts
+    role: application_handler
+    responsibility: >
+      Orchestrates the staging workflow: idempotency check, upsert pending, verify S3 object, stage file, mark staged.
+    solid_violations:
+      - "DIP: depends on concrete VideoRepository and FileStagingAdapter with no interface abstraction"
+      - "SRP: both orchestration logic AND domain error classes (VideoAlreadyStagedError, StagingPermanentFailureError) are defined in this file"
+
+  - path: packages/staging-service/src/domain/video-staging.policy.ts
+    role: domain_policy
+    responsibility: >
+      Pure static policy class. Defines which ScanState values are non-stageable.
+      No framework imports.
+    solid_violations: []
+
+  - path: packages/staging-service/src/infrastructure/video.repository.ts
+    role: infrastructure_repository
+    responsibility: >
+      Mongoose repository for video CRUD operations needed by the staging workflow.
+    solid_violations:
+      - "ISP: wide interface — findByVideoId, upsertPendingStaging, markStaged, markStagingFailed, isAlreadyStaged in one class; handler only needs a subset"
+      - "DIP: no IVideoRepository interface; handler imports concrete class"
+
+  - path: packages/staging-service/src/infrastructure/file-staging.adapter.ts
+    role: infrastructure_adapter
+    responsibility: >
+      Wraps S3Adapter to implement file staging: verify object existence, download to local scan path, remove staged file.
+    solid_violations:
+      - "DIP: no IFileStagingPort interface; handler imports concrete class"
+      - "SRP: error class S3ObjectNotFoundError defined inline"
+
+  - path: packages/staging-service/src/validators/staging-message.validator.ts
+    role: transport_validator
+    responsibility: >
+      Plain function validating NewVideoReadyEvent shape and schema version at the transport boundary.
+    solid_violations: []
+
+  - path: packages/grouping-service/src/application/process-scan.handler.ts
+    role: application_handler
+    responsibility: >
+      Orchestrates scan result processing: idempotency check, S3 load, threshold filtering,
+      edge persistence, group merge, batch status update, ScanPersistedEvent publication.
+    solid_violations:
+      - "SRP: six distinct responsibilities in one class (load, filter, persist-edges, merge-groups, update-batch, publish)"
+      - "DIP: injects six concrete repository/client classes with no interfaces"
+      - "OCP: UnionFindDomainService instantiated with 'new' inside constructor — not injected, not replaceable"
+
+  - path: packages/grouping-service/src/domain/similarity-threshold.policy.ts
+    role: domain_policy
+    responsibility: >
+      Value-object-like class wrapping SimilarityThresholdPolicy config. Provides
+      isStorable, isMergeEligible, isStrongDuplicate, requiresManualReview, filterStorable, filterMergeEligible.
+      No framework imports.
+    solid_violations: []
+
+  - path: packages/grouping-service/src/domain/union-find.domain-service.ts
+    role: domain_service
+    responsibility: >
+      Pure domain service implementing Union-Find for connected component discovery.
+      No framework imports.
+    solid_violations: []
+
+  - path: packages/grouping-service/src/infrastructure/scan-result.client.ts
+    role: infrastructure_client
+    responsibility: >
+      Loads and validates a NormalizedScanResult from S3 for a given bucket/key.
+    solid_violations:
+      - "DIP: depends on concrete S3Adapter with no IS3Client interface"
+
+  - path: packages/grouping-service/src/infrastructure/similarity-edge.repository.ts
+    role: infrastructure_repository
+    responsibility: >
+      Mongoose repository for persisting similarity edges (upsert-by-scanId-and-pair).
+    solid_violations:
+      - "DIP: no ISimilarityEdgeRepository interface"
+
+  - path: packages/grouping-service/src/infrastructure/similarity-group.repository.ts
+    role: infrastructure_repository
+    responsibility: >
+      Mongoose repository for group records — findByIds, upsertGroup, deleteByIds.
+    solid_violations:
+      - "DIP: no ISimilarityGroupRepository interface"
+
+  - path: packages/grouping-service/src/infrastructure/video-similarity.repository.ts
+    role: infrastructure_repository
+    responsibility: >
+      Mongoose repository for updating video similarity status fields —
+      findGroupMemberships, reassignGroup, markInGroup, markHasMatches, markNoMatches.
+    solid_violations:
+      - "ISP: five mixed-concern methods on one class; mark* operations are writes, findGroupMemberships is a query"
+      - "DIP: no IVideoSimilarityRepository interface"
+
+  - path: packages/grouping-service/src/infrastructure/scan-batch.repository.ts
+    role: infrastructure_repository
+    responsibility: >
+      Minimal repository for scan batch idempotency check and completion marking.
+    solid_violations:
+      - "DIP: no IScanBatchRepository interface"
+
+  - path: packages/grouping-service/src/consumers/scan-completed.consumer.ts
+    role: transport_consumer
+    responsibility: >
+      NestJS @Controller listening on 'scan.completed'. Validates event, delegates to ProcessScanHandler.
+    solid_violations:
+      - "SRP: contains inline validateEvent() method duplicating boundary validation logic"
+
+  - path: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    role: application_handler
+    responsibility: >
+      @Interval(30_000) scheduled orchestrator: claim batch, run VDF scan, normalize manifest,
+      upload to S3, transition batch statuses, publish ScanCompletedEvent, run cleanup pass.
+    solid_violations:
+      - "SRP: seven distinct responsibilities in one class"
+      - "DIP: injects S3Adapter and RabbitMQPublisher directly — concrete classes, no ports"
+      - "OCP: orchestration sequence is hardcoded; adding a new scan phase requires modifying this class"
+
+  - path: packages/vdf-scan-service/src/domain/batch-claim.policy.ts
+    role: domain_policy
+    responsibility: >
+      Static policy for batch expiry logic — EXPIRABLE_STATUSES, expiresAt, isExpired. No framework imports.
+    solid_violations: []
+
+  - path: packages/vdf-scan-service/src/domain/scan-cleanup.policy.ts
+    role: domain_policy
+    responsibility: >
+      Static policy for cleanup trigger conditions — CLEANUP_TRIGGER_STATUS, isStaleForRetention. No framework imports.
+    solid_violations: []
+
+  - path: packages/vdf-scan-service/src/infrastructure/batch-claimer.service.ts
+    role: infrastructure_service
+    responsibility: >
+      Implements durable batch claiming: find staged videos, atomically claim, create ScanBatch document,
+      recover expired claims.
+    solid_violations:
+      - "SRP: claim logic and expired-claim recovery logic combined in one class"
+      - "DIP: no IBatchClaimerPort interface"
+
+  - path: packages/vdf-scan-service/src/infrastructure/vdf-runner.adapter.ts
+    role: infrastructure_adapter
+    responsibility: >
+      Wraps the VDF CLI process invocation with timeout, stdout/stderr capture, and output validation.
+    solid_violations:
+      - "DIP: no IVdfRunnerPort interface"
+
+  - path: packages/vdf-scan-service/src/infrastructure/vdf-manifest.normalizer.ts
+    role: infrastructure_adapter
+    responsibility: >
+      Reads and normalizes VDF's raw JSON output into NormalizedScanResult.
+      Handles two VDF output field name variants (Duplicates/duplicates, similarity/percentage).
+    solid_violations:
+      - "SRP: file I/O (readRawOutput) mixed with normalization logic; better separated"
+
+  - path: packages/vdf-scan-service/src/infrastructure/scan-purger.service.ts
+    role: infrastructure_service
+    responsibility: >
+      Cleanup pass: transitions GROUPING_COMPLETED batches to PENDING_CLEANUP, removes VDF artifacts,
+      marks GROUPED_COMPLETED on videos, expires stale PENDING_GROUPING batches.
+    solid_violations:
+      - "SRP: cleanup and expiry are two distinct operations bundled in one service"
+      - "DIP: depends on concrete VdfRunnerAdapter and VideoScanRepository"
+
+  - path: packages/vdf-scan-service/src/infrastructure/video-scan.repository.ts
+    role: infrastructure_repository
+    responsibility: >
+      Mongoose repository for video scan state transitions and videoId-to-stagedPath map building.
+    solid_violations:
+      - "ISP: buildVideoIdMap is a query; markScan* are writes — mixed concerns"
+      - "DIP: no IVideoScanRepository interface"
+
+  - path: packages/pipeline-service/src/app.module.ts
+    role: application_module_root
+    responsibility: >
+      Composes SharedInfraModule, StagingModule, ScanningModule, GroupingModule into
+      a single NestJS application. Manages MongoDB and scheduler at the root level.
+    solid_violations:
+      - "SRP: one module hosts all three service subdomains — no single-responsibility boundary at module level"
+
+  - path: packages/pipeline-service/src/shared-infra.module.ts
+    role: infrastructure_module
+    responsibility: >
+      @Global module providing S3Adapter, RabbitMQPublisher, PIPELINE_CONFIG, and SCAN_OUTPUT_DIR
+      to all submodules without re-declaration.
+    solid_violations:
+      - "OCP: @Global pattern means all submodules implicitly depend on this module's exported concretions"
+
+call_sites:
+  - caller: packages/staging-service/src/transport/video-ready.consumer.ts
+    callee: packages/staging-service/src/application/stage-video.handler.ts
+    relationship: "consumer delegates to handler via constructor-injected StageVideoHandler.handle(event)"
+
+  - caller: packages/staging-service/src/application/stage-video.handler.ts
+    callee: packages/staging-service/src/infrastructure/video.repository.ts
+    relationship: "handler directly injects and calls VideoRepository.isAlreadyStaged, upsertPendingStaging, markStaged, markStagingFailed"
+
+  - caller: packages/staging-service/src/application/stage-video.handler.ts
+    callee: packages/staging-service/src/infrastructure/file-staging.adapter.ts
+    relationship: "handler directly injects and calls FileStagingAdapter.verifyS3ObjectExists, stageFromS3"
+
+  - caller: packages/staging-service/src/infrastructure/file-staging.adapter.ts
+    callee: packages/shared/src/storage/s3.client.ts
+    relationship: "adapter injects S3Adapter and calls headObject, downloadToFile"
+
+  - caller: packages/staging-service/src/infrastructure/video.repository.ts
+    callee: packages/staging-service/src/domain/video-staging.policy.ts
+    relationship: "repository calls VideoStagingPolicy.nonStageableStates() for isAlreadyStaged query filter"
+
+  - caller: packages/grouping-service/src/consumers/scan-completed.consumer.ts
+    callee: packages/grouping-service/src/application/process-scan.handler.ts
+    relationship: "consumer delegates to ProcessScanHandler.handle(event)"
+
+  - caller: packages/grouping-service/src/application/process-scan.handler.ts
+    callee: packages/grouping-service/src/infrastructure/scan-result.client.ts
+    relationship: "handler injects ScanResultClient and calls load(bucket, key)"
+
+  - caller: packages/grouping-service/src/application/process-scan.handler.ts
+    callee: packages/grouping-service/src/domain/similarity-threshold.policy.ts
+    relationship: "handler constructs SimilarityThreshold with config, calls filterStorable, filterMergeEligible"
+
+  - caller: packages/grouping-service/src/application/process-scan.handler.ts
+    callee: packages/grouping-service/src/domain/union-find.domain-service.ts
+    relationship: "handler instantiates UnionFindDomainService via 'new' in field initializer — not injected"
+
+  - caller: packages/grouping-service/src/application/process-scan.handler.ts
+    callee: packages/shared/src/queue/rabbitmq.client.ts
+    relationship: "handler injects RabbitMQPublisher and calls publish() to emit ScanPersistedEvent"
+
+  - caller: packages/grouping-service/src/infrastructure/scan-result.client.ts
+    callee: packages/shared/src/storage/s3.client.ts
+    relationship: "client injects S3Adapter and calls getJson()"
+
+  - caller: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    callee: packages/vdf-scan-service/src/infrastructure/batch-claimer.service.ts
+    relationship: "orchestrator injects BatchClaimerService and calls claimNextBatch, transitionBatchStatus"
+
+  - caller: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    callee: packages/vdf-scan-service/src/infrastructure/vdf-runner.adapter.ts
+    relationship: "orchestrator injects VdfRunnerAdapter and calls run()"
+
+  - caller: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    callee: packages/shared/src/storage/s3.client.ts
+    relationship: "orchestrator injects S3Adapter directly and calls putJson() for scan result upload"
+
+  - caller: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    callee: packages/shared/src/queue/rabbitmq.client.ts
+    relationship: "orchestrator injects RabbitMQPublisher directly and calls publish() for ScanCompletedEvent"
+
+  - caller: packages/vdf-scan-service/src/infrastructure/batch-claimer.service.ts
+    callee: packages/vdf-scan-service/src/domain/batch-claim.policy.ts
+    relationship: "service calls BatchClaimPolicy.expiresAt, EXPIRABLE_STATUSES for claim and recovery logic"
+
+  - caller: packages/vdf-scan-service/src/infrastructure/scan-purger.service.ts
+    callee: packages/vdf-scan-service/src/domain/scan-cleanup.policy.ts
+    relationship: "purger calls ScanCleanupPolicy.STALE_AWAITING_STATUS, isStaleForRetention"
+
+  - caller: all_services
+    callee: packages/shared/src/types/queue.types.ts
+    relationship: "all services import QUEUE_EXCHANGES, ROUTING_KEYS, QUEUE_NAMES constants and event interfaces from shared"
+
+  - caller: all_repositories
+    callee: packages/shared/src/db/*.schema.ts
+    relationship: "all repository classes inject Model<VideoDocument> etc. via @InjectModel(VideoDocument.name) — importing shared schema classes as the injection token"
+
+reusable_behavior:
+  - id: RB-001
+    description: >
+      Event validation pattern — boundary validation of a raw unknown RabbitMQ payload.
+      Identical pattern (check type, check schemaVersion, check required string fields,
+      throw typed ValidationError) implemented independently in:
+      staging-service/src/validators/staging-message.validator.ts,
+      pipeline-service/src/staging/transport/staging-message.validator.ts (verbatim copy),
+      grouping-service/src/consumers/scan-completed.consumer.ts (inline),
+      pipeline-service/src/grouping/transport/scan-completed.consumer.ts (inline).
+    extraction_candidate: >
+      A generic boundary validator factory or a shared event validation utility
+      could be extracted to shared package.
+
+  - id: RB-002
+    description: >
+      NormalizedScanResult validator — validateScanResult() function, including
+      validateMatch() helper. Implemented identically in:
+      grouping-service/src/validators/scan-result.validator.ts and
+      pipeline-service/src/grouping/infrastructure/scan-result.validator.ts.
+    extraction_candidate: >
+      Move to shared package as a reusable validator, collocated with the type definition.
+
+  - id: RB-003
+    description: >
+      Config pattern — EnvironmentVariables class with class-validator decorators,
+      plainToInstance, validateSync, and typed config interface returned by buildConfig().
+      Implemented in each package's config.ts with variations (staging, grouping, vdf-scan, pipeline).
+    extraction_candidate: >
+      A shared config builder utility or base class for environment variable validation,
+      though each service has enough unique config fields that extraction should be partial.
+
+  - id: RB-004
+    description: >
+      Idempotency guard — check if an operation has already been performed (isAlreadyStaged,
+      isAlreadyGrouped) and throw a typed Already*Error before doing work. Pattern is consistent
+      across StageVideoHandler and ProcessScanHandler.
+    extraction_candidate: >
+      An idempotency guard abstraction or port interface could standardize this pattern.
+
+  - id: RB-005
+    description: >
+      Ack/Nack error classification — transport consumers map specific error types to ack/nack
+      decisions. Identical structure in VideoReadyConsumer and ScanCompletedConsumer:
+      catch AlreadyDoneError -> ack, catch PermanentFailureError -> nack(requeue=false), other -> nack(requeue=false).
+    extraction_candidate: >
+      A generic consumer base class or error-classifier utility could extract this pattern.
+
+  - id: RB-006
+    description: >
+      ScanOrchestrator / ProcessScanHandler — fully duplicated in pipeline-service
+      scanning and grouping submodules respectively.
+    extraction_candidate: >
+      Canonical implementation should live in pipeline-service; standalone services
+      can be deprecated.
+
+  - id: RB-007
+    description: >
+      BatchClaimerService, VdfRunnerAdapter, VdfManifestNormalizer, ScanPurgerService,
+      VideoScanRepository — fully duplicated between vdf-scan-service/src/infrastructure/
+      and pipeline-service/src/scanning/infrastructure/.
+    extraction_candidate: >
+      Pipeline-service submodule is the consolidation target.
+
+local_conventions:
+  - id: LC-001
+    name: Layer folder naming
+    description: >
+      All services use consistent layer folder names: domain/, application/,
+      infrastructure/, transport/ (or consumers/). Validators are placed in a
+      validators/ folder within the service root (standalone services) or within
+      transport/ (pipeline-service).
+    packages_following: [staging-service, grouping-service, vdf-scan-service, pipeline-service]
+
+  - id: LC-002
+    name: File naming — kebab-case with role suffix
+    description: >
+      All files use kebab-case with a semantic role suffix:
+      *.handler.ts, *.consumer.ts, *.repository.ts, *.adapter.ts, *.policy.ts,
+      *.service.ts, *.module.ts, *.validator.ts, *.client.ts, *.normalizer.ts.
+    packages_following: [all]
+
+  - id: LC-003
+    name: Typed custom error classes with name and cause
+    description: >
+      All error classes extend Error, set this.name to the class name, optionally
+      set this.cause. Error classes are defined close to the code that throws them
+      (handler file or adapter file), not in a separate errors directory.
+    packages_following: [all]
+
+  - id: LC-004
+    name: plainToInstance + class-validator config pattern
+    description: >
+      Every service uses a EnvironmentVariables class with class-validator decorators,
+      plainToInstance with enableImplicitConversion, validateSync, and returns a
+      typed config interface from buildConfig().
+    packages_following: [staging-service, grouping-service, vdf-scan-service, pipeline-service]
+
+  - id: LC-005
+    name: NestJS Logger instantiated per class
+    description: >
+      Every class that logs creates private readonly logger = new Logger(ClassName.name).
+      Consistent across all services.
+    packages_following: [all]
+
+  - id: LC-006
+    name: Mongoose .lean() + typed generic on all reads
+    description: >
+      All repository read operations chain .lean<T>() before .exec() to return
+      plain objects rather than Mongoose hydrated documents.
+    packages_following: [staging-service, grouping-service, vdf-scan-service, pipeline-service]
+
+  - id: LC-007
+    name: Injection token symbols
+    description: >
+      Services with value-type providers (config objects, path strings) use
+      Symbol-based injection tokens declared in injection-tokens.ts.
+      Example: VDF_SCAN_CONFIG = Symbol('VDF_SCAN_CONFIG'), GROUPING_CONFIG = Symbol('GROUPING_CONFIG'),
+      PIPELINE_CONFIG = Symbol('PIPELINE_CONFIG').
+    packages_following: [vdf-scan-service, grouping-service, pipeline-service]
+
+  - id: LC-008
+    name: No REST HTTP layer — RMQ microservice or scheduler-only
+    description: >
+      The codebase deliberately avoids REST. Services are either RMQ microservices
+      (staging, grouping) or scheduler-driven standalone applications (vdf-scan-service).
+      Pipeline-service combines both patterns.
+    packages_following: [all]
+
+  - id: LC-009
+    name: Graceful shutdown via SIGTERM/SIGINT handlers in main.ts
+    description: >
+      Every main.ts registers process.on('SIGTERM') and process.on('SIGINT') handlers
+      that call app.close() and process.exit(0). Consistent pattern across all services.
+    packages_following: [all]
+
+  - id: LC-010
+    name: Barrel index.ts exports per module
+    description: >
+      Each sub-folder of shared has an index.ts barrel (db/index.ts, queue/index.ts,
+      storage/index.ts, types/index.ts) re-exported from the root index.ts.
+    packages_following: [shared]
+
+dependency_signals:
+  - description: >
+      All four service packages depend on @gunea-pig/shared via workspace wildcard.
+      The dependency is unidirectional: services -> shared.
+  - description: >
+      Within staging-service: transport -> application -> infrastructure -> domain.
+      Domain has no inbound infrastructure imports.
+  - description: >
+      Within grouping-service: consumers -> application -> infrastructure -> domain.
+      Domain imports only from @gunea-pig/shared types (no Mongoose, no NestJS).
+  - description: >
+      Within vdf-scan-service: application (ScanOrchestrator) imports from infrastructure
+      AND from @gunea-pig/shared directly (S3Adapter, RabbitMQPublisher, QUEUE_EXCHANGES).
+      This is an SRP violation — the application layer directly handles infrastructure concerns.
+  - description: >
+      The shared package itself imports @nestjs/mongoose and mongoose — meaning it is
+      not a pure domain/type package; it carries framework dependencies.
+  - description: >
+      pipeline-service/shared-infra.module.ts provides S3Adapter and RabbitMQPublisher
+      as @Global providers, making them implicitly available to all submodules without
+      explicit module imports. This creates hidden coupling between submodules and the
+      global infrastructure.
+
+boundary_signals:
+  - description: >
+      Module boundaries in pipeline-service: StagingModule, ScanningModule, GroupingModule
+      are NestJS feature modules, but they share a single root AppModule and the @Global
+      SharedInfraModule — no clean domain boundary between the three subdomains.
+  - description: >
+      The transport layer (consumers) forms a clean boundary: it validates the raw RabbitMQ
+      payload and delegates to the application handler. This pattern is consistent and sound
+      but lacks a formal port definition.
+  - description: >
+      Domain policy classes (VideoStagingPolicy, SimilarityThreshold, UnionFindDomainService,
+      BatchClaimPolicy, ScanCleanupPolicy) are the only truly clean, isolated units in the
+      codebase. They have no framework imports and could be tested in isolation. These are
+      the existing port-like abstractions — they serve as the inner boundary of the
+      domain layer.
+  - description: >
+      The shared package's types/queue.types.ts acts as the published interface between services —
+      it is the closest thing to an anti-corruption layer boundary in the system.
+  - description: >
+      No formal ports/interfaces directory exists anywhere. The absence of interface files
+      is the primary structural gap for SOLID compliance.

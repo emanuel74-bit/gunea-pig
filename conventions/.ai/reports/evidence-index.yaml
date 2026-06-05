@@ -1,0 +1,1130 @@
+artifact: evidence_index
+generated_by: collect-evidence
+status: collected
+evidence_count: 197
+evidence_counts_by_type:
+  bundle: 64
+  unknown: 1
+  gate: 33
+  handoff: 18
+  report: 59
+  topology: 2
+  validation: 20
+required_source_types:
+  - validation
+  - gate
+  - handoff
+  - revision
+  - report
+entries:
+  - evidence_id: bundles_phases_mission_active_context_manifest_bundle_yaml
+    path: .ai/bundles/phases/mission/active_context_manifest.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_active_context_manifest_manifest_yaml
+    path: .ai/bundles/phases/mission/active_context_manifest.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_architecture_decomposition_bundle_yaml
+    path: .ai/bundles/phases/mission/architecture_decomposition.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_architecture_decomposition_manifest_yaml
+    path: .ai/bundles/phases/mission/architecture_decomposition.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_artifact_action_resolution_bundle_yaml
+    path: .ai/bundles/phases/mission/artifact_action_resolution.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_artifact_action_resolution_manifest_yaml
+    path: .ai/bundles/phases/mission/artifact_action_resolution.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_artifact_reuse_analysis_bundle_yaml
+    path: .ai/bundles/phases/mission/artifact_reuse_analysis.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_artifact_reuse_analysis_manifest_yaml
+    path: .ai/bundles/phases/mission/artifact_reuse_analysis.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_behavior_contract_bundle_yaml
+    path: .ai/bundles/phases/mission/behavior_contract.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_behavior_contract_manifest_yaml
+    path: .ai/bundles/phases/mission/behavior_contract.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_boundary_contract_classification_bundle_yaml
+    path: .ai/bundles/phases/mission/boundary_contract_classification.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_boundary_contract_classification_manifest_yaml
+    path: .ai/bundles/phases/mission/boundary_contract_classification.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_call_site_impact_analysis_bundle_yaml
+    path: .ai/bundles/phases/mission/call_site_impact_analysis.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_call_site_impact_analysis_manifest_yaml
+    path: .ai/bundles/phases/mission/call_site_impact_analysis.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_change_impact_analysis_bundle_yaml
+    path: .ai/bundles/phases/mission/change_impact_analysis.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_change_impact_analysis_manifest_yaml
+    path: .ai/bundles/phases/mission/change_impact_analysis.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_checkpoint_validation_plan_bundle_yaml
+    path: .ai/bundles/phases/mission/checkpoint_validation_plan.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_checkpoint_validation_plan_manifest_yaml
+    path: .ai/bundles/phases/mission/checkpoint_validation_plan.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_codebase_reconnaissance_bundle_yaml
+    path: .ai/bundles/phases/mission/codebase_reconnaissance.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_codebase_reconnaissance_manifest_yaml
+    path: .ai/bundles/phases/mission/codebase_reconnaissance.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_dependency_classification_bundle_yaml
+    path: .ai/bundles/phases/mission/dependency_classification.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_dependency_classification_manifest_yaml
+    path: .ai/bundles/phases/mission/dependency_classification.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_draft_role_pass_bundle_yaml
+    path: .ai/bundles/phases/mission/draft_role_pass.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_draft_role_pass_manifest_yaml
+    path: .ai/bundles/phases/mission/draft_role_pass.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_failure_classification_bundle_yaml
+    path: .ai/bundles/phases/mission/failure_classification.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_failure_classification_manifest_yaml
+    path: .ai/bundles/phases/mission/failure_classification.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_feedback_repair_bundle_yaml
+    path: .ai/bundles/phases/mission/feedback_repair.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_feedback_repair_manifest_yaml
+    path: .ai/bundles/phases/mission/feedback_repair.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_final_role_assignment_bundle_yaml
+    path: .ai/bundles/phases/mission/final_role_assignment.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_final_role_assignment_manifest_yaml
+    path: .ai/bundles/phases/mission/final_role_assignment.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_final_validation_bundle_yaml
+    path: .ai/bundles/phases/mission/final_validation.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_final_validation_manifest_yaml
+    path: .ai/bundles/phases/mission/final_validation.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_implementation_bundle_yaml
+    path: .ai/bundles/phases/mission/implementation.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_implementation_manifest_yaml
+    path: .ai/bundles/phases/mission/implementation.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_implementation_sequence_bundle_yaml
+    path: .ai/bundles/phases/mission/implementation_sequence.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_implementation_sequence_manifest_yaml
+    path: .ai/bundles/phases/mission/implementation_sequence.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_local_alignment_bundle_yaml
+    path: .ai/bundles/phases/mission/local_alignment.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_local_alignment_manifest_yaml
+    path: .ai/bundles/phases/mission/local_alignment.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_mission_initialization_bundle_yaml
+    path: .ai/bundles/phases/mission/mission_initialization.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_mission_initialization_manifest_yaml
+    path: .ai/bundles/phases/mission/mission_initialization.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_mission_profile_selection_bundle_yaml
+    path: .ai/bundles/phases/mission/mission_profile_selection.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_mission_profile_selection_manifest_yaml
+    path: .ai/bundles/phases/mission/mission_profile_selection.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_pattern_pressure_detection_bundle_yaml
+    path: .ai/bundles/phases/mission/pattern_pressure_detection.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_pattern_pressure_detection_manifest_yaml
+    path: .ai/bundles/phases/mission/pattern_pressure_detection.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_pattern_selection_bundle_yaml
+    path: .ai/bundles/phases/mission/pattern_selection.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_pattern_selection_manifest_yaml
+    path: .ai/bundles/phases/mission/pattern_selection.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_phase_accounting_bundle_yaml
+    path: .ai/bundles/phases/mission/phase_accounting.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_phase_accounting_manifest_yaml
+    path: .ai/bundles/phases/mission/phase_accounting.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_post_implementation_validation_bundle_yaml
+    path: .ai/bundles/phases/mission/post_implementation_validation.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_post_implementation_validation_manifest_yaml
+    path: .ai/bundles/phases/mission/post_implementation_validation.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_pre_implementation_gate_bundle_yaml
+    path: .ai/bundles/phases/mission/pre_implementation_gate.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_pre_implementation_gate_manifest_yaml
+    path: .ai/bundles/phases/mission/pre_implementation_gate.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_refactor_strategy_selection_bundle_yaml
+    path: .ai/bundles/phases/mission/refactor_strategy_selection.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_refactor_strategy_selection_manifest_yaml
+    path: .ai/bundles/phases/mission/refactor_strategy_selection.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_report_artifact_validation_bundle_yaml
+    path: .ai/bundles/phases/mission/report_artifact_validation.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_report_artifact_validation_manifest_yaml
+    path: .ai/bundles/phases/mission/report_artifact_validation.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_risk_classification_bundle_yaml
+    path: .ai/bundles/phases/mission/risk_classification.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_risk_classification_manifest_yaml
+    path: .ai/bundles/phases/mission/risk_classification.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_structure_rendering_bundle_yaml
+    path: .ai/bundles/phases/mission/structure_rendering.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_structure_rendering_manifest_yaml
+    path: .ai/bundles/phases/mission/structure_rendering.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_test_derivation_bundle_yaml
+    path: .ai/bundles/phases/mission/test_derivation.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_test_derivation_manifest_yaml
+    path: .ai/bundles/phases/mission/test_derivation.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: bundles_phases_mission_trigger_review_bundle_yaml
+    path: .ai/bundles/phases/mission/trigger_review.bundle.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_context_bundle
+  - evidence_id: bundles_phases_mission_trigger_review_manifest_yaml
+    path: .ai/bundles/phases/mission/trigger_review.manifest.yaml
+    source_type: bundle
+    generated_by: generate-phase-bundle
+    status: unknown
+    artifact: phase_bundle_manifest
+  - evidence_id: claude_execution_plan_yaml
+    path: .ai/claude/execution-plan.yaml
+    source_type: unknown
+    generated_by: generate-claude-execution-plan
+    status: generated
+    artifact: claude_code_execution_plan
+  - evidence_id: gates_gate_active_context_manifest_output_gate_result_yaml
+    path: .ai/gates/gate.active_context_manifest.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_architecture_decomposition_output_gate_result_yaml
+    path: .ai/gates/gate.architecture_decomposition.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_artifact_action_resolution_output_gate_result_yaml
+    path: .ai/gates/gate.artifact_action_resolution.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_artifact_reuse_analysis_output_gate_result_yaml
+    path: .ai/gates/gate.artifact_reuse_analysis.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_behavior_contract_output_gate_result_yaml
+    path: .ai/gates/gate.behavior_contract.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_boundary_contract_classification_output_gate_result_yaml
+    path: .ai/gates/gate.boundary_contract_classification.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_call_site_impact_analysis_output_gate_result_yaml
+    path: .ai/gates/gate.call_site_impact_analysis.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_change_impact_analysis_output_gate_result_yaml
+    path: .ai/gates/gate.change_impact_analysis.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_checkpoint_validation_plan_output_gate_result_yaml
+    path: .ai/gates/gate.checkpoint_validation_plan.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_codebase_reconnaissance_output_gate_result_yaml
+    path: .ai/gates/gate.codebase_reconnaissance.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_dependency_classification_output_gate_result_yaml
+    path: .ai/gates/gate.dependency_classification.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_draft_role_pass_output_gate_result_yaml
+    path: .ai/gates/gate.draft_role_pass.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_failure_classification_output_gate_result_yaml
+    path: .ai/gates/gate.failure_classification.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_feedback_repair_output_gate_result_yaml
+    path: .ai/gates/gate.feedback_repair.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_final_role_assignment_output_gate_result_yaml
+    path: .ai/gates/gate.final_role_assignment.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_final_validation_output_gate_result_yaml
+    path: .ai/gates/gate.final_validation.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_implementation_output_gate_result_yaml
+    path: .ai/gates/gate.implementation.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_implementation_sequence_output_gate_result_yaml
+    path: .ai/gates/gate.implementation_sequence.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_local_alignment_output_gate_result_yaml
+    path: .ai/gates/gate.local_alignment.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_mission_initialization_output_gate_result_yaml
+    path: .ai/gates/gate.mission_initialization.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_mission_profile_selection_output_gate_result_yaml
+    path: .ai/gates/gate.mission_profile_selection.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_pattern_pressure_detection_output_gate_result_yaml
+    path: .ai/gates/gate.pattern_pressure_detection.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_pattern_selection_output_gate_result_yaml
+    path: .ai/gates/gate.pattern_selection.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_phase_accounting_output_gate_result_yaml
+    path: .ai/gates/gate.phase_accounting.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_post_implementation_validation_output_gate_result_yaml
+    path: .ai/gates/gate.post_implementation_validation.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_pre_implementation_gate_output_gate_result_yaml
+    path: .ai/gates/gate.pre_implementation_gate.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_refactor_strategy_selection_output_gate_result_yaml
+    path: .ai/gates/gate.refactor_strategy_selection.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_report_artifact_validation_output_gate_result_yaml
+    path: .ai/gates/gate.report_artifact_validation.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_risk_classification_output_gate_result_yaml
+    path: .ai/gates/gate.risk_classification.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_structure_rendering_output_gate_result_yaml
+    path: .ai/gates/gate.structure_rendering.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_test_derivation_output_gate_result_yaml
+    path: .ai/gates/gate.test_derivation.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_gate_trigger_review_output_gate_result_yaml
+    path: .ai/gates/gate.trigger_review.output.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: pass
+    artifact: gate_result
+  - evidence_id: gates_invalid_gate_gate_result_yaml
+    path: .ai/gates/invalid_gate.gate-result.yaml
+    source_type: gate
+    generated_by: run-gate-check
+    status: blocked
+    artifact: gate_result
+  - evidence_id: handoffs_alpha_controller_handoff_yaml
+    path: .ai/handoffs/alpha_controller-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_architecture_agent_handoff_yaml
+    path: .ai/handoffs/architecture_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_artifact_action_agent_handoff_yaml
+    path: .ai/handoffs/artifact_action_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_behavior_agent_handoff_yaml
+    path: .ai/handoffs/behavior_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_classification_agent_handoff_yaml
+    path: .ai/handoffs/classification_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_draft_role_agent_handoff_yaml
+    path: .ai/handoffs/draft_role_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_execution_planning_agent_handoff_yaml
+    path: .ai/handoffs/execution_planning_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_impact_agent_handoff_yaml
+    path: .ai/handoffs/impact_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_implementation_agent_handoff_yaml
+    path: .ai/handoffs/implementation_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_pattern_agent_handoff_yaml
+    path: .ai/handoffs/pattern_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_pre_implementation_gate_agent_handoff_yaml
+    path: .ai/handoffs/pre_implementation_gate_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_reconnaissance_agent_handoff_yaml
+    path: .ai/handoffs/reconnaissance_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_refactor_strategy_agent_handoff_yaml
+    path: .ai/handoffs/refactor_strategy_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_role_agent_handoff_yaml
+    path: .ai/handoffs/role_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_structure_agent_handoff_yaml
+    path: .ai/handoffs/structure_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_target_handoff_yaml
+    path: .ai/handoffs/target-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: invalid
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_testing_agent_handoff_yaml
+    path: .ai/handoffs/testing_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: handoffs_validation_agent_handoff_yaml
+    path: .ai/handoffs/validation_agent-handoff.yaml
+    source_type: handoff
+    generated_by: prepare-agent-handoff
+    status: prepared
+    artifact: agent_handoff_packet
+  - evidence_id: reports_00_mission_profile_yaml
+    path: .ai/reports/00-mission-profile.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_01_active_context_manifest_yaml
+    path: .ai/reports/01-active-context-manifest.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_02_behavior_contract_yaml
+    path: .ai/reports/02-behavior-contract.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_03_codebase_reconnaissance_yaml
+    path: .ai/reports/03-codebase-reconnaissance.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_04_draft_role_signals_yaml
+    path: .ai/reports/04-draft-role-signals.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_05_artifact_actions_yaml
+    path: .ai/reports/05-artifact-actions.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_06_refactor_strategy_yaml
+    path: .ai/reports/06-refactor-strategy.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_07_change_impact_yaml
+    path: .ai/reports/07-change-impact.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_08_final_role_assignment_yaml
+    path: .ai/reports/08-final-role-assignment.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_09_test_plan_yaml
+    path: .ai/reports/09-test-plan.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_10_implementation_sequence_yaml
+    path: .ai/reports/10-implementation-sequence.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_99_validation_summary_yaml
+    path: .ai/reports/99-validation-summary.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_architecture_blueprint_yaml
+    path: .ai/reports/architecture-blueprint.yaml
+    source_type: report
+    generated_by: unknown
+    status: unknown
+    artifact: architecture_blueprint
+  - evidence_id: reports_artifact_candidates_yaml
+    path: .ai/reports/artifact-candidates.yaml
+    source_type: report
+    generated_by: unknown
+    status: unknown
+    artifact: artifact_candidates
+  - evidence_id: reports_artifact_conflict_report_yaml
+    path: .ai/reports/artifact-conflict-report.yaml
+    source_type: report
+    generated_by: compile-runtime-artifact-topology
+    status: unknown
+  - evidence_id: reports_artifact_reuse_analysis_yaml
+    path: .ai/reports/artifact-reuse-analysis.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_assumptions_yaml
+    path: .ai/reports/assumptions.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_behavior_preservation_requirements_yaml
+    path: .ai/reports/behavior-preservation-requirements.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_boundary_contract_classification_yaml
+    path: .ai/reports/boundary-contract-classification.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_call_site_impact_yaml
+    path: .ai/reports/call-site-impact.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_changed_file_manifest_yaml
+    path: .ai/reports/changed-file-manifest.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_characterization_test_plan_yaml
+    path: .ai/reports/characterization-test-plan.yaml
+    source_type: report
+    generated_by: unknown
+    status: unknown
+  - evidence_id: reports_checkpoint_groups_yaml
+    path: .ai/reports/checkpoint-groups.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_checkpoint_results_yaml
+    path: .ai/reports/checkpoint-results.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_checkpoint_validation_plan_yaml
+    path: .ai/reports/checkpoint-validation-plan.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_claude_execution_plan_validation_yaml
+    path: .ai/reports/claude-execution-plan-validation.yaml
+    source_type: report
+    generated_by: validate-claude-execution-plan
+    status: pass
+    artifact: claude_execution_plan_validation_report
+  - evidence_id: reports_compatibility_decision_yaml
+    path: .ai/reports/compatibility-decision.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_consumer_impact_yaml
+    path: .ai/reports/consumer-impact.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_dependency_classification_yaml
+    path: .ai/reports/dependency-classification.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_dependency_validation_yaml
+    path: .ai/reports/dependency-validation.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_failure_classification_yaml
+    path: .ai/reports/failure-classification.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_failure_report_yaml
+    path: .ai/reports/failure-report.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_feedback_repair_result_yaml
+    path: .ai/reports/feedback-repair-result.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_final_file_tree_yaml
+    path: .ai/reports/final-file-tree.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_final_mission_report_yaml
+    path: .ai/reports/final-mission-report.yaml
+    source_type: report
+    generated_by: generate-final-mission-report
+    status: complete
+    artifact: final_mission_report
+  - evidence_id: reports_final_unresolved_items_yaml
+    path: .ai/reports/final-unresolved-items.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_implementation_result_yaml
+    path: .ai/reports/implementation-result.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_local_alignment_yaml
+    path: .ai/reports/local-alignment.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_local_convention_candidates_yaml
+    path: .ai/reports/local-convention-candidates.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_mission_evidence_summary_yaml
+    path: .ai/reports/mission-evidence-summary.yaml
+    source_type: report
+    generated_by: generate-final-mission-report
+    status: complete
+    artifact: mission_evidence_summary
+  - evidence_id: reports_pattern_decision_log_yaml
+    path: .ai/reports/pattern-decision-log.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_pattern_pressure_yaml
+    path: .ai/reports/pattern-pressure.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_phase_accounting_yaml
+    path: .ai/reports/phase-accounting.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_phase_report_yaml
+    path: .ai/reports/phase-report.yaml
+    source_type: report
+    generated_by: collect-phase-report
+    status: collected
+    artifact: phase_report
+  - evidence_id: reports_post_action_artifact_candidates_yaml
+    path: .ai/reports/post-action-artifact-candidates.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_post_implementation_validation_yaml
+    path: .ai/reports/post-implementation-validation.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_pre_implementation_gate_yaml
+    path: .ai/reports/pre-implementation-gate.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_refactor_required_followups_yaml
+    path: .ai/reports/refactor-required-followups.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_regression_test_plan_yaml
+    path: .ai/reports/regression-test-plan.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_repair_plan_yaml
+    path: .ai/reports/repair-plan.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_report_artifact_validation_yaml
+    path: .ai/reports/report-artifact-validation.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_report_evidence_validation_yaml
+    path: .ai/reports/report-evidence-validation.yaml
+    source_type: report
+    generated_by: validate-report-evidence
+    status: pass
+    artifact: report_evidence_validation_report
+  - evidence_id: reports_report_registry_yaml
+    path: .ai/reports/report-registry.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_risk_classification_yaml
+    path: .ai/reports/risk-classification.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_role_collision_resolution_yaml
+    path: .ai/reports/role-collision-resolution.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_script_verification_report_yaml
+    path: .ai/reports/script-verification-report.yaml
+    source_type: report
+    generated_by: verify-scripts
+    status: unknown
+    artifact: script_verification_report
+  - evidence_id: reports_semantic_completeness_report_yaml
+    path: .ai/reports/semantic-completeness-report.yaml
+    source_type: report
+    generated_by: validate-semantic-completeness
+    status: unknown
+    artifact: semantic_completeness_report
+  - evidence_id: reports_structure_plan_yaml
+    path: .ai/reports/structure-plan.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: reports_trigger_review_yaml
+    path: .ai/reports/trigger-review.yaml
+    source_type: report
+    generated_by: unknown
+    status: complete
+  - evidence_id: topologies_reference_topology_yaml
+    path: .ai/topologies/reference-topology.yaml
+    source_type: topology
+    generated_by: unknown
+    status: unknown
+  - evidence_id: topologies_runtime_artifact_topology_yaml
+    path: .ai/topologies/runtime-artifact-topology.yaml
+    source_type: topology
+    generated_by: compile-runtime-artifact-topology
+    status: unknown
+    artifact: runtime_artifact_topology
+  - evidence_id: validation_collect_evidence_result_yaml
+    path: .ai/validation/collect-evidence.result.yaml
+    source_type: validation
+    generated_by: collect-evidence
+    status: pass
+  - evidence_id: validation_collect_phase_report_result_yaml
+    path: .ai/validation/collect-phase-report.result.yaml
+    source_type: validation
+    generated_by: collect-phase-report
+    status: pass
+  - evidence_id: validation_compile_runtime_artifact_topology_result_yaml
+    path: .ai/validation/compile-runtime-artifact-topology.result.yaml
+    source_type: validation
+    generated_by: compile-runtime-artifact-topology
+    status: pass
+  - evidence_id: validation_generate_claude_execution_plan_result_yaml
+    path: .ai/validation/generate-claude-execution-plan.result.yaml
+    source_type: validation
+    generated_by: generate-claude-execution-plan
+    status: pass
+  - evidence_id: validation_generate_final_mission_report_result_yaml
+    path: .ai/validation/generate-final-mission-report.result.yaml
+    source_type: validation
+    generated_by: generate-final-mission-report
+    status: pass
+  - evidence_id: validation_generate_phase_bundle_result_yaml
+    path: .ai/validation/generate-phase-bundle.result.yaml
+    source_type: validation
+    generated_by: generate-phase-bundle
+    status: pass
+  - evidence_id: validation_prepare_agent_handoff_result_yaml
+    path: .ai/validation/prepare-agent-handoff.result.yaml
+    source_type: validation
+    generated_by: prepare-agent-handoff
+    status: pass
+  - evidence_id: validation_run_gate_check_result_yaml
+    path: .ai/validation/run-gate-check.result.yaml
+    source_type: validation
+    generated_by: run-gate-check
+    status: pass
+  - evidence_id: validation_validate_changed_files_result_yaml
+    path: .ai/validation/validate-changed-files.result.yaml
+    source_type: validation
+    generated_by: validate-changed-files
+    status: pass
+  - evidence_id: validation_validate_claude_execution_plan_result_yaml
+    path: .ai/validation/validate-claude-execution-plan.result.yaml
+    source_type: validation
+    generated_by: validate-claude-execution-plan
+    status: pass
+  - evidence_id: validation_validate_executor_routes_result_yaml
+    path: .ai/validation/validate-executor-routes.result.yaml
+    source_type: validation
+    generated_by: validate-executor-routes
+    status: pass
+  - evidence_id: validation_validate_gate_result_result_yaml
+    path: .ai/validation/validate-gate-result.result.yaml
+    source_type: validation
+    generated_by: validate-gate-result
+    status: pass
+  - evidence_id: validation_validate_handoff_result_yaml
+    path: .ai/validation/validate-handoff.result.yaml
+    source_type: validation
+    generated_by: validate-handoff
+    status: pass
+  - evidence_id: validation_validate_phase_bundle_result_yaml
+    path: .ai/validation/validate-phase-bundle.result.yaml
+    source_type: validation
+    generated_by: validate-phase-bundle
+    status: pass
+  - evidence_id: validation_validate_phase_output_result_yaml
+    path: .ai/validation/validate-phase-output.result.yaml
+    source_type: validation
+    generated_by: validate-phase-output
+    status: pass
+  - evidence_id: validation_validate_references_result_yaml
+    path: .ai/validation/validate-references.result.yaml
+    source_type: validation
+    generated_by: validate-references
+    status: pass
+  - evidence_id: validation_validate_report_evidence_result_yaml
+    path: .ai/validation/validate-report-evidence.result.yaml
+    source_type: validation
+    generated_by: validate-report-evidence
+    status: pass
+  - evidence_id: validation_validate_runtime_artifacts_result_yaml
+    path: .ai/validation/validate-runtime-artifacts.result.yaml
+    source_type: validation
+    generated_by: validate-runtime-artifacts
+    status: pass
+  - evidence_id: validation_validate_semantic_completeness_result_yaml
+    path: .ai/validation/validate-semantic-completeness.result.yaml
+    source_type: validation
+    generated_by: validate-semantic-completeness
+    status: pass
+  - evidence_id: validation_verify_scripts_result_yaml
+    path: .ai/validation/verify-scripts.result.yaml
+    source_type: validation
+    generated_by: verify-scripts
+    status: pass

@@ -3,9 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VideoDocument, ScanState } from '@gunea-pig/shared';
 import * as path from 'path';
+import { IVideoScanRepository } from '../interfaces/i-video-scan-repository.port';
 
 @Injectable()
-export class VideoScanRepository {
+export class VideoScanRepository implements IVideoScanRepository {
   constructor(
     @InjectModel(VideoDocument.name)
     private readonly videoModel: Model<VideoDocument>,

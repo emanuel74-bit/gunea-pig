@@ -5,20 +5,20 @@ import {
   ScanCompletedEvent,
   NormalizedScanResult,
   ScanResultMatch,
-  RabbitMQPublisher,
   QUEUE_EXCHANGES,
   ROUTING_KEYS,
   ScanPersistedEvent,
 } from '@gunea-pig/shared';
-import { ScanResultClient } from '../infrastructure/scan-result.client';
-import { SimilarityEdgeRepository } from '../infrastructure/similarity-edge.repository';
-import { SimilarityGroupRepository } from '../infrastructure/similarity-group.repository';
-import { VideoSimilarityRepository } from '../infrastructure/video-similarity.repository';
-import { ScanBatchRepository } from '../infrastructure/scan-batch.repository';
 import { SimilarityThreshold } from '../domain/similarity-threshold.policy';
 import { UnionFindDomainService } from '../domain/union-find.domain-service';
 import { PipelineConfig } from '../../config';
 import { PIPELINE_CONFIG } from '../../injection-tokens';
+import { IGroupingScanBatchRepository, I_GROUPING_SCAN_BATCH_REPOSITORY } from '../interfaces/i-scan-batch-repository.port';
+import { IGroupingScanResultLoader, I_GROUPING_SCAN_RESULT_LOADER } from '../interfaces/i-scan-result-loader.port';
+import { ISimilarityEdgeRepository, I_SIMILARITY_EDGE_REPOSITORY } from '../interfaces/i-similarity-edge-repository.port';
+import { ISimilarityGroupRepository, GroupRecord, I_SIMILARITY_GROUP_REPOSITORY } from '../interfaces/i-similarity-group-repository.port';
+import { IVideoSimilarityRepository, I_VIDEO_SIMILARITY_REPOSITORY } from '../interfaces/i-video-similarity-repository.port';
+import { IEventPublisher, I_EVENT_PUBLISHER } from '../../shared-infra/interfaces/i-event-publisher.port';
 
 export class ScanAlreadyGroupedError extends Error {
   constructor(public readonly scanId: string) {
@@ -33,12 +33,12 @@ export class ProcessScanHandler {
   private readonly unionFind = new UnionFindDomainService();
 
   constructor(
-    private readonly scanResultClient: ScanResultClient,
-    private readonly edgeRepository: SimilarityEdgeRepository,
-    private readonly groupRepository: SimilarityGroupRepository,
-    private readonly videoSimilarityRepository: VideoSimilarityRepository,
-    private readonly scanBatchRepository: ScanBatchRepository,
-    private readonly publisher: RabbitMQPublisher,
+    @Inject(I_GROUPING_SCAN_RESULT_LOADER) private readonly scanResultClient: IGroupingScanResultLoader,
+    @Inject(I_SIMILARITY_EDGE_REPOSITORY) private readonly edgeRepository: ISimilarityEdgeRepository,
+    @Inject(I_SIMILARITY_GROUP_REPOSITORY) private readonly groupRepository: ISimilarityGroupRepository,
+    @Inject(I_VIDEO_SIMILARITY_REPOSITORY) private readonly videoSimilarityRepository: IVideoSimilarityRepository,
+    @Inject(I_GROUPING_SCAN_BATCH_REPOSITORY) private readonly scanBatchRepository: IGroupingScanBatchRepository,
+    @Inject(I_EVENT_PUBLISHER) private readonly publisher: IEventPublisher,
     @Inject(PIPELINE_CONFIG)
     private readonly config: PipelineConfig,
   ) {}

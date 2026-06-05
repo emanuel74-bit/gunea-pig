@@ -1,0 +1,8 @@
+artifact: gate_result
+generated_by: run-gate-check
+gate_id: gate.mission_initialization.output
+status: pass
+validation_status: not_provided
+decision: allow_transition
+evidence_refs: []
+errors: []

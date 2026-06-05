@@ -1,0 +1,9 @@
+script_id: validate-gate-result
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/validation/validate-gate-result.result.yaml
+summary:
+  gate_result: .ai/gates/gate.final_validation.output.gate-result.yaml

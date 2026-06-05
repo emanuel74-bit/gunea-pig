@@ -3,9 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { VideoDocument, ScanState, SimilarityStatus } from '@gunea-pig/shared';
 import { VideoStagingPolicy } from '../domain/video-staging.policy';
+import { IVideoRepository } from '../interfaces/i-video-repository.port';
 
 @Injectable()
-export class VideoRepository {
+export class VideoRepository implements IVideoRepository {
   private readonly logger = new Logger(VideoRepository.name);
 
   constructor(
@@ -21,7 +22,7 @@ export class VideoRepository {
     videoId: string,
     s3Key: string,
     s3Bucket: string,
-  ): Promise<VideoDocument> {
+  ): Promise<void> {
     const result = await this.videoModel
       .findOneAndUpdate(
         { videoId },
@@ -41,7 +42,6 @@ export class VideoRepository {
       .exec();
 
     if (!result) throw new Error(`[VideoRepository] upsert failed for videoId=${videoId}`);
-    return result;
   }
 
   async markStaged(videoId: string, stagedPath: string): Promise<void> {

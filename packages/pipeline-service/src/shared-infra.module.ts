@@ -2,7 +2,9 @@ import * as path from 'path';
 import { Global, Module } from '@nestjs/common';
 import { S3Adapter, RabbitMQPublisher } from '@gunea-pig/shared';
 import { buildConfig } from './config';
-import { PIPELINE_CONFIG, SCAN_OUTPUT_DIR } from './injection-tokens';
+import { PIPELINE_CONFIG, SCAN_OUTPUT_DIR, I_STORAGE, I_EVENT_PUBLISHER } from './injection-tokens';
+import { S3StorageAdapter } from './shared-infra/adapters/s3-storage.adapter';
+import { RabbitMQPublisherAdapter } from './shared-infra/adapters/rabbitmq-publisher.adapter';
 
 const config = buildConfig();
 
@@ -32,7 +34,17 @@ const config = buildConfig();
         return publisher;
       },
     },
+    {
+      provide: I_STORAGE,
+      useFactory: (s3: S3Adapter) => new S3StorageAdapter(s3),
+      inject: [S3Adapter],
+    },
+    {
+      provide: I_EVENT_PUBLISHER,
+      useFactory: (publisher: RabbitMQPublisher) => new RabbitMQPublisherAdapter(publisher),
+      inject: [RabbitMQPublisher],
+    },
   ],
-  exports: [PIPELINE_CONFIG, SCAN_OUTPUT_DIR, S3Adapter, RabbitMQPublisher],
+  exports: [PIPELINE_CONFIG, SCAN_OUTPUT_DIR, S3Adapter, RabbitMQPublisher, I_STORAGE, I_EVENT_PUBLISHER],
 })
 export class SharedInfraModule {}

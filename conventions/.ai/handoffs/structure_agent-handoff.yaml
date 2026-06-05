@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: structure_agent-handoff
+status: prepared
+source_output: .ai/reports/pattern-decision-log.yaml
+target_agent: structure_agent
+evidence_refs:
+  - .ai/reports/pattern-decision-log.yaml
+source_summary: {}

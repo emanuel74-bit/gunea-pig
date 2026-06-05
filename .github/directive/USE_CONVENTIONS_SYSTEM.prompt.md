@@ -15,7 +15,7 @@ When the next user request arrives, use the convention system as follows:
    - `core/conventions.validation.yaml`
    - `core/conventions.output-schema.yaml`
 
-2. Do **not** load or apply every YAML file by default. Use the agent context policy to request the smallest valid set of subsystem files, and let core routing determine the active file manifest.
+2. Do **not** load or apply every YAML file by default. Use the agent context policy to request the smallest valid set of subsystem files, and let core routing determine the active file manifest. If coverage is ambiguous for an edge case, expand only to the minimum additional files required by routing/validation contracts, record the assumption, and fail closed if no valid manifest can be resolved.
 
 3. Follow the core orchestrator phase order. Do not invent a separate pipeline. If a subsystem is active, use its source vocabulary before its decision engine.
 

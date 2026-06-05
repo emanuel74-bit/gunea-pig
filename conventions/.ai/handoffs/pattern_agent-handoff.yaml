@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: pattern_agent-handoff
+status: prepared
+source_output: .ai/reports/08-final-role-assignment.yaml
+target_agent: pattern_agent
+evidence_refs:
+  - .ai/reports/08-final-role-assignment.yaml
+source_summary: {}

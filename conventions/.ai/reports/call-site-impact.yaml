@@ -1,0 +1,1126 @@
+report_id: "call-site-impact"
+phase_id: call_site_impact_analysis
+status: complete
+summary: >
+  Call site analysis for all 51 post-action candidates across the pipeline-service NestJS
+  monorepo. The two split targets (ScanOrchestrator AC-010, ProcessScanHandler AC-023) each
+  have a single provider-registration call site in their respective NestJS modules plus
+  zero external constructor-injection consumers — their blast radius is therefore self-contained
+  to their own module file. The extract target (ScanSchedulerTrigger AC-009) has no existing
+  call sites because it does not yet exist as a file. The 25 modify_existing artifacts
+  (repositories, adapters, consumers, handlers, validators, schema modules, NestJS modules,
+  and the SharedInfraModule) have call sites exclusively within pipeline-service/src.
+  Cross-package impact is limited to the shared/ barrel exports — four Mongoose schema files
+  currently live in shared/src/db/ and are imported directly by scanning.module.ts and
+  grouping.module.ts via the @gunea-pig/shared barrel; those import sites must be updated
+  when the schema modules move into pipeline-service capability directories.
+  The 12 create_new port interfaces (AC-005, AC-007, AC-013, AC-015, AC-018, AC-026, AC-028,
+  AC-030, AC-032, AC-034, AC-036, AC-038) have no existing call sites — they are new artifacts.
+  The 5 reuse_existing policy/domain-service artifacts (AC-004, AC-011, AC-012, AC-024, AC-025)
+  have confirmed consumers within pipeline-service but require no structural change themselves.
+  S3Adapter (shared/src/storage/s3.client.ts) and RabbitMQPublisher (shared/src/queue/rabbitmq.client.ts)
+  are the concrete implementations currently exported from @gunea-pig/shared and imported
+  as concrete class tokens in SharedInfraModule, ScanOrchestrator, ProcessScanHandler,
+  ScanResultClient, FileStagingAdapter, and staging.module.ts — all these sites must be
+  updated to consume IStoragePort and IEventPublisher respectively.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/05-artifact-actions.yaml
+    artifact: artifact_action_table
+  - source: conventions/.ai/reports/post-action-artifact-candidates.yaml
+    artifact: post_action_candidates
+
+decisions:
+  - id: DECISION-CSI-001
+    decision: >
+      ScanOrchestrator (AC-010) has exactly one provider registration call site in
+      scanning.module.ts (line 24) and zero external constructor-injection consumers.
+      Its split blast radius is therefore scoped to scanning.module.ts alone.
+    rationale: >
+      Grep across pipeline-service/src confirms ScanOrchestrator is imported only in
+      scanning/application/scan.orchestrator.ts (declaration) and scanning/scanning.module.ts
+      (provider registration). No other file imports or injects ScanOrchestrator.
+      The @Interval tick is defined inside ScanOrchestrator itself — no external caller
+      invokes runScanCycle() directly. The split produces ScanSchedulerTrigger (new file) and
+      a trimmed ScanOrchestrator; scanning.module.ts must register both.
+    evidence:
+      - source: packages/pipeline-service/src/scanning/scanning.module.ts
+        observation: "ScanOrchestrator listed in providers array at line 24; no other import of ScanOrchestrator found in codebase"
+
+  - id: DECISION-CSI-002
+    decision: >
+      ProcessScanHandler (AC-023) has two call sites: provider registration in
+      grouping.module.ts (line 32) and constructor injection in ScanCompletedConsumer
+      (grouping/transport/scan-completed.consumer.ts line 14). Post-split the trimmed
+      ProcessScanHandler retains the same class name and file path so both call sites
+      survive without path changes — only the injected token types change inside the handler.
+    rationale: >
+      ScanCompletedConsumer injects ProcessScanHandler via its constructor and delegates to
+      handler.handle(event). GroupingModule registers ProcessScanHandler as a provider.
+      The split converts 6 concrete constructor params to port tokens but the class export
+      name and file path remain identical, so these two call sites are not broken by the split
+      action itself. However, GroupingModule must also register the new port implementations
+      under their respective tokens after the split.
+    evidence:
+      - source: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        observation: "constructor(private readonly handler: ProcessScanHandler) at line 14"
+      - source: packages/pipeline-service/src/grouping/grouping.module.ts
+        observation: "ProcessScanHandler listed in providers array at line 32"
+
+  - id: DECISION-CSI-003
+    decision: >
+      S3Adapter from @gunea-pig/shared is consumed as a concrete class token in four
+      pipeline-service files: shared-infra.module.ts (provider registration and export),
+      staging/staging.module.ts (inject into FileStagingAdapter factory), and implicitly
+      by FileStagingAdapter and ScanResultClient constructors which inject S3Adapter directly.
+      All four sites must migrate to IStoragePort after the S3StorageAdapter modify action.
+    rationale: >
+      shared-infra.module.ts provides S3Adapter under the S3Adapter token and exports it.
+      staging.module.ts injects S3Adapter from SharedInfraModule into the FileStagingAdapter
+      factory (line 21). FileStagingAdapter.constructor takes s3: S3Adapter (line 22).
+      ScanResultClient.constructor takes s3: S3Adapter (line 9). All concrete-token usages
+      must become IStoragePort token usages post-refactor.
+    evidence:
+      - source: packages/pipeline-service/src/shared-infra.module.ts
+        observation: "provide: S3Adapter at line 18; exports: [..., S3Adapter] at line 36"
+      - source: packages/pipeline-service/src/staging/staging.module.ts
+        observation: "inject: [S3Adapter, PIPELINE_CONFIG] in FileStagingAdapter factory at line 21"
+      - source: packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts
+        observation: "constructor(private readonly s3: S3Adapter, ...) at line 22"
+      - source: packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts
+        observation: "constructor(private readonly s3: S3Adapter) at line 9"
+
+  - id: DECISION-CSI-004
+    decision: >
+      RabbitMQPublisher from @gunea-pig/shared is consumed as a concrete class token in three
+      pipeline-service files: shared-infra.module.ts (provider and export), ScanOrchestrator
+      constructor (line 34), and ProcessScanHandler constructor (line 41). All three sites
+      must migrate to IEventPublisher token after the RabbitMQPublisher modify action.
+    rationale: >
+      SharedInfraModule provides RabbitMQPublisher under the RabbitMQPublisher token and
+      exports it globally. ScanOrchestrator injects RabbitMQPublisher directly via its
+      constructor (private readonly publisher: RabbitMQPublisher). ProcessScanHandler
+      injects RabbitMQPublisher directly (private readonly publisher: RabbitMQPublisher).
+      All three sites must use @Inject(IEventPublisher) post-refactor.
+    evidence:
+      - source: packages/pipeline-service/src/shared-infra.module.ts
+        observation: "provide: RabbitMQPublisher at line 29; exports: [..., RabbitMQPublisher] at line 36"
+      - source: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        observation: "private readonly publisher: RabbitMQPublisher at line 34"
+      - source: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        observation: "private readonly publisher: RabbitMQPublisher at line 41"
+
+  - id: DECISION-CSI-005
+    decision: >
+      All four Mongoose schema classes (VideoDocument/VideoSchema, ScanBatchDocument/ScanBatchSchema,
+      SimilarityEdgeDocument/SimilarityEdgeSchema, SimilarityGroupDocument/SimilarityGroupSchema)
+      are currently imported from @gunea-pig/shared in three pipeline-service module files.
+      When schema modules move into pipeline-service capability directories these three module
+      files must update their import sources from @gunea-pig/shared to local paths.
+    rationale: >
+      scanning.module.ts imports VideoDocument, VideoSchema, ScanBatchDocument, ScanBatchSchema
+      from @gunea-pig/shared (line 3). grouping.module.ts imports all four schema pairs from
+      @gunea-pig/shared (lines 4-12). staging.module.ts imports VideoDocument, VideoSchema
+      from @gunea-pig/shared (line 3). BatchClaimerService, VideoScanRepository, ScanPurgerService,
+      and the grouping repositories also import schema types via @gunea-pig/shared but those
+      are type-only imports that remain valid as long as shared continues to export them.
+      The critical change is the MongooseModule.forFeature() registration lines in each module.
+    evidence:
+      - source: packages/pipeline-service/src/scanning/scanning.module.ts
+        observation: "import { VideoDocument, VideoSchema, ScanBatchDocument, ScanBatchSchema } from '@gunea-pig/shared' at line 3"
+      - source: packages/pipeline-service/src/grouping/grouping.module.ts
+        observation: "import { VideoDocument, VideoSchema, ScanBatchDocument, ScanBatchSchema, SimilarityEdgeDocument, SimilarityEdgeSchema, SimilarityGroupDocument, SimilarityGroupSchema } from '@gunea-pig/shared' at lines 4-12"
+      - source: packages/pipeline-service/src/staging/staging.module.ts
+        observation: "import { VideoDocument, VideoSchema, S3Adapter } from '@gunea-pig/shared' at line 3"
+
+  - id: DECISION-CSI-006
+    decision: >
+      ScanCompletedConsumer has an inline validateEvent() method (lines 59-74) that duplicates
+      ScanResultValidator logic. It also imports ScanResultValidationError from scan-result.validator
+      (line 4) for error-type matching in the catch block. Post-refactor the inline validateEvent()
+      must be removed and the consumer must delegate to ScanResultValidator.
+    rationale: >
+      ScanCompletedConsumer.handle() calls this.validateEvent(rawPayload) but the method body
+      is an inline re-implementation rather than a delegation to ScanResultValidator. The consumer
+      does correctly import ScanResultValidationError from scan-result.validator for the catch
+      block — that import should remain. The validateEvent() method itself must be removed.
+    evidence:
+      - source: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        observation: "private validateEvent() at lines 59-74 — inline duplicate of ScanResultValidator logic"
+      - source: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        observation: "import { ScanResultValidationError } from '../infrastructure/scan-result.validator' at line 4"
+
+  - id: DECISION-CSI-007
+    decision: >
+      BatchClaimerService currently holds both batch claiming logic AND expired-claim recovery
+      (recoverExpiredClaims() private method). ScanOrchestrator injects BatchClaimerService
+      directly (concrete class, no port). Post-refactor ScanOrchestrator must inject IBatchClaimerPort
+      token. BatchClaimerService must implement IBatchClaimerPort. Recovery logic scope is noted
+      as outside the 48-candidate set but the interface method set must be clarified.
+    rationale: >
+      scan.orchestrator.ts injects BatchClaimerService at constructor line 28 and calls
+      claimNextBatch() and transitionBatchStatus() methods. scanning.module.ts registers
+      BatchClaimerService as a provider. The IBatchClaimerPort interface must expose at minimum
+      claimNextBatch() and transitionBatchStatus(). The recoverExpiredClaims() private method
+      is internal to the service and need not appear on the port interface.
+    evidence:
+      - source: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        observation: "private readonly batchClaimer: BatchClaimerService at line 28; calls claimNextBatch() and transitionBatchStatus()"
+      - source: packages/pipeline-service/src/scanning/scanning.module.ts
+        observation: "BatchClaimerService listed in providers at line 20"
+
+  - id: DECISION-CSI-008
+    decision: >
+      VdfManifestNormalizer mixes file I/O (readRawOutput, calls fs.readFileSync) with
+      normalization logic. ScanOrchestrator injects VdfManifestNormalizer directly (line 31)
+      and calls normalize(). Post-refactor the readRawOutput concern moves to VdfRunnerAdapter;
+      VdfManifestNormalizer becomes a pure normalizer. ScanOrchestrator call site changes from
+      passing outputPath string to passing already-read raw content.
+    rationale: >
+      scan.orchestrator.ts injects VdfManifestNormalizer (line 31) and calls
+      this.manifestNormalizer.normalize(scanId, vdfOutputPath, videoIdMap, ...). The outputPath
+      argument currently triggers a file read inside VdfManifestNormalizer.normalize() via
+      readRawOutput(). After the SRP fix, VdfRunnerAdapter.run() provides the raw content and
+      VdfManifestNormalizer.normalize() accepts raw content (string or object) instead of a path.
+      The ScanOrchestrator call site at line 101-107 must be updated accordingly.
+    evidence:
+      - source: packages/pipeline-service/src/scanning/infrastructure/vdf-manifest.normalizer.ts
+        observation: "private readRawOutput(outputPath) calls fs.readFileSync at line 83"
+      - source: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        observation: "this.manifestNormalizer.normalize(scanId, vdfOutputPath, ...) at line 101"
+
+  - id: DECISION-CSI-009
+    decision: >
+      ScanBatchRepository in grouping/infrastructure/scan-batch.repository.ts is a separate
+      concrete class from BatchClaimerService in scanning/infrastructure/batch-claimer.service.ts.
+      Both deal with ScanBatch persistence. ProcessScanHandler injects ScanBatchRepository
+      (grouping copy) directly. The canonical consolidation target (AC-035/PAC-035) is
+      pipeline-service/src/shared/infrastructure/scan-batch.repository.ts. The grouping copy
+      must be removed after consolidation; ProcessScanHandler must inject IScanBatchRepository token.
+    rationale: >
+      grouping.module.ts registers ScanBatchRepository (grouping/infrastructure copy) as a provider
+      and ProcessScanHandler injects it directly. After consolidation to shared/infrastructure,
+      GroupingModule must import SharedInfraModule (or shared scan-batch registration) and
+      ProcessScanHandler must use @Inject(IScanBatchRepository). The current grouping copy
+      (ScanBatchRepository at grouping/infrastructure/scan-batch.repository.ts) is a separate
+      pre-consolidation artifact.
+    evidence:
+      - source: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        observation: "private readonly scanBatchRepository: ScanBatchRepository at line 40; import from ../infrastructure/scan-batch.repository at line 17"
+      - source: packages/pipeline-service/src/grouping/grouping.module.ts
+        observation: "ScanBatchRepository listed in providers at line 37"
+
+  - id: DECISION-CSI-010
+    decision: >
+      ProcessScanHandler instantiates UnionFindDomainService via new keyword (line 33)
+      rather than NestJS DI. This is a confirmed OCP violation. Post-refactor UnionFindDomainService
+      must be registered as a provider in GroupingModule and injected into ProcessScanHandler
+      via constructor. UnionFindDomainService itself requires no code change (reuse_existing).
+    rationale: >
+      private readonly unionFind = new UnionFindDomainService() at class field line 33 bypasses
+      NestJS DI container. GroupingModule does not currently register UnionFindDomainService
+      as a provider. Post-split, GroupingModule must add UnionFindDomainService to providers
+      and ProcessScanHandler must receive it via constructor injection.
+    evidence:
+      - source: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        observation: "private readonly unionFind = new UnionFindDomainService() at line 33 — bypasses DI container"
+      - source: packages/pipeline-service/src/grouping/grouping.module.ts
+        observation: "UnionFindDomainService absent from providers array"
+
+call_site_impact:
+
+  # ─────────────────────────────────────────────────
+  # CAP-001: Video Staging
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-001
+    artifact_name: VideoReadyConsumer
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/transport/video-ready.consumer.ts
+    call_sites:
+      - file: packages/pipeline-service/src/staging/staging.module.ts
+        line: 13
+        import_type: controller_registration
+        impact: "StagingModule registers VideoReadyConsumer in controllers array — no change required to registration line; consumer class modification is internal"
+    blast_radius: low
+    consumer_count: 1
+    notes: >
+      VideoReadyConsumer delegates to StageVideoHandler via constructor injection. Currently
+      calls validateStagingMessage() (imported from staging-message.validator) which is already
+      correct delegation. No inline business logic beyond delegation confirmed.
+
+  - candidate_id: PAC-002
+    artifact_name: StagingMessageValidator
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/transport/staging-message.validator.ts
+    call_sites:
+      - file: packages/pipeline-service/src/staging/transport/video-ready.consumer.ts
+        line: 5
+        import_type: function_import
+        impact: "VideoReadyConsumer imports validateStagingMessage and StagingMessageValidationError — import path unchanged; function signature must be preserved"
+    blast_radius: low
+    consumer_count: 1
+    notes: "StagingMessageValidator is clean; modification is canonical placement confirmation only."
+
+  - candidate_id: PAC-003
+    artifact_name: StageVideoHandler
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/application/stage-video.handler.ts
+    call_sites:
+      - file: packages/pipeline-service/src/staging/transport/video-ready.consumer.ts
+        line: 9
+        import_type: constructor_injection
+        impact: "VideoReadyConsumer injects StageVideoHandler; also imports VideoAlreadyStagedError and StagingPermanentFailureError from stage-video.handler — error class exports must be preserved post-modify"
+      - file: packages/pipeline-service/src/staging/staging.module.ts
+        line: 15
+        import_type: provider_registration
+        impact: "StagingModule registers StageVideoHandler in providers array — provider token changes from concrete class to interface token post-refactor"
+    blast_radius: medium
+    consumer_count: 2
+    notes: >
+      StageVideoHandler currently injects VideoRepository and FileStagingAdapter as concrete
+      classes. Post-modify it must inject IVideoRepository and IFileStagingPort via tokens.
+      Error classes VideoAlreadyStagedError and StagingPermanentFailureError defined inline
+      must be extracted per LC-004. VideoReadyConsumer imports these error classes — import
+      path will change if they move to a separate errors file.
+
+  - candidate_id: PAC-004
+    artifact_name: VideoStagingPolicy
+    selected_action: reuse_existing
+    target_file: packages/pipeline-service/src/staging/domain/video-staging.policy.ts
+    call_sites:
+      - file: packages/pipeline-service/src/staging/infrastructure/video.repository.ts
+        line: 5
+        import_type: static_method_call
+        impact: "VideoRepository calls VideoStagingPolicy.nonStageableStates() — no change required; policy is reuse_existing"
+    blast_radius: none
+    consumer_count: 1
+    notes: "Clean artifact. No code change. Consumer (VideoRepository) must import correctly post-refactor."
+
+  - candidate_id: PAC-005
+    artifact_name: IVideoRepository
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/staging/infrastructure/ports/i-video.repository.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be consumed by VideoRepository (implements) and StageVideoHandler (injects via token) post-implementation."
+
+  - candidate_id: PAC-006
+    artifact_name: VideoRepository
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/infrastructure/video.repository.ts
+    call_sites:
+      - file: packages/pipeline-service/src/staging/application/stage-video.handler.ts
+        line: 3
+        import_type: constructor_injection
+        impact: "StageVideoHandler injects VideoRepository directly — must change to inject IVideoRepository token after modify"
+      - file: packages/pipeline-service/src/staging/staging.module.ts
+        line: 16
+        import_type: provider_registration
+        impact: "StagingModule registers VideoRepository as a provider — must be updated to { provide: IVideoRepository, useClass: VideoRepository } post-refactor"
+    blast_radius: medium
+    consumer_count: 2
+    notes: "VideoRepository uses @InjectModel(VideoDocument.name) via MongooseModule. Modify adds IVideoRepository interface implementation and DI token registration."
+
+  - candidate_id: PAC-007
+    artifact_name: IFileStagingPort
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/staging/infrastructure/ports/i-file-staging.port.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be consumed by FileStagingAdapter (implements) and StageVideoHandler (injects via token) post-implementation."
+
+  - candidate_id: PAC-008
+    artifact_name: FileStagingAdapter
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts
+    call_sites:
+      - file: packages/pipeline-service/src/staging/application/stage-video.handler.ts
+        line: 4
+        import_type: constructor_injection
+        impact: "StageVideoHandler injects FileStagingAdapter and imports S3ObjectNotFoundError from it — must change to inject IFileStagingPort token; S3ObjectNotFoundError import path changes if error is extracted"
+      - file: packages/pipeline-service/src/staging/staging.module.ts
+        line: 18
+        import_type: provider_factory_registration
+        impact: "StagingModule registers FileStagingAdapter via useFactory injecting S3Adapter and PIPELINE_CONFIG — factory must be updated to use IStoragePort token instead of S3Adapter class token"
+    blast_radius: medium
+    consumer_count: 2
+    notes: >
+      FileStagingAdapter currently takes s3: S3Adapter in constructor (line 22) and scanPath: string.
+      Post-modify: constructor takes IStoragePort token; S3ObjectNotFoundError inline class must
+      be extracted (SRP fix). staging.module.ts factory inject list must change from [S3Adapter, PIPELINE_CONFIG]
+      to [IStoragePort, PIPELINE_CONFIG].
+
+  # ─────────────────────────────────────────────────
+  # CAP-002: VDF Scanning
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-009
+    artifact_name: ScanSchedulerTrigger
+    selected_action: extract_from_existing
+    target_file: packages/pipeline-service/src/scanning/transport/scan-scheduler.trigger.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: >
+      New file extracted from ScanOrchestrator. No existing call sites. After extraction,
+      scanning.module.ts must add ScanSchedulerTrigger to its providers array alongside
+      the trimmed ScanOrchestrator. The @Interval(30000) decorator moves to this new class.
+
+  - candidate_id: PAC-010
+    artifact_name: ScanOrchestrator
+    selected_action: split_existing
+    target_file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 4
+        import_type: import_statement
+        impact: "ScanOrchestrator is imported into scanning.module.ts"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 24
+        import_type: provider_registration
+        impact: "ScanOrchestrator is registered in providers array — must remain registered; all 6 concrete constructor deps must become port token injections; ScanSchedulerTrigger must also be added to providers"
+    blast_radius: medium
+    consumer_count: 1
+    notes: >
+      ScanOrchestrator currently injects 7 concrete dependencies: BatchClaimerService (must become
+      IBatchClaimerPort), VdfRunnerAdapter (must become IVdfRunnerPort), ScanPurgerService (retained
+      as concrete — no port defined in 48-candidate set), VdfManifestNormalizer (retained concrete post-SRP fix),
+      VideoScanRepository (must become IVideoScanRepository), S3Adapter (must become IStoragePort),
+      RabbitMQPublisher (must become IEventPublisher). Also imports from @gunea-pig/shared:
+      ScanBatchDocument, ScanBatchStatus, S3Adapter, RabbitMQPublisher, QUEUE_EXCHANGES, ROUTING_KEYS,
+      ScanCompletedEvent — shared type imports remain; concrete class imports (S3Adapter, RabbitMQPublisher)
+      change to port token imports.
+
+  - candidate_id: PAC-011
+    artifact_name: BatchClaimPolicy
+    selected_action: reuse_existing
+    target_file: packages/pipeline-service/src/scanning/domain/batch-claim.policy.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/infrastructure/batch-claimer.service.ts
+        line: 6
+        import_type: static_method_call
+        impact: "BatchClaimerService calls BatchClaimPolicy.expiresAt() at line 45 and uses BatchClaimPolicy.EXPIRABLE_STATUSES at line 106 — no change required; policy is reuse_existing"
+    blast_radius: none
+    consumer_count: 1
+    notes: "Clean artifact. No code change required."
+
+  - candidate_id: PAC-012
+    artifact_name: ScanCleanupPolicy
+    selected_action: reuse_existing
+    target_file: packages/pipeline-service/src/scanning/domain/scan-cleanup.policy.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts
+        line: 7
+        import_type: static_method_and_property_access
+        impact: "ScanPurgerService uses ScanCleanupPolicy.STALE_AWAITING_STATUS at line 73 and ScanCleanupPolicy.isStaleForRetention() at line 78 — no change required; policy is reuse_existing"
+    blast_radius: none
+    consumer_count: 1
+    notes: "Clean artifact. No code change required."
+
+  - candidate_id: PAC-013
+    artifact_name: IBatchClaimerPort
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/scanning/infrastructure/ports/i-batch-claimer.port.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by BatchClaimerService and consumed by ScanOrchestrator via @Inject(IBatchClaimerPort) post-implementation."
+
+  - candidate_id: PAC-014
+    artifact_name: BatchClaimerService
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/infrastructure/batch-claimer.service.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 14
+        import_type: constructor_injection
+        impact: "ScanOrchestrator injects BatchClaimerService directly — must change to inject IBatchClaimerPort token post-modify"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 5
+        import_type: import_statement
+        impact: "scanning.module.ts imports BatchClaimerService for provider registration — registration must change to { provide: IBatchClaimerPort, useClass: BatchClaimerService }"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 20
+        import_type: provider_registration
+        impact: "BatchClaimerService is listed in providers array as concrete class — must become token-based registration"
+    blast_radius: medium
+    consumer_count: 2
+    notes: >
+      BatchClaimerService uses @InjectModel for VideoDocument and ScanBatchDocument.
+      Post-modify: implements IBatchClaimerPort, registered under IBatchClaimerPort DI token.
+      ScanBatchDocument model injection remains (Mongoose dependency unchanged).
+
+  - candidate_id: PAC-015
+    artifact_name: IVdfRunnerPort
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/scanning/infrastructure/ports/i-vdf-runner.port.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by VdfRunnerAdapter and consumed by ScanOrchestrator and ScanPurgerService via @Inject(IVdfRunnerPort) post-implementation."
+
+  - candidate_id: PAC-016
+    artifact_name: VdfRunnerAdapter
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 15
+        import_type: constructor_injection
+        impact: "ScanOrchestrator injects VdfRunnerAdapter directly — must change to inject IVdfRunnerPort token"
+      - file: packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts
+        line: 5
+        import_type: constructor_injection
+        impact: "ScanPurgerService injects VdfRunnerAdapter directly (line 17) — must change to inject IVdfRunnerPort token"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 6
+        import_type: provider_registration
+        impact: "scanning.module.ts registers VdfRunnerAdapter in providers — must become { provide: IVdfRunnerPort, useClass: VdfRunnerAdapter }"
+    blast_radius: medium
+    consumer_count: 3
+    notes: >
+      VdfRunnerAdapter also receives readRawOutput extracted from VdfManifestNormalizer (AC-016 action).
+      After SRP fix, VdfRunnerAdapter.run() returns raw content in addition to outputPath.
+      The two consumer call sites (ScanOrchestrator line 80, ScanPurgerService line 52) will need
+      updated method signatures.
+
+  - candidate_id: PAC-017
+    artifact_name: VdfManifestNormalizer
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/infrastructure/vdf-manifest.normalizer.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 17
+        import_type: constructor_injection
+        impact: "ScanOrchestrator injects VdfManifestNormalizer directly (line 31) and calls normalize(scanId, vdfOutputPath, ...) at line 101 — after SRP fix, normalize() signature changes from accepting outputPath to accepting raw content"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 7
+        import_type: provider_registration
+        impact: "scanning.module.ts registers VdfManifestNormalizer in providers — no registration change needed; normalizer remains a concrete class provider (no port defined)"
+    blast_radius: medium
+    consumer_count: 2
+    notes: >
+      Post-SRP fix: VdfManifestNormalizer.normalize() removes readRawOutput internal call and
+      accepts raw string/object instead. ScanOrchestrator call site must pass raw content from
+      VdfRunnerAdapter result rather than outputPath string.
+
+  - candidate_id: PAC-018
+    artifact_name: IVideoScanRepository
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/scanning/infrastructure/ports/i-video-scan.repository.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by VideoScanRepository and consumed by ScanOrchestrator and ScanPurgerService via @Inject(IVideoScanRepository) post-implementation."
+
+  - candidate_id: PAC-019
+    artifact_name: VideoScanRepository
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/infrastructure/video-scan.repository.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 18
+        import_type: constructor_injection
+        impact: "ScanOrchestrator injects VideoScanRepository directly (line 33) — must change to inject IVideoScanRepository token"
+      - file: packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts
+        line: 6
+        import_type: constructor_injection
+        impact: "ScanPurgerService injects VideoScanRepository directly (line 18) — must change to inject IVideoScanRepository token"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 9
+        import_type: provider_registration
+        impact: "scanning.module.ts registers VideoScanRepository in providers — must become { provide: IVideoScanRepository, useClass: VideoScanRepository }"
+    blast_radius: medium
+    consumer_count: 3
+    notes: >
+      VideoScanRepository uses @InjectModel(VideoDocument.name). ISP violation: mixes
+      buildVideoIdMap (query) with markScan* writes. Post-modify: implements IVideoScanRepository
+      interface and registers under IVideoScanRepository DI token.
+
+  - candidate_id: PAC-020
+    artifact_name: ScanPurgerService
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 16
+        import_type: constructor_injection
+        impact: "ScanOrchestrator injects ScanPurgerService directly (line 30) and calls purger.runCleanupPass() — no port defined for ScanPurgerService in 48-candidate set; injection remains concrete"
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 8
+        import_type: provider_registration
+        impact: "scanning.module.ts registers ScanPurgerService in providers — registration unchanged (no port token defined for this service)"
+    blast_radius: low
+    consumer_count: 2
+    notes: >
+      ScanPurgerService has no port interface in the 48-candidate set. ScanOrchestrator
+      retains concrete injection of ScanPurgerService. Internal to ScanPurgerService:
+      VdfRunnerAdapter injection must become IVdfRunnerPort token; VideoScanRepository
+      injection must become IVideoScanRepository token.
+
+  # ─────────────────────────────────────────────────
+  # CAP-003: Video Similarity Grouping
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-021
+    artifact_name: ScanCompletedConsumer
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 13
+        import_type: controller_registration
+        impact: "GroupingModule registers ScanCompletedConsumer in controllers array — no change to registration line needed; consumer modification is internal"
+    blast_radius: low
+    consumer_count: 1
+    notes: >
+      ScanCompletedConsumer has an inline validateEvent() method (lines 59-74) that must be
+      removed and replaced with delegation to ScanResultValidator. Consumer already imports
+      ScanResultValidationError from scan-result.validator (line 4) — that import is preserved.
+      ProcessScanHandler injection (line 14) is unchanged by this modification.
+
+  - candidate_id: PAC-022
+    artifact_name: ScanResultValidator
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/scan-result.validator.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts
+        line: 3
+        import_type: function_import
+        impact: "ScanResultClient imports validateScanResult from scan-result.validator — import path unchanged; function signature preserved"
+      - file: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        line: 4
+        import_type: error_class_import
+        impact: "ScanCompletedConsumer imports ScanResultValidationError for catch-block type check — import remains valid post-modify"
+    blast_radius: low
+    consumer_count: 2
+    notes: >
+      ScanResultValidator is clean; modification is canonical placement confirmation.
+      ScanCompletedConsumer must additionally be updated to call validateScanResult()
+      instead of its inline validateEvent().
+
+  - candidate_id: PAC-023
+    artifact_name: ProcessScanHandler
+    selected_action: split_existing
+    target_file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        line: 6
+        import_type: constructor_injection
+        impact: "ScanCompletedConsumer injects ProcessScanHandler (line 14) and imports ScanAlreadyGroupedError — class name and file path unchanged by split; error class export must be preserved or moved"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 14
+        import_type: provider_registration
+        impact: "GroupingModule registers ProcessScanHandler in providers (line 32) — remains registered; all 6 concrete deps become port token injections; GroupingModule must also add all 6 port provider registrations"
+    blast_radius: high
+    consumer_count: 2
+    notes: >
+      ProcessScanHandler is the most complex split target. Currently injects 6 concrete classes:
+      ScanResultClient (must become IScanResultLoader), SimilarityEdgeRepository (must become
+      ISimilarityEdgeRepository), SimilarityGroupRepository (must become ISimilarityGroupRepository),
+      VideoSimilarityRepository (must become IVideoSimilarityRepository), ScanBatchRepository
+      (must become IScanBatchRepository — moved to shared), RabbitMQPublisher (must become
+      IEventPublisher). UnionFindDomainService currently instantiated via new (line 33) — must
+      become constructor-injected DI. GroupingModule must register all these under their
+      respective tokens. ScanAlreadyGroupedError defined inline — must be extracted per LC-004.
+
+  - candidate_id: PAC-024
+    artifact_name: SimilarityThresholdPolicy
+    selected_action: reuse_existing
+    target_file: packages/pipeline-service/src/grouping/domain/similarity-threshold.policy.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 18
+        import_type: direct_instantiation
+        impact: "ProcessScanHandler instantiates SimilarityThreshold directly via new SimilarityThreshold(config.grouping.thresholdPolicy) at line 55 — this is a local value-object instantiation pattern, acceptable per domain policy semantics; no DI change required"
+    blast_radius: none
+    consumer_count: 1
+    notes: "Clean artifact. No code change. ProcessScanHandler instantiation pattern is acceptable."
+
+  - candidate_id: PAC-025
+    artifact_name: UnionFindDomainService
+    selected_action: reuse_existing
+    target_file: packages/pipeline-service/src/grouping/domain/union-find.domain-service.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 19
+        import_type: direct_instantiation_bypassing_di
+        impact: "ProcessScanHandler instantiates UnionFindDomainService via new keyword (line 33 class field) bypassing NestJS DI — must change to constructor injection; GroupingModule must add UnionFindDomainService to providers"
+    blast_radius: low
+    consumer_count: 1
+    notes: >
+      UnionFindDomainService itself is clean and requires no code change. The fix is in
+      ProcessScanHandler (split_existing) and GroupingModule (modify_existing). After fix,
+      UnionFindDomainService becomes a proper NestJS-managed provider.
+
+  - candidate_id: PAC-026
+    artifact_name: IScanResultLoader
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/grouping/infrastructure/ports/i-scan-result-loader.port.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by ScanResultClient and consumed by ProcessScanHandler via @Inject(IScanResultLoader) post-implementation."
+
+  - candidate_id: PAC-027
+    artifact_name: ScanResultClient
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 13
+        import_type: constructor_injection
+        impact: "ProcessScanHandler injects ScanResultClient directly (line 36) — must change to inject IScanResultLoader token"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 15
+        import_type: provider_registration
+        impact: "GroupingModule registers ScanResultClient in providers (line 34) — must become { provide: IScanResultLoader, useClass: ScanResultClient }"
+    blast_radius: medium
+    consumer_count: 2
+    notes: >
+      ScanResultClient currently injects S3Adapter (concrete class, line 9). Post-modify:
+      must inject IStoragePort token instead of S3Adapter. Implements IScanResultLoader interface.
+      GroupingModule must currently import SharedInfraModule to get IStoragePort.
+
+  - candidate_id: PAC-028
+    artifact_name: ISimilarityEdgeRepository
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/grouping/infrastructure/ports/i-similarity-edge.repository.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by SimilarityEdgeRepository and consumed by ProcessScanHandler via @Inject(ISimilarityEdgeRepository) post-implementation."
+
+  - candidate_id: PAC-029
+    artifact_name: SimilarityEdgeRepository
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/similarity-edge.repository.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 14
+        import_type: constructor_injection
+        impact: "ProcessScanHandler injects SimilarityEdgeRepository directly (line 37) — must change to inject ISimilarityEdgeRepository token"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 16
+        import_type: provider_registration
+        impact: "GroupingModule registers SimilarityEdgeRepository in providers (line 35) — must become { provide: ISimilarityEdgeRepository, useClass: SimilarityEdgeRepository }"
+    blast_radius: medium
+    consumer_count: 2
+    notes: "Uses @InjectModel(SimilarityEdgeDocument.name). Post-modify: implements ISimilarityEdgeRepository and registers under token."
+
+  - candidate_id: PAC-030
+    artifact_name: ISimilarityGroupRepository
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/grouping/infrastructure/ports/i-similarity-group.repository.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by SimilarityGroupRepository and consumed by ProcessScanHandler via @Inject(ISimilarityGroupRepository) post-implementation."
+
+  - candidate_id: PAC-031
+    artifact_name: SimilarityGroupRepository
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/similarity-group.repository.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 15
+        import_type: constructor_injection
+        impact: "ProcessScanHandler injects SimilarityGroupRepository directly (line 38) — must change to inject ISimilarityGroupRepository token"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 17
+        import_type: provider_registration
+        impact: "GroupingModule registers SimilarityGroupRepository in providers (line 36) — must become { provide: ISimilarityGroupRepository, useClass: SimilarityGroupRepository }"
+    blast_radius: medium
+    consumer_count: 2
+    notes: "Uses @InjectModel(SimilarityGroupDocument.name). Post-modify: implements ISimilarityGroupRepository and registers under token."
+
+  - candidate_id: PAC-032
+    artifact_name: IVideoSimilarityRepository
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/grouping/infrastructure/ports/i-video-similarity.repository.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: >
+      New artifact — no existing call sites. ISP split decision (single interface vs reader+writer)
+      deferred to final_role_assignment phase. Will be implemented by VideoSimilarityRepository
+      and consumed by ProcessScanHandler via @Inject(IVideoSimilarityRepository) post-implementation.
+
+  - candidate_id: PAC-033
+    artifact_name: VideoSimilarityRepository
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/video-similarity.repository.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 16
+        import_type: constructor_injection
+        impact: "ProcessScanHandler injects VideoSimilarityRepository directly (line 39) — must change to inject IVideoSimilarityRepository token"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 18
+        import_type: provider_registration
+        impact: "GroupingModule registers VideoSimilarityRepository in providers (line 37) — must become { provide: IVideoSimilarityRepository, useClass: VideoSimilarityRepository }"
+    blast_radius: medium
+    consumer_count: 2
+    notes: "Uses @InjectModel(VideoDocument.name). ISP: five mixed-concern methods. Post-modify: implements IVideoSimilarityRepository (or split interfaces); registers under DI token(s)."
+
+  # ─────────────────────────────────────────────────
+  # Shared: Cross-capability infrastructure
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-034
+    artifact_name: IScanBatchRepository
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/shared/infrastructure/ports/i-scan-batch.repository.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: >
+      New artifact — no existing call sites. Will be implemented by the consolidated
+      ScanBatchRepository (PAC-035) and consumed by ProcessScanHandler via
+      @Inject(IScanBatchRepository) and by ScanOrchestrator (BatchClaimerService exposes
+      batch status transitions which overlap but are scoped separately via IBatchClaimerPort).
+
+  - candidate_id: PAC-035
+    artifact_name: ScanBatchRepository
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/shared/infrastructure/scan-batch.repository.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 17
+        import_type: constructor_injection
+        impact: "ProcessScanHandler injects ScanBatchRepository (grouping copy at grouping/infrastructure/scan-batch.repository.ts, line 40) — must change to inject IScanBatchRepository token pointing to consolidated shared copy"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 19
+        import_type: provider_registration
+        impact: "GroupingModule registers the grouping-local ScanBatchRepository in providers (line 38) — must be removed; IScanBatchRepository token registration moves to SharedInfraModule (globally available)"
+    blast_radius: high
+    consumer_count: 2
+    notes: >
+      Current source: packages/pipeline-service/src/grouping/infrastructure/scan-batch.repository.ts
+      (grouping-local copy with isAlreadyGrouped and markGroupingCompleted).
+      Canonical target: packages/pipeline-service/src/shared/infrastructure/scan-batch.repository.ts
+      (does not yet exist — must be created from consolidation of grouping and vdf-scan-service copies).
+      GroupingModule local registration must be removed; IScanBatchRepository registration
+      moves to SharedInfraModule. This is a cross-module consolidation with high blast radius
+      because it changes where the provider is registered.
+
+  - candidate_id: PAC-036
+    artifact_name: IStoragePort
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/shared/infrastructure/ports/i-storage.port.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: >
+      New artifact — no existing call sites. Will be implemented by S3StorageAdapter and
+      consumed by FileStagingAdapter, ScanResultClient, and ScanOrchestrator via
+      @Inject(IStoragePort) post-implementation.
+
+  - candidate_id: PAC-037
+    artifact_name: S3StorageAdapter
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/shared/infrastructure/s3-storage.adapter.ts
+    call_sites:
+      - file: packages/pipeline-service/src/shared-infra.module.ts
+        line: 3
+        import_type: concrete_class_import_and_provider
+        impact: "SharedInfraModule imports S3Adapter from @gunea-pig/shared (line 3), provides it under S3Adapter token and exports it (line 18-25, 36) — must change to provide S3StorageAdapter under IStoragePort token; import source changes to local shared infrastructure path"
+      - file: packages/pipeline-service/src/staging/staging.module.ts
+        line: 3
+        import_type: concrete_class_import_inject
+        impact: "staging.module.ts imports S3Adapter to inject into FileStagingAdapter factory (inject: [S3Adapter, PIPELINE_CONFIG] at line 21) — must change to inject IStoragePort token"
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 8
+        import_type: constructor_injection
+        impact: "ScanOrchestrator imports S3Adapter from @gunea-pig/shared (line 8) and injects it (line 33) — must change to inject IStoragePort token"
+      - file: packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts
+        line: 4
+        import_type: constructor_injection
+        impact: "FileStagingAdapter imports S3Adapter (line 4) and takes it as constructor param (line 22) — must change to inject IStoragePort token"
+      - file: packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts
+        line: 2
+        import_type: constructor_injection
+        impact: "ScanResultClient imports S3Adapter (line 2) and takes it as constructor param (line 9) — must change to inject IStoragePort token"
+    blast_radius: high
+    consumer_count: 5
+    notes: >
+      S3Adapter currently lives in packages/shared/src/storage/s3.client.ts and is exported
+      from @gunea-pig/shared. Target post-rename is S3StorageAdapter at
+      packages/pipeline-service/src/shared/infrastructure/s3-storage.adapter.ts. The shared
+      package S3Adapter may remain for other packages but pipeline-service must import from the
+      local path and use the IStoragePort token. Five call sites must migrate.
+
+  - candidate_id: PAC-038
+    artifact_name: IEventPublisher
+    selected_action: create_new
+    target_file: packages/pipeline-service/src/shared/infrastructure/ports/i-event-publisher.port.ts
+    call_sites: []
+    blast_radius: none
+    consumer_count: 0
+    notes: "New artifact — no existing call sites. Will be implemented by RabbitMQPublisher and consumed by ScanOrchestrator and ProcessScanHandler via @Inject(IEventPublisher) post-implementation."
+
+  - candidate_id: PAC-039
+    artifact_name: RabbitMQPublisher
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/shared/infrastructure/rabbitmq.publisher.ts
+    call_sites:
+      - file: packages/pipeline-service/src/shared-infra.module.ts
+        line: 3
+        import_type: concrete_class_import_and_provider
+        impact: "SharedInfraModule imports RabbitMQPublisher from @gunea-pig/shared (line 3), provides it under RabbitMQPublisher token via useFactory async and exports it (lines 27-35, 36) — must change to provide under IEventPublisher token; import source changes to local shared infrastructure path"
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 9
+        import_type: constructor_injection
+        impact: "ScanOrchestrator imports RabbitMQPublisher from @gunea-pig/shared (line 9) and injects it (line 34) — must change to inject IEventPublisher token"
+      - file: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        line: 8
+        import_type: constructor_injection
+        impact: "ProcessScanHandler imports RabbitMQPublisher from @gunea-pig/shared (line 8) and injects it (line 41) — must change to inject IEventPublisher token"
+    blast_radius: high
+    consumer_count: 3
+    notes: >
+      RabbitMQPublisher currently lives in packages/shared/src/queue/rabbitmq.client.ts and is
+      exported from @gunea-pig/shared. Target is packages/pipeline-service/src/shared/infrastructure/rabbitmq.publisher.ts
+      (already named correctly per target_path_hint). Three call sites must migrate.
+      OCP fix: topology assertion (assertTopology) embedded in the class must be separated.
+
+  # ─────────────────────────────────────────────────
+  # Shared: Schema modules (move + wrap)
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-040
+    artifact_name: VideoSchemaModule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/infrastructure/schemas/video.schema.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 3
+        import_type: schema_import_for_mongoose_registration
+        impact: "scanning.module.ts imports VideoDocument and VideoSchema from @gunea-pig/shared for MongooseModule.forFeature — must change to import from local staging schema path after move"
+      - file: packages/pipeline-service/src/staging/staging.module.ts
+        line: 3
+        import_type: schema_import_for_mongoose_registration
+        impact: "staging.module.ts imports VideoDocument and VideoSchema from @gunea-pig/shared for MongooseModule.forFeature — must change to import from local staging schema path"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 4
+        import_type: schema_import_for_mongoose_registration
+        impact: "grouping.module.ts imports VideoDocument and VideoSchema from @gunea-pig/shared — if VideoDocument is needed for VideoSimilarityRepository model injection, import path must be updated"
+    blast_radius: medium
+    consumer_count: 3
+    notes: >
+      VideoDocument/VideoSchema currently in packages/shared/src/db/video.schema.ts exported via
+      @gunea-pig/shared barrel. After move to pipeline-service staging schemas, three module
+      files must update their imports. Additionally: BatchClaimerService, VideoScanRepository,
+      VideoSimilarityRepository import VideoDocument from @gunea-pig/shared for @InjectModel — these
+      type imports may remain if shared package continues to re-export, or must be updated if
+      the schema is fully removed from shared.
+
+  - candidate_id: PAC-041
+    artifact_name: ScanBatchSchemaModule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/infrastructure/schemas/scan-batch.schema.ts
+    call_sites:
+      - file: packages/pipeline-service/src/scanning/scanning.module.ts
+        line: 3
+        import_type: schema_import_for_mongoose_registration
+        impact: "scanning.module.ts imports ScanBatchDocument and ScanBatchSchema from @gunea-pig/shared — must change to local scanning schema path after move"
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 6
+        import_type: schema_import_for_mongoose_registration
+        impact: "grouping.module.ts imports ScanBatchDocument and ScanBatchSchema from @gunea-pig/shared — must change to local scanning schema path after move"
+    blast_radius: medium
+    consumer_count: 2
+    notes: >
+      ScanBatchDocument also used by BatchClaimerService (line 5 @InjectModel), ScanPurgerService
+      (line 4 @InjectModel), and ScanBatchRepository grouping copy (line 4 @InjectModel) — all
+      import from @gunea-pig/shared. If schema moves, these infrastructure files must update imports.
+
+  - candidate_id: PAC-042
+    artifact_name: SimilarityEdgeSchemaModule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/schemas/similarity-edge.schema.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 8
+        import_type: schema_import_for_mongoose_registration
+        impact: "grouping.module.ts imports SimilarityEdgeDocument and SimilarityEdgeSchema from @gunea-pig/shared — must change to local grouping schema path after move"
+    blast_radius: low
+    consumer_count: 1
+    notes: >
+      SimilarityEdgeDocument also imported by SimilarityEdgeRepository (line 4 @InjectModel).
+      Both import paths must be updated if schema is fully removed from shared package.
+
+  - candidate_id: PAC-043
+    artifact_name: SimilarityGroupSchemaModule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/infrastructure/schemas/similarity-group.schema.ts
+    call_sites:
+      - file: packages/pipeline-service/src/grouping/grouping.module.ts
+        line: 10
+        import_type: schema_import_for_mongoose_registration
+        impact: "grouping.module.ts imports SimilarityGroupDocument and SimilarityGroupSchema from @gunea-pig/shared — must change to local grouping schema path after move"
+    blast_radius: low
+    consumer_count: 1
+    notes: >
+      SimilarityGroupDocument also imported by SimilarityGroupRepository (line 4 @InjectModel).
+      Both import paths must be updated if schema is fully removed from shared package.
+
+  # ─────────────────────────────────────────────────
+  # Pipeline-service: NestJS module composition
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-044
+    artifact_name: PipelineStagingSubmodule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/staging/staging.module.ts
+    call_sites:
+      - file: packages/pipeline-service/src/app.module.ts
+        line: 6
+        import_type: module_import
+        impact: "AppModule imports StagingModule (line 6) — no change required; module name and path unchanged"
+    blast_radius: medium
+    consumer_count: 1
+    notes: >
+      staging.module.ts must: import VideoSchemaModule (after schema move) and SharedInfraModule;
+      register VideoRepository under IVideoRepository token; update FileStagingAdapter factory
+      to inject IStoragePort instead of S3Adapter. Currently registers 4 providers (StageVideoHandler,
+      VideoRepository, FileStagingAdapter factory) and 1 controller (VideoReadyConsumer).
+
+  - candidate_id: PAC-045
+    artifact_name: PipelineScanningSubmodule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/scanning/scanning.module.ts
+    call_sites:
+      - file: packages/pipeline-service/src/app.module.ts
+        line: 7
+        import_type: module_import
+        impact: "AppModule imports ScanningModule (line 7) — no change required; module name and path unchanged"
+    blast_radius: high
+    consumer_count: 1
+    notes: >
+      scanning.module.ts must: import ScanBatchSchemaModule (after schema move), remove direct
+      MongooseModule.forFeature calls for schemas that move; import SharedInfraModule; register
+      BatchClaimerService under IBatchClaimerPort token; register VdfRunnerAdapter under IVdfRunnerPort
+      token; register VideoScanRepository under IVideoScanRepository token; add ScanSchedulerTrigger
+      to providers. 6 provider registrations currently; will expand to 9+ with new port tokens.
+
+  - candidate_id: PAC-046
+    artifact_name: PipelineGroupingSubmodule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/grouping/grouping.module.ts
+    call_sites:
+      - file: packages/pipeline-service/src/app.module.ts
+        line: 8
+        import_type: module_import
+        impact: "AppModule imports GroupingModule (line 8) — no change required; module name and path unchanged"
+    blast_radius: high
+    consumer_count: 1
+    notes: >
+      grouping.module.ts must: import SimilarityEdgeSchemaModule and SimilarityGroupSchemaModule
+      (after schema move); import SharedInfraModule; register ScanResultClient under IScanResultLoader;
+      register SimilarityEdgeRepository under ISimilarityEdgeRepository; register SimilarityGroupRepository
+      under ISimilarityGroupRepository; register VideoSimilarityRepository under IVideoSimilarityRepository;
+      remove local ScanBatchRepository (consolidated to SharedInfraModule); add UnionFindDomainService
+      as provider. 6 providers currently; will change to 8+ with new token registrations.
+
+  - candidate_id: PAC-047
+    artifact_name: SharedInfraModule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/shared-infra.module.ts
+    call_sites:
+      - file: packages/pipeline-service/src/app.module.ts
+        line: 5
+        import_type: module_import
+        impact: "AppModule imports SharedInfraModule (line 5 — first module in imports array) — no change required to import line; module is @Global so all submodules inherit its providers"
+    blast_radius: high
+    consumer_count: 1
+    notes: >
+      SharedInfraModule is @Global — its exported providers are available to all submodules.
+      Currently provides and exports: PIPELINE_CONFIG, SCAN_OUTPUT_DIR, S3Adapter, RabbitMQPublisher.
+      Post-modify: must provide S3StorageAdapter under IStoragePort token; provide RabbitMQPublisher
+      under IEventPublisher token; add ScanBatchRepository under IScanBatchRepository token
+      (consolidated shared infrastructure). Export tokens change from concrete classes to
+      interface symbols. High blast radius because all three submodules depend on @Global exports.
+
+  - candidate_id: PAC-048
+    artifact_name: PipelineAppModule
+    selected_action: modify_existing
+    target_file: packages/pipeline-service/src/app.module.ts
+    call_sites: []
+    blast_radius: low
+    consumer_count: 0
+    notes: >
+      AppModule is the root module with no external consumers. Currently imports exactly:
+      ConfigModule, MongooseModule, ScheduleModule, SharedInfraModule, StagingModule,
+      ScanningModule, GroupingModule. SRP fix ensures no direct subdomain provider registrations
+      appear here. MongoDB and ScheduleModule configuration remain at root. Structure is
+      already close to target — the main change is ensuring no cross-domain providers leak
+      into this module.
+
+cross_package_impacts:
+  - source_package: pipeline-service
+    target_package: shared
+    impact_type: import
+    affected_artifacts:
+      - S3Adapter (shared/src/storage/s3.client.ts)
+      - RabbitMQPublisher (shared/src/queue/rabbitmq.client.ts)
+      - VideoDocument/VideoSchema (shared/src/db/video.schema.ts)
+      - ScanBatchDocument/ScanBatchSchema (shared/src/db/scan-batch.schema.ts)
+      - SimilarityEdgeDocument/SimilarityEdgeSchema (shared/src/db/similarity-edge.schema.ts)
+      - SimilarityGroupDocument/SimilarityGroupSchema (shared/src/db/similarity-group.schema.ts)
+    notes: >
+      pipeline-service currently imports 6 exported members from @gunea-pig/shared as concrete
+      class tokens. Post-refactor: S3Adapter and RabbitMQPublisher concrete references are
+      replaced by IStoragePort and IEventPublisher port tokens implemented locally.
+      Schema imports (VideoDocument etc.) currently used both for MongooseModule.forFeature
+      registration and for @InjectModel decorators in infrastructure classes. After schema
+      modules move into pipeline-service, the MongooseModule.forFeature registrations must
+      use local paths. If the shared barrel continues to re-export the schemas, the @InjectModel
+      type-only imports in infrastructure classes can remain pointing to @gunea-pig/shared.
+      If schemas are fully removed from shared, all 8 infrastructure class import sites must
+      also update to local paths.
+
+  - source_package: pipeline-service
+    target_package: shared
+    impact_type: none_added
+    affected_artifacts: []
+    notes: >
+      pipeline-service does NOT currently depend on staging-service, grouping-service, or
+      vdf-scan-service packages. Those packages each have their own standalone copies of
+      the same classes (e.g. grouping-service/src/infrastructure/scan-batch.repository.ts,
+      vdf-scan-service/src/application/scan.orchestrator.ts). These sibling-package copies
+      are not call sites for the pipeline-service refactor — they are independent duplicates
+      that will likely be deprecated in a future cleanup phase outside this mission scope.
+
+evidence_refs:
+  - ref: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+    section: source_search
+    consumed_by: call_site_identification_ScanOrchestrator
+  - ref: packages/pipeline-service/src/scanning/scanning.module.ts
+    section: source_search
+    consumed_by: provider_registration_scanning
+  - ref: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+    section: source_search
+    consumed_by: call_site_identification_ProcessScanHandler
+  - ref: packages/pipeline-service/src/grouping/grouping.module.ts
+    section: source_search
+    consumed_by: provider_registration_grouping
+  - ref: packages/pipeline-service/src/staging/staging.module.ts
+    section: source_search
+    consumed_by: provider_registration_staging
+  - ref: packages/pipeline-service/src/shared-infra.module.ts
+    section: source_search
+    consumed_by: global_provider_blast_radius
+  - ref: packages/pipeline-service/src/app.module.ts
+    section: source_search
+    consumed_by: root_module_composition
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.call_site_impact_analysis.output
+  status: pending
+  note: Gate result produced by gate subsystem via run_gate_check route.

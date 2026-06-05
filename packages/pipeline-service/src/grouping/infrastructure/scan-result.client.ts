@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { NormalizedScanResult, S3Adapter } from '@gunea-pig/shared';
 import { validateScanResult } from './scan-result.validator';
+import { IGroupingScanResultLoader } from '../interfaces/i-scan-result-loader.port';
 
 @Injectable()
-export class ScanResultClient {
+export class ScanResultClient implements IGroupingScanResultLoader {
   private readonly logger = new Logger(ScanResultClient.name);
 
   constructor(private readonly s3: S3Adapter) {}

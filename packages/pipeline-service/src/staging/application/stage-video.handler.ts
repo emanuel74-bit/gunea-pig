@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { NewVideoReadyEvent } from '@gunea-pig/shared';
-import { VideoRepository } from '../infrastructure/video.repository';
-import { FileStagingAdapter, S3ObjectNotFoundError } from '../infrastructure/file-staging.adapter';
+import { S3ObjectNotFoundError } from '../infrastructure/file-staging.adapter';
+import { IVideoRepository, I_VIDEO_REPOSITORY } from '../interfaces/i-video-repository.port';
+import { IFileStagingPort, I_FILE_STAGING } from '../interfaces/i-file-staging.port';
 
 export class VideoAlreadyStagedError extends Error {
   constructor(public readonly videoId: string) {
@@ -26,8 +27,8 @@ export class StageVideoHandler {
   private readonly logger = new Logger(StageVideoHandler.name);
 
   constructor(
-    private readonly videoRepository: VideoRepository,
-    private readonly fileStagingAdapter: FileStagingAdapter,
+    @Inject(I_VIDEO_REPOSITORY) private readonly videoRepository: IVideoRepository,
+    @Inject(I_FILE_STAGING) private readonly fileStagingAdapter: IFileStagingPort,
   ) {}
 
   async handle(event: NewVideoReadyEvent): Promise<void> {

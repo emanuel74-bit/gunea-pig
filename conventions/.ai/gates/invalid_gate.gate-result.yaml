@@ -1,0 +1,12 @@
+artifact: gate_result
+generated_by: run-gate-check
+gate_id: null
+status: blocked
+validation_status: not_provided
+decision: block_transition
+evidence_refs: []
+errors:
+  - severity: error
+    code: GATE_ID_MISSING
+    message: Gate checks require --gate-id so the gate result can be identified and
+      persisted.

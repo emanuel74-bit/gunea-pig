@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: behavior_agent-handoff
+status: prepared
+source_output: .ai/reports/phase-accounting.yaml
+target_agent: behavior_agent
+evidence_refs:
+  - .ai/reports/phase-accounting.yaml
+source_summary: {}

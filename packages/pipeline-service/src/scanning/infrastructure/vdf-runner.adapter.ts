@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { spawn } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import { IVdfRunnerPort } from '../interfaces/i-vdf-runner.port';
 
 export interface VdfRunResult {
   outputPath: string;
@@ -39,7 +40,7 @@ export class VdfOutputMissingError extends Error {
 }
 
 @Injectable()
-export class VdfRunnerAdapter {
+export class VdfRunnerAdapter implements IVdfRunnerPort {
   private readonly logger = new Logger(VdfRunnerAdapter.name);
 
   async run(opts: VdfRunOptions): Promise<VdfRunResult> {

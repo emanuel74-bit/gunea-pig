@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: implementation_agent-handoff
+status: prepared
+source_output: .ai/reports/pre-implementation-gate.yaml
+target_agent: implementation_agent
+evidence_refs:
+  - .ai/reports/pre-implementation-gate.yaml
+source_summary: {}

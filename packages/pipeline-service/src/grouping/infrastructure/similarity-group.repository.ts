@@ -2,14 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SimilarityGroupDocument } from '@gunea-pig/shared';
+import { ISimilarityGroupRepository, GroupRecord } from '../interfaces/i-similarity-group-repository.port';
 
-export interface GroupRecord {
-  groupId: string;
-  videoIds: string[];
-}
+export { GroupRecord };
 
 @Injectable()
-export class SimilarityGroupRepository {
+export class SimilarityGroupRepository implements ISimilarityGroupRepository {
   private readonly logger = new Logger(SimilarityGroupRepository.name);
 
   constructor(

@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: refactor_strategy_agent-handoff
+status: prepared
+source_output: .ai/reports/05-artifact-actions.yaml
+target_agent: refactor_strategy_agent
+evidence_refs:
+  - .ai/reports/05-artifact-actions.yaml
+source_summary: {}

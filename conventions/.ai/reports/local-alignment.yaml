@@ -1,0 +1,454 @@
+report_id: "local-alignment"
+phase_id: local_alignment
+status: complete
+summary: >
+  Ten local conventions were evaluated against the global convention system.
+  Nine are compatible and will be kept as-is or lightly formalized.
+  One introduces a structural gap — the complete absence of interface/port
+  abstractions between application-layer handlers and their infrastructure
+  dependencies — that directly conflicts with the global DIP/ISP authority.
+  The primary conflict (no ports/interfaces) is the central driver of the
+  SOLID refactor and must be resolved before structure rendering can proceed.
+  All compatible conventions are preserved and two (Symbol injection tokens,
+  ack/nack classification) are elevated to formalized status. No local
+  convention is permitted to weaken a global authority rule.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    artifact: codebase_reconnaissance
+    fields_used:
+      - local_conventions
+      - boundary_signals
+      - dependency_signals
+      - decisions
+  - source: conventions/.ai/reports/local-convention-candidates.yaml
+    artifact: local_convention_candidates
+    fields_used:
+      - detected_conventions
+      - decisions
+
+decisions:
+  - id: DECISION-LA-001
+    decision: >
+      Accept the layered folder structure (domain/application/infrastructure/transport)
+      as a global-compatible local convention. Formalize it as the required layer
+      scaffold for all services and pipeline-service submodules. A ports/ (or
+      application/ports/) sub-folder must be added during the refactor for interface
+      declarations — this extension is additive and does not conflict with existing structure.
+    rationale: >
+      The folder structure maps directly to Clean Architecture layer boundaries and
+      is the assumed scaffold in global DDD/SOLID conventions. All five packages
+      follow it consistently. Authority: LOCAL-AUTH-003 (file_naming_or_folder_style)
+      is local_when_not_conflicting — this convention does not conflict. Decision rule
+      LOCAL-ACCEPT-001 applies: evidenced, not conflicting, improves consistency.
+    evidence:
+      - ref: packages/staging-service/src/
+        value: "domain/, application/, infrastructure/, transport/"
+      - ref: packages/pipeline-service/src/
+        value: "grouping/domain/, grouping/application/, grouping/infrastructure/, grouping/transport/"
+
+  - id: DECISION-LA-002
+    decision: >
+      Accept the kebab-case role-suffix file naming convention without change.
+      New port/interface files introduced by the refactor must follow *.port.ts
+      or use an I-prefixed interface inside a *.ts file — either is compatible.
+    rationale: >
+      100% adoption across all source files. Authority: LOCAL-AUTH-003
+      (file_naming_or_folder_style, local_when_not_conflicting). Decision rule
+      LOCAL-ACCEPT-001 applies. The naming convention does not conflict with any
+      global rule and improves searchability and role clarity.
+    evidence:
+      - ref: packages/staging-service/src/
+        value: "video-staging.policy.ts, stage-video.handler.ts, video.repository.ts, file-staging.adapter.ts"
+
+  - id: DECISION-LA-003
+    decision: >
+      Accept the Symbol injection token convention for value providers and elevate it
+      to include port/interface injection tokens. Each DIP port introduced during the
+      refactor must declare a matching Symbol token in the service's injection-tokens.ts.
+      staging-service, which currently has no injection-tokens.ts, must create one.
+    rationale: >
+      The convention is already used in vdf-scan-service, grouping-service, and
+      pipeline-service. It is the correct NestJS pattern for injecting non-class values
+      and for decoupling application handlers from concrete class tokens. Authority:
+      LOCAL-AUTH-003 (local_when_not_conflicting). This elevates the pattern from
+      partial to universal adoption. Decision rule LOCAL-ACCEPT-001 applies.
+    evidence:
+      - ref: packages/vdf-scan-service/src/injection-tokens.ts
+        value: "VDF_SCAN_CONFIG = Symbol('VDF_SCAN_CONFIG'), SCAN_OUTPUT_DIR = Symbol('SCAN_OUTPUT_DIR')"
+      - ref: packages/pipeline-service/src/injection-tokens.ts
+        value: "PIPELINE_CONFIG = Symbol('PIPELINE_CONFIG'), SCAN_OUTPUT_DIR = Symbol('SCAN_OUTPUT_DIR')"
+
+  - id: DECISION-LA-004
+    decision: >
+      Accept the typed custom error class co-location convention. Error classes must
+      remain in the same file as the code that throws them. No top-level errors/ directory
+      shall be introduced.
+    rationale: >
+      100% adoption. The behavior contract prohibits changing observable error types at
+      consumer-facing boundaries, so error class names must be preserved. Co-location
+      makes throw sites and error definitions adjacent. Authority: LOCAL-AUTH-003
+      (local_when_not_conflicting). Decision rule LOCAL-ACCEPT-001 applies.
+    evidence:
+      - ref: packages/staging-service/src/application/stage-video.handler.ts
+        value: "VideoAlreadyStagedError, StagingPermanentFailureError — co-located in handler file"
+      - ref: packages/staging-service/src/infrastructure/file-staging.adapter.ts
+        value: "S3ObjectNotFoundError — co-located in adapter file"
+
+  - id: DECISION-LA-005
+    decision: >
+      Accept the EnvironmentVariables + class-validator + buildConfig() config pattern.
+      The refactor must not change config loading semantics or startup validation.
+    rationale: >
+      Identical pattern across all four service packages. Runtime environment variable
+      validation at startup is a production-grade practice. The pattern does not conflict
+      with any global convention. Authority: LOCAL-AUTH-003. Decision rule LOCAL-ACCEPT-001.
+    evidence:
+      - ref: packages/staging-service/src/config.ts
+        value: "plainToInstance(EnvironmentVariables, process.env, { enableImplicitConversion: true }); validateSync()"
+      - ref: packages/grouping-service/src/config.ts
+        value: "identical pattern"
+
+  - id: DECISION-LA-006
+    decision: >
+      Accept the per-class NestJS Logger instantiation convention.
+      All classes that log must declare private readonly logger = new Logger(ClassName.name).
+      Logger injection via constructor is not permitted in this codebase.
+    rationale: >
+      100% adoption. Scopes log output to class name for production log filtering.
+      The pattern is NestJS-specific and does not conflict with global conventions
+      (global conventions are framework-agnostic). Authority: LOCAL-AUTH-003.
+      Decision rule LOCAL-ACCEPT-001 applies.
+    evidence:
+      - ref: packages/staging-service/src/application/stage-video.handler.ts
+        value: "private readonly logger = new Logger(StageVideoHandler.name)"
+      - ref: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+        value: "private readonly logger = new Logger(ScanOrchestrator.name)"
+
+  - id: DECISION-LA-007
+    decision: >
+      Accept and enforce the Mongoose .lean<T>().exec() discipline on all read queries.
+      No repository method may return a hydrated Mongoose document to the application
+      or domain layer. This must be enforced on all new repositories introduced during
+      the refactor.
+    rationale: >
+      100% adoption in all existing repositories. Prevents Mongoose document methods from
+      leaking into application/domain code — aligns with global value-object immutability
+      and boundary isolation principles. Authority: LOCAL-AUTH-003. Decision rule
+      LOCAL-ACCEPT-001 applies with a preserve_and_enforce recommendation.
+    evidence:
+      - ref: packages/staging-service/src/infrastructure/video.repository.ts
+        value: ".lean<VideoDocument>().exec() on findByVideoId"
+      - ref: packages/vdf-scan-service/src/infrastructure/batch-claimer.service.ts
+        value: ".lean<{ videoId: string }[]>().exec() on candidates query"
+
+  - id: DECISION-LA-008
+    decision: >
+      Accept the SIGTERM/SIGINT graceful shutdown pattern. All service main.ts files
+      must continue to register both handlers. The refactor must not remove or restructure
+      them.
+    rationale: >
+      100% adoption. This is an operational correctness requirement — RabbitMQ connections
+      and Mongoose connections require graceful teardown. Not in conflict with any global rule.
+      Authority: LOCAL-AUTH-003. Decision rule LOCAL-ACCEPT-001.
+    evidence:
+      - ref: packages/staging-service/src/main.ts
+        value: "process.on('SIGTERM', ...) and process.on('SIGINT', ...) calling app.close()"
+
+  - id: DECISION-LA-009
+    decision: >
+      Accept and formalize the ack/nack error classification pattern in transport consumers.
+      All new RabbitMQ consumers introduced during the refactor must follow: AlreadyDone
+      error type -> ack (idempotent skip), PermanentFailure error type -> nack(false, false),
+      transient/unknown error -> nack(false, false) (rely on DLX routing for retry).
+    rationale: >
+      Consistent pattern across all consumer classes. Correctly handles idempotency,
+      permanent failures, and transient errors without requeue loops. The global convention
+      system does not prescribe consumer ack strategies, so the local pattern governs.
+      Authority: LOCAL-AUTH-003. Decision rule LOCAL-ACCEPT-001 with a formalize recommendation.
+    evidence:
+      - ref: packages/staging-service/src/transport/video-ready.consumer.ts
+        value: "VideoAlreadyStagedError -> ack, StagingPermanentFailureError -> nack(false,false), other -> nack(false,false)"
+      - ref: packages/grouping-service/src/consumers/scan-completed.consumer.ts
+        value: "ScanAlreadyGroupedError -> ack, ScanResultValidationError -> nack(false,false), other -> nack(false,false)"
+
+  - id: DECISION-LA-010
+    decision: >
+      Accept the shared package nested barrel export pattern. Any new sub-folder added
+      to packages/shared/src/ during the refactor (e.g., ports/, interfaces/) must follow
+      the same pattern: nested index.ts barrel re-exported from the root index.ts.
+    rationale: >
+      The pattern keeps import paths clean and prevents deep-path internal imports.
+      Aligns with global module boundary conventions. Authority: LOCAL-AUTH-003.
+      Decision rule LOCAL-ACCEPT-001 applies.
+    evidence:
+      - ref: packages/shared/src/index.ts
+        value: "export * from './types'; export * from './db'; export * from './queue'; export * from './storage'; export * from './logger'"
+
+  - id: DECISION-LA-CONFLICT-001
+    decision: >
+      Classify the complete absence of interface/port abstractions at application-layer
+      boundaries as a PRIMARY CONFLICT with global SOLID conventions (DIP, ISP).
+      The refactor MUST introduce TypeScript interfaces as port declarations between
+      application handlers and all infrastructure dependencies.
+      This conflict blocks structure rendering and pre-implementation gates until resolved.
+    rationale: >
+      Application-layer handlers (StageVideoHandler, ProcessScanHandler, ScanOrchestrator)
+      directly inject and depend on concrete infrastructure classes with no interface
+      between them. This violates DIP (application depends on concretions, not abstractions)
+      and ISP (wide repository classes with no role-scoped interfaces). Authority:
+      LOCAL-AUTH-001 (layer_direction, winner: global) and LOCAL-AUTH-002
+      (role_responsibility, winner: global) both apply. Decision rule LOCAL-REJECT-001
+      activates: local convention (concrete-class injection) conflicts with global rule,
+      creates mixed responsibility, and allows forbidden dependency direction (application
+      -> infrastructure concretion). Conflict escalation rule LOCAL-CONFLICT-001 triggers
+      dependency_validation_required and blocks structure_rendering and pre_implementation_gate.
+      Conflict escalation rule LOCAL-CONFLICT-002 triggers role_collision_possible and
+      blocks final_role_assignment.
+    evidence:
+      - ref: packages/staging-service/src/application/stage-video.handler.ts
+        value: "constructor injects concrete VideoRepository and FileStagingAdapter — no interface"
+      - ref: packages/grouping-service/src/application/process-scan.handler.ts
+        value: "constructor injects six concrete infrastructure classes — no interfaces"
+      - ref: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+        value: "constructor injects S3Adapter and RabbitMQPublisher as concrete classes — no IStoragePort or IEventPublisherPort"
+      - ref: packages/shared/src/queue/rabbitmq.client.ts
+        value: "no IQueuePublisher or IEventPublisher interface exists — application handlers depend on concretion"
+      - ref: packages/shared/src/storage/s3.client.ts
+        value: "no IS3Client or IStorageAdapter interface exists"
+
+evidence_refs:
+  - ref: conventions/planning/conventions.local-alignment.yaml
+    section: global_vs_local_authority_matrix, local_alignment_decision_rules, conflict_escalation_rules
+    consumed_by: alignment_classification
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: decisions, local_conventions, boundary_signals, dependency_signals
+    consumed_by: conflict_identification
+  - ref: conventions/.ai/reports/local-convention-candidates.yaml
+    section: detected_conventions, decisions
+    consumed_by: compatible_convention_identification
+  - ref: packages/staging-service/src/application/stage-video.handler.ts
+    section: constructor parameters
+    consumed_by: dip_conflict_evidence
+  - ref: packages/grouping-service/src/application/process-scan.handler.ts
+    section: constructor parameters
+    consumed_by: dip_conflict_evidence
+  - ref: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+    section: constructor parameters
+    consumed_by: dip_conflict_evidence
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.local_alignment.output
+  status: pending
+  note: "Gate result is produced by the gate subsystem via run_gate_check route — not authored here."
+
+compatible_local_conventions:
+  - convention_id: CONV-001
+    description: >
+      Layered folder structure: domain/, application/, infrastructure/, transport/
+      (or consumers/) used consistently across all service packages and pipeline-service
+      submodules.
+    global_alignment_basis: >
+      Maps directly to Clean Architecture layer boundaries. Authority matrix LOCAL-AUTH-003
+      (file_naming_or_folder_style, local_when_not_conflicting) applies. Does not weaken
+      any global dependency direction or role responsibility rule.
+    keep_decision: keep_and_formalize
+    extension_required: >
+      A ports/ or application/ports/ sub-folder must be added during the refactor for
+      interface/port declarations. This is an additive extension, not a change to the
+      existing structure.
+
+  - convention_id: CONV-002
+    description: >
+      Kebab-case file naming with semantic role suffix: *.handler.ts, *.repository.ts,
+      *.adapter.ts, *.policy.ts, *.consumer.ts, *.service.ts, *.module.ts, etc.
+    global_alignment_basis: >
+      Authority matrix LOCAL-AUTH-003. 100% adoption. Does not conflict with global
+      naming rules. New port/interface files must follow *.port.ts or standard *.ts with
+      I-prefixed interface names.
+    keep_decision: keep
+
+  - convention_id: CONV-003
+    description: >
+      Symbol injection tokens for value providers (config objects, path strings) declared
+      in injection-tokens.ts files.
+    global_alignment_basis: >
+      Authority matrix LOCAL-AUTH-003. NestJS-specific pattern, global conventions are
+      framework-agnostic and do not prescribe DI token strategy. The pattern strengthens
+      decoupling and is the correct vehicle for port injection tokens.
+    keep_decision: keep_and_elevate
+    elevation: >
+      Extend to interface/port tokens. Each DIP port must have a Symbol token declared
+      alongside or near the port interface declaration.
+
+  - convention_id: CONV-004
+    description: >
+      Typed custom error classes extending Error with this.name set, co-located in the
+      same file as the code that throws them.
+    global_alignment_basis: >
+      Authority matrix LOCAL-AUTH-003. Error co-location is a local style convention that
+      does not conflict with any global rule. Behavior contract forbids renaming consumer-
+      facing error types — this convention supports that constraint.
+    keep_decision: keep
+
+  - convention_id: CONV-005
+    description: >
+      EnvironmentVariables class with @IsString/@IsInt class-validator decorators,
+      plainToInstance, validateSync, and typed buildConfig() function per service.
+    global_alignment_basis: >
+      Authority matrix LOCAL-AUTH-003. Production-grade startup validation. No global
+      rule addresses config loading strategy. Pattern does not affect layer boundaries.
+    keep_decision: keep
+
+  - convention_id: CONV-006
+    description: >
+      Per-class NestJS Logger: private readonly logger = new Logger(ClassName.name)
+      declared as a field in every class that emits logs.
+    global_alignment_basis: >
+      Authority matrix LOCAL-AUTH-003. NestJS-specific idiom. Global conventions are
+      framework-agnostic. Logger injection via constructor is explicitly rejected as
+      unnecessary complexity for this codebase.
+    keep_decision: keep
+
+  - convention_id: CONV-007
+    description: >
+      Mongoose .lean<T>().exec() on all repository read operations — returns plain
+      typed objects rather than hydrated Mongoose documents.
+    global_alignment_basis: >
+      Aligns with global value-object immutability and application-layer isolation
+      principles. Prevents framework-coupled objects from crossing layer boundaries.
+      Authority matrix LOCAL-AUTH-003.
+    keep_decision: keep_and_enforce
+
+  - convention_id: CONV-008
+    description: >
+      Graceful shutdown via SIGTERM/SIGINT handlers in every main.ts calling app.close().
+    global_alignment_basis: >
+      Operational correctness requirement. Authority matrix LOCAL-AUTH-003. No global rule
+      conflicts with this lifecycle pattern.
+    keep_decision: keep
+
+  - convention_id: CONV-009
+    description: >
+      Ack/nack error classification in RabbitMQ transport consumers: AlreadyDone -> ack,
+      PermanentFailure -> nack(false,false), transient/unknown -> nack(false,false).
+    global_alignment_basis: >
+      Authority matrix LOCAL-AUTH-003. Global conventions do not prescribe consumer ack
+      strategies. This is a correct and consistent local transport contract that should
+      be formalized across all consumers.
+    keep_decision: keep_and_formalize
+
+  - convention_id: CONV-010
+    description: >
+      Shared package nested barrel exports: each sub-folder has its own index.ts,
+      all re-exported from packages/shared/src/index.ts.
+    global_alignment_basis: >
+      Aligns with global module boundary conventions — prevents deep internal import paths
+      and enforces clean public surface. Authority matrix LOCAL-AUTH-003.
+    keep_decision: keep
+
+conflicting_local_conventions:
+  - convention_id: IMPL-CONFLICT-001
+    description: >
+      Application-layer handlers inject and depend on concrete infrastructure classes
+      directly, with no TypeScript interface or port abstraction between layers. This
+      is not a named explicit "convention" but is the de-facto structural pattern
+      throughout the entire codebase: StageVideoHandler, ProcessScanHandler, and
+      ScanOrchestrator all import and reference concrete repository, adapter, and
+      client classes from their constructors.
+    conflict_reason: >
+      Violates DIP: application layer depends on infrastructure concretions rather than
+      abstractions. Violates ISP: repository classes expose wide mixed-concern interfaces
+      with no role-scoped narrowing. Authority matrix LOCAL-AUTH-001 (layer_direction,
+      winner: global) and LOCAL-AUTH-002 (role_responsibility, winner: global) both
+      assign the global convention system as the authoritative rule. This pattern allows
+      a forbidden dependency direction (application -> concrete infrastructure) and creates
+      mixed role responsibilities in repository classes. Conflict escalation rules
+      LOCAL-CONFLICT-001 and LOCAL-CONFLICT-002 apply.
+    resolution: >
+      The refactor must introduce TypeScript interface declarations (ports) for every
+      infrastructure dependency of every application-layer class. Each port interface
+      must be placed in a ports/ sub-folder (within the service's application/ layer or
+      at the service root). Concrete classes must implement the port interface. Application
+      handlers must be updated to inject by Symbol token bound to the interface, not by
+      concrete class token. Wide repository interfaces must be split into role-scoped
+      ports (e.g., IVideoReadRepository vs IVideoWriteRepository) where ISP violations
+      exist. S3Adapter and RabbitMQPublisher must each have a corresponding port interface
+      (IStoragePort / IS3Client, IEventPublisherPort / IQueuePublisher).
+    triggered_blocks:
+      - dependency_validation_required
+      - role_collision_possible
+      - blocks: structure_rendering
+      - blocks: pre_implementation_gate
+      - blocks: final_role_assignment
+
+alignment_decisions:
+  - convention_id: CONV-001
+    decision: keep_and_formalize
+    rationale: >
+      Fully compatible with global Clean Architecture layer model. Additive extension
+      (ports/ sub-folder) required during refactor but does not alter existing structure.
+
+  - convention_id: CONV-002
+    decision: keep
+    rationale: >
+      100% adoption, no global conflict. New port files extend the naming pattern
+      naturally (*.port.ts or I-prefixed interface names).
+
+  - convention_id: CONV-003
+    decision: adapt
+    rationale: >
+      Compatible but partially adopted (staging-service lacks injection-tokens.ts).
+      Must be universalized and extended to port injection during the refactor.
+
+  - convention_id: CONV-004
+    decision: keep
+    rationale: >
+      Compatible with global rules and required by behavior contract constraint on
+      observable error types. No change needed.
+
+  - convention_id: CONV-005
+    decision: keep
+    rationale: >
+      Compatible and production-grade. No change to config loading semantics permitted.
+
+  - convention_id: CONV-006
+    decision: keep
+    rationale: >
+      NestJS-specific idiom with 100% adoption. No global conflict. Logger injection
+      via constructor explicitly rejected for this codebase.
+
+  - convention_id: CONV-007
+    decision: keep_and_enforce
+    rationale: >
+      Aligns with global layer isolation principles. Must be enforced on all new
+      repository code introduced during the refactor — no hydrated documents
+      may cross the infrastructure/application boundary.
+
+  - convention_id: CONV-008
+    decision: keep
+    rationale: >
+      Operational correctness. No global conflict. Must not be touched during refactor.
+
+  - convention_id: CONV-009
+    decision: adapt
+    rationale: >
+      Correct pattern, currently informal. Must be formalized as a required rule for
+      all new consumers. Consider extracting a ConsumerAckStrategy utility class or
+      base consumer to enforce it structurally.
+
+  - convention_id: CONV-010
+    decision: keep
+    rationale: >
+      Compatible with global module boundary conventions. Any new shared sub-folder
+      must follow the barrel export pattern.
+
+  - convention_id: IMPL-CONFLICT-001
+    decision: supersede
+    rationale: >
+      The concrete-injection de-facto pattern is superseded by the global DIP/ISP
+      authority. The refactor must introduce port interfaces for all application-layer
+      infrastructure dependencies. This is the primary structural work of the mission.
+      The conflict blocks structure rendering and pre-implementation gates until resolved.

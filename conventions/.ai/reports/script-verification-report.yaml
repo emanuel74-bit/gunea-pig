@@ -1,0 +1,662 @@
+artifact: script_verification_report
+generated_by: verify-scripts
+coverage_model: per_route_script_behavior_matrix
+required_route_coverage: every executor route except validate_script_execution
+  must have declared coverage; selected representative cases are run live
+declared_test_count: 73
+live_test_count: 12
+deferred_live_cases:
+  - authority topology compile fails duplicate owner
+  - authority topology compile fails malformed relationship list
+  - authority topology compile fails unknown relationship key
+  - authority topology compile valid input passes
+  - authority topology validation fails duplicate owner in topology
+  - authority topology validation fails missing topology
+  - authority topology validation passes after compile
+  - changed files validation fails malformed changed yaml
+  - changed files validation fails missing file
+  - changed files validation passes empty input as advisory
+  - claude execution plan validation fails missing plan
+  - claude execution plan validation passes generated plan
+  - executor route validation fails direct script reference
+  - executor route validation fails forbidden blocking field
+  - executor route validation fails forbidden failure policy field
+  - executor route validation fails invalid route id
+  - executor route validation fails missing required field
+  - executor route validation fails missing script
+  - executor route validation fails unknown executor type
+  - executor route validation fails unknown lifecycle hook
+  - executor route validation fails unknown local route
+  - final mission report generation fails missing evidence
+  - final mission report generation writes evidence backed report
+  - gate check fails missing gate id
+  - gate result validation fails missing result
+  - gate result validation passes valid result
+  - gate result validation rejects manual result
+  - handoff preparation fails missing input
+  - handoff validation fails missing packet
+  - handoff validation passes valid packet
+  - handoff validation rejects manual packet
+  - mission bundle generation passes
+  - phase bundle generation fails unknown phase
+  - phase bundle validation fails full context dump
+  - phase bundle validation fails missing bundle
+  - phase bundle validation fails missing manifest
+  - phase bundle validation fails unknown route
+  - phase bundle validation fails weak agent context boundary
+  - phase bundle validation passes after generation
+  - phase output validation passes advisory missing output
+  - phase output validation passes existing output
+  - phase report collection writes report
+  - reference validation fails missing required dependency
+  - reference validation fails stale removed reference
+  - reference validation fails unknown executor route reference
+  - report evidence validation fails missing evidence index
+  - report evidence validation passes collected evidence
+  - revision task creation fails missing failure
+  - revision task validation fails missing task
+  - revision task validation passes valid task
+  - revision task validation rejects manual task
+  - runtime artifact topology compile fails same path different id
+  - runtime artifact validation fails invalid topology path
+  - runtime artifact validation fails unnormalized topology path
+  - runtime artifact validation fails without topology
+  - runtime artifact validation passes after compile
+  - semantic completeness validation fails decision without rejection
+  - semantic completeness validation fails dynamically added policy phrase
+  - semantic completeness validation fails placeholder content
+  - semantic completeness validation fails policy loaded vague phrase
+  - semantic completeness validation fails weak phase output claim
+failed_test_count: 0
+route_coverage:
+  validate_executor_routes:
+    script: scripts/validate-executor-routes.ts
+    executor_type: validation
+    declared_test_count: 10
+    live_test_count: 1
+    declared_categories:
+      - invalid_state
+      - malformed_input
+      - valid_input
+    live_categories:
+      - valid_input
+  validate_authority_topology:
+    script: scripts/validate-authority-topology.ts
+    executor_type: validation
+    declared_test_count: 3
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_phase_output:
+    script: scripts/validate-phase-output.ts
+    executor_type: validation
+    declared_test_count: 2
+    live_test_count: 0
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_phase_bundle:
+    script: scripts/validate-phase-bundle.ts
+    executor_type: validation
+    declared_test_count: 6
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_changed_files:
+    script: scripts/validate-changed-files.ts
+    executor_type: validation
+    declared_test_count: 4
+    live_test_count: 1
+    declared_categories:
+      - invalid_state
+      - malformed_input
+      - missing_input
+      - valid_input
+    live_categories:
+      - valid_input
+  validate_references:
+    script: scripts/validate-references.ts
+    executor_type: validation
+    declared_test_count: 4
+    live_test_count: 1
+    declared_categories:
+      - invalid_state
+      - valid_input
+    live_categories:
+      - valid_input
+  validate_runtime_artifacts:
+    script: scripts/validate-runtime-artifacts.ts
+    executor_type: validation
+    declared_test_count: 4
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - malformed_input
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_script_execution:
+    script: scripts/verify-scripts.ts
+    executor_type: validation
+    declared_test_count: 0
+    live_test_count: 0
+    declared_categories: []
+    live_categories: []
+  validate_semantic_completeness:
+    script: scripts/validate-semantic-completeness.ts
+    executor_type: validation
+    declared_test_count: 6
+    live_test_count: 1
+    declared_categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+    live_categories:
+      - valid_input
+  validate_gate_result:
+    script: scripts/validate-gate-result.ts
+    executor_type: validation
+    declared_test_count: 3
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_handoff:
+    script: scripts/validate-handoff.ts
+    executor_type: validation
+    declared_test_count: 3
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_revision_task:
+    script: scripts/validate-revision-task.ts
+    executor_type: validation
+    declared_test_count: 3
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_report_evidence:
+    script: scripts/validate-report-evidence.ts
+    executor_type: validation
+    declared_test_count: 2
+    live_test_count: 0
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_claude_execution_plan:
+    script: scripts/validate-claude-execution-plan.ts
+    executor_type: validation
+    declared_test_count: 2
+    live_test_count: 0
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories: []
+  validate_claude_native_integration:
+    script: scripts/validate-claude-native-integration.ts
+    executor_type: validation
+    declared_test_count: 1
+    live_test_count: 1
+    declared_categories:
+      - valid_input
+    live_categories:
+      - valid_input
+  compile_authority_topology:
+    script: scripts/compile-authority-topology.ts
+    executor_type: compiler
+    declared_test_count: 4
+    live_test_count: 0
+    declared_categories:
+      - invalid_state
+      - malformed_input
+      - valid_input
+    live_categories: []
+  compile_runtime_artifact_topology:
+    script: scripts/compile-runtime-artifact-topology.ts
+    executor_type: compiler
+    declared_test_count: 2
+    live_test_count: 1
+    declared_categories:
+      - invalid_state
+      - valid_input
+    live_categories:
+      - valid_input
+  generate_phase_bundle:
+    script: scripts/generate-phase-bundle.ts
+    executor_type: generator
+    declared_test_count: 2
+    live_test_count: 1
+    declared_categories:
+      - invalid_state
+      - valid_input
+    live_categories:
+      - valid_input
+  generate_claude_execution_plan:
+    script: scripts/generate-claude-execution-plan.ts
+    executor_type: generator
+    declared_test_count: 1
+    live_test_count: 1
+    declared_categories:
+      - valid_input
+    live_categories:
+      - valid_input
+  run_gate_check:
+    script: scripts/run-gate-check.ts
+    executor_type: gate
+    declared_test_count: 2
+    live_test_count: 1
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories:
+      - valid_input
+  prepare_agent_handoff:
+    script: scripts/prepare-agent-handoff.ts
+    executor_type: handoff
+    declared_test_count: 2
+    live_test_count: 1
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories:
+      - valid_input
+  create_revision_task:
+    script: scripts/create-revision-task.ts
+    executor_type: revision
+    declared_test_count: 2
+    live_test_count: 1
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories:
+      - valid_input
+  collect_phase_report:
+    script: scripts/collect-phase-report.ts
+    executor_type: report
+    declared_test_count: 1
+    live_test_count: 0
+    declared_categories:
+      - valid_input
+    live_categories: []
+  collect_evidence:
+    script: scripts/collect-evidence.ts
+    executor_type: report
+    declared_test_count: 1
+    live_test_count: 1
+    declared_categories:
+      - valid_input
+    live_categories:
+      - valid_input
+  generate_final_mission_report:
+    script: scripts/generate-final-mission-report.ts
+    executor_type: report
+    declared_test_count: 2
+    live_test_count: 0
+    declared_categories:
+      - missing_input
+      - valid_input
+    live_categories: []
+  generate_mission_bundle:
+    script: scripts/generate-mission-bundle.ts
+    executor_type: bundle
+    declared_test_count: 1
+    live_test_count: 0
+    declared_categories:
+      - valid_input
+    live_categories: []
+script_coverage:
+  scripts/validate-executor-routes.ts:
+    test_count: 10
+    routes:
+      - validate_executor_routes
+    categories:
+      - invalid_state
+      - malformed_input
+      - valid_input
+  scripts/compile-authority-topology.ts:
+    test_count: 4
+    routes:
+      - compile_authority_topology
+    categories:
+      - invalid_state
+      - malformed_input
+      - valid_input
+  scripts/validate-authority-topology.ts:
+    test_count: 3
+    routes:
+      - validate_authority_topology
+    categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+  scripts/validate-references.ts:
+    test_count: 4
+    routes:
+      - validate_references
+    categories:
+      - invalid_state
+      - valid_input
+  scripts/validate-changed-files.ts:
+    test_count: 4
+    routes:
+      - validate_changed_files
+    categories:
+      - invalid_state
+      - malformed_input
+      - missing_input
+      - valid_input
+  scripts/compile-runtime-artifact-topology.ts:
+    test_count: 2
+    routes:
+      - compile_runtime_artifact_topology
+    categories:
+      - invalid_state
+      - valid_input
+  scripts/validate-runtime-artifacts.ts:
+    test_count: 4
+    routes:
+      - validate_runtime_artifacts
+    categories:
+      - invalid_state
+      - malformed_input
+      - missing_input
+      - valid_input
+  scripts/generate-phase-bundle.ts:
+    test_count: 2
+    routes:
+      - generate_phase_bundle
+    categories:
+      - invalid_state
+      - valid_input
+  scripts/validate-phase-bundle.ts:
+    test_count: 6
+    routes:
+      - validate_phase_bundle
+    categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+  scripts/validate-semantic-completeness.ts:
+    test_count: 6
+    routes:
+      - validate_semantic_completeness
+    categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+  scripts/validate-phase-output.ts:
+    test_count: 2
+    routes:
+      - validate_phase_output
+    categories:
+      - missing_input
+      - valid_input
+  scripts/generate-mission-bundle.ts:
+    test_count: 1
+    routes:
+      - generate_mission_bundle
+    categories:
+      - valid_input
+  scripts/run-gate-check.ts:
+    test_count: 2
+    routes:
+      - run_gate_check
+    categories:
+      - missing_input
+      - valid_input
+  scripts/validate-gate-result.ts:
+    test_count: 3
+    routes:
+      - validate_gate_result
+    categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+  scripts/prepare-agent-handoff.ts:
+    test_count: 2
+    routes:
+      - prepare_agent_handoff
+    categories:
+      - missing_input
+      - valid_input
+  scripts/validate-handoff.ts:
+    test_count: 3
+    routes:
+      - validate_handoff
+    categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+  scripts/create-revision-task.ts:
+    test_count: 2
+    routes:
+      - create_revision_task
+    categories:
+      - missing_input
+      - valid_input
+  scripts/validate-revision-task.ts:
+    test_count: 3
+    routes:
+      - validate_revision_task
+    categories:
+      - invalid_state
+      - missing_input
+      - valid_input
+  scripts/collect-phase-report.ts:
+    test_count: 1
+    routes:
+      - collect_phase_report
+    categories:
+      - valid_input
+  scripts/collect-evidence.ts:
+    test_count: 1
+    routes:
+      - collect_evidence
+    categories:
+      - valid_input
+  scripts/validate-report-evidence.ts:
+    test_count: 2
+    routes:
+      - validate_report_evidence
+    categories:
+      - missing_input
+      - valid_input
+  scripts/generate-final-mission-report.ts:
+    test_count: 2
+    routes:
+      - generate_final_mission_report
+    categories:
+      - missing_input
+      - valid_input
+  scripts/generate-claude-execution-plan.ts:
+    test_count: 1
+    routes:
+      - generate_claude_execution_plan
+    categories:
+      - valid_input
+  scripts/validate-claude-execution-plan.ts:
+    test_count: 2
+    routes:
+      - validate_claude_execution_plan
+    categories:
+      - missing_input
+      - valid_input
+  scripts/validate-claude-native-integration.ts:
+    test_count: 1
+    routes:
+      - validate_claude_native_integration
+    categories:
+      - valid_input
+tests:
+  - name: executor routes valid input passes
+    category: valid_input
+    route_id: validate_executor_routes
+    script: scripts/validate-executor-routes.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/validation/validate-executor-routes.result.yaml
+    disallowed_writes: []
+  - name: reference validation valid input passes
+    category: valid_input
+    route_id: validate_references
+    script: scripts/validate-references.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/topologies/reference-topology.yaml
+      - .ai/validation/validate-references.result.yaml
+    disallowed_writes: []
+  - name: changed files validation passes valid file
+    category: valid_input
+    route_id: validate_changed_files
+    script: scripts/validate-changed-files.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/validation/validate-changed-files.result.yaml
+    disallowed_writes: []
+  - name: runtime artifact topology compile valid input passes
+    category: valid_input
+    route_id: compile_runtime_artifact_topology
+    script: scripts/compile-runtime-artifact-topology.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/reports/artifact-conflict-report.yaml
+      - .ai/topologies/runtime-artifact-topology.yaml
+      - .ai/validation/compile-runtime-artifact-topology.result.yaml
+    disallowed_writes: []
+  - name: phase bundle generation passes known phase
+    category: valid_input
+    route_id: generate_phase_bundle
+    script: scripts/generate-phase-bundle.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/bundles/phases/verify/mission_profile_selection.bundle.yaml
+      - .ai/bundles/phases/verify/mission_profile_selection.manifest.yaml
+      - .ai/validation/generate-phase-bundle.result.yaml
+    disallowed_writes: []
+  - name: semantic completeness validation passes current conventions
+    category: valid_input
+    route_id: validate_semantic_completeness
+    script: scripts/validate-semantic-completeness.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/reports/semantic-completeness-report.yaml
+      - .ai/validation/validate-semantic-completeness.result.yaml
+    disallowed_writes: []
+  - name: gate check writes pass result
+    category: valid_input
+    route_id: run_gate_check
+    script: scripts/run-gate-check.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/gates/verify_gate.gate-result.yaml
+      - .ai/validation/run-gate-check.result.yaml
+    disallowed_writes: []
+  - name: handoff preparation writes handoff packet
+    category: valid_input
+    route_id: prepare_agent_handoff
+    script: scripts/prepare-agent-handoff.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/handoffs/verify_handoff.yaml
+      - .ai/validation/prepare-agent-handoff.result.yaml
+    disallowed_writes: []
+  - name: revision task creation writes revision task
+    category: valid_input
+    route_id: create_revision_task
+    script: scripts/create-revision-task.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/revisions/verify_revision.yaml
+      - .ai/validation/create-revision-task.result.yaml
+    disallowed_writes: []
+  - name: evidence collection writes evidence index
+    category: valid_input
+    route_id: collect_evidence
+    script: scripts/collect-evidence.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/reports/evidence-collection-report.yaml
+      - .ai/reports/evidence-index.yaml
+      - .ai/validation/collect-evidence.result.yaml
+    disallowed_writes: []
+  - name: claude execution plan generation writes plan
+    category: valid_input
+    route_id: generate_claude_execution_plan
+    script: scripts/generate-claude-execution-plan.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/claude/execution-plan.yaml
+      - .ai/validation/generate-claude-execution-plan.result.yaml
+    disallowed_writes: []
+  - name: claude native integration validation passes project files
+    category: valid_input
+    route_id: validate_claude_native_integration
+    script: scripts/validate-claude-native-integration.ts
+    expected_exit: 0
+    actual_exit: 0
+    expected_status: pass
+    actual_status: pass
+    error_codes: []
+    written_files:
+      - .ai/validation/validate-claude-native-integration.result.yaml
+    disallowed_writes: []

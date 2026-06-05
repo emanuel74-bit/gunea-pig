@@ -1,0 +1,19 @@
+{
+  "script_id": "verify-scripts",
+  "status": "pass",
+  "errors": [],
+  "warnings": [],
+  "info": [],
+  "outputs": [
+    ".ai/reports/script-verification-report.yaml",
+    ".ai/validation/verify-scripts.result.yaml"
+  ],
+  "summary": {
+    "live_test_count": 12,
+    "declared_test_count": 73,
+    "failed_test_count": 0,
+    "declared_tested_route_count": 25,
+    "live_tested_route_count": 12,
+    "untested_route_count": 0
+  }
+}

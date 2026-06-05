@@ -1,0 +1,11 @@
+script_id: generate-final-mission-report
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/reports/final-mission-report.yaml
+  - .ai/reports/mission-evidence-summary.yaml
+summary:
+  status: complete
+  evidence_count: 194

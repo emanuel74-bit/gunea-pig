@@ -1,0 +1,527 @@
+report_id: "checkpoint-validation-plan"
+phase_id: checkpoint_validation_plan
+status: complete
+summary: >
+  10 checkpoint groups (CHK-000 through CHK-009) for the PortsAndAdapters SOLID refactor
+  of packages/pipeline-service. 3 blocking checkpoints: CHK-000 (characterization tests —
+  BLOCK-RS-001), CHK-001 (port interface contracts — SEQ-001), CHK-009 (full test suite —
+  final regression gate). Each group defines exact validation commands, pass/fail criteria,
+  declared temporary failures, and repair escalation paths. Risk level HIGH: validation is
+  mandatory after every group — no group may begin until the preceding checkpoint passes.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/10-implementation-sequence.yaml
+    artifact: implementation_sequence
+  - source: conventions/.ai/reports/checkpoint-groups.yaml
+    artifact: checkpoint_groups
+
+validation_plan:
+
+  - checkpoint_id: CHK-000
+    title: "Characterization tests (BLOCKING — BLOCK-RS-001)"
+    group_steps: [STEP-000]
+    blocking: true
+    blocks_if_failed: >
+      All subsequent groups CHK-001 through CHK-009 are blocked.
+      No production code file (any file outside test/) may be created, moved, or
+      modified until this checkpoint passes.
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx jest --testPathPattern=characterization/"
+        purpose: >
+          All 29 characterization test spec files exist at
+          packages/pipeline-service/test/characterization/ and all 37 test cases
+          pass against the pre-refactor codebase.
+    pass_criteria:
+      - "Jest exit code 0"
+      - "29 spec files present in packages/pipeline-service/test/characterization/"
+      - "All 37 test cases TC-CHAR-001 through TC-CHAR-037 green"
+      - "PB-001 covered: RabbitMQ topic 'video.ready-for-scan' asserted (TC-CHAR-001..TC-CHAR-006)"
+      - "PB-001 covered: RabbitMQ topic 'scan.completed' asserted (TC-CHAR-001..TC-CHAR-006)"
+      - "PB-001 covered: exchange 'scan.events' and routing keys asserted (TC-CHAR-001..TC-CHAR-006)"
+      - "PB-002 covered: collection names videos, scan_batches, similarity_edges, similarity_groups asserted (TC-CHAR-007..TC-CHAR-011)"
+      - "PB-003 covered: S3 key pattern 'scans/${scanId}/result.json' asserted (TC-CHAR-012..TC-CHAR-014)"
+      - "PB-004 covered: inter-service event ordering and pipeline sequence (TC-CHAR-015..TC-CHAR-018)"
+      - "PB-005 covered: error class names and ack/nack behavior (TC-CHAR-019..TC-CHAR-028)"
+      - "Additional characterization coverage: TC-CHAR-029..TC-CHAR-037 (SharedInfraModule, ScanSchedulerTrigger, ProcessScanHandler)"
+    fail_criteria:
+      - "Jest exit code non-zero"
+      - "Any of the 37 test cases fails"
+      - "Any spec file missing for preserved behaviors PB-001 through PB-005"
+      - "Fewer than 29 spec files present in test/characterization/"
+    repair_path: >
+      Return to STEP-000. Identify which spec file is missing or which test case fails.
+      Author or fix the failing spec file. Rerun
+      'cd packages/pipeline-service && npx jest --testPathPattern=characterization/'
+      until exit code 0 and all 37 cases pass. Do not proceed to STEP-001 until fully resolved.
+    behaviors_validated:
+      - "PB-001: RabbitMQ topic names and exchange/routing keys"
+      - "PB-002: Mongoose collection names and @Prop fields"
+      - "PB-003: S3 key patterns and pass-through behavior"
+      - "PB-004: Inter-service event ordering and pipeline sequence"
+      - "PB-005: Error boundary types and ack/nack behavior"
+      - "SharedInfraModule wiring, ScanSchedulerTrigger split, ProcessScanHandler edge cases"
+
+  - checkpoint_id: CHK-001
+    title: "Port interface contracts (BLOCKING — SEQ-001)"
+    group_steps: [STEP-001]
+    blocking: true
+    blocks_if_failed: >
+      All infrastructure modification groups CHK-002, CHK-003, and all subsequent groups
+      are blocked. No file may implement or inject a port token that does not yet exist.
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: "TypeScript compiles with all 12 new .port.ts interface files in place"
+      - command: >
+          ls packages/pipeline-service/src/staging/interfaces/i-video-repository.port.ts
+          packages/pipeline-service/src/staging/interfaces/i-file-staging.port.ts
+          packages/pipeline-service/src/scanning/interfaces/i-batch-claimer.port.ts
+          packages/pipeline-service/src/scanning/interfaces/i-vdf-runner.port.ts
+          packages/pipeline-service/src/scanning/interfaces/i-video-scan-repository.port.ts
+          packages/pipeline-service/src/grouping/interfaces/i-scan-result-loader.port.ts
+          packages/pipeline-service/src/grouping/interfaces/i-similarity-edge-repository.port.ts
+          packages/pipeline-service/src/grouping/interfaces/i-similarity-group-repository.port.ts
+          packages/pipeline-service/src/grouping/interfaces/i-video-similarity-repository.port.ts
+          packages/pipeline-service/src/shared-infra/interfaces/i-scan-batch-repository.port.ts
+          packages/pipeline-service/src/shared-infra/interfaces/i-storage.port.ts
+          packages/pipeline-service/src/shared-infra/interfaces/i-event-publisher.port.ts
+        purpose: "All 12 .port.ts files exist at their declared target paths"
+    pass_criteria:
+      - "tsc --noEmit exit code 0"
+      - "All 12 .port.ts interface files exist at target paths (PAC-005, PAC-007, PAC-013, PAC-015, PAC-018, PAC-026, PAC-028, PAC-030, PAC-032, PAC-034, PAC-036, PAC-038)"
+      - "All interface files export TypeScript interfaces (not classes)"
+      - "Interface methods match architecture-blueprint.yaml declarations for each port"
+      - "No circular imports introduced by new interface files"
+    fail_criteria:
+      - "tsc --noEmit exit code non-zero"
+      - "Any of the 12 .port.ts files missing from its declared target path"
+      - "Any interface file declares a class instead of a TypeScript interface"
+      - "Any required method missing from an interface relative to architecture-blueprint.yaml"
+    repair_path: >
+      Identify the failing interface file from tsc output. Fix the interface definition or
+      create the missing file at the declared path. Rerun tsc --noEmit until exit code 0
+      and all 12 files are present. Do not proceed to CHK-002 until fully resolved.
+    behaviors_validated:
+      - "12 port interface contracts exist as pure TypeScript interfaces"
+      - "Interface contracts match architecture blueprint for all port roles"
+
+  - checkpoint_id: CHK-002
+    title: "Infrastructure implementations: repositories, adapters, and schema moves"
+    group_steps: [STEP-002, STEP-003, STEP-004]
+    blocking: false
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: "Repository and adapter files at new paths compile against port interface declarations"
+      - command: "npx tsc --noEmit -p packages/shared/tsconfig.json"
+        purpose: "shared package compiles after cross-package schema/adapter file moves"
+    pass_criteria:
+      - "tsc --noEmit exit code 0 for repository, adapter, client, publisher, and schema files"
+      - "6 repository files exist at target paths (mongo-*.repository.ts at capability repositories/ folders)"
+      - "6 adapter/client/publisher files exist at target paths (capability adapters/ and clients/ folders)"
+      - "4 schema files exist at capability schemas/ paths (staging, scanning, grouping)"
+      - "Each repository class carries 'implements IXxxRepository' clause matching its port"
+      - "Each adapter/client class carries 'implements IXxxPort' or 'implements IXxxLoader' clause"
+      - "Collection name decorators byte-for-byte preserved: videos, scan_batches, similarity_edges, similarity_groups"
+    fail_criteria:
+      - "Method signature mismatch between a concrete class and its port interface"
+      - "Repository or adapter file missing at declared target path"
+      - "Collection name decorator value changed from locked value"
+      - "tsc --noEmit reports type error inside an infrastructure file itself (not consuming code)"
+    expected_temporary_failures:
+      - id: TF-001
+        description: >
+          StagingModule, ScanningModule, GroupingModule compile errors due to broken
+          provider registrations after infrastructure file moves. Tolerated — resolved in CHK-006 (STEP-011).
+      - id: TF-002
+        description: >
+          packages/shared/src/index.ts barrel re-export errors after cross-package moves
+          of schema and adapter files. Tolerated — resolved in CHK-007 (STEP-013).
+      - id: TF-004
+        description: >
+          Import path errors in consuming code still referencing old transport/,
+          application/, infrastructure/ paths. Tolerated — resolved in CHK-006 (STEP-011).
+    repair_path: >
+      Fix method signature in the concrete class to match the port interface.
+      If a file is missing, check that the move was completed to the target path.
+      If a collection name was changed, restore the original decorator value immediately.
+      Rerun tsc --noEmit to verify infrastructure files themselves are clean.
+    behaviors_validated:
+      - "6 repositories implement declared port interfaces"
+      - "6 adapters/clients implement declared port interfaces"
+      - "4 schema files preserve locked collection names after cross-package move"
+
+  - checkpoint_id: CHK-003
+    title: "SharedInfraModule: global port tokens registered and exported (BLOCKING — SEQ-002)"
+    group_steps: [STEP-005]
+    blocking: true
+    blocks_if_failed: >
+      Groups CHK-004 through CHK-009 are blocked. Pipeline submodules cannot be wired
+      without SharedInfraModule providing global tokens IStoragePort, IEventPublisher,
+      IScanBatchRepository.
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: "SharedInfraModule at shared-infra/shared-infra.module.ts compiles with all 3 port token provider bindings"
+    pass_criteria:
+      - "tsc --noEmit exit code 0 for packages/pipeline-service/src/shared-infra/shared-infra.module.ts"
+      - "SharedInfraModule file exists at packages/pipeline-service/src/shared-infra/shared-infra.module.ts"
+      - "SharedInfraModule carries @Global decorator"
+      - "providers array includes: { provide: IStoragePort (PAC-036), useClass: S3StorageAdapter }"
+      - "providers array includes: { provide: IEventPublisher (PAC-038), useClass: RabbitMQPublisher }"
+      - "providers array includes: { provide: IScanBatchRepository (PAC-034), useClass: MongoScanBatchRepository }"
+      - "exports array includes all three port tokens"
+      - "ScanBatchSchemaModule imported for MongoScanBatchRepository dependency"
+    fail_criteria:
+      - "tsc --noEmit exit code non-zero for SharedInfraModule file"
+      - "SharedInfraModule missing from shared-infra/shared-infra.module.ts"
+      - "Missing useClass or useValue binding for any of the 3 port tokens"
+      - "Any port token registered in providers but not in exports"
+      - "@Global decorator absent"
+    expected_temporary_failures:
+      - id: TF-003
+        description: >
+          app.module.ts import path error for SharedInfraModule after move to shared-infra/ folder.
+          Tolerated — resolved in CHK-006 (STEP-012).
+      - id: TF-001
+        description: >
+          StagingModule, ScanningModule, GroupingModule provider registration errors.
+          Tolerated — resolved in CHK-006 (STEP-011).
+    repair_path: >
+      Fix provider registration in packages/pipeline-service/src/shared-infra/shared-infra.module.ts.
+      Ensure all three { provide, useClass } bindings are present and all three tokens are exported.
+      Rerun tsc --noEmit until exit code 0 for SharedInfraModule. TC-CHAR-029 is the integration
+      regression guard for this binding once module wiring is complete.
+    behaviors_validated:
+      - "IStoragePort global token resolves to S3StorageAdapter"
+      - "IEventPublisher global token resolves to RabbitMQPublisher"
+      - "IScanBatchRepository global token resolves to MongoScanBatchRepository"
+      - "All three tokens visible globally without explicit import in submodules"
+
+  - checkpoint_id: CHK-004
+    title: "Split and extract operations: ScanOrchestrator, ScanSchedulerTrigger, ProcessScanHandler"
+    group_steps: [STEP-006, STEP-007]
+    blocking: false
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: "ScanOrchestrator, ScanSchedulerTrigger, BatchClaimerService, ScanPurgerService, and ProcessScanHandler compile at new paths"
+      - command: "cd packages/pipeline-service && npx jest --testPathPattern=characterization/"
+        purpose: "Characterization tests for pipeline ordering, S3 key, and routing key preservation still pass after split operations"
+    pass_criteria:
+      - "tsc --noEmit exit code 0 for all files in scanning/services/ and grouping/services/"
+      - "packages/pipeline-service/src/scanning/services/scan-scheduler.scheduler.ts exists (newly extracted)"
+      - "packages/pipeline-service/src/scanning/services/scan.orchestrator.ts exists (moved from scanning/application/)"
+      - "scan.orchestrator.ts does NOT contain @Interval decorator (scheduling extracted to ScanSchedulerTrigger)"
+      - "S3 key template 'scans/${scanId}/result.json' preserved byte-for-byte in scan.orchestrator.ts"
+      - "packages/pipeline-service/src/grouping/services/process-scan.handler.ts exists (moved from grouping/application/)"
+      - "process-scan.handler.ts injects all 6 port interfaces: IScanResultLoader, ISimilarityEdgeRepository, ISimilarityGroupRepository, IVideoSimilarityRepository, IScanBatchRepository, IEventPublisher"
+      - "exchange 'scan.events' and routingKey 'scan.persisted' preserved in process-scan.handler.ts"
+      - "packages/pipeline-service/src/scanning/services/batch-claimer.service.ts exists (moved from scanning/infrastructure/)"
+      - "packages/pipeline-service/src/scanning/services/scan-purger.service.ts exists (moved from scanning/infrastructure/)"
+      - "TC-CHAR-012 passes (S3 key pattern asserted)"
+      - "TC-CHAR-016 passes (ScanOrchestrator pipeline sequence)"
+      - "TC-CHAR-017 passes (ProcessScanHandler routing key)"
+      - "TC-CHAR-030 passes (ScanSchedulerTrigger extracted — no @Interval on ScanOrchestrator)"
+    fail_criteria:
+      - "scan.orchestrator.ts still carries @Interval decorator after split"
+      - "S3 key template value changed from 'scans/${scanId}/result.json'"
+      - "exchange or routingKey value changed in process-scan.handler.ts"
+      - "Any of TC-CHAR-012, TC-CHAR-016, TC-CHAR-017, TC-CHAR-030 fails"
+      - "Any behavioral regression in PB-001, PB-003, or PB-004 area"
+    expected_temporary_failures:
+      - id: TF-001
+        description: >
+          ScanningModule and GroupingModule compile errors from broken provider registrations
+          after service moves. Tolerated — resolved in CHK-006 (STEP-011).
+    repair_path: >
+      Failure analysis: determine which of the two split operations introduced the regression.
+      If ScanOrchestrator: verify @Interval was removed, S3 key line preserved, IBatchClaimerPort
+      and IVdfRunnerPort correctly injected. If ProcessScanHandler: verify all 6 port interfaces
+      injected, routing key 'scan.persisted' preserved. Repair-agent applies fix bounded to the
+      failing artifact. Rerun tsc --noEmit and characterization tests before proceeding.
+    behaviors_validated:
+      - "ScanOrchestrator scheduling responsibility extracted to ScanSchedulerTrigger"
+      - "S3 key template 'scans/${scanId}/result.json' preserved in ScanOrchestrator"
+      - "ProcessScanHandler injects port interfaces instead of concrete classes"
+      - "exchange 'scan.events' and routingKey 'scan.persisted' preserved in ProcessScanHandler"
+      - "Pipeline ordering behaviors PB-001, PB-003, PB-004 unaffected by split"
+
+  - checkpoint_id: CHK-005
+    title: "Consumer, handler, validator, and service updates"
+    group_steps: [STEP-008, STEP-009, STEP-010]
+    blocking: false
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: >
+          VideoReadyConsumer, StagingMessageValidator, ScanCompletedConsumer,
+          StageVideoHandler, and ScanResultValidator compile at their new paths
+          with port interface injections in place
+    pass_criteria:
+      - "tsc --noEmit exit code 0 for the 5 affected files"
+      - "packages/pipeline-service/src/staging/consumers/video-ready.consumer.ts exists"
+      - "packages/pipeline-service/src/staging/domain/staging-message.validator.ts exists"
+      - "packages/pipeline-service/src/grouping/consumers/scan-completed.consumer.ts exists"
+      - "packages/pipeline-service/src/staging/services/stage-video.handler.ts exists"
+      - "packages/pipeline-service/src/grouping/domain/scan-result.validator.ts exists"
+      - "@EventPattern value 'video.ready-for-scan' locked in VideoReadyConsumer"
+      - "@EventPattern value 'scan.completed' locked in ScanCompletedConsumer"
+      - "StageVideoHandler injects IVideoRepository, IFileStagingPort, IStoragePort (not concrete classes)"
+      - "S3ObjectNotFoundError wrapping preserved: 'if (err instanceof S3ObjectNotFoundError) throw new StagingPermanentFailureError(videoId, err)'"
+      - "ScanResultValidationError class still present in grouping/domain/scan-result.validator.ts"
+      - "StagingMessageValidationError class still present in staging/domain/staging-message.validator.ts"
+      - "VideoAlreadyStagedError and StagingPermanentFailureError still in stage-video.handler.ts"
+    fail_criteria:
+      - "@EventPattern value changed on either consumer"
+      - "Concrete class directly injected in StageVideoHandler instead of port token"
+      - "S3ObjectNotFoundError wrapping removed or changed"
+      - "Any error class moved out of its declared file"
+      - "tsc --noEmit reports type error inside any of the 5 files themselves"
+    expected_temporary_failures:
+      - id: TF-001
+        description: >
+          StagingModule and GroupingModule compile errors from broken provider registrations.
+          Tolerated — resolved in CHK-006 (STEP-011).
+      - id: TF-004
+        description: >
+          Import path errors in module files still referencing old transport/ or application/ paths.
+          Tolerated — resolved in CHK-006 (STEP-011).
+    repair_path: >
+      Replace any concrete class injection with the corresponding port token in the affected consumer
+      or handler. Restore any moved error class to its declared file. Restore any changed
+      @EventPattern value. Fix S3ObjectNotFoundError wrapping if removed. Rerun tsc --noEmit
+      until clean for the 5 files. TC-CHAR-026, TC-CHAR-027, TC-CHAR-028 are the regression
+      guards for ack/nack and error wrapping behavior.
+    behaviors_validated:
+      - "RabbitMQ @EventPattern values locked: 'video.ready-for-scan', 'scan.completed' (PB-001)"
+      - "StageVideoHandler uses port tokens for all 3 injections"
+      - "S3ObjectNotFoundError -> StagingPermanentFailureError wrapping preserved (PB-005)"
+      - "Error class names preserved in declared files (PB-005)"
+      - "ScanResultValidationError field validation rules preserved"
+
+  - checkpoint_id: CHK-006
+    title: "Pipeline submodule wiring and PipelineAppModule update"
+    group_steps: [STEP-011, STEP-012]
+    blocking: false
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: >
+          Full clean TypeScript compilation across all of packages/pipeline-service —
+          this is the first checkpoint where zero compile errors are expected
+          (all temporary failures TF-001, TF-003, TF-004 resolved)
+      - command: "cd packages/pipeline-service && npx jest --testPathPattern=characterization/"
+        purpose: "All 37 characterization tests pass after complete submodule wiring"
+    pass_criteria:
+      - "tsc --noEmit exit code 0 across ALL files in packages/pipeline-service (zero errors)"
+      - "StagingModule providers include: { provide: IVideoRepository, useClass: MongoVideoRepository }"
+      - "StagingModule providers include: { provide: IFileStagingPort, useClass: FileStagingAdapter }"
+      - "StagingModule imports: VideoSchemaModule, SharedInfraModule"
+      - "StagingModule declares: VideoReadyConsumer, StageVideoHandler, StagingMessageValidator"
+      - "ScanningModule providers include: { provide: IVideoScanRepository, useClass: MongoVideoScanRepository }"
+      - "ScanningModule providers include: { provide: IVdfRunnerPort, useClass: VdfRunnerAdapter }"
+      - "ScanningModule providers include: { provide: IBatchClaimerPort, useClass: BatchClaimerService }"
+      - "ScanningModule imports: ScanBatchSchemaModule, SharedInfraModule"
+      - "ScanningModule declares: ScanSchedulerTrigger, ScanOrchestrator, ScanPurgerService"
+      - "GroupingModule providers include: { provide: ISimilarityEdgeRepository, useClass: MongoSimilarityEdgeRepository }"
+      - "GroupingModule providers include: { provide: ISimilarityGroupRepository, useClass: MongoSimilarityGroupRepository }"
+      - "GroupingModule providers include: { provide: IVideoSimilarityRepository, useClass: MongoVideoSimilarityRepository }"
+      - "GroupingModule providers include: { provide: IScanResultLoader, useClass: ScanResultClient }"
+      - "GroupingModule imports: SimilarityEdgeSchemaModule, SimilarityGroupSchemaModule, SharedInfraModule"
+      - "GroupingModule declares: ScanCompletedConsumer, ProcessScanHandler, ScanResultValidator"
+      - "app.module.ts imports SharedInfraModule from 'shared-infra/shared-infra.module.ts' (new path)"
+      - "All 37 characterization tests pass (Jest exit code 0)"
+      - "TC-CHAR-029 passes (SharedInfraModule global token resolution)"
+      - "TC-CHAR-030 passes (ScanSchedulerTrigger registration in ScanningModule)"
+    fail_criteria:
+      - "tsc --noEmit reports any error after this step (all TF-* expected failures must be resolved)"
+      - "Missing provider binding for any port token in any submodule"
+      - "Module import cycle introduced"
+      - "app.module.ts still references old SharedInfraModule path"
+      - "Any of the 37 characterization tests fails"
+    repair_path: >
+      Fix the provider array in the affected submodule. Each missing { provide, useClass } binding
+      must be added. If a module import cycle is detected, re-examine import order and remove the
+      circular dependency. If characterization tests fail, identify the regression against PB-001
+      through PB-005 and apply a bounded fix. Rerun both tsc --noEmit and the characterization suite.
+    behaviors_validated:
+      - "Complete DI provider registration for all 12 port tokens across 3 submodules"
+      - "SharedInfraModule global tokens visible to all submodules (TC-CHAR-029)"
+      - "ScanSchedulerTrigger correctly registered in ScanningModule (TC-CHAR-030)"
+      - "All preserved behaviors PB-001 through PB-005 confirmed via 37-test suite"
+
+  - checkpoint_id: CHK-007
+    title: "Shared barrel update: no broken cross-package import paths"
+    group_steps: [STEP-013]
+    blocking: false
+    validation_commands:
+      - command: "npx tsc --noEmit -p packages/shared/tsconfig.json"
+        purpose: "packages/shared compiles cleanly after barrel re-export updates"
+      - command: "npx tsc --noEmit -p packages/pipeline-service/tsconfig.json"
+        purpose: "packages/pipeline-service still compiles cleanly after shared barrel changes"
+    pass_criteria:
+      - "tsc exit code 0 for packages/shared"
+      - "tsc exit code 0 for packages/pipeline-service"
+      - "No broken re-export paths remain in packages/shared/src/index.ts"
+      - "Re-exports for moved schema files (video.schema, scan-batch.schema, similarity-edge.schema, similarity-group.schema) removed or updated to new paths"
+      - "Re-exports for moved adapter files (s3.client, rabbitmq.client) removed or updated to new paths"
+      - "No breaking import changes for any downstream package consuming @gunea-pig/shared port type references"
+    fail_criteria:
+      - "Type error from changed barrel exports in packages/shared/src/index.ts"
+      - "Any downstream package that imports from @gunea-pig/shared gains a new type error"
+    repair_path: >
+      Fix the broken export path in packages/shared/src/index.ts.
+      Identify which re-export references a file that was moved and update or remove it.
+      Rerun tsc --noEmit in both packages/shared and packages/pipeline-service.
+    behaviors_validated:
+      - "Cross-package moves of 4 schema files and 2 adapter files do not break @gunea-pig/shared consumers"
+      - "shared package barrel exports consistent with post-refactor file locations"
+
+  - checkpoint_id: CHK-008
+    title: "TypeScript compilation: full clean pass across all packages"
+    group_steps: [STEP-014]
+    blocking: false
+    validation_commands:
+      - command: "npx tsc --noEmit -p packages/pipeline-service/tsconfig.json"
+        purpose: "pipeline-service full clean compile"
+      - command: "npx tsc --noEmit -p packages/shared/tsconfig.json"
+        purpose: "shared package full clean compile"
+    pass_criteria:
+      - "tsc --noEmit exit code 0 across all packages"
+      - "Zero TypeScript type errors across packages/pipeline-service and packages/shared"
+      - "No residual errors from any prior temporary failure (TF-001 through TF-004 all resolved)"
+    fail_criteria:
+      - "Any TypeScript error in any package"
+      - "Any residual temporary failure not resolved by CHK-006 or CHK-007"
+    repair_path: >
+      Identify the file producing the type error from tsc output. Determine whether it is
+      a leftover from a temporary failure that was not fully resolved in CHK-006 or CHK-007,
+      then apply the bounded fix. Rerun full tsc --noEmit until exit code 0 before proceeding
+      to CHK-009.
+    behaviors_validated:
+      - "Complete static type safety across all packages after refactor"
+      - "All 12 port interfaces correctly satisfied by all concrete implementations"
+      - "No residual import path errors from file moves"
+
+  - checkpoint_id: CHK-009
+    title: "Full test suite: characterization + unit + integration + contract (BLOCKING)"
+    group_steps: [STEP-015, STEP-016]
+    blocking: true
+    blocks_if_failed: >
+      Implementation phase cannot be declared complete. Failing tests must be diagnosed
+      against regression obligation IDs REG-001 through REG-005 and test obligation IDs
+      OBL-002 through OBL-006 from test-plan.yaml.
+    validation_commands:
+      - command: "cd packages/pipeline-service && npx tsc --noEmit"
+        purpose: "Final TypeScript compile confirmation before test run"
+      - command: "cd packages/pipeline-service && npx jest --testPathPattern=characterization/"
+        purpose: "All 37 characterization tests pass against post-refactor codebase"
+      - command: "cd packages/pipeline-service && npx jest"
+        purpose: "Full test suite passes: unit, integration, contract, and characterization"
+    pass_criteria:
+      - "tsc --noEmit exit code 0 across all packages"
+      - "jest --testPathPattern=characterization/ exit code 0 (all 37 TC-CHAR-* pass)"
+      - "npx jest exit code 0 (all OBL-002 through OBL-006 obligations satisfied)"
+      - "Zero regressions on PB-001: RabbitMQ topic names 'video.ready-for-scan', 'scan.completed', exchange 'scan.events' (REG-001)"
+      - "Zero regressions on PB-002: Mongoose collection names videos, scan_batches, similarity_edges, similarity_groups (REG-002)"
+      - "Zero regressions on PB-003: S3 key template 'scans/${scanId}/result.json' (REG-003)"
+      - "Zero regressions on PB-004: pipeline event ordering and inter-service sequence (REG-004)"
+      - "Zero regressions on PB-005: error class names and ack/nack boundaries (REG-005)"
+      - "OBL-002 satisfied: unit tests for policies, validators, domain_service, normalizer, handlers, services"
+      - "OBL-003 satisfied: integration tests for repositories, consumers, orchestrator, modules, adapters, scheduler"
+      - "OBL-004 satisfied: contract tests for consumers and publisher topic/routing-key contracts"
+      - "OBL-005 satisfied: contract tests for Mongoose collection names"
+      - "OBL-006 satisfied: contract tests for S3 key patterns"
+    fail_criteria:
+      - "Any test fails (unit, integration, contract, or characterization)"
+      - "Any TypeScript error"
+      - "Any characterization test regression (TC-CHAR-001 through TC-CHAR-037)"
+      - "Any regression in PB-001 through PB-005 behaviors"
+    repair_path: >
+      Run jest --verbose to identify the specific failing test and its file.
+      Map the failure to the appropriate regression obligation (REG-001..REG-005) or
+      test obligation (OBL-002..OBL-006). Activate failure analysis agent to identify
+      which artifact introduced the regression. Repair-agent applies a bounded fix to
+      the failing artifact only. Rerun full jest suite after repair. Do not declare
+      the implementation phase complete until all tests pass.
+    behaviors_validated:
+      - "REG-001 (PB-001): RabbitMQ topic names, exchange, routing keys preserved"
+      - "REG-002 (PB-002): Mongoose collection names byte-for-byte preserved"
+      - "REG-003 (PB-003): S3 key template 'scans/${scanId}/result.json' preserved"
+      - "REG-004 (PB-004): Pipeline event ordering preserved"
+      - "REG-005 (PB-005): Error class names and ack/nack boundaries preserved"
+      - "OBL-002 through OBL-006: all unit, integration, and contract obligations satisfied"
+
+temporary_failure_register:
+  description: >
+    The following compile/test failures are declared as expected and tolerated during
+    intermediate checkpoints. Each must be resolved by its stated checkpoint or earlier.
+    Any failure NOT in this register that appears during implementation requires
+    immediate repair before proceeding.
+  declared_failures:
+    - failure_id: TF-001
+      description: >
+        StagingModule, ScanningModule, GroupingModule compile errors due to broken
+        provider registrations after infrastructure file moves (STEP-002 through STEP-010).
+      tolerated_during: [CHK-002, CHK-003, CHK-004, CHK-005]
+      must_be_resolved_by: CHK-006
+      resolved_by_steps: [STEP-011, STEP-012]
+    - failure_id: TF-002
+      description: >
+        packages/shared/src/index.ts barrel re-export errors after cross-package moves
+        of 4 schema files and 2 adapter files (STEP-003, STEP-004).
+      tolerated_during: [CHK-002, CHK-003, CHK-004, CHK-005]
+      must_be_resolved_by: CHK-007
+      resolved_by_steps: [STEP-013]
+    - failure_id: TF-003
+      description: >
+        app.module.ts import path error for SharedInfraModule after move from src/ root
+        to shared-infra/ folder (STEP-005).
+      tolerated_during: [CHK-003, CHK-004, CHK-005]
+      must_be_resolved_by: CHK-006
+      resolved_by_steps: [STEP-012]
+    - failure_id: TF-004
+      description: >
+        Import path errors in consuming code still referencing old transport/,
+        application/, and infrastructure/ paths before module wiring is updated.
+      tolerated_during: [CHK-002, CHK-003, CHK-004, CHK-005]
+      must_be_resolved_by: CHK-006
+      resolved_by_steps: [STEP-011]
+
+validation_cadence:
+  trigger: after_every_group
+  primary_check: "npx tsc --noEmit in packages/pipeline-service"
+  secondary_check: "npx jest --testPathPattern=characterization/ (after CHK-004 and CHK-009 only — and also CHK-006)"
+  rationale: >
+    Risk level HIGH per risk-classification.yaml. Mandatory checkpoint after every group.
+    TypeScript compilation is fast and catches interface mismatch errors early.
+    Characterization test suite run at CHK-004 (after all split/extract operations),
+    CHK-006 (after full module wiring is complete), and CHK-009 (final regression check)
+    to avoid long test runs on every single step.
+
+pre_implementation_gate_checklist:
+  - "CHK-000 passed — all 37 characterization tests exist and pass against pre-refactor codebase"
+  - "CHK-001 passed — all 12 port interface files compile cleanly"
+  - "conventions/.ai/reports/characterization-test-plan.yaml exists at declared path"
+  - "conventions/.ai/reports/behavior-preservation-requirements.yaml exists at declared path"
+  - "conventions/.ai/reports/checkpoint-validation-plan.yaml exists (this file)"
+  - "All blocking items from conventions/.ai/reports/06-refactor-strategy.yaml resolved"
+
+evidence_refs:
+  - ref: conventions/.ai/reports/10-implementation-sequence.yaml
+    section: ordered_steps
+    consumed_by: validation_command_derivation and step membership per checkpoint
+  - ref: conventions/.ai/reports/10-implementation-sequence.yaml
+    section: blocked_items
+    consumed_by: blocking checkpoint identification (BLOCK-IMPL-001, BLOCK-IMPL-002, BLOCK-IMPL-003)
+  - ref: conventions/.ai/reports/checkpoint-groups.yaml
+    section: checkpoint_groups
+    consumed_by: checkpoint group definitions, temporary failure declarations, validation cadence
+  - ref: conventions/.ai/reports/checkpoint-groups.yaml
+    section: temporary_failure_declaration
+    consumed_by: temporary_failure_register in this plan
+  - ref: conventions/.ai/reports/checkpoint-groups.yaml
+    section: validation_cadence
+    consumed_by: validation_cadence field in this plan
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.checkpoint_validation_plan.output
+  status: pending
+  note: Gate result produced by gate subsystem.

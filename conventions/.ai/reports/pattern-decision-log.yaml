@@ -1,0 +1,393 @@
+report_id: "pattern-decision-log"
+phase_id: pattern_selection
+status: complete
+summary: >
+  Selected pattern: PortsAndAdapters. All 5 activation gates pass.
+  Data access pressure (PP-002) resolved by role decomposition — repository ports are a
+  subset of the PortsAndAdapters boundary model (NoPattern for standalone Repository pattern).
+  Workflow pressure (PP-003) resolved by split_then_migrate strategy + orchestrator role (NoPattern).
+  Event pressure (PP-004) resolved by publisher/consumer role decomposition + IEventPublisher port (NoPattern
+  for formal DomainEvent or Observer pattern).
+
+inputs_consumed:
+  - source: conventions/.ai/reports/08-final-role-assignment.yaml
+    artifact: final_role_assignment
+  - source: conventions/.ai/reports/role-collision-resolution.yaml
+    artifact: role_collision_resolution
+  - source: conventions/.ai/reports/pattern-pressure.yaml
+    artifact: pattern_pressure
+
+selected_pattern: PortsAndAdapters
+selected_pattern_status: active
+no_pattern_selected: false
+
+primary_pressure_type: adapter_boundary_pressure
+
+matched_pressure_signals:
+  - "client/repository injected through interface/port"
+  - "adapter wrapping external API"
+  - "framework-specific code at boundary (MongooseModule, AWS SDK, amqplib)"
+  - "external dependency boundary exists"
+  - "domain/application must remain independent of infrastructure"
+  - "multiple adapters may implement same capability"
+  - "zero port/interface abstractions currently exist — 13 DIP violations confirmed"
+  - "external API shape differs from internal contract (S3 SDK, AMQP channel, VDF CLI subprocess)"
+
+activation_gate_results:
+  - gate_id: PATTERN-ACTIVATION-001
+    name: pressure_gate
+    status: pass
+    reason: >
+      adapter_boundary_pressure detected at HIGH severity and HIGH confidence from 13 confirmed
+      DIP violations and 12 required port interfaces spanning all 3 capabilities (staging, scanning,
+      grouping) plus shared infrastructure. All positive signals matched, zero negative signals.
+    evidence_refs:
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-001]"
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "decisions[DECISION-PP-001]"
+
+  - gate_id: PATTERN-ACTIVATION-002
+    name: necessity_gate
+    status: pass
+    reason: >
+      Role decomposition alone is insufficient. 12 new port interfaces represent a system-wide
+      boundary contract model, not just named roles. PortsAndAdapters prescribes the structural
+      rule that application code depends only on port interfaces, never on concrete adapters —
+      this is the architectural model missing from the codebase. Role assignment names the
+      artifacts but does not enforce the dependency direction contract.
+    evidence_refs:
+      - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+        section: role_distribution_summary
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-001].notes"
+
+  - gate_id: PATTERN-ACTIVATION-003
+    name: restriction_gate
+    status: pass
+    reason: >
+      PortsAndAdapters status is active, not restricted, conditional, or disallowed. Pattern
+      is applicable to the NestJS TypeScript monorepo context. No restriction rule blocks selection.
+    evidence_refs:
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-001].candidate_pattern_families"
+
+  - gate_id: PATTERN-ACTIVATION-004
+    name: compatibility_gate
+    status: pass
+    reason: >
+      PortsAndAdapters introduces [port, adapter, client, mapper] role types. The final role
+      assignment confirms all are present: 12 port (PAC-005, PAC-007, PAC-013, PAC-015, PAC-018,
+      PAC-026, PAC-028, PAC-030, PAC-032, PAC-034, PAC-036, PAC-038), 3 adapter (PAC-008, PAC-016,
+      PAC-037), 1 client (PAC-027), 1 publisher (PAC-039). No extra role types are introduced
+      beyond what is already assigned. Zero role-pattern incompatibilities.
+    evidence_refs:
+      - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+        section: role_distribution_summary
+
+  - gate_id: PATTERN-ACTIVATION-005
+    name: cost_gate
+    status: pass
+    reason: >
+      No extra files are introduced by selecting PortsAndAdapters. All port and adapter artifacts
+      are already in the final role assignment as planned post-action candidates. The pattern
+      confirmation imposes zero additional artifact cost — it provides the governing structural
+      contract for artifacts that were already planned.
+    evidence_refs:
+      - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+        section: role_assignment_table
+
+ranking_result:
+  - candidate_pattern: PortsAndAdapters
+    score: 22
+    passed_gates: [pressure_gate, necessity_gate, restriction_gate, compatibility_gate, cost_gate]
+    failed_gates: []
+    reason: >
+      All 5 gates pass. Directly addresses adapter_boundary_pressure (HIGH severity, HIGH confidence)
+      with zero additional artifacts. All introduced role types (port, adapter, client) are already
+      present in the binding final role assignment. Provides the governing boundary contract for
+      12 port interfaces and 5 adapter/client/publisher implementations across 3 capabilities.
+
+  - candidate_pattern: Repository
+    score: 8
+    passed_gates: [pressure_gate, restriction_gate, compatibility_gate]
+    failed_gates: [necessity_gate, cost_gate]
+    reason: >
+      Subsumed by PortsAndAdapters. The 6 repository implementations each implement a corresponding
+      port interface — the repository boundary is a specialisation of the PortsAndAdapters port model.
+      Role decomposition (port + repository roles) is sufficient. Selecting Repository as an
+      additional pattern would introduce redundant boundary semantics already covered by
+      PortsAndAdapters. Necessity gate fails.
+
+  - candidate_pattern: Pipeline
+    score: 4
+    passed_gates: [restriction_gate]
+    failed_gates: [pressure_gate, necessity_gate]
+    reason: >
+      Workflow pressure (PP-003) is MEDIUM severity and resolved by the split_existing action on
+      ScanOrchestrator + orchestrator role assignment. Post-split ScanOrchestrator coordinates
+      6 steps via injected port dependencies — a plain orchestrator class with DI. No formal
+      Pipeline pattern stages, pipeline factories, or step registries are required.
+      Pressure and necessity gates fail.
+
+  - candidate_pattern: Observer
+    score: 5
+    passed_gates: [restriction_gate, compatibility_gate]
+    failed_gates: [pressure_gate, necessity_gate]
+    reason: >
+      Event pressure (PP-004) is MEDIUM severity. Candidate families listed in PP-004 are
+      Observer/PublishSubscribe/MessageConsumer. The IEventPublisher port + RabbitMQPublisher
+      adapter + consumer roles already model the async event boundary. Observer pattern would
+      add an in-process observable subject/observer model on top of the existing external
+      RabbitMQ boundary — this is incorrect for infrastructure-level messaging. Pressure and
+      necessity gates fail.
+
+  - candidate_pattern: DomainEvent
+    score: 6
+    passed_gates: [pressure_gate, restriction_gate, compatibility_gate]
+    failed_gates: [necessity_gate]
+    reason: >
+      Event boundary pressure is addressed by publisher/consumer roles already assigned.
+      RabbitMQ messages are integration events (infrastructure), not domain events (semantic
+      domain facts with internal dispatch). DomainEvent pattern adds internal domain event
+      dispatch semantics not applicable to external AMQP message contracts. Necessity gate fails.
+
+rejected_patterns:
+  - pattern: Adapter
+    reason: >
+      Too narrow. Single-adapter pattern models a single boundary translation. The mission
+      requires a system-wide boundary model with 12 port interfaces and 5 adapter/client/publisher
+      implementations. PortsAndAdapters is the correct governing model — Adapter is a subset
+      component within it, not an alternative.
+    matched_reject_when: ["a broader subsystem boundary is needed"]
+    simpler_alternative: ""
+    evidence_refs:
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-001]"
+
+  - pattern: DependencyInversion
+    reason: >
+      NestJS already provides DI infrastructure through its IoC container. DependencyInversion
+      as a standalone pattern concerns providing dependencies through injection — this is the
+      NestJS @Injectable / @Inject mechanism already in place. PortsAndAdapters is the correct
+      model for the port/adapter boundary contract; DI is the implementation mechanism through
+      which port-to-adapter bindings are registered in NestJS modules.
+    matched_reject_when: ["dependency is a value object or local helper with no external lifetime"]
+    simpler_alternative: "NestJS @Injectable + @Inject + module provider registration"
+    evidence_refs: []
+
+  - pattern: Repository
+    reason: >
+      6 repository port interfaces (IVideoRepository, IVideoScanRepository, ISimilarityEdgeRepository,
+      ISimilarityGroupRepository, IVideoSimilarityRepository, IScanBatchRepository) are a specialisation
+      of the PortsAndAdapters port model. Repository pattern introduction as a separate pattern would
+      be redundant — the boundary model is already provided by PortsAndAdapters. Role decomposition
+      (port + repository roles) is sufficient for the data access concern.
+    matched_reject_when: ["simple direct repository already exists and fits role rules"]
+    simpler_alternative: "port + repository role decomposition under PortsAndAdapters"
+    evidence_refs:
+      - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+        section: "role_distribution_summary.repository"
+
+  - pattern: Pipeline
+    reason: >
+      Workflow pressure (PP-003) is MEDIUM severity and flagged confidence medium in pattern-pressure.yaml.
+      Post-split ScanOrchestrator coordinates a 6-step flow via injected ports — this is adequately
+      modelled by the orchestrator role with plain NestJS DI. A formal Pipeline pattern (stage
+      registries, pipeline factories, step interfaces) adds abstraction overhead not justified by the
+      scale (single orchestrator, single pipeline, deterministic stage sequence).
+    matched_reject_when: ["only one or two trivial steps", "sequence is not stable"]
+    simpler_alternative: "orchestrator role + split_then_migrate strategy (split_existing action on AC-010)"
+    evidence_refs:
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-003]"
+
+  - pattern: DomainEvent
+    reason: >
+      Event boundary pressure (PP-004) is addressed by the IEventPublisher port (PAC-038) +
+      RabbitMQPublisher publisher (PAC-039) + 2 consumer roles (PAC-001, PAC-021). RabbitMQ messages
+      are infrastructure-level integration events with LOCKED external schemas — they are not semantic
+      internal domain events. DomainEvent pattern adds internal dispatch and domain fact semantics
+      that are inappropriate for external AMQP message contracts.
+    matched_reject_when: ["there is only one local inline side effect", "event is just technical logging"]
+    simpler_alternative: "publisher + consumer role decomposition + IEventPublisher port abstraction"
+    evidence_refs:
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-004]"
+
+  - pattern: Observer
+    reason: >
+      Observer pattern models in-process observable subject/observer relationships. The event
+      boundary here is external (RabbitMQ AMQP with LOCKED topology). Observer would impose
+      an in-process notification model on top of an infrastructure messaging boundary — wrong
+      architectural layer. IEventPublisher port + publisher role is the correct abstraction.
+    matched_reject_when: ["synchronous direct call is required and sufficient"]
+    simpler_alternative: "IEventPublisher port + RabbitMQPublisher publisher + consumer roles"
+    evidence_refs:
+      - ref: conventions/.ai/reports/pattern-pressure.yaml
+        section: "detected_pressures[PP-004].candidate_pattern_families"
+
+simpler_alternatives_considered:
+  - alternative: "adapter (single boundary translation)"
+    accepted_or_rejected: rejected
+    reason: >
+      System-wide boundary model with 12 ports and 5 adapter/client/publisher implementations
+      across 3 capabilities requires PortsAndAdapters — single Adapter pattern models one
+      boundary translation, not a system-wide DIP contract.
+
+  - alternative: "role_decomposition only (NoPattern for all pressures)"
+    accepted_or_rejected: rejected
+    reason: >
+      Role decomposition assigns names and responsibilities but does not prescribe the structural
+      dependency direction contract (application → port interface, never application → adapter).
+      PortsAndAdapters provides the governing structural contract that all 12 port interfaces
+      enforce between application and infrastructure layers.
+
+  - alternative: "NoPattern for PP-002 (data_access_pressure)"
+    accepted_or_rejected: accepted
+    reason: >
+      Repository pattern is subsumed by PortsAndAdapters. The 6 repository ports are port-role
+      artifacts within the PortsAndAdapters boundary model. Standalone Repository pattern
+      selection would be redundant — role decomposition is sufficient for the data access concern.
+
+  - alternative: "NoPattern for PP-003 (workflow_pressure)"
+    accepted_or_rejected: accepted
+    reason: >
+      Orchestrator role + split_existing action (split_then_migrate) resolves workflow pressure.
+      Post-split ScanOrchestrator is a plain class with injected port dependencies. No formal
+      Pipeline or ProcessManager pattern overhead is justified for a single deterministic pipeline.
+
+  - alternative: "NoPattern for PP-004 (event_pressure)"
+    accepted_or_rejected: accepted
+    reason: >
+      Publisher + consumer role decomposition + IEventPublisher port abstraction resolves the
+      event boundary concern. RabbitMQ integration events are infrastructure events with LOCKED
+      external schemas — DomainEvent or Observer patterns are not appropriate.
+
+introduced_roles:
+  - port
+  - adapter
+  - client
+
+compatibility_result:
+  status: pass
+  checked_against: "patterns/conventions.role-pattern-compatibility.yaml"
+  conflicts: []
+  notes: >
+    PortsAndAdapters introduces [port, adapter, client, mapper] role types.
+    port (12 artifacts), adapter (3 artifacts), client (1 artifact) are all present in the
+    binding final role assignment. mapper role is not required by this codebase — no mapper
+    artifacts were planned (no field-to-field object mapping boundary identified). Zero conflicts.
+
+decisions:
+  - id: DECISION-PD-001
+    decision: >
+      Select PortsAndAdapters as the binding design pattern for this mission.
+    rationale: >
+      adapter_boundary_pressure (PP-001) is HIGH severity, HIGH confidence with all 8 positive
+      signals confirmed and zero negative signals. 12 port interfaces + 5 adapter/client/publisher
+      implementations across all 3 capabilities and shared infrastructure constitute a system-wide
+      boundary model. PortsAndAdapters is status=active, all 5 gates pass, introduced roles
+      [port, adapter, client] are already in the binding final role assignment with zero extra
+      artifacts required. The pattern provides the governing structural contract that prescribes
+      the correct dependency direction: application code depends on port interfaces, infrastructure
+      adapters implement port interfaces, NestJS modules bind them via DI tokens.
+    evidence:
+      - source: conventions/.ai/reports/pattern-pressure.yaml
+        field: "detected_pressures[PP-001].severity"
+        value: high
+      - source: conventions/.ai/reports/pattern-pressure.yaml
+        field: "detected_pressures[PP-001].confidence"
+        value: high
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_distribution_summary.port.count"
+        value: 12
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_distribution_summary.adapter.count"
+        value: 3
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_distribution_summary.client.count"
+        value: 1
+
+  - id: DECISION-PD-002
+    decision: >
+      Confirm NoPattern for PP-002 (data_access_pressure). Repository pattern is subsumed by
+      PortsAndAdapters — no standalone Repository pattern introduction.
+    rationale: >
+      The 6 repository port interfaces (IVideoRepository, IVideoScanRepository,
+      ISimilarityEdgeRepository, ISimilarityGroupRepository, IVideoSimilarityRepository,
+      IScanBatchRepository) are already modelled as port-role artifacts within the PortsAndAdapters
+      boundary contract. Adding Repository as a separate pattern would add no structural value
+      beyond what PortsAndAdapters already prescribes. Anti-overengineering rule: prefer role
+      decomposition before pattern introduction when roles are already sufficient.
+    evidence:
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_distribution_summary.repository.count"
+        value: 6
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_distribution_summary.port.count"
+        value: 12
+
+  - id: DECISION-PD-003
+    decision: >
+      Confirm NoPattern for PP-003 (workflow_pressure). Orchestrator role + split_existing action
+      is sufficient — no Pipeline or ProcessManager pattern introduction.
+    rationale: >
+      Post-split ScanOrchestrator (PAC-010, role=orchestrator) coordinates a 6-step scan pipeline
+      via injected port dependencies. This is a plain class with constructor-injected ports — no
+      stage registration, pipeline factory, or step interface is required. The split_existing action
+      already resolves the SRP violation. Formal Pipeline pattern overhead is not justified for
+      a single deterministic 6-step orchestrator.
+    evidence:
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_assignment_table[PAC-010].assigned_role"
+        value: orchestrator
+      - source: conventions/.ai/reports/pattern-pressure.yaml
+        field: "detected_pressures[PP-003].severity"
+        value: medium
+
+  - id: DECISION-PD-004
+    decision: >
+      Confirm NoPattern for PP-004 (event_pressure). Publisher/consumer role decomposition +
+      IEventPublisher port abstraction is sufficient — no DomainEvent, Observer, or
+      PublishSubscribe pattern introduction.
+    rationale: >
+      IEventPublisher port (PAC-038) + RabbitMQPublisher publisher (PAC-039) + 2 consumer roles
+      (PAC-001, PAC-021) correctly model the async event boundary. RabbitMQ messages have LOCKED
+      external schemas — they are infrastructure integration events, not semantic domain facts.
+      DomainEvent and Observer patterns add internal dispatch semantics inappropriate for the
+      external AMQP boundary.
+    evidence:
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_assignment_table[PAC-038].assigned_role"
+        value: port
+      - source: conventions/.ai/reports/08-final-role-assignment.yaml
+        field: "role_assignment_table[PAC-039].assigned_role"
+        value: publisher
+      - source: conventions/.ai/reports/pattern-pressure.yaml
+        field: "detected_pressures[PP-004].severity"
+        value: medium
+
+triggers_emitted: []
+
+evidence_refs:
+  - ref: conventions/.ai/reports/pattern-pressure.yaml
+    section: detected_pressures
+    consumed_by: pattern_selection
+  - ref: conventions/.ai/reports/pattern-pressure.yaml
+    section: decisions
+    consumed_by: pressure_severity_and_confidence_verification
+  - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+    section: role_assignment_table
+    consumed_by: role_compatibility_check
+  - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+    section: role_distribution_summary
+    consumed_by: gate_compatibility_and_cost_evaluation
+  - ref: conventions/.ai/reports/role-collision-resolution.yaml
+    section: collisions_resolved
+    consumed_by: collision_awareness_for_publisher_and_client_roles
+
+gate_result:
+  gate_id: gate.pattern_selection.output
+  status: pending
+  note: Gate result produced by gate subsystem via run_gate_check route.

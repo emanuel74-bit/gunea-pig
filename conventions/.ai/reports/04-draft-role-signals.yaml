@@ -1,0 +1,1547 @@
+report_id: "04-draft-role-signals"
+phase_id: draft_role_pass
+status: complete
+summary: >
+  Draft role signal pass completed for all 48 artifact candidates across 3 capabilities
+  (CAP-001 video_staging, CAP-002 vdf_scanning, CAP-003 video_similarity_grouping).
+  12 port interfaces assigned role 'port' (architectural_boundary family).
+  7 repository implementations assigned role 'repository' (persistence_data family).
+  4 adapter/client implementations assigned role 'adapter' (integration_boundary family).
+  4 RabbitMQ/transport consumers assigned role 'consumer' (integration_async family).
+  2 application handlers assigned role 'handler' (application_execution family).
+  1 application orchestrator assigned role 'orchestrator' (application_execution family).
+  1 scheduler trigger assigned role 'scheduler' (integration_async family).
+  4 domain policies assigned role 'policy' (decision family).
+  1 pure domain service assigned role 'domain_service' (domain_model family).
+  2 transport-layer validators assigned role 'validator' (domain_constraint family).
+  1 pure transformation normalizer assigned role 'normalizer' (transformation family).
+  4 Mongoose schema modules assigned role 'schema' (persistence_data family).
+  5 NestJS module compositions assigned role 'module' (structural_framework family).
+  2 artifacts flagged mixed_responsibility (AC-010 ScanOrchestrator, AC-023 ProcessScanHandler).
+  2 artifacts flagged extraction_target (AC-010, AC-023).
+  1 service implementation (AC-014 BatchClaimerService) assigned role 'service' — no more specific
+  infrastructure execution role applies because it owns atomic MongoDB claim logic.
+  1 purger implementation (AC-020 ScanPurgerService) assigned role 'service' — bounded deletion
+  executor with no more specific infrastructure execution role available.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/architecture-blueprint.yaml
+    artifact: architecture_blueprint
+  - source: conventions/.ai/reports/artifact-candidates.yaml
+    artifact: artifact_candidates
+
+decisions:
+  - id: DECISION-DR-001
+    decision: >
+      All 12 new port interfaces (I-prefixed TypeScript interfaces) are assigned role 'port'
+      under the architectural_boundary family, not 'interface' or 'contract'.
+    rationale: >
+      The role-taxonomy defines 'port' as the specific role for dependency-inversion boundary
+      contracts consumed by application-layer handlers via DI tokens. The 'interface' role is
+      a more generic TypeScript construct role; 'port' is specific to the hexagonal-architecture
+      boundary pattern that all 12 artifacts represent. Rule ROLE-RESOLVE-BOUNDARY applies.
+      All 12 port artifacts have candidate_role_pressure: port_interface in the blueprint.
+    evidence:
+      - source: architecture-blueprint.yaml
+        field: boundary_refs[repository_abstraction].artifacts_affected
+        value: AU-005, AU-013, AU-018, AU-028, AU-030, AU-032, AU-034
+      - source: architecture-blueprint.yaml
+        field: boundary_refs[external_system_port].artifacts_affected
+        value: AU-036, AU-038, AU-015, AU-007, AU-026
+      - source: conventions.role-taxonomy.yaml
+        field: role_definitions.port
+        value: "architectural_boundary family — DIP contract role"
+
+  - id: DECISION-DR-002
+    decision: >
+      ScanOrchestrator (AC-010) is assigned draft role 'orchestrator' but flagged
+      mixed_responsibility and extraction_target due to 7 co-located responsibilities.
+    rationale: >
+      Architecture blueprint AU-009 explicitly documents 7 responsibilities mixed in the
+      current ScanOrchestrator monolith: orchestration, batch claiming, result loading, error
+      handling, scheduling, scan dispatch, progress tracking. The taxonomy rule DRAFT-ROLE-MIXED-RESPONSIBILITY
+      fires. After decomposition (extraction of ScanSchedulerTrigger to AC-009 is already planned),
+      the post-extraction ScanOrchestrator will own only multi-step flow coordination — matching
+      the 'orchestrator' role cleanly. The draft signal is 'orchestrator' because that is the
+      primary surviving role after decomposition.
+    evidence:
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-009].evidence_refs
+        value: "risk-classification.yaml#SRP_violation_7_responsibilities"
+      - source: artifact-candidates.yaml
+        field: candidates[AC-010].reason
+        value: "Current monolith has 7 mixed responsibilities"
+
+  - id: DECISION-DR-003
+    decision: >
+      ProcessScanHandler (AC-023) is assigned draft role 'handler' but flagged
+      mixed_responsibility and extraction_target due to 6 co-located responsibilities.
+    rationale: >
+      Architecture blueprint AU-023 documents DIP violations and SRP violations: 6 concrete
+      dependencies injected directly, UnionFindDomainService instantiated with 'new'. The handler
+      also mixes message-consume concerns (now extracted to ScanCompletedConsumer AC-021).
+      After refactor, the surviving artifact orchestrates the grouping use-case through port
+      interfaces — that maps to 'handler' (handles ProcessScanCommand, delegates via ports).
+      Rule DRAFT-ROLE-MIXED-RESPONSIBILITY fires due to residual multi-responsibility signals.
+    evidence:
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-023].evidence_refs
+        value: "risk-classification.yaml#SRP_violation, risk-classification.yaml#DIP_violation_new_keyword"
+      - source: artifact-candidates.yaml
+        field: candidates[AC-023].reason
+        value: "Current implementation has 6 concrete dependencies and instantiates UnionFindDomainService with new keyword"
+
+  - id: DECISION-DR-004
+    decision: >
+      BatchClaimerService (AC-014) is assigned role 'service' rather than 'repository' or 'adapter'.
+    rationale: >
+      BatchClaimerService implements IBatchClaimerPort and performs atomic MongoDB batch-claim
+      coordination (timing, locking, atomicity). This is infrastructure execution behavior, not
+      pure persistence (repository would be purely CRUD-shaped). The taxonomy 'service' role is
+      appropriate when the artifact coordinates dependencies and owns side effects at the
+      infrastructure layer with no more specific role available. 'repository' is rejected because
+      the artifact has claim-orchestration logic beyond persistence. 'adapter' is rejected because
+      it wraps MongoDB, not an external system boundary that requires port abstraction.
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-014].candidate_role_pressure
+        value: service
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-014].candidate_role_pressure
+        value: service
+      - source: conventions.role-taxonomy.yaml
+        field: specific_before_generic_rules
+        value: "Never choose repository for domain behavior or application orchestration"
+
+  - id: DECISION-DR-005
+    decision: >
+      ScanPurgerService (AC-020) is assigned role 'service' rather than 'adapter' or 'repository'.
+    rationale: >
+      ScanPurgerService executes deletion of expired scan artifacts (local filesystem + S3 via
+      IStoragePort). It coordinates multi-step deletion but does not implement a port interface,
+      nor is it a pure persistence repository. The 'service' role (infrastructure execution,
+      coordinates dependencies, owns side effects) is the most precise available. 'adapter' is
+      rejected because it does not wrap a single external system through a port contract.
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-020].candidate_role_pressure
+        value: service
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-020].evidence_refs
+        value: "risk-classification.yaml#SRP_violation_cleanup_expiry"
+
+  - id: DECISION-DR-006
+    decision: >
+      NestJS feature modules (AC-044, AC-045, AC-046, AC-047, AC-048) are all assigned role
+      'module' under structural_framework family, not 'orchestrator' or 'service'.
+    rationale: >
+      These artifacts have orchestration_intent or integration_intent in the blueprint, but their
+      primary responsibility is NestJS DI wiring — providers, imports, exports. The taxonomy
+      'module' role covers framework wiring and dependency composition. The 'orchestrator' role
+      is application execution, not module composition. Rule ROLE-RESOLVE-APPLICATION-EXECUTION
+      does not fire because these artifacts contain no executable business logic — they are pure
+      DI configuration. SharedInfraModule (AC-047) is assigned 'module' for the same reason
+      even though it lives in the infrastructure layer.
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-044..AC-048].candidate_role_pressure
+        value: nestjs_feature_module, nestjs_global_module, nestjs_root_module
+      - source: conventions.role-taxonomy.yaml
+        field: role_definitions.module.positive_signals
+        value: "wires dependencies"
+
+  - id: DECISION-DR-007
+    decision: >
+      StagingMessageValidator (AC-002) and ScanResultValidator (AC-022) are assigned role
+      'validator' under domain_constraint family rather than 'normalizer' or 'mapper'.
+    rationale: >
+      Both artifacts have transformation_intent in the blueprint but their primary operation
+      is payload validation and parsing — confirming the shape is correct before passing on.
+      The taxonomy 'validator' role applies when the artifact's responsibility is validation
+      only. The 'normalizer' role standardizes values (not validates). These validators
+      confirm payload correctness and produce a validated DTO — validation is the primary signal.
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-002, AC-022].candidate_role_pressure
+        value: validator
+      - source: conventions.role-taxonomy.yaml
+        field: role_definitions.validator.positive_signals
+        value: "validation only"
+
+  - id: DECISION-DR-008
+    decision: >
+      VdfManifestNormalizer (AC-017) is assigned role 'normalizer' under transformation family.
+    rationale: >
+      After SRP fix (file I/O extracted to VdfRunnerAdapter), VdfManifestNormalizer is a pure
+      transformation: raw string in, NormalizedScanResult out, zero side effects. The taxonomy
+      'normalizer' role matches exactly — standardizes/normalizes values. Rule ROLE-RESOLVE-TRANSFORMATION
+      fires. 'mapper' is rejected because the artifact standardizes format (not shapes between layers).
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-017].candidate_role_pressure
+        value: normalizer
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-017].intent
+        value: transformation_intent
+
+  - id: DECISION-DR-009
+    decision: >
+      ScanSchedulerTrigger (AC-009) is assigned role 'scheduler' under integration_async family,
+      not 'consumer' or 'handler'.
+    rationale: >
+      ScanSchedulerTrigger uses NestJS @Interval decorator — it is a time-driven entry point, not
+      a message consumer. The taxonomy 'scheduler' role covers time-triggered execution entry points.
+      'consumer' is rejected because there is no message queue involved. 'handler' is rejected
+      because the artifact has no command/query envelope — it fires on tick.
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-009].candidate_role_pressure
+        value: scheduler_entry
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-010].description
+        value: "@Interval(30000) NestJS scheduler entry point"
+
+  - id: DECISION-DR-010
+    decision: >
+      ScanResultClient (AC-027) is assigned role 'adapter' under integration_boundary family,
+      not 'client' or 'repository'.
+    rationale: >
+      ScanResultClient implements IScanResultLoader (a port interface) and wraps S3 access via
+      IStoragePort. It is a concrete implementation of a port contract — the taxonomy 'adapter'
+      role applies to concrete external-boundary implementations. 'client' would apply if it
+      directly wrapped an external SDK without a port interface. 'repository' is rejected because
+      the artifact does not own persistence — it loads and deserializes from S3 (integration boundary).
+    evidence:
+      - source: artifact-candidates.yaml
+        field: candidates[AC-027].candidate_role_pressure
+        value: adapter
+      - source: architecture-blueprint.yaml
+        field: atomic_units[AU-027].candidate_role_pressure
+        value: adapter
+
+draft_role_signals:
+
+  # ─────────────────────────────────────────────────
+  # CAP-001: Video Staging
+  # ─────────────────────────────────────────────────
+
+  - artifact_id: AC-001
+    artifact_path: "pipeline-service/staging/transport/video-ready.consumer.ts"
+    proposed_name: VideoReadyConsumer
+    capability_ref: CAP-001
+    draft_role_signal: consumer
+    role_family: integration_async
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-001]"
+        value: "entry_intent, layer_candidate: transport, receives NewVideoReadyEvent from RabbitMQ"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-001]"
+        value: "candidate_role_pressure: consumer, input: NewVideoReadyEvent (RabbitMQ AMQP message)"
+    rejected_roles:
+      - role: controller
+        reason: "HTTP controller — this artifact receives AMQP messages, not HTTP requests"
+      - role: handler
+        reason: "Handler processes a command after dispatch; this artifact is the transport entry point that dispatches the command"
+      - role: processor
+        reason: "No batch/stream item processing — single message receive and delegate"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Must be verified to contain no inline business logic. SRP fix: delegation only."
+
+  - artifact_id: AC-002
+    artifact_path: "pipeline-service/staging/validators/staging-message.validator.ts"
+    proposed_name: StagingMessageValidator
+    capability_ref: CAP-001
+    draft_role_signal: validator
+    role_family: domain_constraint
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-002]"
+        value: "transformation_intent, pure validation/parsing, no I/O, no side effects"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-002]"
+        value: "candidate_role_pressure: validator, outputs: validated StagingMessageDto"
+    rejected_roles:
+      - role: normalizer
+        reason: "Normalizers standardize data format; this artifact validates shape correctness and produces a typed DTO"
+      - role: mapper
+        reason: "Mappers transform between layer shapes; primary signal here is validation not shape mapping"
+      - role: dto
+        reason: "DTO is a data container; this artifact contains validation logic"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Confirm as canonical validator — no inline duplicates in VideoReadyConsumer."
+
+  - artifact_id: AC-003
+    artifact_path: "pipeline-service/staging/application/stage-video.handler.ts"
+    proposed_name: StageVideoHandler
+    capability_ref: CAP-001
+    draft_role_signal: handler
+    role_family: application_execution
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-003]"
+        value: "orchestration_intent, layer_candidate: application, handles StageVideoCommand"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-003]"
+        value: "candidate_role_pressure: handler, input: StageVideoCommand"
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-003].evidence_refs"
+        value: "risk-classification.yaml#SRP_violation, risk-classification.yaml#DIP_violation"
+    rejected_roles:
+      - role: service
+        reason: "Taxonomy absolute rule: never choose service when handler applies — this artifact handles a command envelope via NestJS dispatch"
+      - role: orchestrator
+        reason: "Single capability use-case handler, not a multi-step flow coordinator across capabilities"
+      - role: use_case
+        reason: "Handler is more precise — artifact is invoked by command dispatch mechanism, not called as a standalone use case"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "DIP fix required: inject IVideoRepository, IFileStagingPort, IStoragePort via tokens. Error classes extracted to shared errors module."
+
+  - artifact_id: AC-004
+    artifact_path: "pipeline-service/staging/domain/video-staging.policy.ts"
+    proposed_name: VideoStagingPolicy
+    capability_ref: CAP-001
+    draft_role_signal: policy
+    role_family: decision
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-004]"
+        value: "decision_intent, layer_candidate: decision, pure domain policy, zero framework imports"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-004]"
+        value: "candidate_role_pressure: policy, side_effects: [], pure eligibility decision"
+    rejected_roles:
+      - role: guard
+        reason: "Guard is authorization context check; this is a domain eligibility rule"
+      - role: rule
+        reason: "Rule is a single-condition assertion; policy can combine multiple eligibility conditions"
+      - role: strategy
+        reason: "Strategy implies interchangeable algorithms; this is a fixed domain policy"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Confirmed clean — no framework imports. Placement in decision layer is correct."
+
+  - artifact_id: AC-005
+    artifact_path: "pipeline-service/staging/infrastructure/ports/i-video.repository.ts"
+    proposed_name: IVideoRepository
+    capability_ref: CAP-001
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-005]"
+        value: "candidate_role_pressure: port_interface, DIP violation source noted"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-001]"
+        value: "IVideoRepository, consumed_by: StageVideoHandler (AU-003)"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-005]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: interface
+        reason: "Interface is a generic TypeScript construct role; port is the specific hexagonal-architecture DIP boundary role"
+      - role: contract
+        reason: "Contract is more general; port specifically models the application-to-infrastructure dependency inversion boundary"
+      - role: repository
+        reason: "Repository is the concrete implementation role; this is the abstract interface/port"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact — does not exist in current codebase. ISP-narrowed to findById and updateState operations."
+
+  - artifact_id: AC-006
+    artifact_path: "pipeline-service/staging/infrastructure/video.repository.ts"
+    proposed_name: VideoRepository
+    capability_ref: CAP-001
+    draft_role_signal: repository
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-006]"
+        value: "candidate_role_pressure: repository, MongoDB read/write, implements IVideoRepository"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-006]"
+        value: "candidate_role_pressure: repository, side_effects: MongoDB read/write on videos collection"
+    rejected_roles:
+      - role: service
+        reason: "Pure persistence implementation; no coordination logic or multi-step orchestration"
+      - role: adapter
+        reason: "Repository wraps a MongoDB model, not an external system boundary; repository role is more precise for persistence"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Must implement IVideoRepository interface and register under IVideoRepository DI token."
+
+  - artifact_id: AC-007
+    artifact_path: "pipeline-service/staging/infrastructure/ports/i-file-staging.port.ts"
+    proposed_name: IFileStagingPort
+    capability_ref: CAP-001
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-007]"
+        value: "candidate_role_pressure: port_interface, integration_intent, abstracts S3 SDK from application layer"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-002]"
+        value: "IFileStagingPort, dip_violation_source: no IFileStagingPort currently exists"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-007]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: interface
+        reason: "Port is the specific DIP boundary role for application-to-infrastructure contracts"
+      - role: adapter
+        reason: "Adapter is the concrete implementation; this is the abstract port"
+      - role: contract
+        reason: "Port is more precise than contract for hexagonal DIP patterns"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Declares verifyExists(s3Key) and downloadToScanPath(s3Key, destPath) only."
+
+  - artifact_id: AC-008
+    artifact_path: "pipeline-service/staging/infrastructure/file-staging.adapter.ts"
+    proposed_name: FileStagingAdapter
+    capability_ref: CAP-001
+    draft_role_signal: adapter
+    role_family: integration_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-008]"
+        value: "candidate_role_pressure: adapter, wraps S3 SDK + local filesystem, implements IFileStagingPort"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-008]"
+        value: "candidate_role_pressure: adapter, side_effects: S3 SDK calls, local filesystem write"
+    rejected_roles:
+      - role: client
+        reason: "Client role applies when directly wrapping external SDK without port interface; this implements a port contract — adapter is more precise"
+      - role: service
+        reason: "Taxonomy absolute rule: never choose service when adapter applies for external system integration"
+      - role: repository
+        reason: "This wraps S3 + filesystem (integration boundary), not a persistence store; repository is for database persistence"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "S3ObjectNotFoundError must be extracted to shared errors module. Registers under IFileStagingPort DI token."
+
+  # ─────────────────────────────────────────────────
+  # CAP-002: VDF Scanning
+  # ─────────────────────────────────────────────────
+
+  - artifact_id: AC-009
+    artifact_path: "pipeline-service/scanning/transport/scan-scheduler.trigger.ts"
+    proposed_name: ScanSchedulerTrigger
+    capability_ref: CAP-002
+    draft_role_signal: scheduler
+    role_family: integration_async
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-010]"
+        value: "entry_intent, layer_candidate: transport, @Interval(30000) NestJS scheduler"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-009]"
+        value: "candidate_role_pressure: scheduler_entry, input: NestJS @Interval(30000) tick"
+    rejected_roles:
+      - role: consumer
+        reason: "Consumer receives messages from a queue; this is triggered by a time interval, not a message"
+      - role: handler
+        reason: "Handler processes a command/event envelope; this is a time-triggered entry point"
+      - role: job
+        reason: "Job is a background execution unit; this is the entry point trigger only — ScanOrchestrator is the executor"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Must be extracted from ScanOrchestrator (currently embedded). Single responsibility: invoke ScanOrchestrator.run()."
+
+  - artifact_id: AC-010
+    artifact_path: "pipeline-service/scanning/application/scan.orchestrator.ts"
+    proposed_name: ScanOrchestrator
+    capability_ref: CAP-002
+    draft_role_signal: orchestrator
+    role_family: application_execution
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-009]"
+        value: "orchestration_intent, 7-responsibility monolith, SRP_violation_7_responsibilities"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-010]"
+        value: "candidate_role_pressure: orchestrator, 7 mixed responsibilities"
+      - ref: conventions.role-resolution.yaml
+        section: "draft_role_signal_rules[DRAFT-ROLE-MIXED-RESPONSIBILITY]"
+        value: "emit_mixed_responsibility_signal when artifact contains multiple role signals"
+    rejected_roles:
+      - role: handler
+        reason: "Handler processes a single command/event; orchestrator coordinates multi-step flow — after decomposition, multi-step coordination is the surviving primary responsibility"
+      - role: service
+        reason: "Taxonomy absolute rule: never choose service when orchestrator applies"
+      - role: scheduler
+        reason: "Scheduler trigger is extracted to ScanSchedulerTrigger (AC-009); orchestrator itself has no scheduling responsibility after decomposition"
+    mixed_responsibility_flag: true
+    extraction_target: true
+    notes: >
+      MIXED RESPONSIBILITY: Current implementation has 7 co-located responsibilities (orchestration,
+      batch claiming, result loading, error handling, scheduling, scan dispatch, progress tracking).
+      Extraction plan: (1) ScanSchedulerTrigger extracted to AC-009; (2) batch claiming delegated to
+      IBatchClaimerPort; (3) VDF invocation delegated to IVdfRunnerPort; (4) result upload delegated
+      to IStoragePort; (5) event emission delegated to IEventPublisher; (6) cleanup delegated to
+      ScanPurgerService. Post-extraction, orchestrator role is clean. Confidence medium until decomposition
+      is confirmed by artifact_action_resolution phase.
+
+  - artifact_id: AC-011
+    artifact_path: "pipeline-service/scanning/domain/batch-claim.policy.ts"
+    proposed_name: BatchClaimPolicy
+    capability_ref: CAP-002
+    draft_role_signal: policy
+    role_family: decision
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-011]"
+        value: "decision_intent, pure batch eligibility policy, zero framework imports"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-011]"
+        value: "candidate_role_pressure: policy, side_effects: [], pure decision"
+    rejected_roles:
+      - role: rule
+        reason: "Policy can combine multiple eligibility conditions; rule is a single deterministic condition"
+      - role: specification
+        reason: "Specification is composable logic; this is a fixed policy — no composition evidence"
+      - role: guard
+        reason: "Guard is authorization context check; this is a domain eligibility decision"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Confirmed clean. Zero framework imports. Verify batch eligibility conditions are bounded to this artifact."
+
+  - artifact_id: AC-012
+    artifact_path: "pipeline-service/scanning/domain/scan-cleanup.policy.ts"
+    proposed_name: ScanCleanupPolicy
+    capability_ref: CAP-002
+    draft_role_signal: policy
+    role_family: decision
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-012]"
+        value: "decision_intent, pure cleanup expiry policy, zero framework imports"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-012]"
+        value: "candidate_role_pressure: policy, side_effects: [], expiry determination logic"
+    rejected_roles:
+      - role: rule
+        reason: "Expiry determination may combine multiple conditions — policy is more appropriate than single rule"
+      - role: strategy
+        reason: "No interchangeable algorithm signal — this is a fixed expiry policy"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "SRP fix: expiry determination logic must be moved from ScanPurgerService (AC-020) to this artifact."
+
+  - artifact_id: AC-013
+    artifact_path: "pipeline-service/scanning/infrastructure/ports/i-batch-claimer.port.ts"
+    proposed_name: IBatchClaimerPort
+    capability_ref: CAP-002
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-013]"
+        value: "candidate_role_pressure: port_interface, ISP compliance, separates claim from recovery"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-008]"
+        value: "IBatchClaimerPort, dip_violation_source: no IBatchClaimerPort currently"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-013]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: interface
+        reason: "Port is specific to the DIP boundary pattern — more precise than generic interface role"
+      - role: contract
+        reason: "Port is more precise for hexagonal architecture boundary contracts"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Declares claimBatch(eligibleBatches) only. Recovery concern separated to dedicated StaleBatchRecoveryService."
+
+  - artifact_id: AC-014
+    artifact_path: "pipeline-service/scanning/infrastructure/batch-claimer.service.ts"
+    proposed_name: BatchClaimerService
+    capability_ref: CAP-002
+    draft_role_signal: service
+    role_family: application_execution
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-014]"
+        value: "candidate_role_pressure: service, MongoDB atomic update, implements IBatchClaimerPort"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-014]"
+        value: "candidate_role_pressure: service, side_effects: MongoDB atomic update on scan_batch"
+    rejected_roles:
+      - role: repository
+        reason: "Repository is pure CRUD persistence; BatchClaimerService has atomic claim-coordination logic (timing, locking) beyond CRUD"
+      - role: adapter
+        reason: "Adapter wraps an external system through a port boundary; this wraps MongoDB persistence — repository or service is more precise"
+      - role: handler
+        reason: "Handler processes command/event envelopes dispatched by a framework; this is an infrastructure service injected via DI token"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registers under IBatchClaimerPort DI token. Recovery logic must be extracted to dedicated StaleBatchRecoveryService per architecture blueprint."
+
+  - artifact_id: AC-015
+    artifact_path: "pipeline-service/scanning/infrastructure/ports/i-vdf-runner.port.ts"
+    proposed_name: IVdfRunnerPort
+    capability_ref: CAP-002
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-015]"
+        value: "candidate_role_pressure: port_interface, decouples ScanOrchestrator from CLI subprocess"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-009]"
+        value: "IVdfRunnerPort, dip_violation_source: no IVdfRunnerPort currently"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-015]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: interface
+        reason: "Port is specific to DIP boundary pattern for VDF CLI external system"
+      - role: adapter
+        reason: "Adapter is the concrete implementation; this is the abstract port"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Declares runScan(batchId, inputPath) -> Promise<string>."
+
+  - artifact_id: AC-016
+    artifact_path: "pipeline-service/scanning/infrastructure/vdf-runner.adapter.ts"
+    proposed_name: VdfRunnerAdapter
+    capability_ref: CAP-002
+    draft_role_signal: adapter
+    role_family: integration_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-016]"
+        value: "candidate_role_pressure: adapter, spawns VDF CLI child process, implements IVdfRunnerPort"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-016]"
+        value: "candidate_role_pressure: adapter, side_effects: child_process.spawn"
+    rejected_roles:
+      - role: service
+        reason: "Taxonomy absolute rule: never choose service when adapter applies for external system boundary"
+      - role: client
+        reason: "Client wraps network/SDK calls; this wraps a CLI subprocess — adapter is more precise for process boundary"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "SRP fix: any file I/O currently in VdfManifestNormalizer moves here. Registers under IVdfRunnerPort DI token."
+
+  - artifact_id: AC-017
+    artifact_path: "pipeline-service/scanning/infrastructure/vdf-manifest.normalizer.ts"
+    proposed_name: VdfManifestNormalizer
+    capability_ref: CAP-002
+    draft_role_signal: normalizer
+    role_family: transformation
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-TRANSFORMATION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-017]"
+        value: "transformation_intent, pure string-to-NormalizedScanResult, zero side effects after SRP fix"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-017]"
+        value: "candidate_role_pressure: normalizer, transforms raw VDF manifest to NormalizedScanResult"
+    rejected_roles:
+      - role: mapper
+        reason: "Mapper transforms between domain layer shapes; normalizer standardizes format/values — manifest normalization is format standardization"
+      - role: parser
+        reason: "Parser converts serialized input to structured data; normalizer produces a standardized representation — normalizer is more semantically precise"
+      - role: validator
+        reason: "No validation logic — pure format normalization of scan output"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "SRP fix: file I/O must be extracted to VdfRunnerAdapter before this artifact is clean. After fix, zero side effects."
+
+  - artifact_id: AC-018
+    artifact_path: "pipeline-service/scanning/infrastructure/ports/i-video-scan.repository.ts"
+    proposed_name: IVideoScanRepository
+    capability_ref: CAP-002
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-018]"
+        value: "candidate_role_pressure: port_interface, ISP violation noted, splits read/write concerns"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-010]"
+        value: "IVideoScanRepository, dip_violation_source: ISP+DIP violation"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-018]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: repository
+        reason: "Repository is the concrete Mongoose implementation; this is the abstract port contract"
+      - role: interface
+        reason: "Port is specific to DIP boundary pattern"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Declares findByScanId, updateStatus, markCompleted. ISP-bounded to ScanOrchestrator's consumed surface."
+
+  - artifact_id: AC-019
+    artifact_path: "pipeline-service/scanning/infrastructure/video-scan.repository.ts"
+    proposed_name: VideoScanRepository
+    capability_ref: CAP-002
+    draft_role_signal: repository
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-019]"
+        value: "candidate_role_pressure: repository, MongoDB read/write, implements IVideoScanRepository"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-019]"
+        value: "candidate_role_pressure: repository, side_effects: MongoDB read/write on video_scans collection"
+    rejected_roles:
+      - role: service
+        reason: "Pure persistence CRUD — no coordination logic; repository is more precise"
+      - role: adapter
+        reason: "Repository wraps MongoDB model (persistence), not an external integration boundary"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registers under IVideoScanRepository DI token."
+
+  - artifact_id: AC-020
+    artifact_path: "pipeline-service/scanning/infrastructure/scan-purger.service.ts"
+    proposed_name: ScanPurgerService
+    capability_ref: CAP-002
+    draft_role_signal: service
+    role_family: application_execution
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-020]"
+        value: "integration_intent, executes artifact deletion, delegates expiry decision to ScanCleanupPolicy"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-020]"
+        value: "candidate_role_pressure: service, side_effects: filesystem deletes, S3 object deletes"
+    rejected_roles:
+      - role: adapter
+        reason: "Purger orchestrates deletion across multiple surfaces (filesystem + S3 via IStoragePort); not wrapping a single external boundary"
+      - role: repository
+        reason: "Deletion executor with multi-surface coordination; not a pure persistence layer"
+      - role: handler
+        reason: "Not invoked by command dispatch; invoked by orchestrator directly"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "SRP fix: expiry determination extracted to ScanCleanupPolicy (AC-012). Remaining responsibility: execute deletions. Medium confidence because 'service' is generic — confirmed justified by no more specific infrastructure execution role matching."
+
+  # ─────────────────────────────────────────────────
+  # CAP-003: Video Similarity Grouping
+  # ─────────────────────────────────────────────────
+
+  - artifact_id: AC-021
+    artifact_path: "pipeline-service/grouping/consumers/scan-completed.consumer.ts"
+    proposed_name: ScanCompletedConsumer
+    capability_ref: CAP-003
+    draft_role_signal: consumer
+    role_family: integration_async
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-021]"
+        value: "entry_intent, layer_candidate: transport, receives ScanCompletedEvent from RabbitMQ"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-021]"
+        value: "candidate_role_pressure: consumer, input: ScanCompletedEvent (RabbitMQ AMQP message)"
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-021].evidence_refs"
+        value: "risk-classification.yaml#SRP_violation_inline_validator"
+    rejected_roles:
+      - role: handler
+        reason: "Consumer is the AMQP transport entry point; handler is the application executor receiving the command after dispatch"
+      - role: processor
+        reason: "No batch/stream item processing — single message receive"
+      - role: subscriber
+        reason: "Consumer is more specific for RabbitMQ AMQP message consumption with ack/nack semantics"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "SRP fix: inline validateEvent duplicate of ScanResultValidator must be removed. Clean delegation only."
+
+  - artifact_id: AC-022
+    artifact_path: "pipeline-service/grouping/validators/scan-result.validator.ts"
+    proposed_name: ScanResultValidator
+    capability_ref: CAP-003
+    draft_role_signal: validator
+    role_family: domain_constraint
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-022]"
+        value: "transformation_intent, pure payload validation, duplicated in pipeline-service"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-022]"
+        value: "candidate_role_pressure: validator, outputs: validated ScanCompletedDto"
+    rejected_roles:
+      - role: normalizer
+        reason: "Primary operation is payload shape validation, not format normalization"
+      - role: mapper
+        reason: "Primary signal is validation — confirmed correct shape, not layer mapping"
+      - role: dto
+        reason: "DTO is a data container; this artifact contains validation logic"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Canonical copy in grouping-service. Pipeline-service submodule must re-use — not copy. SRP fix required in ScanCompletedConsumer."
+
+  - artifact_id: AC-023
+    artifact_path: "pipeline-service/grouping/application/process-scan.handler.ts"
+    proposed_name: ProcessScanHandler
+    capability_ref: CAP-003
+    draft_role_signal: handler
+    role_family: application_execution
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-023]"
+        value: "orchestration_intent, layer_candidate: application, handles ProcessScanCommand"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-023]"
+        value: "candidate_role_pressure: handler, 6 concrete dependencies, new keyword DIP violation"
+      - ref: conventions.role-resolution.yaml
+        section: "draft_role_signal_rules[DRAFT-ROLE-MIXED-RESPONSIBILITY]"
+        value: "emit_mixed_responsibility_signal when artifact contains multiple role signals"
+    rejected_roles:
+      - role: orchestrator
+        reason: "Orchestrator is multi-step flow across capabilities; ProcessScanHandler handles a single ProcessScanCommand within one capability — handler is more precise"
+      - role: service
+        reason: "Taxonomy absolute rule: never choose service when handler applies"
+      - role: use_case
+        reason: "Handler is invoked by command dispatch mechanism; use_case is called as standalone — handler is more precise"
+    mixed_responsibility_flag: true
+    extraction_target: true
+    notes: >
+      MIXED RESPONSIBILITY: Current implementation has 6 concrete dependencies injected directly
+      (SRP+DIP violations) and instantiates UnionFindDomainService with 'new' keyword. After
+      refactor: inject IScanResultLoader, ISimilarityEdgeRepository, ISimilarityGroupRepository,
+      IVideoSimilarityRepository, IScanBatchRepository, IEventPublisher via DI tokens. Inject
+      UnionFindDomainService via NestJS DI. Medium confidence until DIP refactor is confirmed.
+
+  - artifact_id: AC-024
+    artifact_path: "pipeline-service/grouping/domain/similarity-threshold.policy.ts"
+    proposed_name: SimilarityThresholdPolicy
+    capability_ref: CAP-003
+    draft_role_signal: policy
+    role_family: decision
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-024]"
+        value: "decision_intent, pure threshold filter, zero framework imports"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-024]"
+        value: "candidate_role_pressure: policy, side_effects: [], pure threshold decision"
+    rejected_roles:
+      - role: rule
+        reason: "Threshold filtering involves parameter-driven decision; policy is more precise than single rule"
+      - role: strategy
+        reason: "No interchangeable algorithm signal — single threshold policy"
+      - role: guard
+        reason: "Guard is authorization; this is domain similarity threshold filtering"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Confirmed clean. Zero framework imports. Threshold config passed as input parameter."
+
+  - artifact_id: AC-025
+    artifact_path: "pipeline-service/grouping/domain/union-find.domain-service.ts"
+    proposed_name: UnionFindDomainService
+    capability_ref: CAP-003
+    draft_role_signal: domain_service
+    role_family: domain_model
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-025]"
+        value: "domain_intent, pure union-find algorithm, no framework imports, zero side effects"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-025]"
+        value: "candidate_role_pressure: domain_service, side_effects: [], pure domain behavior"
+    rejected_roles:
+      - role: service
+        reason: "Taxonomy absolute rule: never choose service when domain_service applies — this is pure domain behavior with no framework dependencies"
+      - role: strategy
+        reason: "No interchangeable algorithm signal — single canonical union-find implementation"
+      - role: handler
+        reason: "No command/event envelope dispatch — pure domain algorithm"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Algorithm is correct. Only fix required: ProcessScanHandler must inject via NestJS DI instead of using new keyword."
+
+  - artifact_id: AC-026
+    artifact_path: "pipeline-service/grouping/infrastructure/ports/i-scan-result-loader.port.ts"
+    proposed_name: IScanResultLoader
+    capability_ref: CAP-003
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-026]"
+        value: "candidate_role_pressure: port_interface, DIP violation: no IScanResultLoader currently"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-003]"
+        value: "IScanResultLoader, consumed_by: ProcessScanHandler (AU-023)"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-026]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: interface
+        reason: "Port is specific to DIP boundary pattern for S3 loading abstraction"
+      - role: adapter
+        reason: "Adapter is the concrete implementation; this is the abstract port"
+      - role: client
+        reason: "Client wraps SDK directly; this is the port contract — adapter wraps the client"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Declares load(s3Key) -> Promise<NormalizedScanResult>."
+
+  - artifact_id: AC-027
+    artifact_path: "pipeline-service/grouping/infrastructure/scan-result.client.ts"
+    proposed_name: ScanResultClient
+    capability_ref: CAP-003
+    draft_role_signal: adapter
+    role_family: integration_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-027]"
+        value: "candidate_role_pressure: adapter, implements IScanResultLoader, fetches from S3"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-027]"
+        value: "candidate_role_pressure: adapter, side_effects: S3 object fetch via IStoragePort"
+    rejected_roles:
+      - role: client
+        reason: "Client wraps SDK directly; ScanResultClient implements a port interface (IScanResultLoader) — adapter is more precise"
+      - role: repository
+        reason: "This fetches from S3 (integration boundary), not a database — adapter role applies"
+      - role: service
+        reason: "Taxonomy: never choose service when adapter applies for integration boundary"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registers under IScanResultLoader DI token. DIP-compliant: consumes IStoragePort, not S3 SDK directly."
+
+  - artifact_id: AC-028
+    artifact_path: "pipeline-service/grouping/infrastructure/ports/i-similarity-edge.repository.ts"
+    proposed_name: ISimilarityEdgeRepository
+    capability_ref: CAP-003
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-028]"
+        value: "candidate_role_pressure: port_interface, declares upsertEdge and findEdgesByVideoId"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-004]"
+        value: "ISimilarityEdgeRepository, consumed_by: ProcessScanHandler (AU-023)"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-028]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: repository
+        reason: "Repository is the concrete implementation; this is the abstract port contract"
+      - role: interface
+        reason: "Port is specific to the DIP persistence-boundary pattern"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. ISP-bounded to edge persistence operations consumed by ProcessScanHandler."
+
+  - artifact_id: AC-029
+    artifact_path: "pipeline-service/grouping/infrastructure/similarity-edge.repository.ts"
+    proposed_name: SimilarityEdgeRepository
+    capability_ref: CAP-003
+    draft_role_signal: repository
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-029]"
+        value: "candidate_role_pressure: repository, MongoDB read/write, implements ISimilarityEdgeRepository"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-029]"
+        value: "candidate_role_pressure: repository, side_effects: MongoDB read/write on similarity_edges"
+    rejected_roles:
+      - role: service
+        reason: "Pure persistence CRUD — repository is more precise"
+      - role: adapter
+        reason: "Wraps MongoDB model (persistence layer) — repository is the correct persistence role"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registers under ISimilarityEdgeRepository DI token."
+
+  - artifact_id: AC-030
+    artifact_path: "pipeline-service/grouping/infrastructure/ports/i-similarity-group.repository.ts"
+    proposed_name: ISimilarityGroupRepository
+    capability_ref: CAP-003
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-030]"
+        value: "candidate_role_pressure: port_interface, declares upsertGroup and findGroupsByVideoId"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-005]"
+        value: "ISimilarityGroupRepository, consumed_by: ProcessScanHandler (AU-023)"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-030]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: repository
+        reason: "Repository is the concrete implementation; this is the abstract port"
+      - role: interface
+        reason: "Port is specific to the DIP persistence-boundary pattern"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. ISP-bounded to group persistence operations consumed by ProcessScanHandler."
+
+  - artifact_id: AC-031
+    artifact_path: "pipeline-service/grouping/infrastructure/similarity-group.repository.ts"
+    proposed_name: SimilarityGroupRepository
+    capability_ref: CAP-003
+    draft_role_signal: repository
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-031]"
+        value: "candidate_role_pressure: repository, MongoDB read/write, implements ISimilarityGroupRepository"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-031]"
+        value: "candidate_role_pressure: repository, side_effects: MongoDB read/write on similarity_groups"
+    rejected_roles:
+      - role: service
+        reason: "Pure persistence CRUD — repository is more precise"
+      - role: adapter
+        reason: "Wraps MongoDB model (persistence layer) — repository is the correct persistence role"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registers under ISimilarityGroupRepository DI token."
+
+  - artifact_id: AC-032
+    artifact_path: "pipeline-service/grouping/infrastructure/ports/i-video-similarity.repository.ts"
+    proposed_name: IVideoSimilarityRepository
+    capability_ref: CAP-003
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-032]"
+        value: "candidate_role_pressure: port_interface, ISP violation noted, split vs focused-interface deferred"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-006]"
+        value: "IVideoSimilarityRepository, dip_violation_source: ISP+DIP violation"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-032]"
+        value: "candidate_role_pressure: port_interface, ISP split vs focused-interface decision deferred to artifact_action_analysis"
+    rejected_roles:
+      - role: repository
+        reason: "Repository is the concrete implementation; this is the abstract port"
+      - role: interface
+        reason: "Port is specific to the DIP boundary pattern"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: >
+      Medium confidence: ISP decision (split into IVideoSimilarityReader + IVideoSimilarityWriter vs
+      single focused interface) deferred to artifact_action_analysis phase per ARCH-AUTH-003 and
+      architecture blueprint REJ-003. Draft signal is 'port' regardless of split outcome.
+
+  - artifact_id: AC-033
+    artifact_path: "pipeline-service/grouping/infrastructure/video-similarity.repository.ts"
+    proposed_name: VideoSimilarityRepository
+    capability_ref: CAP-003
+    draft_role_signal: repository
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-033]"
+        value: "candidate_role_pressure: repository, MongoDB read/write, implements IVideoSimilarityRepository"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-033]"
+        value: "candidate_role_pressure: repository, side_effects: MongoDB read/write on video_similarity"
+    rejected_roles:
+      - role: service
+        reason: "Pure persistence CRUD — repository is more precise"
+      - role: adapter
+        reason: "Wraps MongoDB model (persistence) — repository role applies"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registers under IVideoSimilarityRepository DI token (or split interface tokens if ISP split is decided)."
+
+  # ─────────────────────────────────────────────────
+  # Shared: Cross-capability infrastructure
+  # ─────────────────────────────────────────────────
+
+  - artifact_id: AC-034
+    artifact_path: "pipeline-service/shared/infrastructure/ports/i-scan-batch.repository.ts"
+    proposed_name: IScanBatchRepository
+    capability_ref: CAP-002
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-034]"
+        value: "candidate_role_pressure: port_interface, shared across vdf-scan and grouping, declares findEligible/markClaimed/markCompleted/findById"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-007]"
+        value: "IScanBatchRepository, consumed_by: ScanOrchestrator (AU-009), ProcessScanHandler (AU-023)"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-034]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: repository
+        reason: "Repository is the concrete implementation; this is the abstract port shared across capabilities"
+      - role: interface
+        reason: "Port is specific to the DIP boundary pattern"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Shared across CAP-002 and CAP-003. Single implementation ScanBatchRepository registered globally."
+
+  - artifact_id: AC-035
+    artifact_path: "pipeline-service/shared/infrastructure/scan-batch.repository.ts"
+    proposed_name: ScanBatchRepository
+    capability_ref: CAP-002
+    draft_role_signal: repository
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-035]"
+        value: "candidate_role_pressure: repository, shared Mongoose implementation, IScanBatchRepository contract"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-035]"
+        value: "candidate_role_pressure: repository, side_effects: MongoDB read/write on scan_batch collection"
+    rejected_roles:
+      - role: service
+        reason: "Pure persistence CRUD across findEligible/markClaimed/markCompleted/findById — repository is more precise"
+      - role: adapter
+        reason: "Wraps MongoDB model (persistence) — repository role applies"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Shared across scanning and grouping submodules. Registered in SharedInfraModule or dedicated shared-persistence module."
+
+  - artifact_id: AC-036
+    artifact_path: "pipeline-service/shared/infrastructure/ports/i-storage.port.ts"
+    proposed_name: IStoragePort
+    capability_ref: CAP-001
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-036]"
+        value: "candidate_role_pressure: port_interface, shared S3/storage port across all 3 capabilities"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-011]"
+        value: "IStoragePort, dip_violation_source: no IStoragePort currently"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-036]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: interface
+        reason: "Port is specific to the DIP boundary for external storage abstraction"
+      - role: adapter
+        reason: "Adapter is the concrete implementation; this is the abstract port"
+      - role: contract
+        reason: "Port is more precise for hexagonal architecture S3 abstraction"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Shared port declaring getObject, putObject, headObject, deleteObject. No application class may import AWS SDK directly."
+
+  - artifact_id: AC-037
+    artifact_path: "pipeline-service/shared/infrastructure/s3-storage.adapter.ts"
+    proposed_name: S3StorageAdapter
+    capability_ref: CAP-001
+    draft_role_signal: adapter
+    role_family: integration_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-037]"
+        value: "candidate_role_pressure: adapter, implements IStoragePort, wraps AWS S3 SDK"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-037]"
+        value: "candidate_role_pressure: adapter, side_effects: AWS S3 SDK calls"
+    rejected_roles:
+      - role: client
+        reason: "Client wraps SDK without port interface; this implements IStoragePort — adapter is more precise"
+      - role: service
+        reason: "Taxonomy: never choose service when adapter applies for external system boundary"
+      - role: repository
+        reason: "Wraps S3 (integration boundary), not a database persistence layer"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Registered globally in SharedInfraModule under IStoragePort DI token."
+
+  - artifact_id: AC-038
+    artifact_path: "pipeline-service/shared/infrastructure/ports/i-event-publisher.port.ts"
+    proposed_name: IEventPublisher
+    capability_ref: CAP-001
+    draft_role_signal: port
+    role_family: architectural_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-038]"
+        value: "candidate_role_pressure: port_interface, decouples application from RabbitMQ topology"
+      - ref: architecture-blueprint.yaml
+        section: "port_inventory[PORT-012]"
+        value: "IEventPublisher, dip_violation_source: topology hardcoded, no IEventPublisher"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-038]"
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+    rejected_roles:
+      - role: publisher
+        reason: "Publisher is the concrete implementation role; this is the abstract port contract"
+      - role: producer
+        reason: "Producer is more specific than port — this is an abstraction layer, not a sending mechanism"
+      - role: interface
+        reason: "Port is specific to the DIP boundary pattern for event publishing abstraction"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "New artifact. Declares publish(exchange, routingKey, payload). Topology constants remain in shared/types/queue.types.ts (LOCKED)."
+
+  - artifact_id: AC-039
+    artifact_path: "pipeline-service/shared/infrastructure/rabbitmq.publisher.ts"
+    proposed_name: RabbitMQPublisher
+    capability_ref: CAP-001
+    draft_role_signal: adapter
+    role_family: integration_boundary
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-039]"
+        value: "candidate_role_pressure: adapter, implements IEventPublisher, wraps AMQP channel"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-039]"
+        value: "candidate_role_pressure: adapter, side_effects: AMQP channel.publish() call"
+    rejected_roles:
+      - role: publisher
+        reason: "Publisher is a role in integration_async family for message-producing actors; this is an infrastructure adapter implementing a port contract — adapter is more precise"
+      - role: service
+        reason: "Taxonomy: never choose service when adapter applies"
+      - role: client
+        reason: "Client wraps SDK directly; this implements a port interface — adapter is more precise"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "OCP fix: topology sourced from QUEUE_EXCHANGES/ROUTING_KEYS constants, not hardcoded. Registered globally in SharedInfraModule under IEventPublisher DI token."
+
+  # ─────────────────────────────────────────────────
+  # Shared: Schema modules
+  # ─────────────────────────────────────────────────
+
+  - artifact_id: AC-040
+    artifact_path: "pipeline-service/staging/infrastructure/schemas/video.schema.ts"
+    proposed_name: VideoSchemaModule
+    capability_ref: CAP-001
+    draft_role_signal: schema
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-040]"
+        value: "persistence_intent, Mongoose @Schema/@Prop definition, infrastructure layer, collection name LOCKED"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-040]"
+        value: "candidate_role_pressure: schema_module, outputs: MongooseModule.forFeature registration"
+    rejected_roles:
+      - role: module
+        reason: "Module wires NestJS DI; schema defines Mongoose collection shape — schema is more specific for persistence definitions"
+      - role: model
+        reason: "Model is a persistence object; schema is the specific role for Mongoose @Schema/@Prop decorator files"
+      - role: config
+        reason: "Config is type_static; schema is a persistence_data role for ORM schema definitions"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Moved from shared/db/ to staging infrastructure layer. Collection name value LOCKED per ASSUMP-003."
+
+  - artifact_id: AC-041
+    artifact_path: "pipeline-service/scanning/infrastructure/schemas/scan-batch.schema.ts"
+    proposed_name: ScanBatchSchemaModule
+    capability_ref: CAP-002
+    draft_role_signal: schema
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-041]"
+        value: "persistence_intent, Mongoose @Schema/@Prop for scan_batch, infrastructure layer"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-041]"
+        value: "candidate_role_pressure: schema_module, outputs: MongooseModule.forFeature registration"
+    rejected_roles:
+      - role: module
+        reason: "Schema is more specific for Mongoose collection definitions than the generic module wiring role"
+      - role: model
+        reason: "Schema is the specific role for Mongoose @Schema/@Prop decorator files"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Moved from shared/db/ to vdf-scan infrastructure layer. Collection name LOCKED."
+
+  - artifact_id: AC-042
+    artifact_path: "pipeline-service/grouping/infrastructure/schemas/similarity-edge.schema.ts"
+    proposed_name: SimilarityEdgeSchemaModule
+    capability_ref: CAP-003
+    draft_role_signal: schema
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-042]"
+        value: "persistence_intent, Mongoose @Schema/@Prop for similarity_edge, infrastructure layer"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-042]"
+        value: "candidate_role_pressure: schema_module, outputs: MongooseModule.forFeature registration"
+    rejected_roles:
+      - role: module
+        reason: "Schema is more specific for Mongoose collection definitions"
+      - role: model
+        reason: "Schema is the specific Mongoose role for @Schema/@Prop decorator files"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Moved from shared/db/ to grouping infrastructure layer. Collection name LOCKED."
+
+  - artifact_id: AC-043
+    artifact_path: "pipeline-service/grouping/infrastructure/schemas/similarity-group.schema.ts"
+    proposed_name: SimilarityGroupSchemaModule
+    capability_ref: CAP-003
+    draft_role_signal: schema
+    role_family: persistence_data
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-043]"
+        value: "persistence_intent, Mongoose @Schema/@Prop for similarity_group, infrastructure layer"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-043]"
+        value: "candidate_role_pressure: schema_module, outputs: MongooseModule.forFeature registration"
+    rejected_roles:
+      - role: module
+        reason: "Schema is more specific for Mongoose collection definitions"
+      - role: model
+        reason: "Schema is the specific Mongoose role for @Schema/@Prop decorator files"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "Moved from shared/db/ to grouping infrastructure layer. Collection name LOCKED."
+
+  # ─────────────────────────────────────────────────
+  # Pipeline-service: NestJS module composition
+  # ─────────────────────────────────────────────────
+
+  - artifact_id: AC-044
+    artifact_path: "pipeline-service/staging/staging.module.ts"
+    proposed_name: PipelineStagingSubmodule
+    capability_ref: CAP-001
+    draft_role_signal: module
+    role_family: structural_framework
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-044]"
+        value: "orchestration_intent, NestJS module, DI registrations, layer_candidate: application"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-044]"
+        value: "candidate_role_pressure: nestjs_feature_module, provides staging capability providers"
+    rejected_roles:
+      - role: orchestrator
+        reason: "Orchestrator executes business logic flow; this artifact's primary responsibility is NestJS DI wiring — module is more precise"
+      - role: service
+        reason: "Module is structural framework role; no business logic in this artifact"
+      - role: provider
+        reason: "Provider constructs/resolves objects; module declares the boundary and wires providers"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "After refactor: imports VideoSchemaModule and SharedInfraModule. Registers VideoRepository under IVideoRepository, FileStagingAdapter under IFileStagingPort."
+
+  - artifact_id: AC-045
+    artifact_path: "pipeline-service/scanning/scanning.module.ts"
+    proposed_name: PipelineScanningSubmodule
+    capability_ref: CAP-002
+    draft_role_signal: module
+    role_family: structural_framework
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-045]"
+        value: "orchestration_intent, NestJS module, DI registrations for scanning capability"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-045]"
+        value: "candidate_role_pressure: nestjs_feature_module, imports ScanBatchSchemaModule"
+    rejected_roles:
+      - role: orchestrator
+        reason: "Primary responsibility is DI wiring, not execution flow coordination"
+      - role: service
+        reason: "No business logic — module wiring only"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "After refactor: imports ScanBatchSchemaModule and SharedInfraModule. Registers all scanning providers under interface tokens."
+
+  - artifact_id: AC-046
+    artifact_path: "pipeline-service/grouping/grouping.module.ts"
+    proposed_name: PipelineGroupingSubmodule
+    capability_ref: CAP-003
+    draft_role_signal: module
+    role_family: structural_framework
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-046]"
+        value: "orchestration_intent, NestJS module, DI registrations for grouping capability"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-046]"
+        value: "candidate_role_pressure: nestjs_feature_module, imports SimilarityEdgeSchemaModule, SimilarityGroupSchemaModule"
+    rejected_roles:
+      - role: orchestrator
+        reason: "Primary responsibility is DI wiring, not execution flow coordination"
+      - role: service
+        reason: "No business logic — module wiring only"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "After refactor: imports SimilarityEdgeSchemaModule, SimilarityGroupSchemaModule, SharedInfraModule. Registers all grouping providers under interface tokens."
+
+  - artifact_id: AC-047
+    artifact_path: "pipeline-service/shared-infra.module.ts"
+    proposed_name: SharedInfraModule
+    capability_ref: CAP-001
+    draft_role_signal: module
+    role_family: structural_framework
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-047]"
+        value: "integration_intent, @Global NestJS module, provides IStoragePort and IEventPublisher globally"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-047]"
+        value: "candidate_role_pressure: nestjs_global_module, OCP fix: providers via interface tokens"
+    rejected_roles:
+      - role: adapter
+        reason: "This is a DI module wiring shared infrastructure providers — not an external boundary adapter itself"
+      - role: service
+        reason: "NestJS module wiring — structural_framework role is precise"
+      - role: provider
+        reason: "Module declares the wiring boundary; provider constructs objects — module is more precise"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "OCP fix: providers registered via interface tokens only. @Global scope makes IStoragePort and IEventPublisher available to all submodules."
+
+  - artifact_id: AC-048
+    artifact_path: "pipeline-service/app.module.ts"
+    proposed_name: PipelineAppModule
+    capability_ref: CAP-001
+    draft_role_signal: module
+    role_family: structural_framework
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - ref: architecture-blueprint.yaml
+        section: "atomic_units[AU-048]"
+        value: "orchestration_intent, root AppModule, imports exactly 3 bounded submodules + SharedInfraModule"
+      - ref: artifact-candidates.yaml
+        section: "candidates[AC-048]"
+        value: "candidate_role_pressure: nestjs_root_module, SRP fix: no cross-domain provider registrations"
+    rejected_roles:
+      - role: orchestrator
+        reason: "Primary responsibility is root NestJS module composition — module is precise"
+      - role: service
+        reason: "No business logic — root module wiring only"
+      - role: config
+        reason: "Config is type_static; this is a runtime NestJS module composition artifact"
+    mixed_responsibility_flag: false
+    extraction_target: false
+    notes: "SRP fix: current module registers all 3 subdomains directly. After refactor: imports exactly SharedInfraModule, PipelineStagingSubmodule, PipelineScanningSubmodule, PipelineGroupingSubmodule."
+
+evidence_refs:
+  - ref: conventions/.ai/reports/architecture-blueprint.yaml
+    section: atomic_units
+    consumed_by: role_signal_derivation
+  - ref: conventions/.ai/reports/architecture-blueprint.yaml
+    section: port_inventory
+    consumed_by: port_role_assignments
+  - ref: conventions/.ai/reports/architecture-blueprint.yaml
+    section: boundary_refs
+    consumed_by: port_role_assignments
+  - ref: conventions/.ai/reports/artifact-candidates.yaml
+    section: candidates
+    consumed_by: role_signal_derivation
+  - ref: conventions/roles/conventions.role-taxonomy.yaml
+    section: role_definitions
+    consumed_by: role_family_and_signal_selection
+  - ref: conventions/roles/conventions.role-resolution.yaml
+    section: specific_before_generic_rules
+    consumed_by: rejected_roles_reasoning
+  - ref: conventions/roles/conventions.role-resolution.yaml
+    section: resolution_decision_rules
+    consumed_by: decision_rule_id_assignment
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.draft_role_pass.output
+  status: pending
+  note: Gate result is produced by the gate subsystem via run_gate_check route — not authored here.

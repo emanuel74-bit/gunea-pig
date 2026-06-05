@@ -1,0 +1,8 @@
+artifact: gate_result
+generated_by: run-gate-check
+gate_id: gate.artifact_reuse_analysis.output
+status: pass
+validation_status: not_provided
+decision: allow_transition
+evidence_refs: []
+errors: []

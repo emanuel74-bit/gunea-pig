@@ -1,0 +1,282 @@
+report_id: "checkpoint-groups"
+phase_id: implementation_sequence
+status: complete
+risk_level: high
+summary: >
+  10 checkpoint groups covering all 17 implementation steps. Risk level HIGH mandates
+  checkpoint validation after every group before the next group begins.
+  3 blocking checkpoints: GROUP-0 (characterization tests — BLOCK-RS-001), GROUP-1
+  (port interface contracts compile cleanly), GROUP-4 (SharedInfraModule provides
+  global port tokens — SEQ-002). All non-blocking checkpoints are 'required'
+  (must pass before advancing) because risk level is HIGH.
+  Checkpoint validation cadence: TypeScript compilation check after every group;
+  characterization test suite check after GROUP-5 and GROUP-10.
+
+validation_cadence:
+  trigger: after_every_group
+  primary_check: "npx tsc --noEmit in packages/pipeline-service"
+  secondary_check: "npx jest --testPathPattern=characterization/ (after GROUP-5 and GROUP-10 only)"
+  rationale: >
+    Risk level HIGH per risk-classification.yaml. RISK-HIGH-TESTS and
+    ACTION-SPLIT-EXTRACT-TESTS both trigger mandatory checkpoint after each group.
+    TypeScript compilation is fast and catches interface mismatch errors early.
+    Characterization test suite is run at GROUP-5 (after all splits/extracts) and
+    GROUP-10 (final regression check) to avoid long test runs on every single step.
+
+checkpoint_groups:
+
+  - group_id: CHK-000
+    title: "Characterization tests (BLOCKING — BLOCK-RS-001)"
+    steps: [STEP-000]
+    checkpoint_type: blocking
+    validation_commands:
+      - "npx jest --testPathPattern=characterization/"
+    passes_when: >
+      All 37 characterization test cases pass against the pre-refactor codebase.
+      Exit code 0. 29 spec files exist at packages/pipeline-service/test/characterization/.
+      Test cases TC-CHAR-001..TC-CHAR-037 all green.
+    blocks_if_fails: >
+      All subsequent groups (CHK-001 through CHK-009) are blocked.
+      No production code file may be created, moved, or modified until this checkpoint passes.
+    behavioral_coverage_required:
+      - "PB-001: RabbitMQ topic names and exchange/routing keys (TC-CHAR-001..TC-CHAR-006)"
+      - "PB-002: Mongoose collection names and @Prop fields (TC-CHAR-007..TC-CHAR-011)"
+      - "PB-003: S3 key patterns and pass-through behavior (TC-CHAR-012..TC-CHAR-014)"
+      - "PB-004: Inter-service event ordering and pipeline sequence (TC-CHAR-015..TC-CHAR-018)"
+      - "PB-005: Error boundary types and ack/nack behavior (TC-CHAR-019..TC-CHAR-028)"
+      - "Additional: SharedInfraModule wiring, ScanSchedulerTrigger split, ProcessScanHandler cases (TC-CHAR-029..TC-CHAR-037)"
+    source_constraint: BLOCK-RS-001
+
+  - group_id: CHK-001
+    title: "Port interface contracts"
+    steps: [STEP-001]
+    checkpoint_type: blocking
+    validation_commands:
+      - "npx tsc --noEmit in packages/pipeline-service"
+      - "Verify 12 .port.ts files exist at their target paths"
+    passes_when: >
+      npx tsc --noEmit exits with code 0.
+      All 12 port interface files exist:
+        staging/interfaces/i-video-repository.port.ts (PAC-005)
+        staging/interfaces/i-file-staging.port.ts (PAC-007)
+        scanning/interfaces/i-batch-claimer.port.ts (PAC-013)
+        scanning/interfaces/i-vdf-runner.port.ts (PAC-015)
+        scanning/interfaces/i-video-scan-repository.port.ts (PAC-018)
+        grouping/interfaces/i-scan-result-loader.port.ts (PAC-026)
+        grouping/interfaces/i-similarity-edge-repository.port.ts (PAC-028)
+        grouping/interfaces/i-similarity-group-repository.port.ts (PAC-030)
+        grouping/interfaces/i-video-similarity-repository.port.ts (PAC-032)
+        shared-infra/interfaces/i-scan-batch-repository.port.ts (PAC-034)
+        shared-infra/interfaces/i-storage.port.ts (PAC-036)
+        shared-infra/interfaces/i-event-publisher.port.ts (PAC-038)
+    blocks_if_fails: >
+      All infrastructure modification groups (CHK-002, CHK-003) and all subsequent groups
+      are blocked. No file can implement or inject a port token that doesn't exist.
+    source_constraint: SEQ-001
+
+  - group_id: CHK-002
+    title: "Infrastructure implementations: repositories, adapters, schemas"
+    steps: [STEP-002, STEP-003, STEP-004]
+    checkpoint_type: required
+    validation_commands:
+      - "npx tsc --noEmit in packages/pipeline-service"
+      - "npx tsc --noEmit in packages/shared"
+    passes_when: >
+      TypeScript compilation passes in both packages.
+      6 repository files exist at target paths (mongo-*.repository.ts).
+      6 adapter/client/publisher files exist at target paths.
+      4 schema files exist at capability schemas/ paths.
+      Collection name decorators byte-for-byte preserved.
+    expected_temporary_failures:
+      - "DI resolution errors at runtime (module wiring not yet updated — resolved in CHK-005)"
+      - "shared/src/index.ts may have broken re-export paths (resolved in CHK-007)"
+    notes: >
+      TypeScript compile errors in consuming code (StagingModule, ScanningModule, GroupingModule)
+      are expected at this checkpoint and are tolerated — they will be resolved in CHK-005.
+      The checkpoint passes as long as the infrastructure files themselves compile correctly.
+
+  - group_id: CHK-003
+    title: "SharedInfraModule: global port tokens registered and exported"
+    steps: [STEP-005]
+    checkpoint_type: blocking
+    validation_commands:
+      - "npx tsc --noEmit in packages/pipeline-service"
+      - "Verify SharedInfraModule at shared-infra/shared-infra.module.ts registers IStoragePort, IEventPublisher, IScanBatchRepository tokens"
+    passes_when: >
+      npx tsc --noEmit exits with code 0 for SharedInfraModule file itself.
+      SharedInfraModule declares @Global and providers include:
+        { provide: IStoragePort (or its injection token), useClass: S3StorageAdapter }
+        { provide: IEventPublisher (or its injection token), useClass: RabbitMQPublisher }
+        { provide: IScanBatchRepository (or its injection token), useClass: MongoScanBatchRepository }
+      SharedInfraModule exports all three tokens.
+    blocks_if_fails: >
+      Groups CHK-004 through CHK-009 are blocked.
+      Pipeline submodules cannot be wired without SharedInfraModule providing global tokens.
+    source_constraint: SEQ-002
+    notes: >
+      TC-CHAR-029 in characterization-test-plan.yaml is the integration regression guard
+      for this checkpoint. The test verifies that all 3 tokens resolve to the correct
+      adapter/repository instances and are visible globally.
+
+  - group_id: CHK-004
+    title: "Split and extract operations: ScanOrchestrator + ScanSchedulerTrigger + ProcessScanHandler"
+    steps: [STEP-006, STEP-007]
+    checkpoint_type: required
+    validation_commands:
+      - "npx tsc --noEmit in packages/pipeline-service"
+      - "npx jest --testPathPattern=characterization/ (PB-001, PB-003, PB-004 guards)"
+    passes_when: >
+      npx tsc --noEmit exits with code 0 for all files in scanning/services/ and grouping/services/.
+      scan-scheduler.scheduler.ts exists at scanning/services/.
+      scan.orchestrator.ts exists at scanning/services/ (NOT at scanning/application/).
+      scan.orchestrator.ts does NOT contain @Interval decorator.
+      process-scan.handler.ts exists at grouping/services/.
+      S3 key template 'scans/${scanId}/result.json' still present in scan.orchestrator.ts.
+      exchange='scan.events' and routingKey='scan.persisted' preserved in process-scan.handler.ts.
+      Characterization tests TC-CHAR-012, TC-CHAR-016, TC-CHAR-017, TC-CHAR-030 pass.
+    expected_temporary_failures:
+      - "ScanningModule and GroupingModule compile errors (provider registrations not yet updated — resolved in CHK-005)"
+    notes: >
+      This is the highest-risk checkpoint. ScanOrchestrator split (7-artifact scope -> 2 artifacts)
+      and ProcessScanHandler split (6 concrete injections -> 6 port interfaces) are the most
+      invasive changes. Characterization tests for pipeline ordering (PB-004) are the primary
+      regression guards.
+
+  - group_id: CHK-005
+    title: "Consumer, handler, validator, and service updates"
+    steps: [STEP-008, STEP-009, STEP-010]
+    checkpoint_type: required
+    validation_commands:
+      - "npx tsc --noEmit in packages/pipeline-service"
+    passes_when: >
+      npx tsc --noEmit exits with code 0 for:
+        staging/consumers/video-ready.consumer.ts
+        staging/domain/staging-message.validator.ts
+        grouping/consumers/scan-completed.consumer.ts
+        staging/services/stage-video.handler.ts
+        grouping/domain/scan-result.validator.ts
+      @EventPattern values still locked:
+        VideoReadyConsumer: 'video.ready-for-scan'
+        ScanCompletedConsumer: 'scan.completed'
+    expected_temporary_failures:
+      - "StagingModule and GroupingModule compile errors from broken provider registrations (resolved in CHK-006)"
+    notes: >
+      PB-005 error boundary integrity check: ack/nack behavior and error class names must
+      be preserved. TC-CHAR-026 and TC-CHAR-027 are the regression guards.
+      StageVideoHandler S3ObjectNotFoundError wrapping must be preserved (TC-CHAR-028).
+
+  - group_id: CHK-006
+    title: "Pipeline submodule wiring and PipelineAppModule update"
+    steps: [STEP-011, STEP-012]
+    checkpoint_type: required
+    validation_commands:
+      - "npx tsc --noEmit in packages/pipeline-service (full clean compilation expected)"
+      - "npx jest --testPathPattern=characterization/"
+    passes_when: >
+      npx tsc --noEmit exits with code 0 across all of packages/pipeline-service —
+      this is the first step where a full clean compilation is expected with zero errors.
+      All 3 submodules (StagingModule, ScanningModule, GroupingModule) register port tokens.
+      PipelineAppModule imports SharedInfraModule from new path.
+      All 37 characterization tests pass.
+    notes: >
+      All temporary compile errors accumulated across CHK-002 through CHK-005 should be
+      resolved at this checkpoint. A full clean tsc pass is the signal that the DIP wiring
+      is complete and consistent.
+      TC-CHAR-029 (SharedInfraModule global token resolution) must pass.
+      TC-CHAR-030 (ScanSchedulerTrigger registration in ScanningModule) must pass.
+
+  - group_id: CHK-007
+    title: "Shared barrel update"
+    steps: [STEP-013]
+    checkpoint_type: required
+    validation_commands:
+      - "npx tsc --noEmit across ALL packages (not just pipeline-service)"
+    passes_when: >
+      npx tsc --noEmit exits with code 0 for packages/shared and all other packages
+      that import from @gunea-pig/shared.
+      No broken import paths remain in packages/shared/src/index.ts.
+    notes: >
+      This checkpoint validates that the cross-package moves (4 schema files, 2 adapter files)
+      did not break any downstream package that was previously importing from @gunea-pig/shared.
+
+  - group_id: CHK-008
+    title: "TypeScript compilation: full clean pass"
+    steps: [STEP-014]
+    checkpoint_type: required
+    validation_commands:
+      - "npx tsc --noEmit (repo root or per-package)"
+    passes_when: "Zero type errors across all packages. Exit code 0."
+    notes: >
+      This is a dedicated compilation-only checkpoint to confirm CHK-007 result
+      and establish the clean baseline before running tests.
+
+  - group_id: CHK-009
+    title: "Full test suite: characterization + unit + integration + contract (BLOCKING)"
+    steps: [STEP-015, STEP-016]
+    checkpoint_type: blocking
+    validation_commands:
+      - "npx jest --testPathPattern=characterization/ (all 37 must pass)"
+      - "npx jest (full suite — unit, integration, contract)"
+    passes_when: >
+      jest --testPathPattern=characterization/ exit code 0 (all 37 TC-CHAR-* pass).
+      npx jest exit code 0 (all OBL-002..OBL-006 obligations satisfied).
+      No regressions detected in PB-001..PB-005.
+    blocks_if_fails: >
+      Implementation phase cannot be declared complete. Failing tests must be diagnosed
+      against the regression obligation IDs (REG-001..REG-005) and obligation IDs
+      (OBL-002..OBL-006) from test-plan.yaml.
+    behavioral_regression_guards:
+      - "REG-001 (PB-001): RabbitMQ topic names, exchange, routing keys"
+      - "REG-002 (PB-002): Mongoose collection names byte-for-byte preserved"
+      - "REG-003 (PB-003): S3 key template 'scans/${scanId}/result.json' preserved"
+      - "REG-004 (PB-004): Pipeline event ordering preserved"
+      - "REG-005 (PB-005): Error class names and ack/nack boundaries preserved"
+
+temporary_failure_declaration:
+  description: >
+    The following compile/test failures are expected and tolerated during intermediate
+    steps. They must all be resolved by the indicated checkpoint.
+  declared_failures:
+    - failure_id: TF-001
+      description: "StagingModule, ScanningModule, GroupingModule compile errors due to broken provider registrations after infrastructure moves"
+      expected_during: [CHK-002, CHK-003, CHK-004, CHK-005]
+      resolved_by: CHK-006 (STEP-011 + STEP-012)
+    - failure_id: TF-002
+      description: "shared/src/index.ts barrel re-export errors after cross-package moves of schema and adapter files"
+      expected_during: [CHK-002, CHK-003, CHK-004, CHK-005]
+      resolved_by: CHK-007 (STEP-013)
+    - failure_id: TF-003
+      description: "app.module.ts import path error for SharedInfraModule after move to shared-infra/ folder"
+      expected_during: [CHK-003, CHK-004, CHK-005]
+      resolved_by: CHK-006 (STEP-012)
+    - failure_id: TF-004
+      description: "Import path errors in consuming code still referencing old transport/, application/, infrastructure/ paths"
+      expected_during: [CHK-002, CHK-003, CHK-004, CHK-005]
+      resolved_by: CHK-006 (STEP-011)
+
+evidence_refs:
+  - ref: conventions/.ai/reports/10-implementation-sequence.yaml
+    section: ordered_steps
+    consumed_by: checkpoint group step membership
+  - ref: conventions/.ai/reports/09-test-plan.yaml
+    section: risk_signal
+    consumed_by: checkpoint_type determination (high risk -> required after every group)
+  - ref: conventions/.ai/reports/09-test-plan.yaml
+    section: blocking_gaps
+    consumed_by: CHK-000 blocking status (GAP-001 resolution requires characterization tests)
+  - ref: conventions/.ai/reports/characterization-test-plan.yaml
+    section: implementation_instructions
+    consumed_by: CHK-000 and CHK-004 validation commands
+  - ref: conventions/.ai/reports/regression-test-plan.yaml
+    section: regression_obligations
+    consumed_by: CHK-009 behavioral regression guards
+  - ref: conventions/.ai/reports/07-change-impact.yaml
+    section: sequence_implications
+    consumed_by: SEQ-001 (CHK-001), SEQ-002 (CHK-003), SEQ-006 (CHK-000)
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.implementation_sequence.output
+  status: pending
+  note: Gate result produced by gate subsystem.

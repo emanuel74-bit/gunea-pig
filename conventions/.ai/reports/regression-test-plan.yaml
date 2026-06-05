@@ -1,0 +1,307 @@
+report_id: "regression-test-plan"
+phase_id: test_derivation
+status: complete
+summary: >
+  Regression test plan for the PortsAndAdapters SOLID refactor of pipeline-service.
+  No existing failing tests to prevent regression from — zero tests confirmed (ASSUMP-003 = FALSE).
+  All regression obligations are new tests to be authored during the implementation phase
+  (phase 26) before any production code is changed. Plan covers post-refactor behavioral
+  regressions across all 5 preserved behaviors (PB-001..PB-005). 5 regression obligations
+  derived from behavior-contract.yaml preserved_behaviors and consumer-impact.yaml
+  external_consumer_impact determination.
+
+existing_test_baseline:
+  test_file_count: 0
+  test_count: 0
+  coverage_state: none
+  baseline_source: conventions/.ai/reports/assumptions.yaml
+  assumption_id: ASSUMP-003
+  validated_value: false
+  note: >
+    Zero tests confirmed. There is no pre-refactor pass/fail baseline for AC-005.
+    The regression plan itself establishes the behavioral baseline that must pass
+    both before any production code changes (as characterization) and after all
+    changes (as regression). The same test cases serve both purposes.
+
+regression_obligations:
+  - regression_id: REG-001
+    preserved_behavior: PB-001
+    description: >
+      RabbitMQ topic names (EventPattern values) and message payload field definitions
+      must not change after DIP introduction and consumer refactor.
+    test_type: contract
+    priority: critical
+    scope:
+      - VideoReadyConsumer @EventPattern value
+      - ScanCompletedConsumer @EventPattern value
+      - RabbitMQPublisher exchange + routing key for ScanCompletedEvent
+      - RabbitMQPublisher exchange + routing key for ScanPersistedEvent
+      - NewVideoReadyEvent payload fields
+      - ScanCompletedEvent payload fields
+      - ScanPersistedEvent payload fields
+    pre_refactor_ground_truth:
+      video_ready_consumer_topic: "video.ready-for-scan"
+      scan_completed_consumer_topic: "scan.completed"
+      scan_completed_publisher_exchange: "scan.events"
+      scan_completed_publisher_routing_key: "scan.completed"
+      scan_persisted_publisher_exchange: "scan.events"
+      scan_persisted_publisher_routing_key: "scan.persisted"
+      new_video_ready_event_fields:
+        - eventId (string, required)
+        - schemaVersion ('1.0', required)
+        - videoId (string, required)
+        - s3ObjectKey (string, required)
+        - s3Bucket (string, required)
+        - timestamp (ISO 8601 string, required)
+        - correlationId (string, required)
+      scan_completed_event_fields:
+        - eventId (string, required)
+        - schemaVersion ('1.0', required)
+        - scanId (string, required)
+        - resultS3Key (string, required)
+        - resultS3Bucket (string, required)
+        - videoIds (string[], required, non-empty)
+        - scannerVersion (string, required)
+        - scannerProfile (string, required)
+        - timestamp (string, required)
+        - correlationId (string, required)
+      scan_persisted_event_fields:
+        - eventId (string, required)
+        - schemaVersion ('1.0', required)
+        - scanId (string, required)
+        - timestamp (string, required)
+        - correlationId (string, required)
+    evidence_source:
+      - file: packages/pipeline-service/src/staging/transport/video-ready.consumer.ts
+        line: 19
+        value: "@EventPattern('video.ready-for-scan')"
+      - file: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        line: 16
+        value: "@EventPattern('scan.completed')"
+      - file: packages/shared/src/types/queue.types.ts
+        lines: [7, 18, 38, 47, 55]
+        value: "QUEUE_EXCHANGES, ROUTING_KEYS, NewVideoReadyEvent, ScanCompletedEvent, ScanPersistedEvent"
+    test_case_stubs:
+      - "Assert VideoReadyConsumer @EventPattern decorator string equals 'video.ready-for-scan' after refactor"
+      - "Assert ScanCompletedConsumer @EventPattern decorator string equals 'scan.completed' after refactor"
+      - "Assert RabbitMQPublisher.publish() called with exchange='scan.events', routingKey='scan.completed' when ScanOrchestrator completes"
+      - "Assert RabbitMQPublisher.publish() called with exchange='scan.events', routingKey='scan.persisted' when ProcessScanHandler completes"
+      - "Assert NewVideoReadyEvent interface fields (eventId, schemaVersion, videoId, s3ObjectKey, s3Bucket, timestamp, correlationId) are all present and typed correctly"
+      - "Assert ScanCompletedEvent interface fields unchanged (11 required fields listed above)"
+
+  - regression_id: REG-002
+    preserved_behavior: PB-002
+    description: >
+      Mongoose collection names must not change after schema file move from
+      packages/shared/src/db/ to capability-scoped paths within pipeline-service.
+      All four @Schema({ collection: '...' }) decorator string values must be
+      byte-for-byte identical after the move.
+    test_type: integration
+    priority: critical
+    scope:
+      - VideoDocument collection name
+      - ScanBatchDocument collection name
+      - SimilarityEdgeDocument collection name
+      - SimilarityGroupDocument collection name
+    pre_refactor_ground_truth:
+      video_collection: "videos"
+      scan_batch_collection: "scan_batches"
+      similarity_edge_collection: "similarity_edges"
+      similarity_group_collection: "similarity_groups"
+    evidence_source:
+      - file: packages/shared/src/db/video.schema.ts
+        line: 11
+        value: "@Schema({ collection: 'videos', timestamps: true })"
+      - file: packages/shared/src/db/scan-batch.schema.ts
+        line: 12
+        value: "@Schema({ collection: 'scan_batches', timestamps: true })"
+      - file: packages/shared/src/db/similarity-edge.schema.ts
+        line: 10
+        value: "@Schema({ collection: 'similarity_edges', timestamps: true })"
+      - file: packages/shared/src/db/similarity-group.schema.ts
+        line: 12
+        value: "@Schema({ collection: 'similarity_groups', timestamps: true })"
+    test_case_stubs:
+      - "Assert VideoSchema (post-move) @Schema decorator collection option equals 'videos'"
+      - "Assert ScanBatchSchema (post-move) @Schema decorator collection option equals 'scan_batches'"
+      - "Assert SimilarityEdgeSchema (post-move) @Schema decorator collection option equals 'similarity_edges'"
+      - "Assert SimilarityGroupSchema (post-move) @Schema decorator collection option equals 'similarity_groups'"
+      - "Integration: MongooseModule.forFeature registration using moved schema resolves to correct MongoDB collection name"
+
+  - regression_id: REG-003
+    preserved_behavior: PB-003
+    description: >
+      S3 key pattern for scan results must not change after DIP introduction in ScanOrchestrator
+      and after FileStagingAdapter IStoragePort abstraction. The key construction template
+      'scans/${scanId}/result.json' is the only S3 key format constructed within pipeline-service;
+      all other S3 keys are caller-supplied from event payloads and must be passed through unchanged.
+    test_type: contract
+    priority: critical
+    scope:
+      - ScanOrchestrator resultS3Key construction
+      - FileStagingAdapter S3 key pass-through (no key construction — passes s3ObjectKey from event)
+      - ScanResultClient S3 key pass-through (uses resultS3Key from ScanCompletedEvent)
+    pre_refactor_ground_truth:
+      scan_result_key_template: "scans/${scanId}/result.json"
+      scan_result_bucket: "config.s3.bucketScanResults (runtime config value)"
+      file_staging_key: "passed through from NewVideoReadyEvent.s3ObjectKey — no construction"
+      scan_result_load_key: "passed through from ScanCompletedEvent.resultS3Key — no construction"
+    evidence_source:
+      - file: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        line: 109
+        value: "const resultS3Key = `scans/${scanId}/result.json`"
+      - file: packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts
+        lines: [31, 37]
+        value: "stageFromS3(videoId, bucket, key) — key passed through; no key construction"
+      - file: packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts
+        line: 13
+        value: "getJson({ bucket: resultS3Bucket, key: resultS3Key }) — key passed through from event"
+    test_case_stubs:
+      - "Assert ScanOrchestrator constructs resultS3Key as `scans/${scanId}/result.json` (template literal unchanged after DIP refactor)"
+      - "Assert S3StorageAdapter.putJson() called with key matching pattern /^scans\\/[^/]+\\/result\\.json$/ during scan pipeline"
+      - "Assert FileStagingAdapter passes s3ObjectKey through to IStoragePort.downloadToFile() without modification"
+      - "Assert ScanResultClient passes resultS3Key through to IStoragePort.getJson() without modification"
+
+  - regression_id: REG-004
+    preserved_behavior: PB-004
+    description: >
+      Scan pipeline event ordering must not change after split (ScanOrchestrator + ScanSchedulerTrigger)
+      and DIP introduction. The canonical ordering is: VideoReady consumed -> video staged ->
+      ScanBatch claimed -> VDF run -> scan result uploaded to S3 -> ScanCompleted published ->
+      ScanCompleted consumed -> grouping applied -> ScanPersisted published.
+      No event may be dropped, duplicated, or reordered.
+    test_type: integration
+    priority: critical
+    scope:
+      - VideoReadyConsumer -> StageVideoHandler -> VideoRepository (staging leg)
+      - ScanOrchestrator.runScanCycle() -> BatchClaimerService -> VdfRunnerAdapter -> S3 upload -> RabbitMQPublisher (scan leg)
+      - ScanCompletedConsumer -> ProcessScanHandler -> similarity persistence -> RabbitMQPublisher (grouping leg)
+    pre_refactor_ground_truth:
+      pipeline_stages:
+        - stage: 1
+          event: "NewVideoReadyEvent on topic 'video.ready-for-scan'"
+          consumer: VideoReadyConsumer
+          handler: StageVideoHandler.handle()
+          side_effect: "VideoDocument upserted with scanState=PENDING_STAGING, then stagedPath set (collection: videos)"
+        - stage: 2
+          event: "Periodic @Interval(30_000) trigger"
+          consumer: ScanOrchestrator.runScanCycle()
+          side_effect: "ScanBatchDocument created with status=SCANNING (collection: scan_batches)"
+        - stage: 3
+          event: "VDF process completes"
+          consumer: ScanOrchestrator (inline)
+          side_effect: "Scan result JSON uploaded to S3 key `scans/${scanId}/result.json`"
+        - stage: 4
+          event: "S3 upload complete"
+          consumer: ScanOrchestrator (inline)
+          side_effect: "ScanCompletedEvent published to exchange 'scan.events', routing key 'scan.completed'"
+        - stage: 5
+          event: "ScanCompletedEvent on topic 'scan.completed'"
+          consumer: ScanCompletedConsumer
+          handler: ProcessScanHandler.handle()
+          side_effect: "SimilarityEdge rows persisted, SimilarityGroup upserted, ScanPersistedEvent published"
+    test_case_stubs:
+      - "Integration: submit NewVideoReadyEvent -> assert VideoDocument created in 'videos' collection with correct scanState"
+      - "Integration: ScanOrchestrator cycle with mocked VDF -> assert ScanBatchDocument created in 'scan_batches' with status=SCANNING"
+      - "Integration: ScanOrchestrator cycle completes -> assert S3StorageAdapter.putJson() called with key matching 'scans/${scanId}/result.json'"
+      - "Integration: ScanOrchestrator cycle completes -> assert RabbitMQPublisher.publish() called with ScanCompletedEvent payload on correct exchange/routing key"
+      - "Integration: submit ScanCompletedEvent -> assert ProcessScanHandler.handle() called -> assert ScanPersistedEvent published"
+      - "E2E (optional): full pipeline from VideoReady to ScanPersisted with all steps mocked"
+
+  - regression_id: REG-005
+    preserved_behavior: PB-005
+    description: >
+      Error boundary types thrown at consumer-facing boundaries must not change after
+      error class extraction (inline classes moved to separate files). Class names, constructor
+      signatures, instanceof hierarchy, and ack/nack behavior must be identical after extraction.
+    test_type: unit
+    priority: important
+    scope:
+      - VideoReadyConsumer ack/nack on VideoAlreadyStagedError
+      - VideoReadyConsumer ack/nack on StagingPermanentFailureError
+      - VideoReadyConsumer nack on StagingMessageValidationError
+      - ScanCompletedConsumer ack/nack on ScanAlreadyGroupedError
+      - ScanCompletedConsumer nack on ScanResultValidationError
+      - StageVideoHandler throws S3ObjectNotFoundError -> wraps in StagingPermanentFailureError
+      - VdfRunnerAdapter throws VdfTimeoutError, VdfProcessError, VdfOutputMissingError
+    pre_refactor_ground_truth:
+      error_classes:
+        - class: StagingMessageValidationError
+          defined_in: packages/pipeline-service/src/staging/transport/staging-message.validator.ts
+          line: 3
+          boundary: VideoReadyConsumer
+          effect: "nack(msg, false, false)"
+        - class: VideoAlreadyStagedError
+          defined_in: packages/pipeline-service/src/staging/application/stage-video.handler.ts
+          line: 6
+          boundary: VideoReadyConsumer
+          effect: "ack(msg) — idempotent"
+        - class: StagingPermanentFailureError
+          defined_in: packages/pipeline-service/src/staging/application/stage-video.handler.ts
+          line: 13
+          boundary: VideoReadyConsumer
+          effect: "nack(msg, false, false) — dead-letter"
+        - class: S3ObjectNotFoundError
+          defined_in: packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts
+          line: 10
+          boundary: StageVideoHandler (internal) -> StagingPermanentFailureError (boundary)
+          effect: "wrapped and re-thrown as StagingPermanentFailureError"
+        - class: ScanAlreadyGroupedError
+          defined_in: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+          line: 23
+          boundary: ScanCompletedConsumer
+          effect: "ack(msg) — idempotent"
+        - class: ScanResultValidationError
+          defined_in: packages/pipeline-service/src/grouping/infrastructure/scan-result.validator.ts
+          line: 3
+          boundary: ScanCompletedConsumer
+          effect: "nack(msg, false, false)"
+        - class: VdfTimeoutError
+          defined_in: packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts
+          line: 20
+          boundary: ScanOrchestrator (internal catch — marks batch FAILED, does not propagate to consumer)
+        - class: VdfProcessError
+          defined_in: packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts
+          line: 27
+          boundary: ScanOrchestrator (internal catch)
+        - class: VdfOutputMissingError
+          defined_in: packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts
+          line: 34
+          boundary: ScanOrchestrator (internal catch)
+    test_case_stubs:
+      - "Unit: VideoReadyConsumer — mock StageVideoHandler throws VideoAlreadyStagedError -> assert channel.ack() called"
+      - "Unit: VideoReadyConsumer — mock StageVideoHandler throws StagingPermanentFailureError -> assert channel.nack(msg, false, false)"
+      - "Unit: VideoReadyConsumer — invalid payload fails validateStagingMessage -> assert StagingMessageValidationError thrown -> assert channel.nack(msg, false, false)"
+      - "Unit: ScanCompletedConsumer — mock ProcessScanHandler throws ScanAlreadyGroupedError -> assert channel.ack() called"
+      - "Unit: ScanCompletedConsumer — mock ProcessScanHandler throws ScanResultValidationError -> assert channel.nack(msg, false, false)"
+      - "Unit: StageVideoHandler — mock FileStagingPort throws S3ObjectNotFoundError -> assert StagingPermanentFailureError thrown (wrapping S3ObjectNotFoundError as cause)"
+      - "Unit: assert all error class names (this.name) are unchanged after extraction to separate files"
+      - "Unit: assert error class instanceof relationships work correctly after file extraction"
+
+evidence_refs:
+  - ref: conventions/.ai/reports/02-behavior-contract.yaml
+    section: preserved_behaviors[PB-001..PB-005]
+    consumed_by: regression_obligation_derivation
+  - ref: conventions/.ai/reports/consumer-impact.yaml
+    section: external_consumer_impact
+    consumed_by: external_regression_surface_determination
+  - ref: conventions/.ai/reports/07-change-impact.yaml
+    section: test_impact
+    consumed_by: regression_priority_assignment
+  - ref: packages/pipeline-service/src/staging/transport/video-ready.consumer.ts
+    section: lines 19, 30-58
+    consumed_by: REG-001 and REG-005 ground truth
+  - ref: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+    section: lines 16, 40-55
+    consumed_by: REG-001 and REG-005 ground truth
+  - ref: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+    section: line 109
+    consumed_by: REG-003 ground truth
+  - ref: packages/shared/src/db
+    section: all four schema files
+    consumed_by: REG-002 ground truth
+
+gate_result:
+  gate_id: gate.test_derivation.output
+  status: pending
+  note: Gate result produced by gate subsystem.

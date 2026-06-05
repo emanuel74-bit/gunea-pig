@@ -1,0 +1,361 @@
+report_id: "02-behavior-contract"
+phase_id: behavior_contract
+status: complete
+summary: >
+  Behavior contract for the large_refactor mission. The user's request is a full-codebase
+  SOLID refactor of a TypeScript/NestJS monorepo comprising four microservices plus a shared
+  package, targeting production-grade quality. All external contracts (RabbitMQ message schemas,
+  DB schemas, S3 operations, inter-service data flows) are preserved. Internal structure,
+  class boundaries, injection patterns, and file organization are in full scope for change.
+  The pipeline-service duplication is explicitly identified as a consolidation target.
+  No blocking ambiguities were found. Safe defaults are recorded for open items.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/01-active-context-manifest.yaml
+    artifact: active_context_manifest
+    fields_used:
+      - active_phase_plan
+      - allowed_agents
+      - required_reports
+  - source: conventions/.ai/bundles/phases/mission/behavior_contract.bundle.yaml
+    artifact: phase_context_bundle
+    fields_used:
+      - phase_contract
+      - allowed_write_scope
+      - must_do
+      - must_not_do
+
+decisions:
+  - id: DECISION-BC-001
+    decision: >
+      Classify the request as a refactor mission — restructure existing code to apply
+      SOLID principles and improve production quality without adding new external behavior.
+    rationale: >
+      The user's phrase "refactor this entire codebase … from the ground up" and the
+      instruction to make it "SOLID high production grade" map directly to the refactor
+      request type. No new features, no new external endpoints, no new queue topics are
+      requested. The intent is structural improvement only.
+    evidence:
+      - source: user_request
+        field: verbatim_text
+        value: "refactor this entire codebase and make it SOLID high production grade, refactor it from the ground up, dont be shy"
+
+  - id: DECISION-BC-002
+    decision: >
+      Define the scope as all packages: shared, staging-service, grouping-service,
+      vdf-scan-service, and pipeline-service.
+    rationale: >
+      The user said "entire codebase." The codebase summary lists five packages. Excluding
+      any would contradict the stated intent. All packages must be brought to SOLID compliance.
+    evidence:
+      - source: activation_prompt
+        field: codebase_summary
+        value: "packages/shared, packages/staging-service, packages/grouping-service, packages/vdf-scan-service, packages/pipeline-service"
+
+  - id: DECISION-BC-003
+    decision: >
+      Treat RabbitMQ topic names and message payload schemas as the primary immutable
+      external contract. No queue message format change is permitted.
+    rationale: >
+      In an event-driven NestJS microservice architecture, RabbitMQ consumers are the
+      primary integration boundary between services. Changing payload schemas or topic names
+      would constitute a breaking change observable by external consumers. The refactor must
+      not alter these.
+    evidence:
+      - source: activation_prompt
+        field: codebase_summary
+        value: "queue (RabbitMQ) … consumers — RabbitMQ transport layer"
+
+  - id: DECISION-BC-004
+    decision: >
+      Treat Drizzle ORM schema definitions as an immutable data contract for the duration
+      of the refactor. Schema mutations (column renames, type changes, new required fields)
+      are out of scope unless structurally forced by consolidation of pipeline-service.
+    rationale: >
+      DB schemas define the persistence contract. Changing them requires migrations and
+      could break runtime data integrity. The SOLID refactor should reorganize code around
+      schemas, not alter the schemas themselves.
+    evidence:
+      - source: activation_prompt
+        field: codebase_summary
+        value: "shared DB schemas (Drizzle ORM)"
+
+  - id: DECISION-BC-005
+    decision: >
+      Resolve pipeline-service duplication by designating it as the single consolidation
+      target. The individual grouping-service, staging-service, and vdf-scan-service
+      submodules within pipeline-service should become the canonical implementations.
+      Whether the standalone services are deprecated is deferred to the architecture phase.
+    rationale: >
+      The codebase summary states pipeline-service "mirrors individual services, suggests
+      in-progress consolidation or duplication." Leaving two sets of implementations violates
+      SRP at the service level and creates drift risk. The safe default is to treat
+      pipeline-service as the consolidation target and flag the standalone services for
+      deprecation review in the architecture phase.
+    evidence:
+      - source: activation_prompt
+        field: codebase_summary
+        value: "pipeline-service … mirrors individual services, suggests in-progress consolidation or duplication"
+
+  - id: DECISION-BC-006
+    decision: >
+      Apply all five SOLID principles as acceptance criteria. Each principle maps to
+      observable structural constraints that can be verified without running the code.
+    rationale: >
+      SOLID compliance is the explicit user goal. Defining each principle as a verifiable
+      constraint allows subsequent phases (test_derivation, post_implementation_validation)
+      to produce concrete checks rather than qualitative assessments.
+    evidence:
+      - source: user_request
+        field: verbatim_text
+        value: "make it SOLID high production grade"
+
+  - id: DECISION-BC-007
+    decision: >
+      Record no blocking ambiguities. The refactor intent is sufficiently scoped by the
+      SOLID principles and the observable codebase structure. Safe defaults are recorded
+      for open questions.
+    rationale: >
+      The request type is well-understood (refactor), the target codebase is described,
+      the external contracts are identifiable (queue, DB, S3), and the acceptance
+      criteria are derivable from SOLID. No clarification is required to begin downstream
+      phases.
+    evidence:
+      - source: phase_bundle
+        field: phase_contract.must_do
+        value: "record_decisions_with_evidence_or_no_evidence_marker"
+
+requested_behavior: >
+  Refactor the entire TypeScript/NestJS monorepo (all five packages) to achieve
+  SOLID compliance and production-grade quality, applying the following principles:
+
+  Single Responsibility Principle (SRP):
+    Each class and module must have exactly one reason to change. Domain logic must not
+    be mixed with infrastructure concerns (DB access, queue publishing, S3 operations,
+    HTTP clients). Application handlers must not contain persistence logic. Consumers
+    must not contain domain rules.
+
+  Open/Closed Principle (OCP):
+    Extension points (new video types, new scanning strategies, new grouping algorithms)
+    must be addable without modifying existing classes. Concrete strategies should be
+    hidden behind interfaces so new variants can be injected.
+
+  Liskov Substitution Principle (LSP):
+    Any implementation of a port/interface must be fully substitutable for any other.
+    Mock implementations used in tests must satisfy the same behavioral contract as
+    production implementations. No subtype may weaken preconditions or strengthen
+    postconditions relative to its declared interface.
+
+  Interface Segregation Principle (ISP):
+    No class or module should be forced to depend on methods it does not use. Wide
+    repository interfaces must be split into focused read/write/query interfaces.
+    Application handlers must depend only on the minimal interface they actually invoke.
+
+  Dependency Inversion Principle (DIP):
+    All application-layer classes must depend on abstractions (interfaces/ports), not
+    on NestJS-specific or infrastructure-specific concretions. Infrastructure modules
+    must register their concrete implementations against declared ports. Domain objects
+    must have zero framework imports.
+
+scope:
+  in_scope:
+    - packages/shared — all internal modules (DB schemas wrapper, queue client wrapper, S3 client wrapper, shared types)
+    - packages/staging-service — all layers (domain, application, infrastructure, transport)
+    - packages/grouping-service — all layers (domain, application, infrastructure, transport)
+    - packages/vdf-scan-service — all layers (domain, application, infrastructure, transport)
+    - packages/pipeline-service — consolidation of grouping, scanning, and staging submodules
+    - Internal class structure, method signatures, module boundaries within each service
+    - Dependency injection wiring and provider registration
+    - File and folder organization within each package
+    - Test structure and test helper organization
+    - Error class hierarchies (internal classification only, not observable error types at boundaries)
+
+  out_of_scope:
+    - RabbitMQ topic names and message payload schemas
+    - Drizzle ORM table schemas and column definitions (unless forced by pipeline-service consolidation)
+    - S3 bucket names and operation semantics
+    - Any public HTTP or gRPC API surface (if present)
+    - CI/CD configuration
+    - Docker and infrastructure-as-code configuration
+    - External service credentials and environment variable naming conventions
+    - Adding net-new features or business capabilities
+
+acceptance_criteria:
+  - id: AC-001
+    criterion: SRP — No class mixes domain logic with infrastructure concerns
+    observable_check: >
+      No domain policy or domain service class imports from NestJS, Drizzle, RabbitMQ,
+      or S3 SDKs. Domain layer files contain zero framework-specific decorators or imports.
+    verification_method: static_analysis — scan domain layer for infrastructure imports
+
+  - id: AC-002
+    criterion: DIP — All infrastructure dependencies are injected, not hard-coded
+    observable_check: >
+      No application-layer class instantiates a repository, queue publisher, or S3 adapter
+      with `new`. All such dependencies are constructor-injected via declared interface tokens.
+    verification_method: static_analysis — scan application layer for `new` instantiations of infrastructure classes
+
+  - id: AC-003
+    criterion: ISP + DIP — Ports/interfaces defined at all application boundaries
+    observable_check: >
+      Every repository, queue publisher, and external client used by an application handler
+      is accessed through a declared TypeScript interface (port). No application-layer file
+      imports a concrete infrastructure class directly.
+    verification_method: static_analysis — verify no direct concrete imports across layer boundaries
+
+  - id: AC-004
+    criterion: SRP — Domain objects have no framework imports
+    observable_check: >
+      All domain entity, value object, and policy files contain zero imports from
+      '@nestjs/*', 'drizzle-orm', 'amqplib', or AWS SDK packages.
+    verification_method: static_analysis — grep domain files for banned import prefixes
+
+  - id: AC-005
+    criterion: Behavior preservation — All existing tests pass after refactor
+    observable_check: >
+      `npm test` (or equivalent) exits with zero failures across all packages. The test
+      suite result before refactor is used as the baseline — no test count regression is
+      permitted.
+    verification_method: test_execution — run full test suite, compare pass/fail counts
+
+  - id: AC-006
+    criterion: Contract preservation — No public queue message format changes
+    observable_check: >
+      All RabbitMQ topic names remain identical. All message payload field names, types,
+      and required/optional semantics remain identical. Consumer and publisher contracts
+      are unchanged at the wire level.
+    verification_method: diff — compare queue message type definitions before and after
+
+  - id: AC-007
+    criterion: Contract preservation — DB schemas are functionally equivalent
+    observable_check: >
+      All Drizzle ORM table definitions produce the same SQL DDL after refactor. No column
+      added, removed, renamed, or retyped without an accompanying migration. No change to
+      primary/foreign key relationships.
+    verification_method: diff — compare Drizzle schema files before and after; run drizzle-kit generate to confirm no pending migrations
+
+  - id: AC-008
+    criterion: Consolidation — pipeline-service duplication resolved
+    observable_check: >
+      After refactor, each business capability (video grouping, VDF scanning, video staging)
+      exists in exactly one canonical implementation location. If pipeline-service is the
+      consolidation target, the standalone service packages either re-export from pipeline-service
+      or are marked deprecated with no duplicate implementation.
+    verification_method: code_review — verify no duplicate logic across service boundaries
+
+  - id: AC-009
+    criterion: OCP — Extension points are interface-backed
+    observable_check: >
+      Each domain policy that selects a strategy (e.g., grouping algorithm, scanning
+      adapter) dispatches through an interface, not a concrete switch/if-else over
+      implementation types. Adding a new strategy requires only a new implementation file
+      and a provider registration — no modification of existing orchestration code.
+    verification_method: code_review — verify strategy dispatch points are abstracted
+
+  - id: AC-010
+    criterion: LSP — All port implementations are fully substitutable
+    observable_check: >
+      Each port interface has at least one production implementation and one test double
+      (mock/stub/fake). The test double satisfies the same interface without throwing
+      NotImplementedError or equivalent on any declared method.
+    verification_method: test_review — inspect test doubles for completeness
+
+preserved_behaviors:
+  - id: PB-001
+    behavior: RabbitMQ message contracts — all topic names and payload schemas
+    rationale: >
+      These are the external integration contract between services and any upstream
+      or downstream consumers. Changing them is a breaking change.
+    scope: all packages that publish or consume queue messages
+
+  - id: PB-002
+    behavior: All DB CRUD operations — same tables, same semantics, same column names
+    rationale: >
+      Database operations are a persistence contract. Changing them requires coordinated
+      migrations and risks data loss or runtime errors.
+    scope: packages/shared (Drizzle schemas), all service repositories
+
+  - id: PB-003
+    behavior: All S3 operations — same bucket interactions, same object key patterns
+    rationale: >
+      S3 operations are a storage contract. Key pattern changes break existing data retrieval.
+    scope: packages/shared (S3 client), all service adapters that invoke S3
+
+  - id: PB-004
+    behavior: All inter-service data flows and their ordering semantics
+    rationale: >
+      The sequence in which services emit and consume events defines the pipeline
+      correctness invariant. Reordering or dropping events would constitute a behavior change.
+    scope: all transport/consumer layer files
+
+  - id: PB-005
+    behavior: All error-handling paths visible at consumer boundaries
+    rationale: >
+      Consumers may rely on specific error types or error messages to implement retry logic,
+      dead-letter routing, or alerting. Changing observable error semantics breaks consumers.
+    scope: all transport/consumer layer files, application handlers
+
+allowed_behavior_changes:
+  - Internal class names, method names, and file/folder organization
+  - Module boundaries and NestJS module registration patterns within each service
+  - Dependency injection wiring — providers, tokens, and injection sites
+  - Introduction of new interfaces, ports, abstract classes, and value objects
+  - Test file organization, test helper extraction, and test double structure
+  - Logging format or log level (internal concern, not observable at consumer boundary)
+  - Internal error class hierarchy (as long as the types thrown at consumer boundaries are unchanged)
+
+forbidden_behavior_changes:
+  - Queue message payload field names, types, required/optional semantics, or topic names
+  - Database table names, column names, column types, or key relationships
+  - S3 bucket names or object key patterns
+  - Any externally observable HTTP or gRPC API surface
+  - The set of error types thrown at RabbitMQ consumer boundaries (observable failure modes)
+  - Net-new business capabilities or features
+
+assumptions:
+  - ref: ASSUMP-001
+    statement: pipeline-service is the intended consolidation target
+  - ref: ASSUMP-002
+    statement: No external consumers depend on internal class or function names
+  - ref: ASSUMP-003
+    statement: The existing test suite (if any) adequately captures observable behavior
+  - ref: ASSUMP-004
+    statement: RabbitMQ message schemas are the primary external contract
+  - ref: ASSUMP-005
+    statement: The shared package exports define the internal contract between packages
+  - ref: ASSUMP-006
+    statement: No active database migrations are in progress that would conflict with schema reads
+
+non_goals:
+  - Adding new features, endpoints, queue topics, or business capabilities
+  - Changing RabbitMQ message payload schemas or topic names
+  - Changing Drizzle ORM table or column definitions beyond what consolidation requires
+  - Changing S3 bucket names or object key patterns
+  - Migrating to a different ORM, queue broker, or cloud storage provider
+  - Upgrading NestJS, TypeScript, or any runtime dependency version
+  - Changing CI/CD pipelines, Docker configuration, or infrastructure-as-code
+  - Introducing new runtime dependencies not already present in the monorepo
+  - Altering observable failure modes at consumer-facing boundaries
+
+unresolved_ambiguity: []
+
+evidence_refs:
+  - ref: conventions/.ai/reports/01-active-context-manifest.yaml
+    section: active_phase_plan
+    consumed_by: phase_status_verification
+  - ref: conventions/.ai/bundles/phases/mission/behavior_contract.bundle.yaml
+    section: phase_contract
+    consumed_by: allowed_write_scope_enforcement
+  - ref: conventions/.ai/bundles/phases/mission/behavior_contract.bundle.yaml
+    section: must_do
+    consumed_by: decision_recording_discipline
+  - ref: user_request
+    section: verbatim_text
+    consumed_by: request_classification_and_scope
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.behavior_contract.output
+  status: pending
+  note: Gate result is produced by the gate subsystem via run_gate_check route — not authored here.

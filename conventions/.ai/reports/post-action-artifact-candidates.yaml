@@ -1,0 +1,731 @@
+report_id: "post-action-artifact-candidates"
+phase_id: artifact_action_resolution
+status: complete
+summary: >
+  Post-action artifact candidate set after all binding actions applied to 48 source candidates.
+  51 post-action candidates total (48 source candidates + 3 split/extract products):
+    new_artifact:          12 (all create_new port interfaces)
+    modified:              25 (all modify_existing candidates)
+    split_product:          4 (2 split_existing candidates each produce 2 post-action entries)
+    extracted:              1 (1 extract_from_existing candidate)
+    reused_as_is:           5 (all reuse_existing candidates)
+
+  Split accounting:
+    AC-010 ScanOrchestrator (split_existing) -> PAC-010a ScanOrchestrator (trimmed) + PAC-010b ScanSchedulerTrigger (extracted; also satisfies AC-009 extract_from_existing)
+    AC-023 ProcessScanHandler (split_existing) -> PAC-023a ProcessScanHandler (trimmed, DIP-compliant) + PAC-023b (orchestration delegation — absorbed into trimmed ProcessScanHandler post-DIP; no second standalone file required per analysis)
+
+  Note on AC-009/AC-010 overlap: ScanSchedulerTrigger (AC-009, extract_from_existing) and the
+  scheduler product of ScanOrchestrator split (AC-010, split_existing) refer to the same new
+  artifact. PAC-009 and PAC-010b are unified into one post-action candidate (PAC-009) to avoid
+  duplication. PAC-010a represents the surviving trimmed ScanOrchestrator.
+
+  Note on AC-023 ProcessScanHandler split: The split produces one trimmed ProcessScanHandler
+  with DIP-compliant port injections. The "orchestration delegation" second product described
+  in the phase bundle is resolved by DIP compliance (each of the 6 concrete deps becomes a
+  port injection) rather than a separate standalone file. PAC-023 represents the single
+  surviving ProcessScanHandler post-split. Total post-action candidates: 51.
+
+post_action_candidates:
+
+  # ─────────────────────────────────────────────────
+  # CAP-001: Video Staging
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-001
+    source_candidate_id: AC-001
+    artifact_name: VideoReadyConsumer
+    action_applied: modify_existing
+    status: modified
+    intended_role: consumer
+    role_family: integration_async
+    target_package: pipeline-service
+    target_path_hint: "src/staging/transport/video-ready.consumer.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-002
+    source_candidate_id: AC-002
+    artifact_name: StagingMessageValidator
+    action_applied: modify_existing
+    status: modified
+    intended_role: validator
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/staging/transport/staging-message.validator.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-003
+    source_candidate_id: AC-003
+    artifact_name: StageVideoHandler
+    action_applied: modify_existing
+    status: modified
+    intended_role: handler
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/staging/application/stage-video.handler.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-004
+    source_candidate_id: AC-004
+    artifact_name: VideoStagingPolicy
+    action_applied: reuse_existing
+    status: reused_as_is
+    intended_role: policy
+    role_family: domain
+    target_package: pipeline-service
+    target_path_hint: "src/staging/domain/video-staging.policy.ts"
+    consumer_phases:
+      - final_role_assignment
+
+  - candidate_id: PAC-005
+    source_candidate_id: AC-005
+    artifact_name: IVideoRepository
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/staging/infrastructure/ports/i-video.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-006
+    source_candidate_id: AC-006
+    artifact_name: VideoRepository
+    action_applied: modify_existing
+    status: modified
+    intended_role: repository
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/staging/infrastructure/video.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-007
+    source_candidate_id: AC-007
+    artifact_name: IFileStagingPort
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/staging/infrastructure/ports/i-file-staging.port.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-008
+    source_candidate_id: AC-008
+    artifact_name: FileStagingAdapter
+    action_applied: modify_existing
+    status: modified
+    intended_role: adapter
+    role_family: integration_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/staging/infrastructure/file-staging.adapter.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  # ─────────────────────────────────────────────────
+  # CAP-002: VDF Scanning
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-009
+    source_candidate_id: AC-009
+    artifact_name: ScanSchedulerTrigger
+    action_applied: extract_from_existing
+    status: extracted
+    intended_role: scheduler
+    role_family: integration_async
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/transport/scan-scheduler.trigger.ts"
+    extraction_source: "packages/pipeline-service/src/scanning/application/scan.orchestrator.ts"
+    notes: "Unified post-action candidate for both AC-009 (extract_from_existing) and the scheduler product of AC-010 (split_existing). Single new file produced."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-010
+    source_candidate_id: AC-010
+    artifact_name: ScanOrchestrator
+    action_applied: split_existing
+    status: split_product
+    intended_role: orchestrator
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/application/scan.orchestrator.ts"
+    split_context: "Surviving trimmed ScanOrchestrator after extraction of ScanSchedulerTrigger (PAC-009) and delegation of batch claiming, VDF execution, S3 upload, event emission, and cleanup to port interfaces. Primary responsibility: multi-step scan flow coordination."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-011
+    source_candidate_id: AC-011
+    artifact_name: BatchClaimPolicy
+    action_applied: reuse_existing
+    status: reused_as_is
+    intended_role: policy
+    role_family: domain
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/domain/batch-claim.policy.ts"
+    consumer_phases:
+      - final_role_assignment
+
+  - candidate_id: PAC-012
+    source_candidate_id: AC-012
+    artifact_name: ScanCleanupPolicy
+    action_applied: reuse_existing
+    status: reused_as_is
+    intended_role: policy
+    role_family: domain
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/domain/scan-cleanup.policy.ts"
+    consumer_phases:
+      - final_role_assignment
+
+  - candidate_id: PAC-013
+    source_candidate_id: AC-013
+    artifact_name: IBatchClaimerPort
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/ports/i-batch-claimer.port.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-014
+    source_candidate_id: AC-014
+    artifact_name: BatchClaimerService
+    action_applied: modify_existing
+    status: modified
+    intended_role: service
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/batch-claimer.service.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-015
+    source_candidate_id: AC-015
+    artifact_name: IVdfRunnerPort
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/ports/i-vdf-runner.port.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-016
+    source_candidate_id: AC-016
+    artifact_name: VdfRunnerAdapter
+    action_applied: modify_existing
+    status: modified
+    intended_role: adapter
+    role_family: integration_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/vdf-runner.adapter.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-017
+    source_candidate_id: AC-017
+    artifact_name: VdfManifestNormalizer
+    action_applied: modify_existing
+    status: modified
+    intended_role: normalizer
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/vdf-manifest.normalizer.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-018
+    source_candidate_id: AC-018
+    artifact_name: IVideoScanRepository
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/ports/i-video-scan.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-019
+    source_candidate_id: AC-019
+    artifact_name: VideoScanRepository
+    action_applied: modify_existing
+    status: modified
+    intended_role: repository
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/video-scan.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-020
+    source_candidate_id: AC-020
+    artifact_name: ScanPurgerService
+    action_applied: modify_existing
+    status: modified
+    intended_role: service
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/scan-purger.service.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  # ─────────────────────────────────────────────────
+  # CAP-003: Video Similarity Grouping
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-021
+    source_candidate_id: AC-021
+    artifact_name: ScanCompletedConsumer
+    action_applied: modify_existing
+    status: modified
+    intended_role: consumer
+    role_family: integration_async
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/transport/scan-completed.consumer.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-022
+    source_candidate_id: AC-022
+    artifact_name: ScanResultValidator
+    action_applied: modify_existing
+    status: modified
+    intended_role: validator
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/scan-result.validator.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-023
+    source_candidate_id: AC-023
+    artifact_name: ProcessScanHandler
+    action_applied: split_existing
+    status: split_product
+    intended_role: handler
+    role_family: application_layer
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/application/process-scan.handler.ts"
+    split_context: "Surviving ProcessScanHandler after split: replaces all 6 concrete dependency injections with port interface tokens (IScanResultLoader, ISimilarityEdgeRepository, ISimilarityGroupRepository, IVideoSimilarityRepository, IScanBatchRepository, IEventPublisher), injects UnionFindDomainService via NestJS DI instead of new keyword, removes inline validation. Core application logic (load, filter, persist-edges, merge-groups, update-batch, publish) preserved."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-024
+    source_candidate_id: AC-024
+    artifact_name: SimilarityThresholdPolicy
+    action_applied: reuse_existing
+    status: reused_as_is
+    intended_role: policy
+    role_family: domain
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/domain/similarity-threshold.policy.ts"
+    consumer_phases:
+      - final_role_assignment
+
+  - candidate_id: PAC-025
+    source_candidate_id: AC-025
+    artifact_name: UnionFindDomainService
+    action_applied: reuse_existing
+    status: reused_as_is
+    intended_role: domain_service
+    role_family: domain
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/domain/union-find.domain-service.ts"
+    consumer_phases:
+      - final_role_assignment
+
+  - candidate_id: PAC-026
+    source_candidate_id: AC-026
+    artifact_name: IScanResultLoader
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/ports/i-scan-result-loader.port.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-027
+    source_candidate_id: AC-027
+    artifact_name: ScanResultClient
+    action_applied: modify_existing
+    status: modified
+    intended_role: adapter
+    role_family: integration_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/scan-result.client.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-028
+    source_candidate_id: AC-028
+    artifact_name: ISimilarityEdgeRepository
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/ports/i-similarity-edge.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-029
+    source_candidate_id: AC-029
+    artifact_name: SimilarityEdgeRepository
+    action_applied: modify_existing
+    status: modified
+    intended_role: repository
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/similarity-edge.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-030
+    source_candidate_id: AC-030
+    artifact_name: ISimilarityGroupRepository
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/ports/i-similarity-group.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-031
+    source_candidate_id: AC-031
+    artifact_name: SimilarityGroupRepository
+    action_applied: modify_existing
+    status: modified
+    intended_role: repository
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/similarity-group.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-032
+    source_candidate_id: AC-032
+    artifact_name: IVideoSimilarityRepository
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/ports/i-video-similarity.repository.ts"
+    notes: "ISP split decision (single IVideoSimilarityRepository vs IVideoSimilarityReader+IVideoSimilarityWriter) deferred to final_role_assignment phase."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-033
+    source_candidate_id: AC-033
+    artifact_name: VideoSimilarityRepository
+    action_applied: modify_existing
+    status: modified
+    intended_role: repository
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/video-similarity.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  # ─────────────────────────────────────────────────
+  # Shared: Cross-capability infrastructure
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-034
+    source_candidate_id: AC-034
+    artifact_name: IScanBatchRepository
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/shared/infrastructure/ports/i-scan-batch.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-035
+    source_candidate_id: AC-035
+    artifact_name: ScanBatchRepository
+    action_applied: modify_existing
+    status: modified
+    intended_role: repository
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/shared/infrastructure/scan-batch.repository.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-036
+    source_candidate_id: AC-036
+    artifact_name: IStoragePort
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/shared/infrastructure/ports/i-storage.port.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-037
+    source_candidate_id: AC-037
+    artifact_name: S3StorageAdapter
+    action_applied: modify_existing
+    status: modified
+    intended_role: adapter
+    role_family: integration_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/shared/infrastructure/s3-storage.adapter.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-038
+    source_candidate_id: AC-038
+    artifact_name: IEventPublisher
+    action_applied: create_new
+    status: new_artifact
+    intended_role: port
+    role_family: architectural_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/shared/infrastructure/ports/i-event-publisher.port.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-039
+    source_candidate_id: AC-039
+    artifact_name: RabbitMQPublisher
+    action_applied: modify_existing
+    status: modified
+    intended_role: adapter
+    role_family: integration_boundary
+    target_package: pipeline-service
+    target_path_hint: "src/shared/infrastructure/rabbitmq.publisher.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  # ─────────────────────────────────────────────────
+  # Shared: Schema modules
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-040
+    source_candidate_id: AC-040
+    artifact_name: VideoSchemaModule
+    action_applied: modify_existing
+    status: modified
+    intended_role: schema
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/staging/infrastructure/schemas/video.schema.ts"
+    notes: "Move from shared/src/db/video.schema.ts. Collection name (videos) locked. MongooseModule.forFeature wrapper added."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-041
+    source_candidate_id: AC-041
+    artifact_name: ScanBatchSchemaModule
+    action_applied: modify_existing
+    status: modified
+    intended_role: schema
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/infrastructure/schemas/scan-batch.schema.ts"
+    notes: "Move from shared/src/db/scan-batch.schema.ts. Collection name (scan_batches) locked. MongooseModule.forFeature wrapper added."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-042
+    source_candidate_id: AC-042
+    artifact_name: SimilarityEdgeSchemaModule
+    action_applied: modify_existing
+    status: modified
+    intended_role: schema
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/schemas/similarity-edge.schema.ts"
+    notes: "Move from shared/src/db/similarity-edge.schema.ts. Collection name (similarity_edges) locked. MongooseModule.forFeature wrapper added."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-043
+    source_candidate_id: AC-043
+    artifact_name: SimilarityGroupSchemaModule
+    action_applied: modify_existing
+    status: modified
+    intended_role: schema
+    role_family: persistence_data
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/infrastructure/schemas/similarity-group.schema.ts"
+    notes: "Move from shared/src/db/similarity-group.schema.ts. Collection name (similarity_groups) locked. MongooseModule.forFeature wrapper added."
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  # ─────────────────────────────────────────────────
+  # Pipeline-service: NestJS module composition
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: PAC-044
+    source_candidate_id: AC-044
+    artifact_name: PipelineStagingSubmodule
+    action_applied: modify_existing
+    status: modified
+    intended_role: module
+    role_family: framework_wiring
+    target_package: pipeline-service
+    target_path_hint: "src/staging/staging.module.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-045
+    source_candidate_id: AC-045
+    artifact_name: PipelineScanningSubmodule
+    action_applied: modify_existing
+    status: modified
+    intended_role: module
+    role_family: framework_wiring
+    target_package: pipeline-service
+    target_path_hint: "src/scanning/scanning.module.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-046
+    source_candidate_id: AC-046
+    artifact_name: PipelineGroupingSubmodule
+    action_applied: modify_existing
+    status: modified
+    intended_role: module
+    role_family: framework_wiring
+    target_package: pipeline-service
+    target_path_hint: "src/grouping/grouping.module.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-047
+    source_candidate_id: AC-047
+    artifact_name: SharedInfraModule
+    action_applied: modify_existing
+    status: modified
+    intended_role: module
+    role_family: framework_wiring
+    target_package: pipeline-service
+    target_path_hint: "src/shared-infra.module.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+  - candidate_id: PAC-048
+    source_candidate_id: AC-048
+    artifact_name: PipelineAppModule
+    action_applied: modify_existing
+    status: modified
+    intended_role: module
+    role_family: framework_wiring
+    target_package: pipeline-service
+    target_path_hint: "src/app.module.ts"
+    consumer_phases:
+      - final_role_assignment
+      - structure_rendering
+      - implementation
+
+evidence_refs:
+  - ref: conventions/.ai/reports/05-artifact-actions.yaml
+    section: artifact_action_table
+    consumed_by: post_action_candidate_generation
+  - ref: conventions/.ai/reports/artifact-reuse-analysis.yaml
+    section: reuse_analysis
+    consumed_by: target_path_and_role_family_derivation

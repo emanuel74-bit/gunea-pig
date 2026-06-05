@@ -1,0 +1,347 @@
+report_id: "compatibility-decision"
+phase_id: boundary_contract_classification
+status: complete
+
+summary: >
+  The SOLID refactor mission is a backward_compatible_refactor: all external, durable,
+  and cross-service contracts are preserved without change. No migration is required.
+  No external surfaces are deprecated. The refactor is purely structural — it introduces
+  TypeScript port interfaces at application boundaries, reorganizes module wiring, and
+  eliminates code duplication. Every consumer-visible contract (RabbitMQ event schemas,
+  MongoDB collection schemas, S3 key pattern, shared package exports) remains identical
+  after the refactor. The compatibility strategy selected for all contracts is
+  internal_only_change for the structural SOLID work, with a strict additive-only
+  constraint applied to the shared package API. No breaking change is introduced or
+  planned.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/boundary-contract-classification.yaml
+    artifact: boundary_contract_classification
+    fields_used:
+      - boundaries
+      - contracts
+      - public_surfaces
+      - consumer_obligations
+      - compatibility_required
+  - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    artifact: codebase_reconnaissance
+    fields_used:
+      - decisions
+      - dependency_signals
+      - boundary_signals
+      - relevant_artifacts
+  - source: conventions/.ai/reports/local-convention-candidates.yaml
+    artifact: local_convention_candidates
+    fields_used:
+      - decisions
+      - detected_conventions
+
+decisions:
+  - id: DECISION-COMPAT-001
+    decision: >
+      Select internal_only_change as the compatibility strategy for the application-layer
+      port boundary (BND-006 / implicit port contracts). Introducing TypeScript interfaces
+      between application handlers and infrastructure dependencies is a pure structural
+      refactor. No consumer-visible behavior changes. The DI wiring is updated within
+      the same packages; all changes are atomic within this repository.
+    rationale: >
+      COMPAT-DECISION-001 (change_type: none for external contracts) and the
+      synchronized_breaking_change rule (COMPAT-DECISION-005) both confirm that
+      structural-only changes to internal module wiring require no external compatibility
+      strategy. All consumers of the changed classes are known and within this workspace.
+      The behavior contract explicitly states that SOLID restructuring is allowed as long
+      as external contracts are preserved.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: DECISION-RECON-006
+        value: "DIP violation identified — introducing interfaces is the required fix, not a breaking change"
+      - source: conventions/.ai/reports/boundary-contract-classification.yaml
+        field: BND-006, stability_class
+        value: "internal_mutable — structural reorganization is safe"
+
+  - id: DECISION-COMPAT-002
+    decision: >
+      Select internal_only_change as the compatibility strategy for the NestJS module
+      boundary (BND-005). Reorganizing module imports, exports, and provider registration
+      within pipeline-service does not affect any external consumer. The pipeline-service
+      module structure is entirely internal to that package.
+    rationale: >
+      COMPAT-DECISION-001 applies: the module boundary has no external consumers.
+      The SharedInfraModule @Global pattern creates hidden coupling that the refactor
+      should eliminate, but this is a wiring reorganization not a contract change.
+      The resulting runtime behavior (which providers are available, which modules
+      are composed) must be preserved.
+    evidence:
+      - source: conventions/.ai/reports/boundary-contract-classification.yaml
+        field: BND-005, visibility
+        value: "module_public — no external consumers"
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: DECISION-RECON-004
+        value: "pipeline-service is the consolidation target; all consumers are within this workspace"
+
+  - id: DECISION-COMPAT-003
+    decision: >
+      Select backward_compatible_addition as the compatibility strategy for the shared
+      package API boundary (CON-009 / BND-004). The refactor may add new port interface
+      exports to packages/shared/src/index.ts. Existing exports must not be removed or
+      renamed without a separate coordinated change.
+    rationale: >
+      COMPAT-DECISION-002 applies: change_type is additive (new exports added, none
+      removed), consumer_knowledge is all_known, stability_level is internal_stable.
+      Adding optional new exports to the shared package index does not break existing
+      consumers — they continue importing from the same barrel. The refactor plan calls
+      for adding port interfaces (IVideoRepository, IFileStagingPort, IQueuePublisher,
+      IS3Client, etc.) to shared without removing the existing concrete class exports.
+    evidence:
+      - source: packages/shared/src/index.ts
+        field: exports
+        value: "Current exports are additive baseline; new port interface exports are additions"
+      - source: packages/shared/package.json
+        field: '"private": true'
+        value: "Workspace-only — all consumers are known and atomically updatable"
+
+  - id: DECISION-COMPAT-004
+    decision: >
+      Confirm change_type: none for all external and durable contracts (CON-001 through
+      CON-008). No RabbitMQ event payload fields are changed. No MongoDB collection names
+      or field definitions are changed. The S3 key pattern is unchanged. These contracts
+      are fully preserved across the refactor.
+    rationale: >
+      The refactor mission goal is SOLID compliance through structural reorganization —
+      specifically DIP (port interfaces), SRP (single-responsibility extraction), and
+      ISP (interface segregation). None of these structural changes require modifying
+      message schemas, database schemas, or file storage key patterns. COMPAT-DECISION-001
+      (change_type: none) applies: no compatibility strategy beyond preservation is needed.
+    evidence:
+      - source: conventions/.ai/reports/02-behavior-contract.yaml
+        field: preserved_behaviors
+        value: "All event schemas, MongoDB schemas, S3 patterns explicitly listed as preserved"
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: DECISION-RECON-003
+        value: "RabbitMQ is the only external interface; no schema change planned"
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: DECISION-RECON-011
+        value: "MongoDB schemas are stable; no pending migrations"
+
+evidence_refs:
+  - ref: conventions/.ai/reports/boundary-contract-classification.yaml
+    section: contracts, compatibility_required
+    consumed_by: all_compatibility_decisions
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: decisions DECISION-RECON-001 through DECISION-RECON-013
+    consumed_by: change_type_and_consumer_knowledge_classification
+  - ref: packages/shared/src/types/queue.types.ts
+    section: event interface field definitions
+    consumed_by: rabbitmq_contract_change_type_verification
+  - ref: packages/shared/src/db/
+    section: all four schema files
+    consumed_by: persistence_contract_change_type_verification
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.boundary_contract_classification.output
+  status: pending
+  note: "Gate result is produced by the gate subsystem via run_gate_check route — not authored here."
+
+compatibility_state: backward_compatible_refactor
+
+affected_consumers:
+  - consumer_id: AFC-001
+    consumer: "External upstream system (produces NewVideoReadyEvent)"
+    boundary_ref: BND-001
+    contract_refs: [CON-001]
+    impact: none
+    notes: >
+      The NewVideoReadyEvent schema is unchanged. The external producer continues to
+      publish messages in the existing format with no coordination required.
+
+  - consumer_id: AFC-002
+    consumer: "staging-service and pipeline-service staging submodule (consume NewVideoReadyEvent)"
+    boundary_ref: BND-001
+    contract_refs: [CON-001]
+    impact: none
+    notes: >
+      The consumer transport layer is unchanged structurally — only internal wiring
+      (concrete -> port interface injection) changes within these packages.
+
+  - consumer_id: AFC-003
+    consumer: "grouping-service and pipeline-service grouping submodule (consume ScanCompletedEvent)"
+    boundary_ref: BND-001
+    contract_refs: [CON-002]
+    impact: none
+    notes: >
+      The consumer transport layer is unchanged structurally — only internal wiring changes.
+
+  - consumer_id: AFC-004
+    consumer: "External downstream system (consumes ScanPersistedEvent)"
+    boundary_ref: BND-001
+    contract_refs: [CON-003]
+    impact: none
+    notes: >
+      The ScanPersistedEvent schema is unchanged. The external consumer (unknown identity,
+      outside this repo) receives messages in the existing format with no coordination required.
+
+  - consumer_id: AFC-005
+    consumer: "All services (consumers of MongoDB collections via Mongoose repositories)"
+    boundary_ref: BND-002
+    contract_refs: [CON-004, CON-005, CON-006, CON-007]
+    impact: none
+    notes: >
+      MongoDB collection schemas are fully preserved. No field additions, removals, or
+      renames. The repository classes will be refactored behind port interfaces but the
+      underlying schema and query behavior is unchanged.
+
+  - consumer_id: AFC-006
+    consumer: "grouping-service ScanResultClient (reads S3 scan results)"
+    boundary_ref: BND-003
+    contract_refs: [CON-008]
+    impact: none
+    notes: >
+      The S3 key pattern and NormalizedScanResult JSON structure are unchanged.
+      ScanResultClient will be refactored behind a port interface but its behavior
+      (loading from S3 by key from event payload) is preserved.
+
+  - consumer_id: AFC-007
+    consumer: "All four service packages (consumers of @gunea-pig/shared)"
+    boundary_ref: BND-004
+    contract_refs: [CON-009]
+    impact: additive_only
+    notes: >
+      New port interface exports will be added to shared package. All existing exports
+      remain in place. Consumer packages that have not yet been updated to use the new
+      port interfaces continue to work against the existing concrete class exports.
+
+migration_required: false
+
+strategy: >
+  The compatibility strategy for this SOLID refactor mission is preserve-all-external-contracts
+  with additive-only shared-package expansion. Specifically:
+
+  1. All RabbitMQ event schemas (NewVideoReadyEvent, ScanCompletedEvent, ScanPersistedEvent)
+     are frozen. No field changes, no schema version changes, no new required fields.
+     Strategy: internal_only_change (change_type: none on all event contracts).
+
+  2. All MongoDB collection schemas (videos, scan_batches, similarity_edges,
+     similarity_groups) are frozen. No collection name changes, no field removals,
+     no required field additions. Strategy: internal_only_change (change_type: none
+     on all persistence contracts).
+
+  3. The S3 key pattern for scan result storage is frozen. No change to the key
+     derivation logic or the NormalizedScanResult JSON structure.
+     Strategy: internal_only_change (change_type: none).
+
+  4. The shared package API is additive-only. New port interface exports may be added
+     to packages/shared/src/index.ts. Existing exports are not removed.
+     Strategy: backward_compatible_addition (change_type: additive).
+
+  5. The application-layer port boundary (currently implicit) becomes explicit through
+     TypeScript interface introduction. This is a pure structural refactor — DI wiring
+     changes within each package but no external behavior changes.
+     Strategy: internal_only_change.
+
+  6. The NestJS module boundaries within pipeline-service may be reorganized to reduce
+     the @Global hidden-coupling pattern. This is entirely internal.
+     Strategy: internal_only_change.
+
+deprecation_required: false
+
+compatibility_decisions_by_contract:
+  - contract_id: CON-001
+    contract_type: event_contract
+    change_type: none
+    stability_level: external_public
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      No change to NewVideoReadyEvent payload. COMPAT-DECISION-001 applies.
+      External producer continues publishing unchanged format.
+    compatibility_required: false
+
+  - contract_id: CON-002
+    contract_type: event_contract
+    change_type: none
+    stability_level: external_public
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      No change to ScanCompletedEvent payload. COMPAT-DECISION-001 applies.
+      Cross-service event routing unchanged.
+    compatibility_required: false
+
+  - contract_id: CON-003
+    contract_type: event_contract
+    change_type: none
+    stability_level: external_public
+    consumer_knowledge: unknown
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      No change to ScanPersistedEvent payload. COMPAT-DECISION-001 applies.
+      Unknown external consumer is unaffected.
+    compatibility_required: false
+
+  - contract_id: CON-004
+    contract_type: persistence_contract
+    change_type: none
+    stability_level: durable_versioned
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      'videos' collection schema frozen. No field changes. COMPAT-DECISION-001 applies.
+    compatibility_required: false
+
+  - contract_id: CON-005
+    contract_type: persistence_contract
+    change_type: none
+    stability_level: durable_versioned
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      'scan_batches' collection schema frozen. No field changes. COMPAT-DECISION-001 applies.
+    compatibility_required: false
+
+  - contract_id: CON-006
+    contract_type: persistence_contract
+    change_type: none
+    stability_level: durable_versioned
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      'similarity_edges' collection schema frozen. No field changes. COMPAT-DECISION-001 applies.
+    compatibility_required: false
+
+  - contract_id: CON-007
+    contract_type: persistence_contract
+    change_type: none
+    stability_level: durable_versioned
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      'similarity_groups' collection schema frozen. No field changes. COMPAT-DECISION-001 applies.
+    compatibility_required: false
+
+  - contract_id: CON-008
+    contract_type: api_contract
+    change_type: none
+    stability_level: external_public
+    consumer_knowledge: all_known
+    selected_strategy: internal_only_change
+    strategy_reason: >
+      S3 key pattern and NormalizedScanResult JSON structure frozen. COMPAT-DECISION-001 applies.
+      ScanResultClient refactored behind port but behavior unchanged.
+    compatibility_required: false
+
+  - contract_id: CON-009
+    contract_type: module_contract
+    change_type: additive
+    stability_level: internal_stable
+    consumer_knowledge: all_known
+    selected_strategy: backward_compatible_addition
+    strategy_reason: >
+      New port interface exports added to shared package index. Existing exports preserved.
+      COMPAT-DECISION-002 applies: additive change with all_known consumers.
+      Old consumers can ignore new exports.
+    compatibility_required: true
+    required_followups:
+      - "Verify all four consumer packages compile after new port interface exports are added"
+      - "Confirm no existing import paths are broken by new barrel additions"

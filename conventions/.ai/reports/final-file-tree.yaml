@@ -1,0 +1,1118 @@
+report_id: "final-file-tree"
+phase_id: structure_rendering
+status: complete
+authority: binding
+summary: >
+  Complete file tree for the PortsAndAdapters refactor of packages/pipeline-service/src/.
+  51 artifacts from 08-final-role-assignment.yaml placed into role_grouped layer-aligned subfolders.
+  12 new port interface files (create_new), 25 files to modify in place or at new paths,
+  2 files produced by split_existing action, 1 file produced by extract_from_existing action.
+  0 files deleted. 4 Mongoose schema files moved from packages/shared/src/db/ to capability
+  subdomain schemas/ subfolders. shared-infra.module.ts moved to shared-infra/ folder root.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/08-final-role-assignment.yaml
+  - source: conventions/.ai/reports/structure-plan.yaml
+
+# ─────────────────────────────────────────────────────────────────────────
+# FILES TO CREATE (12 port interfaces + ScanSchedulerTrigger extract)
+# ─────────────────────────────────────────────────────────────────────────
+
+files_to_create:
+
+  # staging/interfaces/ — 2 new port interfaces
+
+  - artifact_id: PAC-005
+    artifact_name: IVideoRepository
+    target_path: "packages/pipeline-service/src/staging/interfaces/i-video-repository.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: staging
+    source_pac_path: "packages/pipeline-service/src/staging/infrastructure/ports/i-video.repository.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-005]"
+    notes: "DIP boundary for video persistence. Consumed by StageVideoHandler."
+
+  - artifact_id: PAC-007
+    artifact_name: IFileStagingPort
+    target_path: "packages/pipeline-service/src/staging/interfaces/i-file-staging.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: staging
+    source_pac_path: "packages/pipeline-service/src/staging/infrastructure/ports/i-file-staging.port.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-007]"
+    notes: "DIP boundary for S3/filesystem file staging. Consumed by StageVideoHandler."
+
+  # scanning/interfaces/ — 3 new port interfaces
+
+  - artifact_id: PAC-013
+    artifact_name: IBatchClaimerPort
+    target_path: "packages/pipeline-service/src/scanning/interfaces/i-batch-claimer.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: scanning
+    source_pac_path: "packages/pipeline-service/src/scanning/infrastructure/ports/i-batch-claimer.port.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-013]"
+    notes: "DIP boundary for batch claiming. Implemented by BatchClaimerService."
+
+  - artifact_id: PAC-015
+    artifact_name: IVdfRunnerPort
+    target_path: "packages/pipeline-service/src/scanning/interfaces/i-vdf-runner.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: scanning
+    source_pac_path: "packages/pipeline-service/src/scanning/infrastructure/ports/i-vdf-runner.port.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-015]"
+    notes: "DIP boundary for VDF CLI subprocess execution. Implemented by VdfRunnerAdapter."
+
+  - artifact_id: PAC-018
+    artifact_name: IVideoScanRepository
+    target_path: "packages/pipeline-service/src/scanning/interfaces/i-video-scan-repository.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: scanning
+    source_pac_path: "packages/pipeline-service/src/scanning/infrastructure/ports/i-video-scan.repository.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-018]"
+    notes: "DIP boundary for video scan record persistence. Implemented by VideoScanRepository."
+
+  # grouping/interfaces/ — 4 new port interfaces
+
+  - artifact_id: PAC-026
+    artifact_name: IScanResultLoader
+    target_path: "packages/pipeline-service/src/grouping/interfaces/i-scan-result-loader.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: grouping
+    source_pac_path: "packages/pipeline-service/src/grouping/infrastructure/ports/i-scan-result-loader.port.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-026]"
+    notes: "DIP boundary for scan result loading from S3. Implemented by ScanResultClient. Consumed by ProcessScanHandler."
+
+  - artifact_id: PAC-028
+    artifact_name: ISimilarityEdgeRepository
+    target_path: "packages/pipeline-service/src/grouping/interfaces/i-similarity-edge-repository.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: grouping
+    source_pac_path: "packages/pipeline-service/src/grouping/infrastructure/ports/i-similarity-edge.repository.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-028]"
+    notes: "DIP boundary for similarity edge persistence. Implemented by SimilarityEdgeRepository."
+
+  - artifact_id: PAC-030
+    artifact_name: ISimilarityGroupRepository
+    target_path: "packages/pipeline-service/src/grouping/interfaces/i-similarity-group-repository.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: grouping
+    source_pac_path: "packages/pipeline-service/src/grouping/infrastructure/ports/i-similarity-group.repository.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-030]"
+    notes: "DIP boundary for similarity group persistence. Implemented by SimilarityGroupRepository."
+
+  - artifact_id: PAC-032
+    artifact_name: IVideoSimilarityRepository
+    target_path: "packages/pipeline-service/src/grouping/interfaces/i-video-similarity-repository.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: grouping
+    source_pac_path: "packages/pipeline-service/src/grouping/infrastructure/ports/i-video-similarity.repository.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-032]"
+    notes: "DIP boundary for video similarity status persistence. Single unified interface per DECISION-FR-006. Implemented by VideoSimilarityRepository."
+
+  # shared-infra/interfaces/ — 3 new port interfaces
+
+  - artifact_id: PAC-034
+    artifact_name: IScanBatchRepository
+    target_path: "packages/pipeline-service/src/shared-infra/interfaces/i-scan-batch-repository.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: shared_infra
+    source_pac_path: "packages/pipeline-service/src/shared/infrastructure/ports/i-scan-batch.repository.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-034]"
+    notes: "Shared DIP boundary for scan batch persistence. Consumed by BatchClaimerService (scanning) and ProcessScanHandler (grouping)."
+
+  - artifact_id: PAC-036
+    artifact_name: IStoragePort
+    target_path: "packages/pipeline-service/src/shared-infra/interfaces/i-storage.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: shared_infra
+    source_pac_path: "packages/pipeline-service/src/shared/infrastructure/ports/i-storage.port.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-036]"
+    notes: "Shared DIP boundary for S3/object storage. Consumed by FileStagingAdapter (staging), ScanOrchestrator (scanning). Implemented by S3StorageAdapter."
+
+  - artifact_id: PAC-038
+    artifact_name: IEventPublisher
+    target_path: "packages/pipeline-service/src/shared-infra/interfaces/i-event-publisher.port.ts"
+    role: port
+    role_family: architectural_boundary
+    layer: boundary
+    action: create_new
+    subdomain: shared_infra
+    source_pac_path: "packages/pipeline-service/src/shared/infrastructure/ports/i-event-publisher.port.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-038]"
+    notes: "Shared DIP boundary for async event publishing. Consumed by ScanOrchestrator (scanning), StageVideoHandler (staging). Implemented by RabbitMQPublisher."
+
+  # scanning/services/ — 1 extracted file (ScanSchedulerTrigger)
+
+  - artifact_id: PAC-009
+    artifact_name: ScanSchedulerTrigger
+    target_path: "packages/pipeline-service/src/scanning/services/scan-scheduler.scheduler.ts"
+    role: scheduler
+    role_family: integration_async
+    layer: application
+    action: extract_from_existing
+    subdomain: scanning
+    source_file: "packages/pipeline-service/src/scanning/application/scan.orchestrator.ts"
+    evidence_ref: "08-final-role-assignment.yaml[PAC-009]"
+    notes: "@Interval(30000) scheduler entry-point extracted from ScanOrchestrator. Calls ScanOrchestrator.run()."
+
+# ─────────────────────────────────────────────────────────────────────────
+# FILES TO MODIFY (existing files moved to new layer-aligned paths)
+# ─────────────────────────────────────────────────────────────────────────
+# Note: "modify" means the implementation content is modified (DIP injection, interface
+# binding, etc.) AND the file may be moved to a new path if current path uses a non-allowed
+# subfolder. Move column indicates whether a filesystem move is required.
+
+files_to_modify:
+
+  # ── staging capability ──────────────────────────────────────────────
+
+  - artifact_id: PAC-001
+    artifact_name: VideoReadyConsumer
+    current_path: "packages/pipeline-service/src/staging/transport/video-ready.consumer.ts"
+    target_path: "packages/pipeline-service/src/staging/consumers/video-ready.consumer.ts"
+    role: consumer
+    role_family: integration_async
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-001]"
+    notes: "Move from transport/ to consumers/. Modify: inject StageVideoHandler via interface if applicable."
+
+  - artifact_id: PAC-002
+    artifact_name: StagingMessageValidator
+    current_path: "packages/pipeline-service/src/staging/transport/staging-message.validator.ts"
+    target_path: "packages/pipeline-service/src/staging/domain/staging-message.validator.ts"
+    role: validator
+    role_family: domain_constraint
+    layer: domain
+    action: modify_existing
+    move_required: true
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-002]"
+    notes: "Move from transport/ to domain/. Modify: validate incoming AMQP staging message payload shape and required fields."
+
+  - artifact_id: PAC-003
+    artifact_name: StageVideoHandler
+    current_path: "packages/pipeline-service/src/staging/application/stage-video.handler.ts"
+    target_path: "packages/pipeline-service/src/staging/services/stage-video.handler.ts"
+    role: handler
+    role_family: application_execution
+    layer: application
+    action: modify_existing
+    move_required: true
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-003]"
+    notes: "Move from application/ to services/. Modify: replace concrete VideoRepository/FileStagingAdapter injections with IVideoRepository/IFileStagingPort/IStoragePort port interfaces."
+
+  - artifact_id: PAC-004
+    artifact_name: VideoStagingPolicy
+    current_path: "packages/pipeline-service/src/staging/domain/video-staging.policy.ts"
+    target_path: "packages/pipeline-service/src/staging/domain/video-staging.policy.ts"
+    role: policy
+    role_family: decision
+    layer: domain
+    action: reuse_existing
+    move_required: false
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-004]"
+    notes: "Already at correct path in domain/. No move required. action=reuse_existing — no implementation change."
+
+  - artifact_id: PAC-006
+    artifact_name: VideoRepository
+    current_path: "packages/pipeline-service/src/staging/infrastructure/video.repository.ts"
+    target_path: "packages/pipeline-service/src/staging/repositories/mongo-video.repository.ts"
+    role: repository
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-006]"
+    notes: "Move from infrastructure/ to repositories/. Rename to mongo-video.repository.ts. Modify: implement IVideoRepository port interface."
+
+  - artifact_id: PAC-008
+    artifact_name: FileStagingAdapter
+    current_path: "packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts"
+    target_path: "packages/pipeline-service/src/staging/adapters/file-staging.adapter.ts"
+    role: adapter
+    role_family: integration_boundary
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-008]"
+    notes: "Move from infrastructure/ to adapters/. Modify: implement IFileStagingPort interface explicitly."
+
+  - artifact_id: PAC-040
+    artifact_name: VideoSchemaModule
+    current_path: "packages/shared/src/db/video.schema.ts"
+    target_path: "packages/pipeline-service/src/staging/schemas/video.schema.ts"
+    role: schema
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: staging
+    cross_package_move: true
+    evidence_ref: "08-final-role-assignment.yaml[PAC-040]"
+    notes: "Move from shared/src/db/ to staging/schemas/. Collection name (videos) LOCKED — do not change. Modify: scoped to staging MongooseModule.forFeature registration."
+
+  - artifact_id: PAC-044
+    artifact_name: PipelineStagingSubmodule
+    current_path: "packages/pipeline-service/src/staging/staging.module.ts"
+    target_path: "packages/pipeline-service/src/staging/staging.module.ts"
+    role: module
+    role_family: structural_framework
+    layer: framework
+    action: modify_existing
+    move_required: false
+    subdomain: staging
+    evidence_ref: "08-final-role-assignment.yaml[PAC-044]"
+    notes: "Already at correct path. Modify: register all staging providers under port interface tokens. Import VideoSchemaModule. Import SharedInfraModule."
+
+  # ── scanning capability ─────────────────────────────────────────────
+
+  - artifact_id: PAC-010
+    artifact_name: ScanOrchestrator
+    current_path: "packages/pipeline-service/src/scanning/application/scan.orchestrator.ts"
+    target_path: "packages/pipeline-service/src/scanning/services/scan.orchestrator.ts"
+    role: orchestrator
+    role_family: application_execution
+    layer: application
+    action: split_existing
+    move_required: true
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-010]"
+    notes: "Move from application/ to services/. Post-split: scheduler concern extracted to ScanSchedulerTrigger (PAC-009). Remaining responsibility: multi-step scan pipeline coordination via injected ports."
+
+  - artifact_id: PAC-011
+    artifact_name: BatchClaimPolicy
+    current_path: "packages/pipeline-service/src/scanning/domain/batch-claim.policy.ts"
+    target_path: "packages/pipeline-service/src/scanning/domain/batch-claim.policy.ts"
+    role: policy
+    role_family: decision
+    layer: domain
+    action: reuse_existing
+    move_required: false
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-011]"
+    notes: "Already at correct path. action=reuse_existing — no implementation change."
+
+  - artifact_id: PAC-012
+    artifact_name: ScanCleanupPolicy
+    current_path: "packages/pipeline-service/src/scanning/domain/scan-cleanup.policy.ts"
+    target_path: "packages/pipeline-service/src/scanning/domain/scan-cleanup.policy.ts"
+    role: policy
+    role_family: decision
+    layer: domain
+    action: reuse_existing
+    move_required: false
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-012]"
+    notes: "Already at correct path. action=reuse_existing — no implementation change."
+
+  - artifact_id: PAC-014
+    artifact_name: BatchClaimerService
+    current_path: "packages/pipeline-service/src/scanning/infrastructure/batch-claimer.service.ts"
+    target_path: "packages/pipeline-service/src/scanning/services/batch-claimer.service.ts"
+    role: service
+    role_family: application_execution
+    layer: application
+    action: modify_existing
+    move_required: true
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-014]"
+    notes: "Move from infrastructure/ to services/. Modify: implement IBatchClaimerPort interface. Atomic MongoDB batch claim coordination."
+
+  - artifact_id: PAC-016
+    artifact_name: VdfRunnerAdapter
+    current_path: "packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts"
+    target_path: "packages/pipeline-service/src/scanning/adapters/vdf-runner.adapter.ts"
+    role: adapter
+    role_family: integration_boundary
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-016]"
+    notes: "Move from infrastructure/ to adapters/. Modify: implement IVdfRunnerPort. Absorbs file I/O (readRawOutput) from VdfManifestNormalizer per DECISION-AA-004/DECISION-RA-006."
+
+  - artifact_id: PAC-017
+    artifact_name: VdfManifestNormalizer
+    current_path: "packages/pipeline-service/src/scanning/infrastructure/vdf-manifest.normalizer.ts"
+    target_path: "packages/pipeline-service/src/scanning/adapters/vdf-manifest.normalizer.ts"
+    role: normalizer
+    role_family: transformation
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-017]"
+    notes: "Move from infrastructure/ to adapters/. Modify: remove file I/O concern (moved to VdfRunnerAdapter). Pure string-to-NormalizedScanResult transformation only."
+
+  - artifact_id: PAC-019
+    artifact_name: VideoScanRepository
+    current_path: "packages/pipeline-service/src/scanning/infrastructure/video-scan.repository.ts"
+    target_path: "packages/pipeline-service/src/scanning/repositories/mongo-video-scan.repository.ts"
+    role: repository
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-019]"
+    notes: "Move from infrastructure/ to repositories/. Rename to mongo-video-scan.repository.ts. Modify: implement IVideoScanRepository port interface."
+
+  - artifact_id: PAC-020
+    artifact_name: ScanPurgerService
+    current_path: "packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts"
+    target_path: "packages/pipeline-service/src/scanning/services/scan-purger.service.ts"
+    role: service
+    role_family: application_execution
+    layer: application
+    action: modify_existing
+    move_required: true
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-020]"
+    notes: "Move from infrastructure/ to services/. Modify: inject IStoragePort for S3 deletion. Delegates expiry determination to ScanCleanupPolicy."
+
+  - artifact_id: PAC-041
+    artifact_name: ScanBatchSchemaModule
+    current_path: "packages/shared/src/db/scan-batch.schema.ts"
+    target_path: "packages/pipeline-service/src/scanning/schemas/scan-batch.schema.ts"
+    role: schema
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: scanning
+    cross_package_move: true
+    evidence_ref: "08-final-role-assignment.yaml[PAC-041]"
+    notes: "Move from shared/src/db/ to scanning/schemas/. Collection name (scan_batches) LOCKED."
+
+  - artifact_id: PAC-045
+    artifact_name: PipelineScanningSubmodule
+    current_path: "packages/pipeline-service/src/scanning/scanning.module.ts"
+    target_path: "packages/pipeline-service/src/scanning/scanning.module.ts"
+    role: module
+    role_family: structural_framework
+    layer: framework
+    action: modify_existing
+    move_required: false
+    subdomain: scanning
+    evidence_ref: "08-final-role-assignment.yaml[PAC-045]"
+    notes: "Already at correct path. Modify: register all scanning providers under port interface tokens. Import ScanBatchSchemaModule. Import SharedInfraModule."
+
+  # ── grouping capability ─────────────────────────────────────────────
+
+  - artifact_id: PAC-021
+    artifact_name: ScanCompletedConsumer
+    current_path: "packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts"
+    target_path: "packages/pipeline-service/src/grouping/consumers/scan-completed.consumer.ts"
+    role: consumer
+    role_family: integration_async
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-021]"
+    notes: "Move from transport/ to consumers/. Modify: receive ScanCompletedEvent, validate, delegate to ProcessScanHandler."
+
+  - artifact_id: PAC-022
+    artifact_name: ScanResultValidator
+    current_path: "packages/pipeline-service/src/grouping/infrastructure/scan-result.validator.ts"
+    target_path: "packages/pipeline-service/src/grouping/domain/scan-result.validator.ts"
+    role: validator
+    role_family: domain_constraint
+    layer: domain
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-022]"
+    notes: "Move from infrastructure/ to domain/ (domain_constraint family). Validate NormalizedScanResult payload shape and field types."
+
+  - artifact_id: PAC-023
+    artifact_name: ProcessScanHandler
+    current_path: "packages/pipeline-service/src/grouping/application/process-scan.handler.ts"
+    target_path: "packages/pipeline-service/src/grouping/services/process-scan.handler.ts"
+    role: handler
+    role_family: application_execution
+    layer: application
+    action: split_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-023]"
+    notes: "Move from application/ to services/. Post-split: replace 6 concrete injections with port interfaces (IScanResultLoader, ISimilarityEdgeRepository, ISimilarityGroupRepository, IVideoSimilarityRepository, IScanBatchRepository, IEventPublisher)."
+
+  - artifact_id: PAC-024
+    artifact_name: SimilarityThresholdPolicy
+    current_path: "packages/pipeline-service/src/grouping/domain/similarity-threshold.policy.ts"
+    target_path: "packages/pipeline-service/src/grouping/domain/similarity-threshold.policy.ts"
+    role: policy
+    role_family: decision
+    layer: domain
+    action: reuse_existing
+    move_required: false
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-024]"
+    notes: "Already at correct path. action=reuse_existing — no implementation change."
+
+  - artifact_id: PAC-025
+    artifact_name: UnionFindDomainService
+    current_path: "packages/pipeline-service/src/grouping/domain/union-find.domain-service.ts"
+    target_path: "packages/pipeline-service/src/grouping/domain/union-find.domain-service.ts"
+    role: domain_service
+    role_family: domain_model
+    layer: domain
+    action: reuse_existing
+    move_required: false
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-025]"
+    notes: "Already at correct path. action=reuse_existing — no implementation change."
+
+  - artifact_id: PAC-027
+    artifact_name: ScanResultClient
+    current_path: "packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts"
+    target_path: "packages/pipeline-service/src/grouping/clients/scan-result.client.ts"
+    role: client
+    role_family: integration_boundary
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-027]"
+    notes: "Move from infrastructure/ to clients/. Modify: implement IScanResultLoader port interface. S3 JSON retrieval and NormalizedScanResult deserialization."
+
+  - artifact_id: PAC-029
+    artifact_name: SimilarityEdgeRepository
+    current_path: "packages/pipeline-service/src/grouping/infrastructure/similarity-edge.repository.ts"
+    target_path: "packages/pipeline-service/src/grouping/repositories/mongo-similarity-edge.repository.ts"
+    role: repository
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-029]"
+    notes: "Move from infrastructure/ to repositories/. Rename to mongo-similarity-edge.repository.ts. Modify: implement ISimilarityEdgeRepository port interface."
+
+  - artifact_id: PAC-031
+    artifact_name: SimilarityGroupRepository
+    current_path: "packages/pipeline-service/src/grouping/infrastructure/similarity-group.repository.ts"
+    target_path: "packages/pipeline-service/src/grouping/repositories/mongo-similarity-group.repository.ts"
+    role: repository
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-031]"
+    notes: "Move from infrastructure/ to repositories/. Rename to mongo-similarity-group.repository.ts. Modify: implement ISimilarityGroupRepository port interface."
+
+  - artifact_id: PAC-033
+    artifact_name: VideoSimilarityRepository
+    current_path: "packages/pipeline-service/src/grouping/infrastructure/video-similarity.repository.ts"
+    target_path: "packages/pipeline-service/src/grouping/repositories/mongo-video-similarity.repository.ts"
+    role: repository
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-033]"
+    notes: "Move from infrastructure/ to repositories/. Rename to mongo-video-similarity.repository.ts. Modify: implement IVideoSimilarityRepository port interface."
+
+  - artifact_id: PAC-042
+    artifact_name: SimilarityEdgeSchemaModule
+    current_path: "packages/shared/src/db/similarity-edge.schema.ts"
+    target_path: "packages/pipeline-service/src/grouping/schemas/similarity-edge.schema.ts"
+    role: schema
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    cross_package_move: true
+    evidence_ref: "08-final-role-assignment.yaml[PAC-042]"
+    notes: "Move from shared/src/db/ to grouping/schemas/. Collection name (similarity_edges) LOCKED."
+
+  - artifact_id: PAC-043
+    artifact_name: SimilarityGroupSchemaModule
+    current_path: "packages/shared/src/db/similarity-group.schema.ts"
+    target_path: "packages/pipeline-service/src/grouping/schemas/similarity-group.schema.ts"
+    role: schema
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: grouping
+    cross_package_move: true
+    evidence_ref: "08-final-role-assignment.yaml[PAC-043]"
+    notes: "Move from shared/src/db/ to grouping/schemas/. Collection name (similarity_groups) LOCKED."
+
+  - artifact_id: PAC-046
+    artifact_name: PipelineGroupingSubmodule
+    current_path: "packages/pipeline-service/src/grouping/grouping.module.ts"
+    target_path: "packages/pipeline-service/src/grouping/grouping.module.ts"
+    role: module
+    role_family: structural_framework
+    layer: framework
+    action: modify_existing
+    move_required: false
+    subdomain: grouping
+    evidence_ref: "08-final-role-assignment.yaml[PAC-046]"
+    notes: "Already at correct path. Modify: register all grouping providers under port interface tokens. Import SimilarityEdgeSchema + SimilarityGroupSchema modules. Import SharedInfraModule."
+
+  # ── shared-infra capability ─────────────────────────────────────────
+
+  - artifact_id: PAC-035
+    artifact_name: ScanBatchRepository
+    current_path: "packages/pipeline-service/src/grouping/infrastructure/scan-batch.repository.ts"
+    target_path: "packages/pipeline-service/src/shared-infra/repositories/mongo-scan-batch.repository.ts"
+    role: repository
+    role_family: persistence_data
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: shared_infra
+    evidence_ref: "08-final-role-assignment.yaml[PAC-035]"
+    notes: "Move from grouping/infrastructure/ to shared-infra/repositories/. Cross-capability shared repository — consumed by BatchClaimerService (scanning) and ProcessScanHandler (grouping). Modify: implement IScanBatchRepository port interface."
+
+  - artifact_id: PAC-037
+    artifact_name: S3StorageAdapter
+    current_path: "packages/shared/src/storage/s3.client.ts"
+    target_path: "packages/pipeline-service/src/shared-infra/adapters/s3-storage.adapter.ts"
+    role: adapter
+    role_family: integration_boundary
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: shared_infra
+    cross_package_move: true
+    evidence_ref: "08-final-role-assignment.yaml[PAC-037]"
+    notes: "Move from shared/src/storage/ to shared-infra/adapters/. Rename from s3.client.ts to s3-storage.adapter.ts. Modify: implement IStoragePort interface. AWS SDK v3 wrapper."
+
+  - artifact_id: PAC-039
+    artifact_name: RabbitMQPublisher
+    current_path: "packages/shared/src/queue/rabbitmq.client.ts"
+    target_path: "packages/pipeline-service/src/shared-infra/adapters/rabbitmq-publisher.publisher.ts"
+    role: publisher
+    role_family: integration_boundary
+    layer: infrastructure
+    action: modify_existing
+    move_required: true
+    subdomain: shared_infra
+    cross_package_move: true
+    evidence_ref: "08-final-role-assignment.yaml[PAC-039]"
+    notes: "Move from shared/src/queue/ to shared-infra/adapters/. Rename to rabbitmq-publisher.publisher.ts. Modify: implement IEventPublisher port interface. amqplib channel.publish() wrapper."
+
+  - artifact_id: PAC-047
+    artifact_name: SharedInfraModule
+    current_path: "packages/pipeline-service/src/shared-infra.module.ts"
+    target_path: "packages/pipeline-service/src/shared-infra/shared-infra.module.ts"
+    role: module
+    role_family: structural_framework
+    layer: framework
+    action: modify_existing
+    move_required: true
+    subdomain: shared_infra
+    evidence_ref: "08-final-role-assignment.yaml[PAC-047]"
+    notes: "Move from src/ root to shared-infra/ folder root. Modify: register S3StorageAdapter under IStoragePort token, RabbitMQPublisher under IEventPublisher token, ScanBatchRepository under IScanBatchRepository token. @Global module exported to all submodules."
+
+  # ── root level ──────────────────────────────────────────────────────
+
+  - artifact_id: PAC-048
+    artifact_name: PipelineAppModule
+    current_path: "packages/pipeline-service/src/app.module.ts"
+    target_path: "packages/pipeline-service/src/app.module.ts"
+    role: module
+    role_family: structural_framework
+    layer: framework
+    action: modify_existing
+    move_required: false
+    subdomain: root
+    evidence_ref: "08-final-role-assignment.yaml[PAC-048]"
+    notes: "Already at correct path. Modify: import exactly SharedInfraModule + StagingModule + ScanningModule + GroupingModule. Remove any direct subdomain provider registrations."
+
+# ─────────────────────────────────────────────────────────────────────────
+# FILES TO MOVE (filesystem moves with no implementation change)
+# ─────────────────────────────────────────────────────────────────────────
+# Populated from files_to_modify where move_required=true and action=reuse_existing
+
+files_to_move: []
+# Note: All reuse_existing artifacts (PAC-004, PAC-011, PAC-012, PAC-024, PAC-025)
+# are already at their correct target paths. No pure-move-only files.
+
+# ─────────────────────────────────────────────────────────────────────────
+# FILES TO DELETE
+# ─────────────────────────────────────────────────────────────────────────
+
+files_to_delete: []
+# Rationale: standalone services deprecated but not deleted in this refactor phase.
+# shared/src/db/*.schema.ts files are moved (cross_package_move=true) to pipeline-service
+# capability schemas/ folders. shared/src/storage/s3.client.ts and shared/src/queue/rabbitmq.client.ts
+# are moved to shared-infra/adapters/. Deletion of originals from shared/ is out of scope
+# for structure_rendering — it is handled in the implementation phase.
+
+# ─────────────────────────────────────────────────────────────────────────
+# FOLDERS TO CREATE (new folders that do not exist in current source tree)
+# ─────────────────────────────────────────────────────────────────────────
+
+folders_to_create:
+  - "packages/pipeline-service/src/staging/consumers/"
+  - "packages/pipeline-service/src/staging/services/"
+  - "packages/pipeline-service/src/staging/interfaces/"
+  - "packages/pipeline-service/src/staging/repositories/"
+  - "packages/pipeline-service/src/staging/adapters/"
+  - "packages/pipeline-service/src/staging/schemas/"
+  - "packages/pipeline-service/src/scanning/services/"
+  - "packages/pipeline-service/src/scanning/interfaces/"
+  - "packages/pipeline-service/src/scanning/repositories/"
+  - "packages/pipeline-service/src/scanning/adapters/"
+  - "packages/pipeline-service/src/scanning/schemas/"
+  - "packages/pipeline-service/src/grouping/consumers/"
+  - "packages/pipeline-service/src/grouping/services/"
+  - "packages/pipeline-service/src/grouping/interfaces/"
+  - "packages/pipeline-service/src/grouping/clients/"
+  - "packages/pipeline-service/src/grouping/repositories/"
+  - "packages/pipeline-service/src/grouping/schemas/"
+  - "packages/pipeline-service/src/shared-infra/"
+  - "packages/pipeline-service/src/shared-infra/interfaces/"
+  - "packages/pipeline-service/src/shared-infra/adapters/"
+  - "packages/pipeline-service/src/shared-infra/repositories/"
+
+# ─────────────────────────────────────────────────────────────────────────
+# RENDERED FILE TREE (canonical target state)
+# ─────────────────────────────────────────────────────────────────────────
+
+rendered_file_tree:
+  root: "packages/"
+  tree:
+    - path: "pipeline-service/src/"
+      children:
+
+        - path: "app.module.ts"
+          artifact_id: PAC-048
+          role: module
+          action: modify_existing
+          note: "[module, modify] — root app module"
+
+        - path: "staging/"
+          children:
+            - path: "staging.module.ts"
+              artifact_id: PAC-044
+              role: module
+              action: modify_existing
+              note: "[module, modify]"
+
+            - path: "consumers/"
+              children:
+                - path: "video-ready.consumer.ts"
+                  artifact_id: PAC-001
+                  role: consumer
+                  action: modify_existing
+                  note: "[consumer, modify] — moved from staging/transport/"
+
+            - path: "services/"
+              children:
+                - path: "stage-video.handler.ts"
+                  artifact_id: PAC-003
+                  role: handler
+                  action: modify_existing
+                  note: "[handler, modify] — moved from staging/application/"
+
+            - path: "domain/"
+              children:
+                - path: "video-staging.policy.ts"
+                  artifact_id: PAC-004
+                  role: policy
+                  action: reuse_existing
+                  note: "[policy, reuse] — in place"
+
+                - path: "staging-message.validator.ts"
+                  artifact_id: PAC-002
+                  role: validator
+                  action: modify_existing
+                  note: "[validator, modify] — moved from staging/transport/"
+
+            - path: "interfaces/"
+              children:
+                - path: "i-video-repository.port.ts"
+                  artifact_id: PAC-005
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-file-staging.port.ts"
+                  artifact_id: PAC-007
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+            - path: "repositories/"
+              children:
+                - path: "mongo-video.repository.ts"
+                  artifact_id: PAC-006
+                  role: repository
+                  action: modify_existing
+                  note: "[repository, modify] — moved from staging/infrastructure/"
+
+            - path: "adapters/"
+              children:
+                - path: "file-staging.adapter.ts"
+                  artifact_id: PAC-008
+                  role: adapter
+                  action: modify_existing
+                  note: "[adapter, modify] — moved from staging/infrastructure/"
+
+            - path: "schemas/"
+              children:
+                - path: "video.schema.ts"
+                  artifact_id: PAC-040
+                  role: schema
+                  action: modify_existing
+                  note: "[schema, modify] — moved from shared/src/db/"
+
+        - path: "scanning/"
+          children:
+            - path: "scanning.module.ts"
+              artifact_id: PAC-045
+              role: module
+              action: modify_existing
+              note: "[module, modify]"
+
+            - path: "services/"
+              children:
+                - path: "scan.orchestrator.ts"
+                  artifact_id: PAC-010
+                  role: orchestrator
+                  action: split_existing
+                  note: "[orchestrator, split] — moved from scanning/application/"
+
+                - path: "scan-scheduler.scheduler.ts"
+                  artifact_id: PAC-009
+                  role: scheduler
+                  action: extract_from_existing
+                  note: "[scheduler, extract] — new file extracted from scan.orchestrator.ts"
+
+                - path: "batch-claimer.service.ts"
+                  artifact_id: PAC-014
+                  role: service
+                  action: modify_existing
+                  note: "[service, modify] — moved from scanning/infrastructure/"
+
+                - path: "scan-purger.service.ts"
+                  artifact_id: PAC-020
+                  role: service
+                  action: modify_existing
+                  note: "[service, modify] — moved from scanning/infrastructure/"
+
+            - path: "domain/"
+              children:
+                - path: "batch-claim.policy.ts"
+                  artifact_id: PAC-011
+                  role: policy
+                  action: reuse_existing
+                  note: "[policy, reuse] — in place"
+
+                - path: "scan-cleanup.policy.ts"
+                  artifact_id: PAC-012
+                  role: policy
+                  action: reuse_existing
+                  note: "[policy, reuse] — in place"
+
+            - path: "interfaces/"
+              children:
+                - path: "i-batch-claimer.port.ts"
+                  artifact_id: PAC-013
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-vdf-runner.port.ts"
+                  artifact_id: PAC-015
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-video-scan-repository.port.ts"
+                  artifact_id: PAC-018
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+            - path: "repositories/"
+              children:
+                - path: "mongo-video-scan.repository.ts"
+                  artifact_id: PAC-019
+                  role: repository
+                  action: modify_existing
+                  note: "[repository, modify] — moved from scanning/infrastructure/"
+
+            - path: "adapters/"
+              children:
+                - path: "vdf-runner.adapter.ts"
+                  artifact_id: PAC-016
+                  role: adapter
+                  action: modify_existing
+                  note: "[adapter, modify] — moved from scanning/infrastructure/"
+
+                - path: "vdf-manifest.normalizer.ts"
+                  artifact_id: PAC-017
+                  role: normalizer
+                  action: modify_existing
+                  note: "[normalizer, modify] — moved from scanning/infrastructure/"
+
+            - path: "schemas/"
+              children:
+                - path: "scan-batch.schema.ts"
+                  artifact_id: PAC-041
+                  role: schema
+                  action: modify_existing
+                  note: "[schema, modify] — moved from shared/src/db/"
+
+        - path: "grouping/"
+          children:
+            - path: "grouping.module.ts"
+              artifact_id: PAC-046
+              role: module
+              action: modify_existing
+              note: "[module, modify]"
+
+            - path: "consumers/"
+              children:
+                - path: "scan-completed.consumer.ts"
+                  artifact_id: PAC-021
+                  role: consumer
+                  action: modify_existing
+                  note: "[consumer, modify] — moved from grouping/transport/"
+
+            - path: "services/"
+              children:
+                - path: "process-scan.handler.ts"
+                  artifact_id: PAC-023
+                  role: handler
+                  action: split_existing
+                  note: "[handler, split] — moved from grouping/application/"
+
+            - path: "domain/"
+              children:
+                - path: "similarity-threshold.policy.ts"
+                  artifact_id: PAC-024
+                  role: policy
+                  action: reuse_existing
+                  note: "[policy, reuse] — in place"
+
+                - path: "union-find.domain-service.ts"
+                  artifact_id: PAC-025
+                  role: domain_service
+                  action: reuse_existing
+                  note: "[domain_service, reuse] — in place"
+
+                - path: "scan-result.validator.ts"
+                  artifact_id: PAC-022
+                  role: validator
+                  action: modify_existing
+                  note: "[validator, modify] — moved from grouping/infrastructure/"
+
+            - path: "interfaces/"
+              children:
+                - path: "i-scan-result-loader.port.ts"
+                  artifact_id: PAC-026
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-similarity-edge-repository.port.ts"
+                  artifact_id: PAC-028
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-similarity-group-repository.port.ts"
+                  artifact_id: PAC-030
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-video-similarity-repository.port.ts"
+                  artifact_id: PAC-032
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+            - path: "clients/"
+              children:
+                - path: "scan-result.client.ts"
+                  artifact_id: PAC-027
+                  role: client
+                  action: modify_existing
+                  note: "[client, modify] — moved from grouping/infrastructure/"
+
+            - path: "repositories/"
+              children:
+                - path: "mongo-similarity-edge.repository.ts"
+                  artifact_id: PAC-029
+                  role: repository
+                  action: modify_existing
+                  note: "[repository, modify] — moved from grouping/infrastructure/"
+
+                - path: "mongo-similarity-group.repository.ts"
+                  artifact_id: PAC-031
+                  role: repository
+                  action: modify_existing
+                  note: "[repository, modify] — moved from grouping/infrastructure/"
+
+                - path: "mongo-video-similarity.repository.ts"
+                  artifact_id: PAC-033
+                  role: repository
+                  action: modify_existing
+                  note: "[repository, modify] — moved from grouping/infrastructure/"
+
+            - path: "schemas/"
+              children:
+                - path: "similarity-edge.schema.ts"
+                  artifact_id: PAC-042
+                  role: schema
+                  action: modify_existing
+                  note: "[schema, modify] — moved from shared/src/db/"
+
+                - path: "similarity-group.schema.ts"
+                  artifact_id: PAC-043
+                  role: schema
+                  action: modify_existing
+                  note: "[schema, modify] — moved from shared/src/db/"
+
+        - path: "shared-infra/"
+          children:
+            - path: "shared-infra.module.ts"
+              artifact_id: PAC-047
+              role: module
+              action: modify_existing
+              note: "[module, modify] — moved from src/ root to shared-infra/"
+
+            - path: "interfaces/"
+              children:
+                - path: "i-event-publisher.port.ts"
+                  artifact_id: PAC-038
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-storage.port.ts"
+                  artifact_id: PAC-036
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+                - path: "i-scan-batch-repository.port.ts"
+                  artifact_id: PAC-034
+                  role: port
+                  action: create_new
+                  note: "[port, create_new]"
+
+            - path: "adapters/"
+              children:
+                - path: "s3-storage.adapter.ts"
+                  artifact_id: PAC-037
+                  role: adapter
+                  action: modify_existing
+                  note: "[adapter, modify] — moved from shared/src/storage/"
+
+                - path: "rabbitmq-publisher.publisher.ts"
+                  artifact_id: PAC-039
+                  role: publisher
+                  action: modify_existing
+                  note: "[publisher, modify] — moved from shared/src/queue/"
+
+            - path: "repositories/"
+              children:
+                - path: "mongo-scan-batch.repository.ts"
+                  artifact_id: PAC-035
+                  role: repository
+                  action: modify_existing
+                  note: "[repository, modify] — moved from grouping/infrastructure/"
+
+    - path: "shared/src/"
+      note: "LOCKED — existing schemas remain at shared/src/db/ until cross-package-move is executed in implementation phase. index.ts barrel to be updated to re-export from new capability paths."
+      children:
+        - path: "index.ts"
+          note: "[barrel, modify] — update re-exports after schemas moved to pipeline-service"
+
+# ─────────────────────────────────────────────────────────────────────────
+# ARTIFACT COUNT VALIDATION
+# ─────────────────────────────────────────────────────────────────────────
+
+artifact_count_validation:
+  files_to_create_count: 13
+  files_to_create_breakdown:
+    port_interfaces: 12
+    scheduler_extract: 1
+  files_to_modify_count: 38
+  files_to_modify_breakdown:
+    modify_existing: 27
+    split_existing: 2
+    reuse_existing: 5
+    extract_from_existing: 1
+    note: "reuse_existing included here as they appear in files_to_modify section (no implementation change, possible path change)"
+  files_to_move_count: 0
+  files_to_delete_count: 0
+  total_artifacts_covered: 51
+  expected_from_role_assignment: 51
+  count_match: true
+  discrepancy_notes: >
+    files_to_create includes PAC-009 (ScanSchedulerTrigger, extract_from_existing) in addition to
+    the 12 port interfaces. Total create list = 13.
+    files_to_modify section includes all non-create artifacts = 38.
+    13 + 38 = 51 matches expected total.
+
+evidence_refs:
+  - ref: conventions/.ai/reports/08-final-role-assignment.yaml
+    section: role_assignment_table
+    consumed_by: artifact_enumeration
+  - ref: conventions/.ai/reports/structure-plan.yaml
+    section: path_normalization_decisions
+    consumed_by: target_path_derivation
+  - ref: conventions/.ai/reports/structure-plan.yaml
+    section: layer_placement_rules
+    consumed_by: subfolder_assignment
+  - ref: conventions/.ai/reports/structure-plan.yaml
+    section: anti_bloat_checks
+    consumed_by: bloat_validation
+  - ref: conventions/.ai/reports/structure-plan.yaml
+    section: folders_to_create
+    consumed_by: folder_creation_list
+
+triggers_emitted: []

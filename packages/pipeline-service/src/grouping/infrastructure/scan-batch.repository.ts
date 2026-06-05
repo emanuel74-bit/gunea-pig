@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { ScanBatchDocument, ScanBatchStatus } from '@gunea-pig/shared';
+import { IGroupingScanBatchRepository } from '../interfaces/i-scan-batch-repository.port';
 
 @Injectable()
-export class ScanBatchRepository {
+export class ScanBatchRepository implements IGroupingScanBatchRepository {
   constructor(
     @InjectModel(ScanBatchDocument.name)
     private readonly scanBatchModel: Model<ScanBatchDocument>,

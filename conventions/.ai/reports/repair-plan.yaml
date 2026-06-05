@@ -1,0 +1,17 @@
+report_id: "repair-plan"
+phase_id: feedback_repair
+status: complete
+repair_authorized: false
+repair_action: none
+summary: >
+  No repair authorized. failure-classification.yaml reports classification: no_failures,
+  repair_required: false. Implementation passed all validation checks.
+repair_items: []
+evidence_refs:
+  - ref: conventions/.ai/reports/failure-classification.yaml
+    section: classification
+    consumed_by: repair_authorization_check
+gate_result:
+  gate_id: gate.feedback_repair.output
+  status: pending
+  note: Gate result produced by gate subsystem.

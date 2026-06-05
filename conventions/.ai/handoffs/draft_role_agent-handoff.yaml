@@ -1,0 +1,11 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: draft_role_agent-handoff
+status: prepared
+source_output: .ai/reports/architecture-blueprint.yaml
+target_agent: draft_role_agent
+evidence_refs:
+  - .ai/reports/architecture-blueprint.yaml
+source_summary:
+  artifact: architecture_blueprint
+  status: null

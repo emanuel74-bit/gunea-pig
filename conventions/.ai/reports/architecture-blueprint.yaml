@@ -1,0 +1,1487 @@
+artifact: architecture_blueprint
+phase_id: architecture_decomposition
+blueprint_id: "blueprint.large_refactor.solid"
+source_behavior_ref: ".ai/reports/02-behavior-contract.yaml"
+
+# ─────────────────────────────────────────────
+# CAPABILITIES
+# ─────────────────────────────────────────────
+capabilities:
+  - capability_id: CAP-001
+    name: video_staging
+    business_purpose: >
+      Consume a NewVideoReadyEvent from RabbitMQ, perform an idempotency check,
+      verify the asset exists in S3, download it to a local scan path, and mark
+      the video as staged so the VDF scan pipeline can proceed.
+    source_requirements:
+      - AC-001
+      - AC-002
+    included_behaviors:
+      - consume_new_video_ready_event
+      - idempotency_guard
+      - s3_asset_verification
+      - file_download_to_scan_path
+      - mark_video_staged
+    excluded_behaviors:
+      - vdf_scanning
+      - similarity_grouping
+      - event_publishing_beyond_state_update
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service"
+      - "02-behavior-contract.yaml#staging_capability"
+
+  - capability_id: CAP-002
+    name: vdf_scanning
+    business_purpose: >
+      On a 30-second scheduler interval, claim a batch of staged videos, invoke
+      the VDF CLI tool, normalize the manifest output, upload the result to S3,
+      emit a ScanCompletedEvent, and run a cleanup pass to remove expired
+      scan artifacts.
+    source_requirements:
+      - AC-003
+      - AC-004
+    included_behaviors:
+      - scheduled_batch_claim
+      - vdf_cli_invocation
+      - manifest_normalization
+      - s3_result_upload
+      - emit_scan_completed_event
+      - scan_cleanup_pass
+    excluded_behaviors:
+      - video_staging
+      - similarity_grouping
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service"
+      - "02-behavior-contract.yaml#scanning_capability"
+
+  - capability_id: CAP-003
+    name: video_similarity_grouping
+    business_purpose: >
+      Consume a ScanCompletedEvent, load the S3 scan result, apply similarity
+      threshold filtering, persist similarity edges, run a union-find group
+      merge, and emit a ScanPersistedEvent so downstream consumers can act on
+      updated video groups.
+    source_requirements:
+      - AC-005
+      - AC-006
+    included_behaviors:
+      - consume_scan_completed_event
+      - load_s3_scan_result
+      - threshold_filter_application
+      - persist_similarity_edges
+      - union_find_group_merge
+      - emit_scan_persisted_event
+    excluded_behaviors:
+      - video_staging
+      - vdf_scanning
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service"
+      - "02-behavior-contract.yaml#grouping_capability"
+
+# ─────────────────────────────────────────────
+# ATOMIC UNITS
+# ─────────────────────────────────────────────
+atomic_units:
+  # ── CAP-001: Video Staging ─────────────────
+
+  - unit_id: AU-001
+    intent: entry_intent
+    capability_ref: CAP-001
+    name: VideoReadyConsumer
+    description: >
+      Receives NewVideoReadyEvent from RabbitMQ transport, validates message
+      shape, maps to a StageVideoCommand, and delegates to the application
+      handler. No business logic permitted.
+    input_contract: NewVideoReadyEvent (RabbitMQ message)
+    output_contract: StageVideoCommand dispatched to handler
+    side_effects: []
+    layer_candidate: transport
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/transport/video-ready.consumer.ts"
+
+  - unit_id: AU-002
+    intent: transformation_intent
+    capability_ref: CAP-001
+    name: StagingMessageValidator
+    description: >
+      Validates and parses the raw RabbitMQ payload for the staging event.
+      Pure transformation — no I/O, no side effects.
+    input_contract: raw RabbitMQ message payload (unknown)
+    output_contract: validated StagingMessageDto
+    side_effects: []
+    layer_candidate: transport
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/validators/staging-message.validator.ts"
+
+  - unit_id: AU-003
+    intent: orchestration_intent
+    capability_ref: CAP-001
+    name: StageVideoHandler
+    description: >
+      Orchestrates the staging use-case workflow: resolve idempotency via
+      IVideoRepository, verify asset via IFileStagingPort, download file,
+      update state. Depends on declared ports only — never on concrete classes.
+      Error classes must be extracted to a shared errors module.
+    input_contract: StageVideoCommand
+    output_contract: void (state mutation via ports)
+    side_effects:
+      - video record state updated to staged
+      - file written to scan path
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/application/stage-video.handler.ts"
+      - "risk-classification.yaml#SRP_violation"
+      - "risk-classification.yaml#DIP_violation"
+
+  - unit_id: AU-004
+    intent: decision_intent
+    capability_ref: CAP-001
+    name: VideoStagingPolicy
+    description: >
+      Pure domain policy: determines whether a video is eligible for staging
+      based on current state. Zero framework imports.
+    input_contract: IStagingEligibilityContext
+    output_contract: boolean eligibility decision
+    side_effects: []
+    layer_candidate: decision
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/domain/video-staging.policy.ts"
+
+  - unit_id: AU-005
+    intent: persistence_intent
+    capability_ref: CAP-001
+    name: IVideoRepository
+    description: >
+      Port interface for video record persistence. Declares find-by-id and
+      update-state operations used by StageVideoHandler. Concrete Mongoose
+      implementation is VideoRepository.
+    input_contract: video id / state payload
+    output_contract: IVideo or void
+    side_effects:
+      - database read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/infrastructure/video.repository.ts"
+      - "risk-classification.yaml#ISP_violation"
+
+  - unit_id: AU-006
+    intent: persistence_intent
+    capability_ref: CAP-001
+    name: VideoRepository
+    description: >
+      Concrete Mongoose implementation of IVideoRepository. Bounded to
+      persistence operations only; must implement the interface contract.
+    input_contract: IVideoRepository contract
+    output_contract: IVideo document or void
+    side_effects:
+      - MongoDB read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: repository
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/infrastructure/video.repository.ts"
+
+  - unit_id: AU-007
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: IFileStagingPort
+    description: >
+      Port interface for file staging operations: verify S3 object exists,
+      download from S3 to local scan path. Abstracts all S3 SDK calls from
+      the application layer.
+    input_contract: S3 key / local destination path
+    output_contract: boolean verification / void download
+    side_effects:
+      - S3 read
+      - local filesystem write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/infrastructure/file-staging.adapter.ts"
+      - "risk-classification.yaml#DIP_violation"
+
+  - unit_id: AU-008
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: FileStagingAdapter
+    description: >
+      Concrete implementation of IFileStagingPort. Wraps S3 SDK for object
+      existence verification and streaming download. S3ObjectNotFoundError
+      must be extracted to a shared errors module rather than defined inline.
+    input_contract: IFileStagingPort contract
+    output_contract: boolean / void
+    side_effects:
+      - S3 SDK calls
+      - local file I/O
+    layer_candidate: infrastructure
+    candidate_role_pressure: adapter
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#staging-service/infrastructure/file-staging.adapter.ts"
+
+  # ── CAP-002: VDF Scanning ──────────────────
+
+  - unit_id: AU-009
+    intent: orchestration_intent
+    capability_ref: CAP-002
+    name: ScanOrchestrator
+    description: >
+      Coordinates the full VDF scan use-case on each scheduler tick: claim
+      batch via IBatchClaimerPort, run VDF via IVdfRunnerPort, normalize
+      manifest, upload result via IStoragePort, emit event via IEventPublisher,
+      trigger cleanup. Must be decomposed from the current 7-responsibility
+      monolith — each step delegates to a dedicated port or domain service.
+    input_contract: scheduler tick (none / void trigger)
+    output_contract: void (side effects via ports)
+    side_effects:
+      - batch claimed in database
+      - VDF CLI invoked
+      - result uploaded to S3
+      - ScanCompletedEvent published
+      - expired scan artifacts deleted
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/application/scan.orchestrator.ts"
+      - "risk-classification.yaml#SRP_violation_7_responsibilities"
+
+  - unit_id: AU-010
+    intent: entry_intent
+    capability_ref: CAP-002
+    name: ScanSchedulerTrigger
+    description: >
+      @Interval(30000) NestJS scheduler entry point. Single responsibility:
+      invoke ScanOrchestrator. No business logic.
+    input_contract: NestJS @Interval tick
+    output_contract: ScanOrchestrator.run() invoked
+    side_effects: []
+    layer_candidate: transport
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/application/scan.orchestrator.ts"
+
+  - unit_id: AU-011
+    intent: decision_intent
+    capability_ref: CAP-002
+    name: BatchClaimPolicy
+    description: >
+      Pure domain policy: determines which scan batch records are eligible for
+      claiming. Zero framework imports.
+    input_contract: IScanBatch[]
+    output_contract: IScanBatch[] eligible set
+    side_effects: []
+    layer_candidate: decision
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/domain/batch-claim.policy.ts"
+
+  - unit_id: AU-012
+    intent: decision_intent
+    capability_ref: CAP-002
+    name: ScanCleanupPolicy
+    description: >
+      Pure domain policy: determines which scan artifacts are expired and
+      eligible for deletion. Zero framework imports.
+    input_contract: IScanArtifactMeta[]
+    output_contract: IScanArtifactMeta[] expired set
+    side_effects: []
+    layer_candidate: decision
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/domain/scan-cleanup.policy.ts"
+
+  - unit_id: AU-013
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: IBatchClaimerPort
+    description: >
+      Port interface for batch claim + recovery operations. Declares claimBatch
+      and recoverStaleBatches independently (ISP compliance). Separates the
+      claim from recovery concern that currently coexist in BatchClaimerService.
+    input_contract: IScanBatch context
+    output_contract: IScanBatch[] claimed set
+    side_effects:
+      - batch records updated in database
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/batch-claimer.service.ts"
+      - "risk-classification.yaml#SRP_violation"
+
+  - unit_id: AU-014
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: BatchClaimerService
+    description: >
+      Concrete implementation of IBatchClaimerPort. Handles batch claim
+      atomically. Recovery extracted to a separate StaleBatchRecoveryService.
+    input_contract: IBatchClaimerPort contract
+    output_contract: IScanBatch[] claimed
+    side_effects:
+      - MongoDB update
+    layer_candidate: infrastructure
+    candidate_role_pressure: service
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/batch-claimer.service.ts"
+
+  - unit_id: AU-015
+    intent: integration_intent
+    capability_ref: CAP-002
+    name: IVdfRunnerPort
+    description: >
+      Port interface for VDF CLI invocation. Declares runScan(batchId, inputPath)
+      returning raw manifest output. Decouples application from CLI subprocess
+      details.
+    input_contract: batchId, inputPath
+    output_contract: raw VDF manifest string
+    side_effects:
+      - VDF CLI subprocess
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/vdf-runner.adapter.ts"
+
+  - unit_id: AU-016
+    intent: integration_intent
+    capability_ref: CAP-002
+    name: VdfRunnerAdapter
+    description: >
+      Concrete implementation of IVdfRunnerPort. Spawns VDF CLI as a
+      child process, captures stdout, forwards to normalizer.
+    input_contract: IVdfRunnerPort contract
+    output_contract: raw manifest string
+    side_effects:
+      - child_process spawn
+    layer_candidate: infrastructure
+    candidate_role_pressure: adapter
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/vdf-runner.adapter.ts"
+
+  - unit_id: AU-017
+    intent: transformation_intent
+    capability_ref: CAP-002
+    name: VdfManifestNormalizer
+    description: >
+      Transforms raw VDF CLI stdout into a NormalizedScanResult. Pure
+      transformation — file I/O must be extracted to VdfRunnerAdapter so
+      this unit has zero side effects.
+    input_contract: raw VDF manifest string
+    output_contract: NormalizedScanResult
+    side_effects: []
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/vdf-manifest.normalizer.ts"
+      - "risk-classification.yaml#SRP_violation_file_io_mixed"
+
+  - unit_id: AU-018
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: IVideoScanRepository
+    description: >
+      Port interface for video scan record persistence. Declares find and
+      update operations consumed by ScanOrchestrator. Splits read and write
+      concerns that currently coexist in VideoScanRepository (ISP).
+    input_contract: scan id / scan payload
+    output_contract: IVideoScan or void
+    side_effects:
+      - database read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/video-scan.repository.ts"
+      - "risk-classification.yaml#ISP_violation"
+
+  - unit_id: AU-019
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: VideoScanRepository
+    description: >
+      Concrete Mongoose implementation of IVideoScanRepository. Bounded to
+      persistence of video scan records only.
+    input_contract: IVideoScanRepository contract
+    output_contract: IVideoScan or void
+    side_effects:
+      - MongoDB read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: repository
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/video-scan.repository.ts"
+
+  - unit_id: AU-020
+    intent: integration_intent
+    capability_ref: CAP-002
+    name: ScanPurgerService
+    description: >
+      Executes expired scan artifact deletion. Bounded to cleanup only;
+      expiry determination delegated to ScanCleanupPolicy. Decoupled from
+      batch claim lifecycle.
+    input_contract: IScanArtifactMeta[] expired set
+    output_contract: void
+    side_effects:
+      - local filesystem deletes
+      - S3 object deletes (conditional)
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/scan-purger.service.ts"
+      - "risk-classification.yaml#SRP_violation_cleanup_expiry"
+
+  # ── CAP-003: Video Similarity Grouping ─────
+
+  - unit_id: AU-021
+    intent: entry_intent
+    capability_ref: CAP-003
+    name: ScanCompletedConsumer
+    description: >
+      Receives ScanCompletedEvent from RabbitMQ transport, delegates message
+      validation to ScanResultValidator, maps to ProcessScanCommand, and
+      forwards to ProcessScanHandler. Inline validateEvent duplicated from
+      validator must be removed (SRP fix).
+    input_contract: ScanCompletedEvent (RabbitMQ message)
+    output_contract: ProcessScanCommand dispatched to handler
+    side_effects: []
+    layer_candidate: transport
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/consumers/scan-completed.consumer.ts"
+      - "risk-classification.yaml#SRP_violation_inline_validator"
+
+  - unit_id: AU-022
+    intent: transformation_intent
+    capability_ref: CAP-003
+    name: ScanResultValidator
+    description: >
+      Validates and parses the raw ScanCompletedEvent payload. Pure
+      transformation. Currently duplicated between grouping-service and
+      pipeline-service; canonical copy lives here, pipeline submodule
+      re-uses it.
+    input_contract: raw RabbitMQ message payload (unknown)
+    output_contract: validated ScanCompletedDto
+    side_effects: []
+    layer_candidate: transport
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/validators/scan-result.validator.ts"
+      - "risk-classification.yaml#duplication_pipeline_service"
+
+  - unit_id: AU-023
+    intent: orchestration_intent
+    capability_ref: CAP-003
+    name: ProcessScanHandler
+    description: >
+      Orchestrates the grouping use-case: load S3 result via IScanResultLoader,
+      apply threshold policy, persist edges via ISimilarityEdgeRepository,
+      run union-find via UnionFindDomainService, persist groups via
+      ISimilarityGroupRepository, emit event via IEventPublisher. All
+      concrete instantiations replaced by injected port interfaces.
+    input_contract: ProcessScanCommand
+    output_contract: void (state mutations via ports)
+    side_effects:
+      - similarity edges persisted
+      - video groups updated
+      - ScanPersistedEvent published
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/application/process-scan.handler.ts"
+      - "risk-classification.yaml#SRP_violation"
+      - "risk-classification.yaml#DIP_violation_new_keyword"
+
+  - unit_id: AU-024
+    intent: decision_intent
+    capability_ref: CAP-003
+    name: SimilarityThresholdPolicy
+    description: >
+      Pure domain policy: filters similarity edges below the configured
+      threshold. Zero framework imports.
+    input_contract: ISimilarityEdge[], threshold config
+    output_contract: ISimilarityEdge[] above threshold
+    side_effects: []
+    layer_candidate: decision
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/domain/similarity-threshold.policy.ts"
+
+  - unit_id: AU-025
+    intent: domain_intent
+    capability_ref: CAP-003
+    name: UnionFindDomainService
+    description: >
+      Pure domain service implementing union-find algorithm for video group
+      merging. No framework imports; instantiated by NestJS DI not with
+      `new` keyword in handler.
+    input_contract: ISimilarityEdge[] filtered set
+    output_contract: IVideoGroup[] merged groups
+    side_effects: []
+    layer_candidate: domain
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/domain/union-find.domain-service.ts"
+
+  - unit_id: AU-026
+    intent: integration_intent
+    capability_ref: CAP-003
+    name: IScanResultLoader
+    description: >
+      Port interface for loading scan result payloads from S3. Declares a
+      single load(s3Key) -> NormalizedScanResult operation consumed by
+      ProcessScanHandler.
+    input_contract: S3 key string
+    output_contract: NormalizedScanResult
+    side_effects:
+      - S3 read
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/scan-result.client.ts"
+      - "risk-classification.yaml#DIP_violation"
+
+  - unit_id: AU-027
+    intent: integration_intent
+    capability_ref: CAP-003
+    name: ScanResultClient
+    description: >
+      Concrete implementation of IScanResultLoader. Fetches JSON from S3,
+      deserializes to NormalizedScanResult.
+    input_contract: IScanResultLoader contract
+    output_contract: NormalizedScanResult
+    side_effects:
+      - S3 SDK call
+    layer_candidate: infrastructure
+    candidate_role_pressure: adapter
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/scan-result.client.ts"
+
+  - unit_id: AU-028
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: ISimilarityEdgeRepository
+    description: >
+      Port interface for similarity edge persistence. Declares upsertEdge and
+      findEdgesByVideoId operations. Consumed by ProcessScanHandler.
+    input_contract: ISimilarityEdge payload
+    output_contract: void / ISimilarityEdge[]
+    side_effects:
+      - database read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/similarity-edge.repository.ts"
+
+  - unit_id: AU-029
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: SimilarityEdgeRepository
+    description: >
+      Concrete Mongoose implementation of ISimilarityEdgeRepository.
+    input_contract: ISimilarityEdgeRepository contract
+    output_contract: void / ISimilarityEdge[]
+    side_effects:
+      - MongoDB read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: repository
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/similarity-edge.repository.ts"
+
+  - unit_id: AU-030
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: ISimilarityGroupRepository
+    description: >
+      Port interface for video group persistence. Declares upsertGroup and
+      findGroupsByVideoId operations. Consumed by ProcessScanHandler.
+    input_contract: IVideoGroup payload
+    output_contract: void / IVideoGroup[]
+    side_effects:
+      - database read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/similarity-group.repository.ts"
+
+  - unit_id: AU-031
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: SimilarityGroupRepository
+    description: >
+      Concrete Mongoose implementation of ISimilarityGroupRepository.
+    input_contract: ISimilarityGroupRepository contract
+    output_contract: void / IVideoGroup[]
+    side_effects:
+      - MongoDB read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: repository
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/similarity-group.repository.ts"
+
+  - unit_id: AU-032
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: IVideoSimilarityRepository
+    description: >
+      Port interface for mixed video-similarity read/write operations currently
+      in VideoSimilarityRepository. ISP requires splitting: IVideoSimilarityReader
+      and IVideoSimilarityWriter declared as separate interfaces (or one focused
+      interface if read and write consumers are always the same handler).
+    input_contract: video id / ISimilarityRecord payload
+    output_contract: ISimilarityRecord[] / void
+    side_effects:
+      - database read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/video-similarity.repository.ts"
+      - "risk-classification.yaml#ISP_violation"
+
+  - unit_id: AU-033
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: VideoSimilarityRepository
+    description: >
+      Concrete Mongoose implementation of IVideoSimilarityRepository (or its
+      split ISP interfaces). Bounded to similarity record persistence.
+    input_contract: IVideoSimilarityRepository contract
+    output_contract: ISimilarityRecord[] / void
+    side_effects:
+      - MongoDB read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: repository
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/video-similarity.repository.ts"
+
+  # ── SHARED: Cross-capability ports ─────────
+
+  - unit_id: AU-034
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: IScanBatchRepository
+    description: >
+      Port interface for scan batch record persistence shared across
+      vdf-scan-service (claim/update) and grouping-service (read). Declares
+      findEligible, markClaimed, markCompleted, and findById operations.
+    input_contract: IScanBatch context
+    output_contract: IScanBatch / IScanBatch[] / void
+    side_effects:
+      - database read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/scan-batch.repository.ts"
+      - "03-codebase-reconnaissance.yaml#vdf-scan-service/infrastructure/batch-claimer.service.ts"
+
+  - unit_id: AU-035
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: ScanBatchRepository
+    description: >
+      Concrete Mongoose implementation of IScanBatchRepository. Single
+      implementation consumed by both vdf-scan and grouping application layers
+      via injection.
+    input_contract: IScanBatchRepository contract
+    output_contract: IScanBatch / IScanBatch[] / void
+    side_effects:
+      - MongoDB read/write
+    layer_candidate: infrastructure
+    candidate_role_pressure: repository
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#grouping-service/infrastructure/scan-batch.repository.ts"
+
+  - unit_id: AU-036
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: IStoragePort
+    description: >
+      Port interface for all S3/object-storage operations: getObject, putObject,
+      headObject. Shared across all three capabilities. Current S3Client has
+      no interface — DIP violation.
+    input_contract: s3Key, payload, options
+    output_contract: Buffer / metadata / void
+    side_effects:
+      - S3 SDK calls
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/storage/s3.client.ts"
+      - "risk-classification.yaml#DIP_violation"
+
+  - unit_id: AU-037
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: S3StorageAdapter
+    description: >
+      Concrete implementation of IStoragePort wrapping AWS S3 SDK. Registered
+      globally in shared infrastructure module so all capabilities consume the
+      same instance.
+    input_contract: IStoragePort contract
+    output_contract: Buffer / metadata / void
+    side_effects:
+      - AWS S3 SDK calls
+    layer_candidate: infrastructure
+    candidate_role_pressure: adapter
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/storage/s3.client.ts"
+
+  - unit_id: AU-038
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: IEventPublisher
+    description: >
+      Port interface for RabbitMQ event publishing. Declares publish(exchange,
+      routingKey, payload) operation consumed by ScanOrchestrator and
+      ProcessScanHandler. Decouples application from RabbitMQ topology details.
+    input_contract: exchange, routingKey, payload (typed by event interface)
+    output_contract: void
+    side_effects:
+      - RabbitMQ message published
+    layer_candidate: infrastructure
+    candidate_role_pressure: port_interface
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/queue/rabbitmq.client.ts"
+      - "risk-classification.yaml#SRP_OCP_DIP_violation"
+
+  - unit_id: AU-039
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: RabbitMQPublisher
+    description: >
+      Concrete implementation of IEventPublisher. Topology (exchanges,
+      routing keys) sourced from QUEUE_EXCHANGES/ROUTING_KEYS constants in
+      shared queue.types.ts — not hardcoded in the publisher itself (OCP fix).
+    input_contract: IEventPublisher contract
+    output_contract: void
+    side_effects:
+      - AMQP channel publish
+    layer_candidate: infrastructure
+    candidate_role_pressure: adapter
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/queue/rabbitmq.client.ts"
+
+  # ── SHARED: Schema units ───────────────────
+
+  - unit_id: AU-040
+    intent: persistence_intent
+    capability_ref: CAP-001
+    name: VideoSchemaModule
+    description: >
+      Mongoose @Schema/@Prop definition for the video collection. SRP fix
+      requires that schema definitions move into the infrastructure layer of
+      each service rather than residing in the shared package (which couples
+      shared to NestJS). External contract: collection name is LOCKED.
+    input_contract: none (schema registration)
+    output_contract: MongooseModule feature registration
+    side_effects:
+      - Mongoose schema registered
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/db/video.schema.ts"
+      - "risk-classification.yaml#SRP_NestJS_coupling"
+
+  - unit_id: AU-041
+    intent: persistence_intent
+    capability_ref: CAP-002
+    name: ScanBatchSchemaModule
+    description: >
+      Mongoose @Schema/@Prop definition for scan_batch collection. Same SRP
+      fix as AU-040 — moves to vdf-scan infrastructure layer.
+    input_contract: none (schema registration)
+    output_contract: MongooseModule feature registration
+    side_effects:
+      - Mongoose schema registered
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/db/scan-batch.schema.ts"
+
+  - unit_id: AU-042
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: SimilarityEdgeSchemaModule
+    description: >
+      Mongoose @Schema/@Prop definition for similarity_edge collection. Moves
+      to grouping infrastructure layer. Collection name LOCKED.
+    input_contract: none (schema registration)
+    output_contract: MongooseModule feature registration
+    side_effects:
+      - Mongoose schema registered
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/db/similarity-edge.schema.ts"
+
+  - unit_id: AU-043
+    intent: persistence_intent
+    capability_ref: CAP-003
+    name: SimilarityGroupSchemaModule
+    description: >
+      Mongoose @Schema/@Prop definition for similarity_group collection. Moves
+      to grouping infrastructure layer. Collection name LOCKED.
+    input_contract: none (schema registration)
+    output_contract: MongooseModule feature registration
+    side_effects:
+      - Mongoose schema registered
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#shared/db/similarity-group.schema.ts"
+
+  # ── PIPELINE-SERVICE: Module composition ───
+
+  - unit_id: AU-044
+    intent: orchestration_intent
+    capability_ref: CAP-001
+    name: PipelineStagingSubmodule
+    description: >
+      NestJS module encapsulating the staging capability within pipeline-service.
+      After refactor: imports only staging-specific providers, no cross-domain
+      imports. Replaces verbatim copy of staging-service with SOLID-compliant
+      version.
+    input_contract: module imports from SharedInfraModule
+    output_contract: staging capability available in pipeline-service context
+    side_effects:
+      - NestJS DI registrations
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#pipeline-service/staging/"
+
+  - unit_id: AU-045
+    intent: orchestration_intent
+    capability_ref: CAP-002
+    name: PipelineScanningSubmodule
+    description: >
+      NestJS module encapsulating the scanning capability within pipeline-service.
+      After refactor: bounded scanning providers only. Replaces verbatim
+      vdf-scan-service copy.
+    input_contract: module imports from SharedInfraModule
+    output_contract: scanning capability available in pipeline-service context
+    side_effects:
+      - NestJS DI registrations
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#pipeline-service/scanning/"
+
+  - unit_id: AU-046
+    intent: orchestration_intent
+    capability_ref: CAP-003
+    name: PipelineGroupingSubmodule
+    description: >
+      NestJS module encapsulating the grouping capability within pipeline-service.
+      After refactor: bounded grouping providers only. Replaces verbatim
+      grouping-service copy.
+    input_contract: module imports from SharedInfraModule
+    output_contract: grouping capability available in pipeline-service context
+    side_effects:
+      - NestJS DI registrations
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#pipeline-service/grouping/"
+
+  - unit_id: AU-047
+    intent: integration_intent
+    capability_ref: CAP-001
+    name: SharedInfraModule
+    description: >
+      @Global NestJS module providing IStoragePort (S3StorageAdapter) and
+      IEventPublisher (RabbitMQPublisher) to all submodules. OCP fix: providers
+      registered via interface tokens, not concrete class references, so
+      implementations can be swapped without modifying the module.
+    input_contract: module configuration (S3 config, RabbitMQ config)
+    output_contract: IStoragePort, IEventPublisher available globally
+    side_effects:
+      - NestJS global providers registered
+    layer_candidate: infrastructure
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#pipeline-service/shared-infra.module.ts"
+      - "risk-classification.yaml#OCP_violation_global_module"
+
+  - unit_id: AU-048
+    intent: orchestration_intent
+    capability_ref: CAP-001
+    name: PipelineAppModule
+    description: >
+      Root AppModule for pipeline-service. After refactor: imports exactly
+      three bounded submodules (staging, scanning, grouping) and SharedInfraModule.
+      No cross-domain imports at this level.
+    input_contract: three submodule registrations
+    output_contract: assembled NestJS application
+    side_effects:
+      - NestJS application bootstrap
+    layer_candidate: application
+    evidence_refs:
+      - "03-codebase-reconnaissance.yaml#pipeline-service/app.module.ts"
+      - "risk-classification.yaml#SRP_violation_all_3_subdomains"
+
+# ─────────────────────────────────────────────
+# INTENTS (enumeration)
+# ─────────────────────────────────────────────
+intents:
+  - entry_intent
+  - orchestration_intent
+  - decision_intent
+  - domain_intent
+  - persistence_intent
+  - integration_intent
+  - transformation_intent
+
+# ─────────────────────────────────────────────
+# ARTIFACT CANDIDATES (summary list)
+# ─────────────────────────────────────────────
+artifact_candidates:
+  - AU-001  # VideoReadyConsumer
+  - AU-002  # StagingMessageValidator
+  - AU-003  # StageVideoHandler
+  - AU-004  # VideoStagingPolicy
+  - AU-005  # IVideoRepository (port)
+  - AU-006  # VideoRepository (impl)
+  - AU-007  # IFileStagingPort (port)
+  - AU-008  # FileStagingAdapter (impl)
+  - AU-009  # ScanOrchestrator
+  - AU-010  # ScanSchedulerTrigger
+  - AU-011  # BatchClaimPolicy
+  - AU-012  # ScanCleanupPolicy
+  - AU-013  # IBatchClaimerPort (port)
+  - AU-014  # BatchClaimerService (impl)
+  - AU-015  # IVdfRunnerPort (port)
+  - AU-016  # VdfRunnerAdapter (impl)
+  - AU-017  # VdfManifestNormalizer
+  - AU-018  # IVideoScanRepository (port)
+  - AU-019  # VideoScanRepository (impl)
+  - AU-020  # ScanPurgerService
+  - AU-021  # ScanCompletedConsumer
+  - AU-022  # ScanResultValidator
+  - AU-023  # ProcessScanHandler
+  - AU-024  # SimilarityThresholdPolicy
+  - AU-025  # UnionFindDomainService
+  - AU-026  # IScanResultLoader (port)
+  - AU-027  # ScanResultClient (impl)
+  - AU-028  # ISimilarityEdgeRepository (port)
+  - AU-029  # SimilarityEdgeRepository (impl)
+  - AU-030  # ISimilarityGroupRepository (port)
+  - AU-031  # SimilarityGroupRepository (impl)
+  - AU-032  # IVideoSimilarityRepository (port)
+  - AU-033  # VideoSimilarityRepository (impl)
+  - AU-034  # IScanBatchRepository (port)
+  - AU-035  # ScanBatchRepository (impl)
+  - AU-036  # IStoragePort (port)
+  - AU-037  # S3StorageAdapter (impl)
+  - AU-038  # IEventPublisher (port)
+  - AU-039  # RabbitMQPublisher (impl)
+  - AU-040  # VideoSchemaModule
+  - AU-041  # ScanBatchSchemaModule
+  - AU-042  # SimilarityEdgeSchemaModule
+  - AU-043  # SimilarityGroupSchemaModule
+  - AU-044  # PipelineStagingSubmodule
+  - AU-045  # PipelineScanningSubmodule
+  - AU-046  # PipelineGroupingSubmodule
+  - AU-047  # SharedInfraModule
+  - AU-048  # PipelineAppModule
+
+# ─────────────────────────────────────────────
+# LAYER ASSIGNMENTS
+# ─────────────────────────────────────────────
+layer_assignments:
+  - unit_id: AU-001
+    layer: transport
+    rationale: Entry point — delegates only, no business rule. ARCH-EDGE-001 compliant.
+  - unit_id: AU-002
+    layer: transport
+    rationale: Pure message validation/transformation at the transport boundary.
+  - unit_id: AU-003
+    layer: application
+    rationale: Orchestrates use-case. Must depend on ports, not concretes. ARCH-EDGE-001.
+  - unit_id: AU-004
+    layer: decision
+    rationale: Pure policy, no framework. Reachable from application layer per ARCH-EDGE-002.
+  - unit_id: AU-005
+    layer: infrastructure
+    rationale: Port interface definition. Concrete impl in same layer; application depends on token.
+  - unit_id: AU-006
+    layer: infrastructure
+    rationale: Mongoose implementation of IVideoRepository. ARCH-EDGE-004 compliant.
+  - unit_id: AU-007
+    layer: infrastructure
+    rationale: Port interface definition for file staging operations.
+  - unit_id: AU-008
+    layer: infrastructure
+    rationale: S3 + filesystem adapter. ARCH-EDGE-004 compliant.
+  - unit_id: AU-009
+    layer: application
+    rationale: Orchestrates scan use-case. Depends on ports. ARCH-EDGE-001.
+  - unit_id: AU-010
+    layer: transport
+    rationale: Scheduler trigger — delegates only to ScanOrchestrator.
+  - unit_id: AU-011
+    layer: decision
+    rationale: Pure batch eligibility policy, zero framework imports.
+  - unit_id: AU-012
+    layer: decision
+    rationale: Pure cleanup expiry policy, zero framework imports.
+  - unit_id: AU-013
+    layer: infrastructure
+    rationale: Port interface for batch claim. Application injects via token.
+  - unit_id: AU-014
+    layer: infrastructure
+    rationale: Concrete batch claim implementation.
+  - unit_id: AU-015
+    layer: infrastructure
+    rationale: Port interface for VDF CLI invocation.
+  - unit_id: AU-016
+    layer: infrastructure
+    rationale: Child process adapter implementing IVdfRunnerPort.
+  - unit_id: AU-017
+    layer: infrastructure
+    rationale: Manifest transformation; side-effect-free after file I/O extraction.
+  - unit_id: AU-018
+    layer: infrastructure
+    rationale: Port interface for video scan persistence. Enforces ISP.
+  - unit_id: AU-019
+    layer: infrastructure
+    rationale: Mongoose implementation of IVideoScanRepository.
+  - unit_id: AU-020
+    layer: infrastructure
+    rationale: Purger implementation. Delegates expiry decision to ScanCleanupPolicy.
+  - unit_id: AU-021
+    layer: transport
+    rationale: RabbitMQ consumer entry point. Delegates to handler.
+  - unit_id: AU-022
+    layer: transport
+    rationale: Pure event payload validation at transport boundary.
+  - unit_id: AU-023
+    layer: application
+    rationale: Orchestrates grouping use-case via ports.
+  - unit_id: AU-024
+    layer: decision
+    rationale: Pure threshold filter policy.
+  - unit_id: AU-025
+    layer: domain
+    rationale: Pure union-find algorithm — zero framework imports. ARCH-EDGE-003.
+  - unit_id: AU-026
+    layer: infrastructure
+    rationale: Port interface for S3 result loading.
+  - unit_id: AU-027
+    layer: infrastructure
+    rationale: Concrete S3 result fetcher.
+  - unit_id: AU-028
+    layer: infrastructure
+    rationale: Port interface for similarity edge persistence.
+  - unit_id: AU-029
+    layer: infrastructure
+    rationale: Mongoose implementation.
+  - unit_id: AU-030
+    layer: infrastructure
+    rationale: Port interface for group persistence.
+  - unit_id: AU-031
+    layer: infrastructure
+    rationale: Mongoose implementation.
+  - unit_id: AU-032
+    layer: infrastructure
+    rationale: Port interface enforcing ISP for video-similarity reads vs writes.
+  - unit_id: AU-033
+    layer: infrastructure
+    rationale: Mongoose implementation of IVideoSimilarityRepository.
+  - unit_id: AU-034
+    layer: infrastructure
+    rationale: Shared port interface for scan batch persistence.
+  - unit_id: AU-035
+    layer: infrastructure
+    rationale: Shared Mongoose implementation of IScanBatchRepository.
+  - unit_id: AU-036
+    layer: infrastructure
+    rationale: Shared storage port. Application never imports S3 SDK directly.
+  - unit_id: AU-037
+    layer: infrastructure
+    rationale: AWS S3 SDK adapter implementing IStoragePort.
+  - unit_id: AU-038
+    layer: infrastructure
+    rationale: Shared event publisher port. Application never imports AMQP SDK.
+  - unit_id: AU-039
+    layer: infrastructure
+    rationale: AMQP adapter implementing IEventPublisher.
+  - unit_id: AU-040
+    layer: infrastructure
+    rationale: Schema definitions belong in infrastructure, not shared package.
+  - unit_id: AU-041
+    layer: infrastructure
+    rationale: Same as AU-040.
+  - unit_id: AU-042
+    layer: infrastructure
+    rationale: Same as AU-040.
+  - unit_id: AU-043
+    layer: infrastructure
+    rationale: Same as AU-040.
+  - unit_id: AU-044
+    layer: application
+    rationale: NestJS module boundary for staging capability in pipeline-service.
+  - unit_id: AU-045
+    layer: application
+    rationale: NestJS module boundary for scanning capability in pipeline-service.
+  - unit_id: AU-046
+    layer: application
+    rationale: NestJS module boundary for grouping capability in pipeline-service.
+  - unit_id: AU-047
+    layer: infrastructure
+    rationale: Global shared infrastructure providers (S3, RabbitMQ adapters).
+  - unit_id: AU-048
+    layer: application
+    rationale: Root module composition only — imports bounded submodules.
+
+# ─────────────────────────────────────────────
+# BOUNDARY REFS
+# ─────────────────────────────────────────────
+boundary_refs:
+  - boundary: external_system_port
+    required_when: application layer needs to invoke S3, RabbitMQ, or VDF CLI
+    artifacts_affected:
+      - AU-036  # IStoragePort
+      - AU-038  # IEventPublisher
+      - AU-015  # IVdfRunnerPort
+      - AU-007  # IFileStagingPort
+      - AU-026  # IScanResultLoader
+    rationale: ARCH-EDGE-002 forbids application from depending on concrete external SDKs.
+
+  - boundary: repository_abstraction
+    required_when: application or domain layer needs persisted state
+    artifacts_affected:
+      - AU-005  # IVideoRepository
+      - AU-013  # IBatchClaimerPort
+      - AU-018  # IVideoScanRepository
+      - AU-028  # ISimilarityEdgeRepository
+      - AU-030  # ISimilarityGroupRepository
+      - AU-032  # IVideoSimilarityRepository
+      - AU-034  # IScanBatchRepository
+    rationale: Application layer must depend on repository interface tokens, never Mongoose models directly.
+
+  - boundary: mapper_or_dto_boundary
+    required_when: data crosses transport-application or infrastructure-application boundary with different shape
+    artifacts_affected:
+      - AU-001  # VideoReadyConsumer maps event to StageVideoCommand
+      - AU-021  # ScanCompletedConsumer maps event to ProcessScanCommand
+      - AU-017  # VdfManifestNormalizer maps raw string to NormalizedScanResult
+    rationale: ARCH-EDGE-001 requires explicit command/DTO mapping at transport-application boundary.
+
+# ─────────────────────────────────────────────
+# DEPENDENCY CONSTRAINTS
+# ─────────────────────────────────────────────
+dependency_constraints:
+  - edge_id: EDGE-001
+    from: transport
+    to: application
+    allowed: true
+    rationale: "ARCH-EDGE-001: transport delegates via command/DTO only."
+
+  - edge_id: EDGE-002
+    from: application
+    to: domain
+    allowed: true
+    rationale: "ARCH-EDGE-002: application may call domain service."
+
+  - edge_id: EDGE-003
+    from: application
+    to: decision
+    allowed: true
+    rationale: "ARCH-EDGE-002: application may invoke policy/strategy."
+
+  - edge_id: EDGE-004
+    from: application
+    to: infrastructure
+    allowed: false
+    rationale: "ARCH-EDGE-002: application must depend on declared_ports tokens, not concrete infrastructure classes."
+
+  - edge_id: EDGE-005
+    from: domain
+    to: application
+    allowed: false
+    rationale: "ARCH-EDGE-003: domain may not depend on application layer."
+
+  - edge_id: EDGE-006
+    from: domain
+    to: transport
+    allowed: false
+    rationale: "ARCH-EDGE-003: domain may not depend on transport layer."
+
+  - edge_id: EDGE-007
+    from: domain
+    to: infrastructure
+    allowed: false
+    rationale: "ARCH-EDGE-003: domain must remain framework-free."
+
+  - edge_id: EDGE-008
+    from: infrastructure
+    to: transport
+    allowed: false
+    rationale: "ARCH-EDGE-004: infrastructure must not import transport controllers."
+
+  - edge_id: EDGE-009
+    from: infrastructure
+    to: declared_ports
+    allowed: true
+    rationale: "ARCH-EDGE-004: concrete implementations may reference port interface tokens for DI registration."
+
+  - edge_id: EDGE-010
+    from: infrastructure
+    to: external_system
+    allowed: true
+    rationale: "ARCH-EDGE-004: infrastructure is the only layer allowed to touch external SDKs."
+
+  - edge_id: EDGE-011
+    from: application
+    to: declared_ports
+    allowed: true
+    rationale: Application injects port interface tokens — this is the DIP compliance mechanism.
+
+  - edge_id: EDGE-012
+    from: transport
+    to: domain
+    allowed: false
+    rationale: Transport must not bypass application; all business logic flows through application layer.
+
+  - edge_id: EDGE-013
+    from: transport
+    to: infrastructure
+    allowed: false
+    rationale: Transport must not reach into infrastructure directly.
+
+# ─────────────────────────────────────────────
+# ASSUMPTIONS
+# ─────────────────────────────────────────────
+assumptions:
+  - id: ASSUMP-001
+    statement: >
+      Mongoose with @Schema/@Prop decorators is the ORM in use. Drizzle
+      references in the original behavior contract were inaccurate and are
+      disregarded. All schema-related decisions use Mongoose semantics.
+
+  - id: ASSUMP-002
+    statement: >
+      RabbitMQ topic names, routing keys, exchange names, and payload schemas
+      in shared/types/queue.types.ts are LOCKED external contracts. No
+      refactoring will alter these values.
+
+  - id: ASSUMP-003
+    statement: >
+      Mongoose collection names (defined by schema decorators) are LOCKED
+      external contracts. Schema files may move to new paths but the
+      @Schema({ collection: '...' }) values must not change.
+
+  - id: ASSUMP-004
+    statement: >
+      S3 key patterns used across all three capabilities are LOCKED. Only
+      the code that constructs or interprets them may be refactored, not
+      the key pattern strings themselves.
+
+  - id: ASSUMP-005
+    statement: >
+      UnionFindDomainService is correctly implemented in grouping-service/domain.
+      The only required change is replacing `new UnionFindDomainService()` with
+      NestJS DI injection in ProcessScanHandler.
+
+  - id: ASSUMP-006
+    statement: >
+      ScanResultValidator and staging-message.validator.ts are correctly
+      implemented. Refactoring scope is limited to removing inline duplicates
+      in consumers and ensuring these validators are the single canonical
+      transformation units.
+
+  - id: ASSUMP-007
+    statement: >
+      The VDF CLI binary interface (stdin/stdout/exit code contract) is an
+      external system boundary. IVdfRunnerPort abstracts it; the port interface
+      shape is determined by what VdfRunnerAdapter currently does.
+
+# ─────────────────────────────────────────────
+# REJECTED ALTERNATIVES
+# ─────────────────────────────────────────────
+rejected_alternatives:
+  - id: REJ-001
+    alternative: "Keep pipeline-service as a thin orchestrator that delegates to standalone services via network calls"
+    rejection_reason: >
+      Standalone services (staging, grouping, vdf-scan) are already being refactored
+      in-place. Adding network indirection would introduce distributed system complexity,
+      latency, and failure modes with no architectural benefit. Pipeline-service already
+      composes all three subdomains at the module level — this is the correct pattern
+      for a monorepo with a single deployable pipeline unit.
+
+  - id: REJ-002
+    alternative: "Reverse consolidation — split pipeline-service back into three packages and deprecate pipeline-service"
+    rejection_reason: >
+      Contradicts the user's stated goal of a single high-production-grade pipeline.
+      Pipeline-service has the more advanced module composition (SharedInfraModule,
+      @Global providers). Splitting would increase operational overhead (3 deployments,
+      3 RabbitMQ consumer groups, 3 MongoDB connection pools) with no SOLID benefit.
+
+  - id: REJ-003
+    alternative: "Keep IVideoSimilarityRepository as a single combined read/write interface"
+    rejection_reason: >
+      ISP requires that consumers only depend on operations they use. If ProcessScanHandler
+      only writes and a hypothetical query handler only reads, a combined interface
+      forces both to depend on operations they do not use. Splitting or focusing the
+      interface is architecturally required. Final split vs. focused-interface decision
+      deferred to artifact_action_analysis phase per ARCH-AUTH-003.
+
+  - id: REJ-004
+    alternative: "Leave Mongoose schema definitions in the shared package"
+    rejection_reason: >
+      Shared package coupling to NestJS @Schema decorator violates SRP — shared should
+      provide only pure TypeScript types and constants. Infrastructure-specific framework
+      decorators belong in the infrastructure layer of the consuming service, not in a
+      cross-cutting shared package. Collection name values (external contracts) are
+      preserved by carrying them forward to the moved schema files.
+
+  - id: REJ-005
+    alternative: "Define a single IRepository<T> generic interface for all persistence"
+    rejection_reason: >
+      A generic repository interface would satisfy LSP on paper but violate ISP in
+      practice — each aggregate has distinct query shapes (e.g., findEligibleBatches
+      is not a generic find). Capability-specific interfaces result in clearer
+      application-layer dependencies and more precise mock surfaces for testing.
+
+  - id: REJ-006
+    alternative: "Combine BatchClaimerService and ScanBatchRepository into a single unit"
+    rejection_reason: >
+      BatchClaimerService has claim orchestration logic (timing, locking) while
+      ScanBatchRepository is pure persistence. Combining them would merge two distinct
+      reasons to change (claim algorithm vs. persistence technology) — SRP violation.
+
+# ─────────────────────────────────────────────
+# EVIDENCE REFS
+# ─────────────────────────────────────────────
+evidence_refs:
+  - ".ai/reports/02-behavior-contract.yaml"
+  - ".ai/reports/assumptions.yaml"
+  - ".ai/reports/03-codebase-reconnaissance.yaml"
+  - ".ai/reports/risk-classification.yaml"
+  - ".ai/reports/dependency-classification.yaml"
+  - ".ai/reports/boundary-contract-classification.yaml"
+
+# ─────────────────────────────────────────────
+# RF-002: CONSOLIDATION DECISION
+# ─────────────────────────────────────────────
+consolidation_decision:
+  followup_ref: RF-002
+  canonical_target: pipeline-service
+  disposition_of_standalone_services: deprecated
+  rationale: >
+    Pipeline-service already composes all three business capabilities via NestJS
+    submodules (staging/, scanning/, grouping/) and provides a SharedInfraModule
+    with @Global providers for S3 and RabbitMQ. This is architecturally ahead of
+    the standalone services, which remain as isolated single-capability services.
+    The refactor will bring pipeline-service's submodules to SOLID compliance;
+    the standalone services' source files are then superseded. Standalone services
+    (staging-service, grouping-service, vdf-scan-service) remain in the monorepo
+    during the implementation window to serve as reference implementations and
+    are marked DEPRECATED in their package.json descriptions and module-level
+    comments at the end of the implementation phase. Reversing the consolidation
+    (splitting pipeline-service) is rejected per REJ-001 and REJ-002.
+  standalone_service_handling:
+    - service: staging-service
+      status: deprecated_after_implementation
+      reference_role: canonical source for staging business logic during refactor
+    - service: grouping-service
+      status: deprecated_after_implementation
+      reference_role: canonical source for grouping business logic during refactor
+    - service: vdf-scan-service
+      status: deprecated_after_implementation
+      reference_role: canonical source for scanning business logic during refactor
+
+# ─────────────────────────────────────────────
+# RF-003: PORT INVENTORY
+# ─────────────────────────────────────────────
+port_inventory:
+  followup_ref: RF-003
+  ports:
+    - port_id: PORT-001
+      interface_name: IVideoRepository
+      capability: CAP-001
+      concrete_implementation: VideoRepository
+      consumed_by:
+        - StageVideoHandler (AU-003)
+      atomic_unit_ref: AU-005
+      dip_violation_source: "staging-service/infrastructure/video.repository.ts — no interface, wide surface"
+
+    - port_id: PORT-002
+      interface_name: IFileStagingPort
+      capability: CAP-001
+      concrete_implementation: FileStagingAdapter
+      consumed_by:
+        - StageVideoHandler (AU-003)
+      atomic_unit_ref: AU-007
+      dip_violation_source: "staging-service/infrastructure/file-staging.adapter.ts — no IFileStagingPort"
+
+    - port_id: PORT-003
+      interface_name: IScanResultLoader
+      capability: CAP-003
+      concrete_implementation: ScanResultClient
+      consumed_by:
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-026
+      dip_violation_source: "grouping-service/infrastructure/scan-result.client.ts — no IScanResultLoader"
+
+    - port_id: PORT-004
+      interface_name: ISimilarityEdgeRepository
+      capability: CAP-003
+      concrete_implementation: SimilarityEdgeRepository
+      consumed_by:
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-028
+      dip_violation_source: "grouping-service/infrastructure/similarity-edge.repository.ts — no interface"
+
+    - port_id: PORT-005
+      interface_name: ISimilarityGroupRepository
+      capability: CAP-003
+      concrete_implementation: SimilarityGroupRepository
+      consumed_by:
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-030
+      dip_violation_source: "grouping-service/infrastructure/similarity-group.repository.ts — no interface"
+
+    - port_id: PORT-006
+      interface_name: IVideoSimilarityRepository
+      capability: CAP-003
+      concrete_implementation: VideoSimilarityRepository
+      consumed_by:
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-032
+      dip_violation_source: "grouping-service/infrastructure/video-similarity.repository.ts — ISP+DIP violation"
+
+    - port_id: PORT-007
+      interface_name: IScanBatchRepository
+      capability: CAP-002
+      concrete_implementation: ScanBatchRepository
+      consumed_by:
+        - ScanOrchestrator (AU-009)
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-034
+      dip_violation_source: "grouping-service/infrastructure/scan-batch.repository.ts and vdf-scan-service — no interface"
+
+    - port_id: PORT-008
+      interface_name: IBatchClaimerPort
+      capability: CAP-002
+      concrete_implementation: BatchClaimerService
+      consumed_by:
+        - ScanOrchestrator (AU-009)
+      atomic_unit_ref: AU-013
+      dip_violation_source: "vdf-scan-service/infrastructure/batch-claimer.service.ts — no IBatchClaimerPort"
+
+    - port_id: PORT-009
+      interface_name: IVdfRunnerPort
+      capability: CAP-002
+      concrete_implementation: VdfRunnerAdapter
+      consumed_by:
+        - ScanOrchestrator (AU-009)
+      atomic_unit_ref: AU-015
+      dip_violation_source: "vdf-scan-service/infrastructure/vdf-runner.adapter.ts — no IVdfRunnerPort"
+
+    - port_id: PORT-010
+      interface_name: IVideoScanRepository
+      capability: CAP-002
+      concrete_implementation: VideoScanRepository
+      consumed_by:
+        - ScanOrchestrator (AU-009)
+      atomic_unit_ref: AU-018
+      dip_violation_source: "vdf-scan-service/infrastructure/video-scan.repository.ts — ISP+DIP violation"
+
+    - port_id: PORT-011
+      interface_name: IStoragePort
+      capability: CAP-001
+      concrete_implementation: S3StorageAdapter
+      consumed_by:
+        - StageVideoHandler (AU-003)
+        - ScanOrchestrator (AU-009)
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-036
+      dip_violation_source: "shared/storage/s3.client.ts — no IStoragePort interface"
+
+    - port_id: PORT-012
+      interface_name: IEventPublisher
+      capability: CAP-001
+      concrete_implementation: RabbitMQPublisher
+      consumed_by:
+        - ScanOrchestrator (AU-009)
+        - ProcessScanHandler (AU-023)
+      atomic_unit_ref: AU-038
+      dip_violation_source: "shared/queue/rabbitmq.client.ts — topology hardcoded, no IEventPublisher"

@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { VideoDocument, ScanBatchDocument, ScanState, ScanBatchStatus } from '@gunea-pig/shared';
 import { BatchClaimPolicy } from '../domain/batch-claim.policy';
+import { IBatchClaimerPort } from '../interfaces/i-batch-claimer.port';
 
 export interface ClaimedBatch {
   scanId: string;
@@ -13,7 +14,7 @@ export interface ClaimedBatch {
 }
 
 @Injectable()
-export class BatchClaimerService {
+export class BatchClaimerService implements IBatchClaimerPort {
   private readonly logger = new Logger(BatchClaimerService.name);
 
   constructor(
@@ -80,7 +81,7 @@ export class BatchClaimerService {
     expectedStatus: ScanBatchStatus,
     newStatus: ScanBatchStatus,
     extra?: Partial<ScanBatchDocument>,
-  ): Promise<boolean> {
+  ): Promise<void> {
     const result = await this.scanBatchModel.findOneAndUpdate(
       { scanId, status: expectedStatus },
       { $set: { status: newStatus, ...extra } },
@@ -91,9 +92,7 @@ export class BatchClaimerService {
         { scanId, expectedStatus, newStatus },
         'Batch status transition failed — unexpected state',
       );
-      return false;
     }
-    return true;
   }
 
   async getBatch(scanId: string): Promise<ScanBatchDocument | null> {

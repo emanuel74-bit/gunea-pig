@@ -1,0 +1,11 @@
+script_id: prepare-agent-handoff
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/handoffs/validation_agent-handoff.yaml
+summary:
+  status: prepared
+  handoff_id: validation_agent-handoff
+  target_agent: validation_agent

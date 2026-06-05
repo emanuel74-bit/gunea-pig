@@ -1,0 +1,1487 @@
+report_id: "artifact-reuse-analysis"
+phase_id: artifact_reuse_analysis
+status: complete
+summary: >
+  Reuse analysis completed for all 48 artifact candidates across 3 capabilities
+  (CAP-001 video_staging, CAP-002 vdf_scanning, CAP-003 video_similarity_grouping)
+  plus shared cross-capability infrastructure.
+
+  Verdict distribution:
+    no_existing_artifact (create_new hint):  14 candidates — all 12 port interfaces plus
+      2 additional artifacts where no matching source file exists in any package.
+    modify_existing:                          21 candidates — concrete classes that exist
+      in either the standalone services or pipeline-service and need DIP/SRP fixes,
+      interface implementation, or DI token registration.
+    extract_from_existing:                    7 candidates — logic embedded in larger
+      mixed-responsibility classes that must be separated into standalone artifacts.
+    split_existing:                           2 candidates — ScanOrchestrator (7 mixed
+      responsibilities) and ProcessScanHandler (6 mixed responsibilities) are the two
+      flagged mixed_responsibility artifacts; each must be decomposed.
+    reuse_as_is:                              4 candidates — clean domain policy classes
+      with zero SOLID violations; they exist and need no changes beyond context move.
+
+  Key reuse findings:
+  1. All 12 port interfaces (IVideoRepository, IFileStagingPort, IVdfRunnerPort,
+     IVideoScanRepository, IBatchClaimerPort, IScanResultLoader, ISimilarityEdgeRepository,
+     ISimilarityGroupRepository, IVideoSimilarityRepository, IScanBatchRepository,
+     IStoragePort, IEventPublisher) are brand-new artifacts — no interface or port
+     abstraction exists anywhere in the codebase (confirmed: DECISION-RECON-006,
+     boundary_signals note "No formal ports/interfaces directory exists anywhere").
+  2. All 7 concrete repository implementations exist in standalone packages and are
+     verbatim-duplicated in pipeline-service. The pipeline-service copies are the
+     canonical modification targets; standalone copies will be deprecated.
+  3. All 5 adapter implementations (FileStagingAdapter, VdfRunnerAdapter, ScanResultClient,
+     S3StorageAdapter, RabbitMQPublisher) exist as concrete classes without port interfaces.
+     Each needs modify_existing to implement the corresponding port contract.
+  4. All 4 Mongoose schema modules exist as @Schema-decorated classes in the shared package
+     (packages/shared/src/db/). They need to be moved to capability-scoped infrastructure
+     layers and wrapped as MongooseModule.forFeature registrations — modify_existing.
+  5. The 4 domain policy classes (VideoStagingPolicy, BatchClaimPolicy, ScanCleanupPolicy,
+     SimilarityThresholdPolicy) are confirmed clean (zero SOLID violations in reconnaissance)
+     and exist in standalone packages. The pipeline-service copies are reuse targets
+     (reuse_as_is after canonical path alignment, or modify_existing for path move only).
+  6. ScanOrchestrator and ProcessScanHandler are the 2 split_existing targets — their
+     embedded responsibilities (scheduler trigger, policy logic, validator logic) must be
+     extracted before modification.
+  7. UnionFindDomainService exists and is clean; only the instantiation call-site
+     (new keyword in ProcessScanHandler) needs fixing — the artifact itself is reuse_as_is.
+  8. VdfManifestNormalizer exists but mixes file I/O with normalization; the normalizer
+     concern is modify_existing (I/O extraction to VdfRunnerAdapter is the SRP fix).
+  9. All 5 NestJS module classes exist and need modify_existing to register providers
+     under interface tokens and import schema modules.
+  10. ScanSchedulerTrigger does NOT exist as a standalone artifact — the @Interval tick is
+      embedded in ScanOrchestrator. This is extract_from_existing.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/04-draft-role-signals.yaml
+    artifact: draft_role_signals
+  - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    artifact: codebase_reconnaissance
+  - source: conventions/.ai/reports/local-convention-candidates.yaml
+    artifact: local_convention_candidates
+
+decisions:
+  - id: DECISION-RA-001
+    decision: >
+      Zero port/interface abstractions exist anywhere in the codebase. All 12 port
+      interface candidates (AC-005, AC-007, AC-013, AC-015, AC-018, AC-026, AC-028,
+      AC-030, AC-032, AC-034, AC-036, AC-038) are new artifacts with no existing
+      match to reuse, modify, or extract from.
+    rationale: >
+      Reconnaissance DECISION-RECON-006 confirms: "No TypeScript interface exists between
+      any application handler and its dependencies." The boundary_signals section explicitly
+      states: "No formal ports/interfaces directory exists anywhere." The artifact-candidates
+      report lists existing_artifact_refs: [] for all 12 port candidates. All 13 DIP
+      violations documented in the codebase involve direct concrete injection with zero
+      interface abstraction in place.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: boundary_signals[4].description
+        value: "No formal ports/interfaces directory exists anywhere."
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: decisions[DECISION-RECON-006].evidence[0].value
+        value: "VideoRepository, FileStagingAdapter — both concrete classes, no interface"
+      - source: conventions/.ai/reports/04-draft-role-signals.yaml
+        field: draft_role_signals[AC-005].evidence_refs[2].value
+        value: "candidate_role_pressure: port_interface, existing_artifact_refs: [] (new artifact)"
+
+  - id: DECISION-RA-002
+    decision: >
+      Pipeline-service is the canonical modification target for all existing concrete
+      classes. The standalone service packages (staging-service, grouping-service,
+      vdf-scan-service) contain the originals, but the pipeline-service submodule
+      copies are where all modifications must land — standalone packages will be
+      deprecated after consolidation.
+    rationale: >
+      Reconnaissance DECISION-RECON-004 confirms pipeline-service is a near-verbatim
+      duplication of all three standalone services and is "the primary consolidation target
+      for the SOLID refactor." The architecture blueprint and mission context confirm
+      pipeline-service is the CANONICAL target. Modifying standalone packages would
+      create a second implementation target inconsistent with the consolidation goal.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: decisions[DECISION-RECON-004].decision
+        value: "Confirm pipeline-service is a near-verbatim code duplication of the three standalone services."
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: decisions[DECISION-RECON-004].rationale
+        value: "pipeline-service adds a SharedInfraModule (@Global) and uses unified PipelineConfig"
+
+  - id: DECISION-RA-003
+    decision: >
+      The 4 Mongoose schema classes in packages/shared/src/db/ are existing artifacts
+      that must be modified (moved and wrapped). They are not create_new candidates —
+      the @Schema/@Prop definitions already exist and the collection names are LOCKED
+      per ASSUMP-003 (DECISION-RECON-002). The modification required is: (1) move
+      each schema from shared/src/db/ to its capability-scoped infrastructure/schemas/
+      path within pipeline-service; (2) ensure they export MongooseModule.forFeature
+      registration. The @Schema class content must be preserved byte-for-byte except
+      for the module wrapper.
+    rationale: >
+      Reconnaissance DECISION-RECON-002 confirms the Mongoose schemas are the ORM
+      source of truth. DECISION-RECON-005 classifies their current location in shared/
+      as an SRP violation (decorator coupling). The move to capability-scoped paths
+      eliminates the SRP violation while preserving exact collection names. Creating
+      net-new schema files would risk collection name divergence, which is prohibited.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: decisions[DECISION-RECON-005].evidence[0].value
+        value: "@Schema({ collection: 'videos' }) export class VideoDocument"
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/shared/src/db/video.schema.ts].solid_violations[0]
+        value: "SRP: Mongoose @Schema decorator couples the shared data contract to the NestJS Mongoose infrastructure"
+
+  - id: DECISION-RA-004
+    decision: >
+      All 4 domain policy classes (VideoStagingPolicy AC-004, BatchClaimPolicy AC-011,
+      ScanCleanupPolicy AC-012, SimilarityThresholdPolicy AC-024) are confirmed as
+      reuse_as_is with a path_alignment_only caveat: they exist in standalone packages
+      as clean artifacts. The pipeline-service copies at the same canonical paths are
+      the targets. No code-level change is needed to the policy logic — only context
+      (the surrounding module must correctly import them after the DIP refactor).
+    rationale: >
+      Reconnaissance boundary_signals explicitly states: "Domain policy classes
+      (VideoStagingPolicy, SimilarityThreshold, UnionFindDomainService, BatchClaimPolicy,
+      ScanCleanupPolicy) are the only truly clean, isolated units in the codebase."
+      All 4 have solid_violations: [] in reconnaissance relevant_artifacts. The
+      pipeline-service submodule copies are verbatim-identical per DECISION-RECON-004.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: boundary_signals[2].description
+        value: "Domain policy classes are the only truly clean, isolated units in the codebase. They have no framework imports and could be tested in isolation."
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/staging-service/src/domain/video-staging.policy.ts].solid_violations
+        value: "[]"
+
+  - id: DECISION-RA-005
+    decision: >
+      ScanSchedulerTrigger (AC-009) does not exist as a standalone file. The @Interval
+      tick is embedded inside ScanOrchestrator (packages/vdf-scan-service/src/application/
+      scan.orchestrator.ts). This is extract_from_existing with the extraction source
+      being ScanOrchestrator, not a separate adapter. The new file must be created at
+      pipeline-service/scanning/transport/scan-scheduler.trigger.ts.
+    rationale: >
+      Draft role signals AC-009 note: "Must be extracted from ScanOrchestrator (currently
+      embedded)." Reconnaissance confirms ScanOrchestrator owns the @Interval(30_000)
+      tick and "seven distinct responsibilities" (DECISION-RECON-008). The scheduler
+      trigger is one of those 7 responsibilities being decomposed out of the split_existing
+      ScanOrchestrator.
+    evidence:
+      - source: conventions/.ai/reports/04-draft-role-signals.yaml
+        field: draft_role_signals[AC-009].notes
+        value: "Must be extracted from ScanOrchestrator (currently embedded). Single responsibility: invoke ScanOrchestrator.run()."
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/vdf-scan-service/src/application/scan.orchestrator.ts].solid_violations[0]
+        value: "SRP: seven distinct responsibilities in one class"
+
+  - id: DECISION-RA-006
+    decision: >
+      VdfManifestNormalizer (AC-017) exists in packages/vdf-scan-service/src/infrastructure/
+      vdf-manifest.normalizer.ts. It currently mixes file I/O (readRawOutput) with
+      normalization logic — an SRP violation. The normalization logic (transform raw
+      string to NormalizedScanResult) is an existing artifact to modify_existing; the
+      file I/O concern must be extracted to VdfRunnerAdapter (AC-016) during the same
+      phase. The normalizer artifact itself is modify_existing (remove file I/O, keep
+      pure transformation).
+    rationale: >
+      Reconnaissance relevant_artifacts entry for vdf-manifest.normalizer.ts lists
+      solid_violations: "SRP: file I/O (readRawOutput) mixed with normalization logic."
+      Draft role signals AC-017 notes: "SRP fix: file I/O must be extracted to
+      VdfRunnerAdapter before this artifact is clean." No normalization equivalent
+      exists elsewhere — this artifact is the canonical implementation.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/vdf-scan-service/src/infrastructure/vdf-manifest.normalizer.ts].solid_violations[0]
+        value: "SRP: file I/O (readRawOutput) mixed with normalization logic; better separated"
+      - source: conventions/.ai/reports/04-draft-role-signals.yaml
+        field: draft_role_signals[AC-017].notes
+        value: "SRP fix: file I/O must be extracted to VdfRunnerAdapter before this artifact is clean. After fix, zero side effects."
+
+  - id: DECISION-RA-007
+    decision: >
+      ScanResultValidator (AC-022) has a canonical copy in grouping-service/src/validators/
+      scan-result.validator.ts AND is duplicated inline in scan-completed.consumer.ts
+      (both grouping-service and pipeline-service). The reuse verdict is modify_existing:
+      the grouping-service canonical copy is the source; the pipeline-service submodule
+      must have the canonical copy at its canonical path and the inline duplicate in
+      ScanCompletedConsumer must be removed. This is a code consolidation action.
+    rationale: >
+      Reconnaissance DECISION-RECON-013 confirms: "The consumer inlines its own
+      validateEvent() method that duplicates the logic in the standalone
+      scan-result.validator.ts." Reusable behavior RB-002 confirms duplication.
+      The existing validator file is the correct source — it does not need to be
+      created, only the inline duplicate removed and canonical path confirmed.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: decisions[DECISION-RECON-013].rationale
+        value: "scan-completed.consumer.ts contains a private validateEvent() that duplicates scan-result.validator.ts"
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: reusable_behavior[RB-002].description
+        value: "NormalizedScanResult validator — validateScanResult() function — implemented identically in grouping-service and pipeline-service"
+
+  - id: DECISION-RA-008
+    decision: >
+      BatchClaimerService (AC-014) exists in packages/vdf-scan-service/src/infrastructure/
+      batch-claimer.service.ts. It currently mixes claim logic with expired-claim recovery
+      logic (SRP violation per DECISION-RECON-008 / reconnaissance relevant_artifacts).
+      The claim orchestration concern is modify_existing; the recovery concern must be
+      extracted separately. The surviving BatchClaimerService after refactor implements
+      IBatchClaimerPort and performs only atomic claim coordination.
+    rationale: >
+      Reconnaissance classifies batch-claimer.service.ts with solid_violations:
+      "SRP: claim logic and expired-claim recovery logic combined in one class" and
+      "DIP: no IBatchClaimerPort interface." The artifact exists and is modify_existing
+      (not split_existing) because only one responsibility survives in the target
+      artifact — the recovery concern is extracted to a separate StaleBatchRecoveryService
+      (outside the 48 candidate scope, noted in AC-014's notes in draft role signals).
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/vdf-scan-service/src/infrastructure/batch-claimer.service.ts].solid_violations[0]
+        value: "SRP: claim logic and expired-claim recovery logic combined in one class"
+      - source: conventions/.ai/reports/04-draft-role-signals.yaml
+        field: draft_role_signals[AC-014].notes
+        value: "Registers under IBatchClaimerPort DI token. Recovery logic must be extracted to dedicated StaleBatchRecoveryService."
+
+  - id: DECISION-RA-009
+    decision: >
+      StagingMessageValidator (AC-002) exists in packages/staging-service/src/validators/
+      staging-message.validator.ts AND is verbatim-duplicated in the pipeline-service
+      staging submodule. The pipeline-service copy is the canonical target. The artifact
+      is modify_existing because the draft signals note: "Confirm as canonical validator
+      — no inline duplicates in VideoReadyConsumer." The validator itself is clean
+      (no solid_violations in reconnaissance); the only action needed is confirming
+      canonical placement and removing any inline copies in VideoReadyConsumer.
+    rationale: >
+      Reconnaissance reusable_behavior RB-001 documents the identical event validation
+      pattern implemented in multiple places including inline in consumers. The standalone
+      validator file already exists as the clean canonical implementation.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: reusable_behavior[RB-001].description
+        value: "Identical pattern implemented independently in staging-message.validator.ts, pipeline-service copy, and inline in consumers"
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/staging-service/src/validators/staging-message.validator.ts].solid_violations
+        value: "[]"
+
+  - id: DECISION-RA-010
+    decision: >
+      UnionFindDomainService (AC-025) exists in packages/grouping-service/src/domain/
+      union-find.domain-service.ts and is confirmed clean (no SOLID violations, no
+      framework imports). It is reuse_as_is — the only action needed is in
+      ProcessScanHandler (AC-023): change the 'new UnionFindDomainService()' call-site
+      to receive it via NestJS DI injection. The domain service artifact itself requires
+      no modification.
+    rationale: >
+      Reconnaissance relevant_artifacts for union-find.domain-service.ts has
+      solid_violations: []. Draft role signals AC-025 notes: "Algorithm is correct.
+      Only fix required: ProcessScanHandler must inject via NestJS DI instead of
+      using new keyword." The domain service is a pure algorithm with zero framework
+      coupling.
+    evidence:
+      - source: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        field: relevant_artifacts[packages/grouping-service/src/domain/union-find.domain-service.ts].solid_violations
+        value: "[]"
+      - source: conventions/.ai/reports/04-draft-role-signals.yaml
+        field: draft_role_signals[AC-025].notes
+        value: "Algorithm is correct. Only fix required: ProcessScanHandler must inject via NestJS DI instead of using new keyword."
+
+reuse_analysis:
+
+  # ─────────────────────────────────────────────────
+  # CAP-001: Video Staging
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: AC-001
+    artifact_name: VideoReadyConsumer
+    draft_role: consumer
+    existing_artifacts_found:
+      - path: packages/staging-service/src/transport/video-ready.consumer.ts
+        match_quality: exact_duplicate
+        notes: "Verbatim copy exists in pipeline-service/src/staging/transport/ — pipeline-service copy is canonical target"
+      - path: packages/pipeline-service/src/staging/transport/video-ready.consumer.ts
+        match_quality: canonical_target
+        notes: "This is the modification target per DECISION-RA-002"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      VideoReadyConsumer exists as a concrete class in both standalone staging-service and
+      pipeline-service. It has no SOLID violations listed in reconnaissance (solid_violations: []).
+      However, draft role signals note it must contain delegation only — inline business logic,
+      if any exists, must be removed. Additionally, the companion StagingMessageValidator must
+      be confirmed as a separate artifact (not inlined). The consumer artifact itself is clean;
+      the modification is confirming SRP compliance and injecting StageVideoHandler via port token.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts entry for video-ready.consumer.ts: solid_violations: []"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "call_sites: consumer delegates to handler via constructor-injected StageVideoHandler.handle(event)"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-001 notes: Must be verified to contain no inline business logic. SRP fix: delegation only."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-002
+    artifact_name: StagingMessageValidator
+    draft_role: validator
+    existing_artifacts_found:
+      - path: packages/staging-service/src/validators/staging-message.validator.ts
+        match_quality: exact_clean_canonical
+        notes: "Exists as a plain function with no SOLID violations. Pipeline-service copy is verbatim duplicate."
+      - path: packages/pipeline-service/src/staging/transport/staging-message.validator.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service path is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      StagingMessageValidator exists as a clean artifact (solid_violations: [] in reconnaissance).
+      The required modification is confirming canonical placement at the pipeline-service path
+      and removing any inline validation duplicates in VideoReadyConsumer. The validator logic
+      itself requires no change per DECISION-RA-009. Reusable behavior RB-001 documents the
+      pattern is already consistent — this validator is the canonical source.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[staging-message.validator.ts].solid_violations: []"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "reusable_behavior RB-001: event validation pattern exists in staging-message.validator.ts and as inline duplicates"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-002 notes: Confirm as canonical validator — no inline duplicates in VideoReadyConsumer."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-003
+    artifact_name: StageVideoHandler
+    draft_role: handler
+    existing_artifacts_found:
+      - path: packages/staging-service/src/application/stage-video.handler.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists with DIP violations (direct VideoRepository + FileStagingAdapter injection) and error class co-location SRP issue"
+      - path: packages/pipeline-service/src/staging/application/stage-video.handler.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy confirmed verbatim-identical by DECISION-RECON-004"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      StageVideoHandler exists in both standalone staging-service and pipeline-service with the
+      same DIP violations (direct injection of VideoRepository, FileStagingAdapter). Reconnaissance
+      solid_violations: DIP (no interface abstraction), SRP (error classes VideoAlreadyStagedError,
+      StagingPermanentFailureError defined inline). Required modifications: inject IVideoRepository,
+      IFileStagingPort, IStoragePort via DI tokens; extract error classes to co-located placement
+      per LC-004 convention. The core orchestration logic (idempotency check, upsert pending,
+      verify S3, stage file, mark staged) is correct and must be preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[stage-video.handler.ts].solid_violations: DIP depends on concrete VideoRepository and FileStagingAdapter"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[stage-video.handler.ts].solid_violations: SRP error classes VideoAlreadyStagedError, StagingPermanentFailureError defined in this file"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-003 notes: DIP fix required — inject IVideoRepository, IFileStagingPort, IStoragePort via tokens"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-004
+    artifact_name: VideoStagingPolicy
+    draft_role: policy
+    existing_artifacts_found:
+      - path: packages/staging-service/src/domain/video-staging.policy.ts
+        match_quality: exact_clean_canonical
+        notes: "Pure static policy class. No framework imports. solid_violations: []"
+      - path: packages/pipeline-service/src/staging/domain/video-staging.policy.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is verbatim-identical and is the canonical target path"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: reuse_as_is
+    reason: >
+      VideoStagingPolicy is a clean, isolated domain policy class with zero SOLID violations
+      per reconnaissance. It is a pure static class with no framework imports. The pipeline-service
+      copy is the canonical target. No code-level change is needed to the policy logic. The only
+      action is ensuring the consuming artifact (StageVideoHandler) correctly references it after
+      DIP refactor — the policy itself requires no modification per DECISION-RA-004.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[video-staging.policy.ts].solid_violations: []"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "boundary_signals: Domain policy classes are the only truly clean, isolated units in the codebase."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-005
+    artifact_name: IVideoRepository
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IVideoRepository interface or port exists anywhere in the codebase. All repository
+      classes are concrete with no TypeScript interface. Draft signals confirm existing_artifact_refs: [].
+      This port must be created new as a TypeScript interface at
+      pipeline-service/staging/infrastructure/ports/i-video.repository.ts per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-006: No TypeScript interface exists between any application handler and its dependencies"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "boundary_signals: No formal ports/interfaces directory exists anywhere."
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-005 evidence: existing_artifact_refs: [] (new artifact)"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-006
+    artifact_name: VideoRepository
+    draft_role: repository
+    existing_artifacts_found:
+      - path: packages/staging-service/src/infrastructure/video.repository.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. DIP violation (no IVideoRepository interface). ISP violation (wide interface with 5 mixed methods)."
+      - path: packages/pipeline-service/src/staging/infrastructure/video.repository.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy confirmed verbatim-identical"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      VideoRepository exists as a Mongoose repository with ISP and DIP violations (no
+      IVideoRepository interface; wide interface mixes findByVideoId, upsertPendingStaging,
+      markStaged, markStagingFailed, isAlreadyStaged). Required modification: implement
+      IVideoRepository interface (ISP-narrowed to the subset consumed by StageVideoHandler)
+      and register under the IVideoRepository DI token. The Mongoose @Model injection
+      pattern and .lean<T>().exec() discipline must be preserved (LC-006, LC-007).
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[video.repository.ts].solid_violations: ISP wide interface — findByVideoId, upsertPendingStaging, markStaged, markStagingFailed, isAlreadyStaged; DIP no IVideoRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-006 notes: Must implement IVideoRepository interface and register under IVideoRepository DI token"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-007
+    artifact_name: IFileStagingPort
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IFileStagingPort interface exists anywhere. FileStagingAdapter is a concrete class
+      with no interface contract. Draft signals confirm existing_artifact_refs: [] (new artifact).
+      The port must be created new at pipeline-service/staging/infrastructure/ports/
+      i-file-staging.port.ts declaring verifyExists and downloadToScanPath per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[file-staging.adapter.ts].solid_violations: DIP no IFileStagingPort interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-007 evidence: port_inventory[PORT-002]: dip_violation_source: no IFileStagingPort currently exists"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-008
+    artifact_name: FileStagingAdapter
+    draft_role: adapter
+    existing_artifacts_found:
+      - path: packages/staging-service/src/infrastructure/file-staging.adapter.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. DIP violation (no IFileStagingPort). SRP violation (S3ObjectNotFoundError defined inline)."
+      - path: packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      FileStagingAdapter exists in both standalone staging-service and pipeline-service.
+      Reconnaissance solid_violations: DIP (no IFileStagingPort interface), SRP (error class
+      S3ObjectNotFoundError defined inline). Required modifications: implement IFileStagingPort
+      interface, register under IFileStagingPort DI token. The S3ObjectNotFoundError extraction
+      to a shared errors location is noted but per LC-004 (co-location convention) it should
+      remain in the adapter file. The S3Adapter injection must also be updated to IStoragePort.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[file-staging.adapter.ts].solid_violations: DIP no IFileStagingPort; SRP S3ObjectNotFoundError defined inline"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-008 notes: S3ObjectNotFoundError must be extracted to shared errors module. Registers under IFileStagingPort DI token."
+    reuse_blocked_by: null
+
+  # ─────────────────────────────────────────────────
+  # CAP-002: VDF Scanning
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: AC-009
+    artifact_name: ScanSchedulerTrigger
+    draft_role: scheduler
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+        match_quality: embedded_responsibility
+        notes: "The @Interval(30000) tick is embedded inside ScanOrchestrator — not a separate file. Must be extracted."
+    reuse_verdict: no_standalone_artifact
+    recommended_action_hint: extract_from_existing
+    reason: >
+      ScanSchedulerTrigger does not exist as a standalone file anywhere in the codebase.
+      The @Interval(30_000) decorator and scheduler entry-point logic are embedded inside
+      ScanOrchestrator (scan.orchestrator.ts) as one of its 7 mixed responsibilities.
+      This is per DECISION-RA-005: the artifact must be created by extracting the scheduling
+      concern out of ScanOrchestrator. The new file target is
+      pipeline-service/scanning/transport/scan-scheduler.trigger.ts.
+    evidence_refs:
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-009 notes: Must be extracted from ScanOrchestrator (currently embedded). Single responsibility: invoke ScanOrchestrator.run()."
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "ScanOrchestrator solid_violations: SRP seven distinct responsibilities in one class"
+    reuse_blocked_by: "AC-010 ScanOrchestrator must be split before extraction can complete"
+
+  - candidate_id: AC-010
+    artifact_name: ScanOrchestrator
+    draft_role: orchestrator
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/application/scan.orchestrator.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists with 7 mixed responsibilities. Flagged mixed_responsibility and extraction_target."
+      - path: packages/pipeline-service/src/scanning/application/scan.orchestrator.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy confirmed verbatim-identical. This is the split target."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: split_existing
+    reason: >
+      ScanOrchestrator exists with 7 co-located responsibilities (orchestration, batch claiming,
+      result loading, error handling, scheduling, scan dispatch, progress tracking) per
+      DECISION-RECON-008. The draft role signals flag it as mixed_responsibility: true and
+      extraction_target: true. Required action: split this artifact by (1) extracting the
+      @Interval scheduler trigger to ScanSchedulerTrigger (AC-009); (2) delegating batch claiming
+      to IBatchClaimerPort (AC-013/AC-014); (3) delegating VDF execution to IVdfRunnerPort;
+      (4) delegating S3 upload to IStoragePort; (5) delegating event emission to IEventPublisher.
+      The surviving post-split ScanOrchestrator retains only multi-step flow coordination.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "ScanOrchestrator solid_violations: SRP seven distinct responsibilities; DIP injects S3Adapter and RabbitMQPublisher directly; OCP hardcoded orchestration sequence"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-010 mixed_responsibility_flag: true, extraction_target: true — 7 co-located responsibilities"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-011
+    artifact_name: BatchClaimPolicy
+    draft_role: policy
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/domain/batch-claim.policy.ts
+        match_quality: exact_clean_canonical
+        notes: "Pure static policy. EXPIRABLE_STATUSES, expiresAt, isExpired. No framework imports. solid_violations: []"
+      - path: packages/pipeline-service/src/scanning/domain/batch-claim.policy.ts
+        match_quality: canonical_target
+        notes: "Verbatim-identical copy in pipeline-service is the canonical target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: reuse_as_is
+    reason: >
+      BatchClaimPolicy is a clean domain policy with zero SOLID violations per reconnaissance.
+      It contains static expiry logic (EXPIRABLE_STATUSES, expiresAt, isExpired) with no
+      framework imports. The pipeline-service copy is the canonical target. No code-level change
+      is needed per DECISION-RA-004. The consuming artifact (BatchClaimerService) must correctly
+      reference it via import after refactor; the policy itself is untouched.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[batch-claim.policy.ts].solid_violations: []"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "boundary_signals: Domain policy classes are the only truly clean, isolated units in the codebase."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-012
+    artifact_name: ScanCleanupPolicy
+    draft_role: policy
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/domain/scan-cleanup.policy.ts
+        match_quality: exact_clean_canonical
+        notes: "Pure static policy. CLEANUP_TRIGGER_STATUS, isStaleForRetention. No framework imports. solid_violations: []"
+      - path: packages/pipeline-service/src/scanning/domain/scan-cleanup.policy.ts
+        match_quality: canonical_target
+        notes: "Verbatim-identical pipeline-service copy is canonical target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: reuse_as_is
+    reason: >
+      ScanCleanupPolicy is a clean domain policy with zero SOLID violations per reconnaissance.
+      The only refactor action is ensuring ScanPurgerService (AC-020) correctly delegates expiry
+      determination to this policy — the policy artifact itself needs no modification. Per
+      draft role signals AC-012: "SRP fix: expiry determination logic must be moved from
+      ScanPurgerService (AC-020) to this artifact." That SRP fix modifies ScanPurgerService,
+      not ScanCleanupPolicy itself.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[scan-cleanup.policy.ts].solid_violations: []"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-012 notes: SRP fix: expiry determination logic must be moved from ScanPurgerService to this artifact."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-013
+    artifact_name: IBatchClaimerPort
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IBatchClaimerPort interface exists. BatchClaimerService is a concrete class with no
+      interface contract (DIP violation per reconnaissance relevant_artifacts). Draft signals
+      confirm existing_artifact_refs: [] (new artifact). Must be created at
+      pipeline-service/scanning/infrastructure/ports/i-batch-claimer.port.ts per DECISION-RA-001.
+      Declares claimBatch(eligibleBatches) only — recovery concern is separated to
+      StaleBatchRecoveryService outside the 48-candidate scope.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[batch-claimer.service.ts].solid_violations: DIP no IBatchClaimerPort interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-013 evidence: port_inventory[PORT-008]: dip_violation_source: no IBatchClaimerPort currently"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-014
+    artifact_name: BatchClaimerService
+    draft_role: service
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/infrastructure/batch-claimer.service.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. SRP violation (claim + recovery logic combined). DIP violation (no IBatchClaimerPort interface)."
+      - path: packages/pipeline-service/src/scanning/infrastructure/batch-claimer.service.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      BatchClaimerService exists with SRP and DIP violations per DECISION-RA-008 and
+      reconnaissance. Required modifications: (1) implement IBatchClaimerPort interface;
+      (2) register under IBatchClaimerPort DI token; (3) extract expired-claim recovery logic
+      to a separate StaleBatchRecoveryService (outside this 48-candidate scope). The atomic
+      MongoDB claim coordination logic itself is preserved. The call to BatchClaimPolicy
+      for expiry evaluation must be maintained (call_site documented in reconnaissance).
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[batch-claimer.service.ts].solid_violations: SRP claim logic and expired-claim recovery combined; DIP no IBatchClaimerPort"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "call_sites: batch-claimer.service.ts calls BatchClaimPolicy.expiresAt, EXPIRABLE_STATUSES"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-015
+    artifact_name: IVdfRunnerPort
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IVdfRunnerPort interface exists. VdfRunnerAdapter is a concrete class with no
+      interface contract (DIP violation per reconnaissance). Draft signals confirm
+      existing_artifact_refs: [] (new artifact). Must be created at
+      pipeline-service/scanning/infrastructure/ports/i-vdf-runner.port.ts declaring
+      runScan(batchId, inputPath) -> Promise<string> per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[vdf-runner.adapter.ts].solid_violations: DIP no IVdfRunnerPort interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-015 evidence: port_inventory[PORT-009]: dip_violation_source: no IVdfRunnerPort currently"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-016
+    artifact_name: VdfRunnerAdapter
+    draft_role: adapter
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/infrastructure/vdf-runner.adapter.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. DIP violation (no IVdfRunnerPort interface). Will also receive extracted file I/O from VdfManifestNormalizer."
+      - path: packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      VdfRunnerAdapter exists as a concrete CLI subprocess wrapper with no IVdfRunnerPort interface.
+      Required modifications: (1) implement IVdfRunnerPort interface; (2) register under
+      IVdfRunnerPort DI token; (3) receive file I/O logic extracted from VdfManifestNormalizer
+      (the readRawOutput concern migrates here per DECISION-RA-006). The VDF CLI spawn,
+      timeout, stdout/stderr capture, and output validation logic are preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[vdf-runner.adapter.ts].solid_violations: DIP no IVdfRunnerPort interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-016 notes: SRP fix: any file I/O currently in VdfManifestNormalizer moves here."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-017
+    artifact_name: VdfManifestNormalizer
+    draft_role: normalizer
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/infrastructure/vdf-manifest.normalizer.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. SRP violation (file I/O readRawOutput mixed with normalization). After SRP fix will be pure transformation."
+      - path: packages/pipeline-service/src/scanning/infrastructure/vdf-manifest.normalizer.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      VdfManifestNormalizer exists but mixes file I/O (readRawOutput) with normalization logic
+      per DECISION-RA-006 and reconnaissance SRP violation. Required modification: extract
+      readRawOutput to VdfRunnerAdapter (AC-016), leaving only pure string-to-NormalizedScanResult
+      transformation. The normalization logic itself (handling Duplicates/duplicates field name
+      variants, similarity/percentage field variants) is correct and must be preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[vdf-manifest.normalizer.ts].solid_violations: SRP file I/O (readRawOutput) mixed with normalization logic"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-017 notes: SRP fix: file I/O must be extracted to VdfRunnerAdapter before this artifact is clean."
+    reuse_blocked_by: "AC-016 VdfRunnerAdapter must receive the extracted file I/O first"
+
+  - candidate_id: AC-018
+    artifact_name: IVideoScanRepository
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IVideoScanRepository interface exists. VideoScanRepository is a concrete class with
+      ISP and DIP violations (no interface; mixed read/write concerns: buildVideoIdMap is a
+      query, markScan* are writes). Draft signals confirm existing_artifact_refs: [] (new artifact).
+      Must be created at pipeline-service/scanning/infrastructure/ports/
+      i-video-scan.repository.ts declaring findByScanId, updateStatus, markCompleted per
+      DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[video-scan.repository.ts].solid_violations: ISP buildVideoIdMap is query, markScan* are writes — mixed concerns; DIP no IVideoScanRepository"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-018 evidence: port_inventory[PORT-010]: dip_violation_source: ISP+DIP violation"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-019
+    artifact_name: VideoScanRepository
+    draft_role: repository
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/infrastructure/video-scan.repository.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. ISP violation (mixed buildVideoIdMap query and markScan* writes). DIP violation (no interface)."
+      - path: packages/pipeline-service/src/scanning/infrastructure/video-scan.repository.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      VideoScanRepository exists with ISP and DIP violations. Required modifications:
+      (1) implement IVideoScanRepository interface (ISP-bounded to ScanOrchestrator's
+      consumed surface: findByScanId, updateStatus, markCompleted); (2) register under
+      IVideoScanRepository DI token. The Mongoose model injection, .lean<T>().exec() pattern
+      (LC-006), and state transition logic must be preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[video-scan.repository.ts].solid_violations: ISP mixed buildVideoIdMap query and markScan* writes; DIP no IVideoScanRepository"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-019 notes: Registers under IVideoScanRepository DI token."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-020
+    artifact_name: ScanPurgerService
+    draft_role: service
+    existing_artifacts_found:
+      - path: packages/vdf-scan-service/src/infrastructure/scan-purger.service.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. SRP violation (cleanup and expiry bundled). DIP violation (depends on concrete VdfRunnerAdapter and VideoScanRepository)."
+      - path: packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      ScanPurgerService exists with SRP and DIP violations. Required modifications:
+      (1) extract expiry determination logic to ScanCleanupPolicy (AC-012) — the policy
+      already exists clean; (2) inject IVdfRunnerPort instead of concrete VdfRunnerAdapter;
+      (3) inject IVideoScanRepository instead of concrete VideoScanRepository. The
+      multi-surface deletion execution logic (filesystem + S3) is preserved as the primary
+      responsibility. ScanPurgerService does not implement a port contract.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[scan-purger.service.ts].solid_violations: SRP cleanup and expiry two distinct operations bundled; DIP depends on concrete VdfRunnerAdapter and VideoScanRepository"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-020 notes: SRP fix: expiry determination extracted to ScanCleanupPolicy (AC-012)."
+    reuse_blocked_by: null
+
+  # ─────────────────────────────────────────────────
+  # CAP-003: Video Similarity Grouping
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: AC-021
+    artifact_name: ScanCompletedConsumer
+    draft_role: consumer
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/consumers/scan-completed.consumer.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. SRP violation (inline validateEvent() method duplicating ScanResultValidator logic)."
+      - path: packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy confirmed verbatim-identical"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      ScanCompletedConsumer exists as the AMQP transport entry point for CAP-003 with an SRP
+      violation: inline validateEvent() method duplicates ScanResultValidator logic per
+      DECISION-RECON-013. Required modification: remove inline validateEvent(), delegate to
+      ScanResultValidator (AC-022). The ack/nack error classification pattern (LC-009/CONV-009)
+      must be preserved. Delegation to ProcessScanHandler must remain clean — no business logic
+      in the consumer itself.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[scan-completed.consumer.ts].solid_violations: SRP inline validateEvent() duplicating boundary validation logic"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-021 notes: SRP fix: inline validateEvent duplicate of ScanResultValidator must be removed."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-022
+    artifact_name: ScanResultValidator
+    draft_role: validator
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/validators/scan-result.validator.ts
+        match_quality: exact_clean_canonical
+        notes: "Exists as clean validator with validateScanResult() and validateMatch(). No solid_violations."
+      - path: packages/pipeline-service/src/grouping/infrastructure/scan-result.validator.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target path"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      ScanResultValidator exists as a clean validator file per DECISION-RA-007. The modification
+      required is: (1) confirm canonical placement in pipeline-service at the target path;
+      (2) ensure ScanCompletedConsumer delegates to this validator instead of using the inline
+      duplicate. The validator logic itself (validateScanResult, validateMatch) is correct and
+      preserved. Reusable behavior RB-002 confirms this is the canonical copy.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "reusable_behavior RB-002: validateScanResult() function — canonical copy in grouping-service/validators/scan-result.validator.ts"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-013: consumer inlines duplicate that should delegate to this validator"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-023
+    artifact_name: ProcessScanHandler
+    draft_role: handler
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/application/process-scan.handler.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists with 6 mixed responsibilities. Flagged mixed_responsibility and extraction_target. 6 concrete deps, UnionFindDomainService via new."
+      - path: packages/pipeline-service/src/grouping/application/process-scan.handler.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy confirmed verbatim-identical"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: split_existing
+    reason: >
+      ProcessScanHandler exists with 6 mixed responsibilities and multiple SOLID violations
+      (SRP, DIP, OCP) per DECISION-RECON-008. Draft role signals flag it mixed_responsibility: true
+      and extraction_target: true. Required action: (1) replace all 6 concrete dependency
+      injections with their corresponding port interfaces (IScanResultLoader, ISimilarityEdgeRepository,
+      ISimilarityGroupRepository, IVideoSimilarityRepository, IScanBatchRepository, IEventPublisher)
+      via DI tokens; (2) inject UnionFindDomainService via NestJS DI instead of new keyword;
+      (3) confirm inline validation is removed (delegated to ScanResultValidator). The core
+      application logic (load, filter, persist-edges, merge-groups, update-batch, publish) is
+      preserved after DIP compliance.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[process-scan.handler.ts].solid_violations: SRP six responsibilities; DIP six concrete deps no interfaces; OCP UnionFindDomainService instantiated with new"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-023 mixed_responsibility_flag: true, extraction_target: true — 6 concrete dependencies and new keyword DIP violation"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-024
+    artifact_name: SimilarityThresholdPolicy
+    draft_role: policy
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/domain/similarity-threshold.policy.ts
+        match_quality: exact_clean_canonical
+        notes: "Value-object-like class. Provides isStorable, isMergeEligible, isStrongDuplicate, requiresManualReview, filterStorable, filterMergeEligible. solid_violations: []."
+      - path: packages/pipeline-service/src/grouping/domain/similarity-threshold.policy.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the canonical target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: reuse_as_is
+    reason: >
+      SimilarityThresholdPolicy is a clean domain policy with zero SOLID violations per
+      reconnaissance. It is a pure value-object-like class with no framework imports.
+      No code-level change is needed per DECISION-RA-004. The consuming artifact (ProcessScanHandler)
+      must correctly reference it via import after DIP refactor — the policy itself is untouched.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-threshold.policy.ts].solid_violations: []"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "boundary_signals: Domain policy classes are the only truly clean, isolated units in the codebase."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-025
+    artifact_name: UnionFindDomainService
+    draft_role: domain_service
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/domain/union-find.domain-service.ts
+        match_quality: exact_clean_canonical
+        notes: "Pure domain service implementing Union-Find algorithm. No framework imports. solid_violations: []."
+      - path: packages/pipeline-service/src/grouping/domain/union-find.domain-service.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the canonical target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: reuse_as_is
+    reason: >
+      UnionFindDomainService is a clean, pure domain service with zero SOLID violations per
+      DECISION-RA-010 and reconnaissance. The only refactor action is in ProcessScanHandler
+      (AC-023): replace the 'new UnionFindDomainService()' call-site with NestJS DI injection.
+      The domain service algorithm itself requires no modification whatsoever.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[union-find.domain-service.ts].solid_violations: []"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-025 notes: Algorithm is correct. Only fix: ProcessScanHandler must inject via NestJS DI instead of using new keyword."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-026
+    artifact_name: IScanResultLoader
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IScanResultLoader interface exists anywhere. ScanResultClient is a concrete class with
+      no interface contract (DIP violation per reconnaissance). Draft signals confirm
+      existing_artifact_refs: [] (new artifact). Must be created at
+      pipeline-service/grouping/infrastructure/ports/i-scan-result-loader.port.ts declaring
+      load(s3Key) -> Promise<NormalizedScanResult> per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[scan-result.client.ts].solid_violations: DIP depends on concrete S3Adapter with no IS3Client interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-026 evidence: port_inventory[PORT-003]: dip_violation_source: no IScanResultLoader currently"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-027
+    artifact_name: ScanResultClient
+    draft_role: adapter
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/infrastructure/scan-result.client.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. DIP violation (depends on concrete S3Adapter, no IS3Client). Will need to implement IScanResultLoader and inject IStoragePort."
+      - path: packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      ScanResultClient exists in both grouping-service and pipeline-service as a concrete S3
+      loader with a DIP violation (no IScanResultLoader interface; depends directly on S3Adapter).
+      Required modifications: (1) implement IScanResultLoader interface; (2) register under
+      IScanResultLoader DI token; (3) inject IStoragePort instead of concrete S3Adapter.
+      The S3 getJson loading and NormalizedScanResult deserialization logic is preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[scan-result.client.ts].solid_violations: DIP depends on concrete S3Adapter with no IS3Client"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-027 notes: Registers under IScanResultLoader DI token. DIP-compliant: consumes IStoragePort, not S3 SDK directly."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-028
+    artifact_name: ISimilarityEdgeRepository
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No ISimilarityEdgeRepository interface exists anywhere. SimilarityEdgeRepository is a
+      concrete class with no interface contract (DIP violation per reconnaissance). Draft signals
+      confirm existing_artifact_refs: [] (new artifact). Must be created at
+      pipeline-service/grouping/infrastructure/ports/i-similarity-edge.repository.ts
+      declaring upsertEdge and findEdgesByVideoId per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-edge.repository.ts].solid_violations: DIP no ISimilarityEdgeRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-028 evidence: port_inventory[PORT-004]"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-029
+    artifact_name: SimilarityEdgeRepository
+    draft_role: repository
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/infrastructure/similarity-edge.repository.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. DIP violation (no ISimilarityEdgeRepository interface). Mongoose upsert-by-scanId-and-pair."
+      - path: packages/pipeline-service/src/grouping/infrastructure/similarity-edge.repository.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      SimilarityEdgeRepository exists as a Mongoose repository with a DIP violation (no
+      ISimilarityEdgeRepository interface). Required modifications: (1) implement
+      ISimilarityEdgeRepository interface; (2) register under ISimilarityEdgeRepository DI token.
+      The upsert-by-scanId-and-pair Mongoose logic and .lean<T>().exec() discipline (LC-006)
+      are preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-edge.repository.ts].solid_violations: DIP no ISimilarityEdgeRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-029 notes: Registers under ISimilarityEdgeRepository DI token."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-030
+    artifact_name: ISimilarityGroupRepository
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No ISimilarityGroupRepository interface exists anywhere. SimilarityGroupRepository is a
+      concrete class with no interface contract (DIP violation per reconnaissance). Draft signals
+      confirm existing_artifact_refs: [] (new artifact). Must be created at
+      pipeline-service/grouping/infrastructure/ports/i-similarity-group.repository.ts
+      declaring upsertGroup and findGroupsByVideoId per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-group.repository.ts].solid_violations: DIP no ISimilarityGroupRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-030 evidence: port_inventory[PORT-005]"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-031
+    artifact_name: SimilarityGroupRepository
+    draft_role: repository
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/infrastructure/similarity-group.repository.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. DIP violation (no ISimilarityGroupRepository interface). Mongoose findByIds, upsertGroup, deleteByIds."
+      - path: packages/pipeline-service/src/grouping/infrastructure/similarity-group.repository.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      SimilarityGroupRepository exists as a Mongoose repository with a DIP violation (no
+      ISimilarityGroupRepository interface). Required modifications: (1) implement
+      ISimilarityGroupRepository interface; (2) register under ISimilarityGroupRepository DI token.
+      The group persistence logic (findByIds, upsertGroup, deleteByIds) and .lean<T>().exec()
+      discipline are preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-group.repository.ts].solid_violations: DIP no ISimilarityGroupRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-031 notes: Registers under ISimilarityGroupRepository DI token."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-032
+    artifact_name: IVideoSimilarityRepository
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IVideoSimilarityRepository interface exists anywhere. VideoSimilarityRepository is a
+      concrete class with ISP and DIP violations (no interface; five mixed-concern methods:
+      findGroupMemberships read vs markInGroup, markHasMatches, markNoMatches, reassignGroup
+      writes). Draft signals confirm existing_artifact_refs: [] (new artifact) with an open
+      ISP decision (split into IVideoSimilarityReader + IVideoSimilarityWriter vs single
+      focused interface) deferred to artifact_action_analysis. Must be created at
+      pipeline-service/grouping/infrastructure/ports/ per DECISION-RA-001, with the
+      split/consolidation decision resolved in the next phase.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[video-similarity.repository.ts].solid_violations: ISP five mixed-concern methods; DIP no IVideoSimilarityRepository"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-032 notes: ISP decision (split vs focused interface) deferred to artifact_action_analysis phase"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-033
+    artifact_name: VideoSimilarityRepository
+    draft_role: repository
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/infrastructure/video-similarity.repository.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists. ISP violation (five mixed-concern methods). DIP violation (no interface)."
+      - path: packages/pipeline-service/src/grouping/infrastructure/video-similarity.repository.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service copy is the modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      VideoSimilarityRepository exists with ISP and DIP violations (five mixed-concern methods;
+      no IVideoSimilarityRepository interface). Required modifications: (1) implement
+      IVideoSimilarityRepository interface (or split interfaces if ISP split is decided);
+      (2) register under the corresponding DI token(s). The Mongoose update operations for
+      video similarity status fields are preserved. .lean<T>().exec() discipline (LC-006) maintained.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[video-similarity.repository.ts].solid_violations: ISP five mixed-concern methods mark* writes vs findGroupMemberships query; DIP no interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-033 notes: Registers under IVideoSimilarityRepository DI token (or split interface tokens if ISP split is decided)."
+    reuse_blocked_by: null
+
+  # ─────────────────────────────────────────────────
+  # Shared: Cross-capability infrastructure
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: AC-034
+    artifact_name: IScanBatchRepository
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IScanBatchRepository interface exists anywhere. ScanBatch repository classes in both
+      grouping-service and vdf-scan-service are concrete with no interface contract (DIP violations
+      per reconnaissance). Draft signals confirm existing_artifact_refs: [] (new artifact). Must be
+      created at pipeline-service/shared/infrastructure/ports/i-scan-batch.repository.ts declaring
+      findEligible, markClaimed, markCompleted, findById. This is shared across CAP-002 and CAP-003
+      per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[grouping-service/scan-batch.repository.ts].solid_violations: DIP no IScanBatchRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-034 evidence: port_inventory[PORT-007]: IScanBatchRepository consumed_by ScanOrchestrator and ProcessScanHandler"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-035
+    artifact_name: ScanBatchRepository
+    draft_role: repository
+    existing_artifacts_found:
+      - path: packages/grouping-service/src/infrastructure/scan-batch.repository.ts
+        match_quality: partial_match
+        notes: "Exists as minimal idempotency check and completion marking repo. DIP violation (no interface)."
+      - path: packages/vdf-scan-service/src/infrastructure/ (via BatchClaimerService)
+        match_quality: partial_match
+        notes: "Batch persistence operations embedded in BatchClaimerService — not a standalone ScanBatchRepository in vdf-scan-service"
+      - path: packages/pipeline-service/src/shared/infrastructure/scan-batch.repository.ts
+        match_quality: canonical_target
+        notes: "Shared pipeline-service path is the canonical consolidation target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      ScanBatchRepository exists in grouping-service as a minimal Mongoose repository with a
+      DIP violation. The vdf-scan-service equivalent is partially embedded in BatchClaimerService.
+      The canonical target is the shared pipeline-service path which consolidates both consumers'
+      scan-batch persistence needs. Required modifications: (1) implement IScanBatchRepository
+      interface with the full contract (findEligible, markClaimed, markCompleted, findById);
+      (2) register under IScanBatchRepository DI token globally via SharedInfraModule.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[grouping-service/scan-batch.repository.ts]: DIP no IScanBatchRepository interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-035 notes: Shared across scanning and grouping submodules. Registered in SharedInfraModule or dedicated shared-persistence module."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-036
+    artifact_name: IStoragePort
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IStoragePort or IS3Client interface exists anywhere. S3Adapter is a concrete class
+      exported from the shared package with no interface abstraction — a DIP violation confirmed
+      by DECISION-RECON-010. Draft signals confirm existing_artifact_refs: [] (new artifact).
+      Must be created at pipeline-service/shared/infrastructure/ports/i-storage.port.ts
+      declaring getObject, putObject, headObject, deleteObject. Shared across all 3 capabilities
+      per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-010: S3Adapter has no IS3Client or IStorageAdapter interface; application-layer classes depend on this concrete class"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-036 evidence: port_inventory[PORT-011]: dip_violation_source: no IStoragePort currently"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-037
+    artifact_name: S3StorageAdapter
+    draft_role: adapter
+    existing_artifacts_found:
+      - path: packages/shared/src/storage/s3.client.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists as S3Adapter concrete class. DIP violation (no IStoragePort interface). Provides headObject, downloadToFile, putJson, getJson, uploadFile."
+      - path: packages/pipeline-service/src/shared/infrastructure/s3-storage.adapter.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service shared path is the canonical modification target. Rename to S3StorageAdapter per target artifact name."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      S3Adapter (existing) / S3StorageAdapter (target name) exists in the shared package as a
+      concrete AWS SDK v3 wrapper with a DIP violation (no IStoragePort interface). Required
+      modifications: (1) implement IStoragePort interface; (2) register globally under IStoragePort
+      DI token in SharedInfraModule; (3) rename from S3Adapter to S3StorageAdapter at the
+      pipeline-service canonical path. The AWS SDK v3 operation wrapping logic is preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-010: S3Adapter no IS3Client or IStorageAdapter interface; injected by class token"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-037 notes: Registered globally in SharedInfraModule under IStoragePort DI token."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-038
+    artifact_name: IEventPublisher
+    draft_role: port
+    existing_artifacts_found: []
+    reuse_verdict: no_existing_artifact
+    recommended_action_hint: create_new
+    reason: >
+      No IEventPublisher interface exists anywhere. RabbitMQPublisher is a concrete class
+      injected directly into application handlers — a DIP violation confirmed by DECISION-RECON-009.
+      Draft signals confirm existing_artifact_refs: [] (new artifact). Must be created at
+      pipeline-service/shared/infrastructure/ports/i-event-publisher.port.ts declaring
+      publish(exchange, routingKey, payload) per DECISION-RA-001.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-009: RabbitMQPublisher injected directly with no IEventPublisher interface; DIP violation"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-038 evidence: port_inventory[PORT-012]: dip_violation_source: topology hardcoded, no IEventPublisher"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-039
+    artifact_name: RabbitMQPublisher
+    draft_role: adapter
+    existing_artifacts_found:
+      - path: packages/shared/src/queue/rabbitmq.client.ts
+        match_quality: exact_duplicate_with_violations
+        notes: "Exists as concrete amqplib wrapper. SRP violation (topology assertion in client class). OCP violation (topology hardcoded). DIP violation (no IEventPublisher)."
+      - path: packages/pipeline-service/src/shared/infrastructure/rabbitmq.publisher.ts
+        match_quality: canonical_target
+        notes: "Pipeline-service shared path is the canonical modification target"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      RabbitMQPublisher exists in the shared package as a concrete amqplib wrapper with SRP,
+      OCP, and DIP violations per reconnaissance. Required modifications: (1) implement
+      IEventPublisher interface; (2) register globally under IEventPublisher DI token in
+      SharedInfraModule; (3) OCP fix: topology must be sourced from QUEUE_EXCHANGES/ROUTING_KEYS
+      constants (already exist in shared/types/queue.types.ts) rather than hardcoded; (4) SRP fix:
+      topology assertion should be separated from publish concern. The amqplib channel.publish()
+      core logic is preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[rabbitmq.client.ts].solid_violations: SRP topology assertion embedded; OCP topology hardcoded; DIP no IQueuePublisher interface"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-039 notes: OCP fix: topology sourced from QUEUE_EXCHANGES/ROUTING_KEYS constants. Registered under IEventPublisher DI token."
+    reuse_blocked_by: null
+
+  # ─────────────────────────────────────────────────
+  # Shared: Schema modules
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: AC-040
+    artifact_name: VideoSchemaModule
+    draft_role: schema
+    existing_artifacts_found:
+      - path: packages/shared/src/db/video.schema.ts
+        match_quality: existing_schema_wrong_location
+        notes: "Schema @Schema/@Prop definition exists but is in shared/db/ — an SRP violation (ORM coupling in shared package). Collection name LOCKED."
+      - path: packages/pipeline-service/src/staging/infrastructure/schemas/video.schema.ts
+        match_quality: canonical_target
+        notes: "Target path within capability-scoped infrastructure layer"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      The Mongoose VideoDocument schema exists in shared/src/db/video.schema.ts with the
+      @Schema({ collection: 'videos' }) definition. Per DECISION-RA-003, the schema class
+      content must be preserved byte-for-byte (collection name LOCKED per DECISION-RECON-002).
+      Required modification: move to pipeline-service staging infrastructure/schemas/ path
+      and wrap as MongooseModule.forFeature([{ name: VideoDocument.name, schema: VideoSchema }])
+      registration. The @Prop field definitions and SchemaFactory.createForClass call are preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[shared/src/db/video.schema.ts].solid_violations: SRP Mongoose decorator couples shared data contract to NestJS infrastructure"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-005: shared package exports VideoDocument decorated with NestJS Mongoose decorators — infrastructure-coupled"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-041
+    artifact_name: ScanBatchSchemaModule
+    draft_role: schema
+    existing_artifacts_found:
+      - path: packages/shared/src/db/scan-batch.schema.ts
+        match_quality: existing_schema_wrong_location
+        notes: "Schema exists in shared/db/ — SRP violation. Collection name LOCKED."
+      - path: packages/pipeline-service/src/scanning/infrastructure/schemas/scan-batch.schema.ts
+        match_quality: canonical_target
+        notes: "Target path within scanning capability infrastructure layer"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      The Mongoose ScanBatchDocument schema exists in shared/src/db/scan-batch.schema.ts.
+      Per DECISION-RA-003, same rationale as VideoSchemaModule: schema content preserved,
+      move to scanning capability-scoped infrastructure/schemas/ path, wrap as
+      MongooseModule.forFeature registration. The @Prop definitions and collection name
+      (scan_batches) must remain byte-for-byte identical.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[scan-batch.schema.ts].solid_violations: SRP same as video.schema.ts — ORM decorator coupling"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-011: shared/src/db/ contains scan-batch.schema.ts as one of four stable schema files"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-042
+    artifact_name: SimilarityEdgeSchemaModule
+    draft_role: schema
+    existing_artifacts_found:
+      - path: packages/shared/src/db/similarity-edge.schema.ts
+        match_quality: existing_schema_wrong_location
+        notes: "Schema exists in shared/db/ — SRP violation. Collection name LOCKED."
+      - path: packages/pipeline-service/src/grouping/infrastructure/schemas/similarity-edge.schema.ts
+        match_quality: canonical_target
+        notes: "Target path within grouping capability infrastructure layer"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      The Mongoose SimilarityEdgeDocument schema exists in shared/src/db/similarity-edge.schema.ts.
+      Per DECISION-RA-003, schema content preserved, move to grouping capability-scoped
+      infrastructure/schemas/ path. Collection name (similarity_edges) must remain
+      byte-for-byte identical. MongooseModule.forFeature wrapper added.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-edge.schema.ts].solid_violations: SRP same as video.schema.ts — ORM decorator coupling"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-011: shared/src/db/ contains similarity-edge.schema.ts"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-043
+    artifact_name: SimilarityGroupSchemaModule
+    draft_role: schema
+    existing_artifacts_found:
+      - path: packages/shared/src/db/similarity-group.schema.ts
+        match_quality: existing_schema_wrong_location
+        notes: "Schema exists in shared/db/ — SRP violation. Collection name LOCKED."
+      - path: packages/pipeline-service/src/grouping/infrastructure/schemas/similarity-group.schema.ts
+        match_quality: canonical_target
+        notes: "Target path within grouping capability infrastructure layer"
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      The Mongoose SimilarityGroupDocument schema exists in shared/src/db/similarity-group.schema.ts.
+      Per DECISION-RA-003, schema content preserved, move to grouping capability-scoped
+      infrastructure/schemas/ path. Collection name (similarity_groups) must remain
+      byte-for-byte identical. MongooseModule.forFeature wrapper added.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[similarity-group.schema.ts].solid_violations: SRP same as video.schema.ts — ORM decorator coupling"
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-011: shared/src/db/ contains similarity-group.schema.ts"
+    reuse_blocked_by: null
+
+  # ─────────────────────────────────────────────────
+  # Pipeline-service: NestJS module composition
+  # ─────────────────────────────────────────────────
+
+  - candidate_id: AC-044
+    artifact_name: PipelineStagingSubmodule
+    draft_role: module
+    existing_artifacts_found:
+      - path: packages/pipeline-service/src/staging/staging.module.ts
+        match_quality: existing_with_violations
+        notes: "Module exists but registers concrete class tokens rather than interface tokens. OCP violation in SharedInfraModule @Global pattern."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      PipelineStagingSubmodule exists in pipeline-service but currently registers providers
+      using concrete class tokens — a DIP violation in the module wiring layer. Required
+      modifications: (1) import VideoSchemaModule and SharedInfraModule; (2) register
+      VideoRepository under IVideoRepository DI token; (3) register FileStagingAdapter under
+      IFileStagingPort DI token. The NestJS @Module decorator structure and import/export
+      boundaries are preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[shared-infra.module.ts].solid_violations: @Global pattern means submodules implicitly depend on concrete exports"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-044 notes: After refactor: imports VideoSchemaModule and SharedInfraModule. Registers VideoRepository under IVideoRepository, FileStagingAdapter under IFileStagingPort."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-045
+    artifact_name: PipelineScanningSubmodule
+    draft_role: module
+    existing_artifacts_found:
+      - path: packages/pipeline-service/src/scanning/scanning.module.ts
+        match_quality: existing_with_violations
+        notes: "Module exists but uses concrete class tokens. Needs to register all scanning providers under interface tokens."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      PipelineScanningSubmodule exists but uses concrete class tokens in provider registrations.
+      Required modifications: (1) import ScanBatchSchemaModule and SharedInfraModule; (2) register
+      all scanning providers under their interface DI tokens (IBatchClaimerPort, IVdfRunnerPort,
+      IVideoScanRepository, IScanBatchRepository). The @Module decorator structure is preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-045 notes: After refactor: imports ScanBatchSchemaModule and SharedInfraModule. Registers all scanning providers under interface tokens."
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "DECISION-RECON-006: no interface token in module providers — all concrete class injections"
+    reuse_blocked_by: null
+
+  - candidate_id: AC-046
+    artifact_name: PipelineGroupingSubmodule
+    draft_role: module
+    existing_artifacts_found:
+      - path: packages/pipeline-service/src/grouping/grouping.module.ts
+        match_quality: existing_with_violations
+        notes: "Module exists but uses concrete class tokens. Needs to register all grouping providers under interface tokens."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      PipelineGroupingSubmodule exists but uses concrete class tokens in provider registrations.
+      Required modifications: (1) import SimilarityEdgeSchemaModule, SimilarityGroupSchemaModule,
+      and SharedInfraModule; (2) register all grouping providers under their interface DI tokens
+      (IScanResultLoader, ISimilarityEdgeRepository, ISimilarityGroupRepository,
+      IVideoSimilarityRepository). The @Module decorator structure is preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-046 notes: Imports SimilarityEdgeSchemaModule, SimilarityGroupSchemaModule, SharedInfraModule. Registers all grouping providers under interface tokens."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-047
+    artifact_name: SharedInfraModule
+    draft_role: module
+    existing_artifacts_found:
+      - path: packages/pipeline-service/src/shared-infra.module.ts
+        match_quality: existing_with_violations
+        notes: "Exists as @Global module providing S3Adapter, RabbitMQPublisher, PIPELINE_CONFIG, SCAN_OUTPUT_DIR. OCP violation: submodules depend on exported concretions."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      SharedInfraModule exists as the @Global infrastructure module but currently provides
+      concrete S3Adapter and RabbitMQPublisher as exported providers — an OCP violation.
+      Required modifications: (1) register S3StorageAdapter under IStoragePort DI token;
+      (2) register RabbitMQPublisher under IEventPublisher DI token. The @Global scope,
+      PIPELINE_CONFIG and SCAN_OUTPUT_DIR Symbol token provisions are preserved.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[shared-infra.module.ts].solid_violations: OCP @Global pattern means submodules implicitly depend on exported concretions"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-047 notes: OCP fix: providers registered via interface tokens only."
+    reuse_blocked_by: null
+
+  - candidate_id: AC-048
+    artifact_name: PipelineAppModule
+    draft_role: module
+    existing_artifacts_found:
+      - path: packages/pipeline-service/src/app.module.ts
+        match_quality: existing_with_violations
+        notes: "Exists as root AppModule. SRP violation: registers all 3 subdomains directly without clean module boundaries."
+    reuse_verdict: existing_artifact_present
+    recommended_action_hint: modify_existing
+    reason: >
+      PipelineAppModule exists as the root NestJS module but has an SRP violation: it currently
+      registers all three service subdomains directly and may contain cross-domain provider
+      registrations. Required modifications: (1) SRP fix: root module must import exactly
+      SharedInfraModule, PipelineStagingSubmodule, PipelineScanningSubmodule, PipelineGroupingSubmodule
+      with no direct provider registrations from any subdomain; (2) MongoDB and ScheduleModule
+      configuration remain at root level as infrastructure concerns. Cross-domain provider
+      registrations must be removed.
+    evidence_refs:
+      - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+        observation: "relevant_artifacts[app.module.ts].solid_violations: SRP one module hosts all three service subdomains — no single-responsibility boundary at module level"
+      - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+        observation: "AC-048 notes: SRP fix: current module registers all 3 subdomains directly. After refactor: imports exactly SharedInfraModule + 3 submodules."
+    reuse_blocked_by: null
+
+evidence_refs:
+  - ref: conventions/.ai/reports/04-draft-role-signals.yaml
+    section: draft_role_signals
+    consumed_by: candidate_enumeration_and_role_mapping
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: decisions
+    consumed_by: existing_artifact_matching_and_violation_classification
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: relevant_artifacts
+    consumed_by: solid_violation_evidence_per_candidate
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: reusable_behavior
+    consumed_by: duplicate_detection_and_canonical_source_identification
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: boundary_signals
+    consumed_by: port_existence_check_and_no_existing_artifact_verdicts
+  - ref: conventions/.ai/reports/03-codebase-reconnaissance.yaml
+    section: call_sites
+    consumed_by: dependency_chain_and_extraction_source_identification
+  - ref: conventions/.ai/reports/local-convention-candidates.yaml
+    section: decisions
+    consumed_by: convention_preservation_requirements_per_artifact
+  - ref: conventions/.ai/reports/local-convention-candidates.yaml
+    section: detected_conventions
+    consumed_by: modification_constraint_derivation
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.artifact_reuse_analysis.output
+  status: pending
+  note: Gate result is produced by the gate subsystem via run_gate_check route — not authored here.

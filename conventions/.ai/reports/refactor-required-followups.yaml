@@ -1,0 +1,196 @@
+report_id: "refactor-required-followups"
+phase_id: refactor_strategy_selection
+status: complete
+summary: >
+  Required followup phases and reports derived from the selected characterization_first primary
+  strategy, the confirmed action table (split_existing x2, extract_from_existing x1,
+  modify_existing x25, create_new x12, reuse_existing x5), and the active behavior locks
+  (LOCK-001 LOCK-HIGH-RISK, LOCK-002 LOCK-EXTRACT-SPLIT-REPLACE).
+  Two blocking followups must complete before implementation: test_derivation (produces
+  characterization-test-plan) and checkpoint_validation_plan. Four required followups must
+  complete before or during implementation: call_site_impact_analysis, change_impact_analysis,
+  pre_implementation_gate, and implementation itself.
+
+required_followup_phases:
+  - phase_id: call_site_impact_analysis
+    priority: required
+    reason: >
+      split_existing actions on ScanOrchestrator (AC-010) and ProcessScanHandler (AC-023) create
+      new call sites that must be assessed. All 25 modify_existing DIP boundary introductions
+      change dependency injection tokens at call sites across three capabilities.
+      extract_from_existing on ScanSchedulerTrigger (AC-009) removes the @Interval tick from
+      ScanOrchestrator and introduces a new caller. All affected call sites must be inventoried
+      before implementation sequencing can be finalized.
+    depends_on: []
+    blocks: implementation_sequence
+
+  - phase_id: change_impact_analysis
+    priority: required
+    reason: >
+      DIP introduction across all 25 modify_existing artifacts changes the import graph of the
+      entire monorepo. Port interface creation (create_new x12) introduces new import targets.
+      NestJS module wiring changes (AC-044 through AC-048) affect provider registration for all
+      three capabilities. The full downstream impact of these import graph changes must be analyzed
+      before implementation begins.
+    depends_on: []
+    blocks: implementation_sequence
+
+  - phase_id: test_derivation
+    priority: blocking
+    reason: >
+      Zero test coverage confirmed (ASSUMP-003 = FALSE). LOCK-001 (LOCK-HIGH-RISK) and LOCK-002
+      (LOCK-EXTRACT-SPLIT-REPLACE) both require characterization tests before any implementation
+      of decomposition_change or in_place_change actions. The test_derivation phase must produce
+      a characterization-test-plan.yaml covering all 5 preserved behaviors (PB-001 through PB-005)
+      and the key behaviors of ScanOrchestrator, ProcessScanHandler, VideoReadyConsumer,
+      ScanCompletedConsumer, and StageVideoHandler at minimum.
+    depends_on: []
+    blocks: pre_implementation_gate
+    produces:
+      - conventions/.ai/reports/characterization-test-plan.yaml
+
+  - phase_id: checkpoint_validation_plan
+    priority: blocking
+    reason: >
+      HIGH risk level and the presence of split_existing actions require a documented checkpoint
+      validation sequence that specifies validation steps between each implementation increment.
+      The checkpoint_validation_plan must define observable checkpoints for each split, extract,
+      and high-impact modify_existing step. This plan must exist before implementation begins.
+    depends_on:
+      - test_derivation
+    blocks: implementation
+    produces:
+      - conventions/.ai/reports/checkpoint-validation-plan.yaml
+
+  - phase_id: pre_implementation_gate
+    priority: required
+    reason: >
+      LOCK-001 (LOCK-HIGH-RISK) explicitly blocks at pre_implementation_gate. The gatekeeper must
+      validate that: (1) characterization-test-plan.yaml exists and covers all locked surfaces,
+      (2) checkpoint-validation-plan.yaml exists, (3) call_site_impact_analysis is complete,
+      (4) change_impact_analysis is complete. The gate must pass before any implementation action
+      is dispatched.
+    depends_on:
+      - test_derivation
+      - checkpoint_validation_plan
+      - call_site_impact_analysis
+      - change_impact_analysis
+    blocks: implementation
+
+  - phase_id: final_role_assignment
+    priority: required
+    reason: >
+      All 51 post-action candidates list final_role_assignment in their consumer_phases. Final
+      role confirmation is required before structure_rendering and implementation. One deferred
+      decision is open: ISP split for IVideoSimilarityRepository (PAC-032) — single interface
+      versus IVideoSimilarityReader + IVideoSimilarityWriter split.
+    depends_on: []
+    blocks: structure_rendering
+
+  - phase_id: structure_rendering
+    priority: required
+    reason: >
+      structure_rendering_required trigger is emitted for all create_new x12 port interface
+      candidates and all modify_existing and split_existing candidates. Port interface files
+      must be rendered before implementing artifacts. Structure rendering is not blocked by
+      characterization_first for the create_new candidates (pure additive), but is blocked for
+      modify_existing and split_existing candidates until pre_implementation_gate passes.
+    depends_on:
+      - final_role_assignment
+      - pre_implementation_gate
+    blocks: implementation
+
+  - phase_id: implementation
+    priority: required
+    reason: >
+      Actual refactor execution applying all 48 binding actions. Must not begin until
+      pre_implementation_gate passes, structure_rendering is complete, and both blocking
+      followup reports (characterization-test-plan, checkpoint-validation-plan) exist.
+    depends_on:
+      - pre_implementation_gate
+      - structure_rendering
+      - checkpoint_validation_plan
+    blocks: []
+
+required_followup_reports:
+  - report_id: characterization-test-plan
+    path: conventions/.ai/reports/characterization-test-plan.yaml
+    required_before: pre_implementation_gate
+    owner_phase: test_derivation
+    must_cover:
+      - PB-001
+      - PB-002
+      - PB-003
+      - PB-004
+      - PB-005
+      - ScanOrchestrator key behaviors
+      - ProcessScanHandler key behaviors
+
+  - report_id: checkpoint-validation-plan
+    path: conventions/.ai/reports/checkpoint-validation-plan.yaml
+    required_before: implementation
+    owner_phase: checkpoint_validation_plan
+    must_cover:
+      - split_then_migrate checkpoints for AC-010 and AC-023
+      - extract_then_delegate checkpoint for AC-009
+      - incremental_migration checkpoint sequence for 25 modify_existing candidates
+
+  - report_id: call-site-impact-analysis
+    path: conventions/.ai/reports/call-site-impact-analysis.yaml
+    required_before: implementation_sequence
+    owner_phase: call_site_impact_analysis
+    must_cover:
+      - All call sites affected by ScanOrchestrator split (AC-010)
+      - All call sites affected by ProcessScanHandler split (AC-023)
+      - All call sites affected by ScanSchedulerTrigger extraction (AC-009)
+      - DI token call site changes for all 25 modify_existing candidates
+
+  - report_id: change-impact-analysis
+    path: conventions/.ai/reports/change-impact-analysis.yaml
+    required_before: implementation_sequence
+    owner_phase: change_impact_analysis
+    must_cover:
+      - Import graph changes from create_new x12 port interfaces
+      - Import graph changes from modify_existing x25 DIP introductions
+      - NestJS module provider registration changes (AC-044 through AC-048)
+
+open_decisions:
+  - id: OPEN-FU-001
+    description: >
+      ISP split decision for IVideoSimilarityRepository (PAC-032) is deferred to
+      final_role_assignment phase. Options: single IVideoSimilarityRepository interface versus
+      separate IVideoSimilarityReader and IVideoSimilarityWriter interfaces. Decision affects
+      VideoSimilarityRepository (PAC-033) implementation and DI token registration count.
+    deferred_to: final_role_assignment
+    affects:
+      - PAC-032
+      - PAC-033
+
+triggers_emitted:
+  - trigger: refactor_like_action_selected
+    reason: >
+      split_existing x2 (AC-010, AC-023) and extract_from_existing x1 (AC-009) require
+      characterization baseline and behavior lock before execution. Triggers test_derivation
+      and checkpoint_validation_plan as blocking followup phases.
+  - trigger: structure_rendering_required
+    reason: >
+      12 create_new port interface candidates require structure rendering phase:
+      IVideoRepository, IFileStagingPort, IBatchClaimerPort, IVdfRunnerPort, IVideoScanRepository,
+      IScanResultLoader, ISimilarityEdgeRepository, ISimilarityGroupRepository,
+      IVideoSimilarityRepository, IScanBatchRepository, IStoragePort, IEventPublisher.
+
+evidence_refs:
+  - ref: conventions/.ai/reports/05-artifact-actions.yaml
+    section: artifact_action_table
+    consumed_by: followup_derivation
+  - ref: conventions/.ai/reports/post-action-artifact-candidates.yaml
+    section: post_action_candidates
+    consumed_by: consumer_phase_followup_mapping
+  - ref: conventions/.ai/reports/06-refactor-strategy.yaml
+    section: blocking_items
+    consumed_by: blocking_followup_requirement
+
+gate_result:
+  gate_id: gate.refactor_strategy_selection.output
+  status: pending
+  note: Gate result produced by gate subsystem via run_gate_check route. Not authored here.

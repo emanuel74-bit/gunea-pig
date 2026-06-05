@@ -1,0 +1,343 @@
+report_id: "06-refactor-strategy"
+phase_id: refactor_strategy_selection
+status: complete
+summary: >
+  Primary strategy: characterization_first (blocks implementation until characterization tests exist).
+  Execution strategies: split_then_migrate for ScanOrchestrator (AC-010) and ProcessScanHandler (AC-023)
+  splits; extract_then_delegate for ScanSchedulerTrigger (AC-009) extraction;
+  incremental_migration for 25 modify_existing DIP boundary introductions.
+  Zero tests confirmed (ASSUMP-003 = FALSE) — all implementation blocked until characterization
+  test plan is produced and validated by the pre_implementation_gate.
+
+inputs_consumed:
+  - source: conventions/.ai/reports/05-artifact-actions.yaml
+    artifact: artifact_action_table
+  - source: conventions/.ai/reports/post-action-artifact-candidates.yaml
+    artifact: post_action_candidates
+
+decisions:
+  - id: DECISION-RS-001
+    decision: >
+      Select characterization_first as the blocking primary strategy.
+    rationale: >
+      Zero test coverage (ASSUMP-003 confirmed FALSE — no spec or test files exist anywhere in the
+      codebase) combined with HIGH risk level triggers SELECT-CHARACTERIZATION-FIRST at priority 2
+      in the strategy selection order. behavior_lock_required is therefore true. The convention
+      SELECT-CHARACTERIZATION-FIRST rule explicitly blocks implementation until a characterization
+      test plan is produced and validated. No implementation phase may begin before that gate passes.
+    evidence:
+      - source: conventions/.ai/reports/risk-classification.yaml
+        field: risk_level
+        value: high
+      - source: conventions/.ai/reports/assumptions.yaml
+        field: assumptions[ASSUMP-003]
+        value: "confirmed FALSE — zero test files anywhere in the codebase"
+
+  - id: DECISION-RS-002
+    decision: >
+      Assign split_then_migrate execution strategy to both split_existing candidates (AC-010, AC-023).
+    rationale: >
+      ScanOrchestrator (AC-010, 7 co-located responsibilities) and ProcessScanHandler (AC-023,
+      6 co-located responsibilities) both require that the source file be decomposed, surviving
+      call sites be migrated to the trimmed artifact, and checkpoint validation be applied before
+      and after each split step. split_then_migrate is the correct execution strategy for
+      split_existing action family artifacts.
+    evidence:
+      - source: conventions/.ai/reports/05-artifact-actions.yaml
+        field: artifact_action_table[AC-010].selected_action
+        value: split_existing
+      - source: conventions/.ai/reports/05-artifact-actions.yaml
+        field: artifact_action_table[AC-023].selected_action
+        value: split_existing
+
+  - id: DECISION-RS-003
+    decision: >
+      Assign extract_then_delegate execution strategy to the extract_from_existing candidate (AC-009).
+    rationale: >
+      ScanSchedulerTrigger (AC-009) is extracted from ScanOrchestrator. The source file retains its
+      primary orchestration role while one scheduling subresponsibility is pulled to a new standalone
+      file. extract_then_delegate preserves the source artifact's primary role and delegates the
+      extracted concern to the new artifact via the surviving call path.
+    evidence:
+      - source: conventions/.ai/reports/05-artifact-actions.yaml
+        field: artifact_action_table[AC-009].selected_action
+        value: extract_from_existing
+      - source: conventions/.ai/reports/05-artifact-actions.yaml
+        field: artifact_action_table[AC-009].reason_summary
+        value: "extract_from_existing — one subresponsibility (scheduling) is pulled out while primary orchestration role survives"
+
+  - id: DECISION-RS-004
+    decision: >
+      Assign incremental_migration execution strategy to all 25 modify_existing candidates.
+    rationale: >
+      The 25 modify_existing artifacts span three capabilities and shared infrastructure. Each
+      requires DIP boundary introduction (port interface implementation and DI token registration).
+      The cross-module nature of the changes and the absence of any test baseline make incremental
+      sequencing with per-artifact checkpoints mandatory. Incremental migration allows each artifact
+      to be modified and validated in isolation before the next is touched.
+    evidence:
+      - source: conventions/.ai/reports/05-artifact-actions.yaml
+        field: summary
+        value: "modify_existing: 25 candidates (concrete repositories, adapters, consumers, handlers, validators, schema modules, NestJS module wiring)"
+
+selected_strategy: characterization_first
+blocks_implementation: true
+strategy_reason: >
+  The SELECT-CHARACTERIZATION-FIRST rule (priority 2) is triggered when behavior_lock_required is
+  true AND test inventory coverage_state is unknown or weak. Both conditions are satisfied here.
+  behavior_lock_required is true because LOCK-HIGH-RISK applies (risk_level = high with zero test
+  baseline). coverage_state is effectively zero: ASSUMP-003 is confirmed FALSE meaning no spec or
+  test files exist anywhere in the codebase. Under these conditions, implementation of any
+  decomposition_change or in_place_change action must not proceed until a characterization test
+  plan has been produced by the test_derivation phase and the pre_implementation_gate has passed.
+  The 12 create_new port interface candidates (pure additive, no existing behavior affected) are
+  not blocked by this strategy and may proceed to structure_rendering independently, but their
+  consuming artifacts (which require modify_existing or split_existing actions) remain blocked.
+
+execution_strategies:
+  - action_type: split_existing
+    affected_candidates:
+      - AC-010
+      - AC-023
+    post_action_candidates:
+      - PAC-010
+      - PAC-023
+    execution_strategy: split_then_migrate
+    notes: >
+      ScanOrchestrator (AC-010, PAC-010) split produces surviving trimmed orchestrator plus
+      ScanSchedulerTrigger (PAC-009). ProcessScanHandler (AC-023, PAC-023) split produces
+      surviving trimmed handler with DIP-compliant port injections replacing all 6 concrete
+      dependencies. Both splits require call-site migration and checkpoint validation before
+      and after each step.
+
+  - action_type: extract_from_existing
+    affected_candidates:
+      - AC-009
+    post_action_candidates:
+      - PAC-009
+    execution_strategy: extract_then_delegate
+    notes: >
+      ScanSchedulerTrigger (PAC-009) extraction from ScanOrchestrator preserves the
+      ScanOrchestrator primary orchestration role. The @Interval(30000) scheduling concern
+      is moved to the new standalone trigger file; ScanOrchestrator.run() is invoked by
+      delegation from the extracted trigger.
+
+  - action_type: modify_existing
+    affected_candidates:
+      - AC-001
+      - AC-002
+      - AC-003
+      - AC-006
+      - AC-008
+      - AC-014
+      - AC-016
+      - AC-017
+      - AC-019
+      - AC-020
+      - AC-021
+      - AC-022
+      - AC-027
+      - AC-029
+      - AC-031
+      - AC-033
+      - AC-035
+      - AC-037
+      - AC-039
+      - AC-040
+      - AC-041
+      - AC-042
+      - AC-043
+      - AC-044
+      - AC-045
+      - AC-046
+      - AC-047
+      - AC-048
+    post_action_candidates:
+      - PAC-001 through PAC-003
+      - PAC-006
+      - PAC-008
+      - PAC-014
+      - PAC-016
+      - PAC-017
+      - PAC-019
+      - PAC-020
+      - PAC-021
+      - PAC-022
+      - PAC-027
+      - PAC-029
+      - PAC-031
+      - PAC-033
+      - PAC-035
+      - PAC-037
+      - PAC-039
+      - PAC-040 through PAC-048
+    execution_strategy: incremental_migration
+    notes: >
+      25 in_place_change artifacts require DIP boundary introduction across three capabilities
+      and shared infrastructure. Each artifact is modified and checkpoint-validated in isolation
+      before proceeding to the next. Safe sequencing order: shared ports and adapters first,
+      then capability repositories and handlers, then NestJS module wiring last.
+
+  - action_type: create_new
+    affected_candidates:
+      - AC-005
+      - AC-007
+      - AC-013
+      - AC-015
+      - AC-018
+      - AC-026
+      - AC-028
+      - AC-030
+      - AC-032
+      - AC-034
+      - AC-036
+      - AC-038
+    post_action_candidates:
+      - PAC-005
+      - PAC-007
+      - PAC-013
+      - PAC-015
+      - PAC-018
+      - PAC-026
+      - PAC-028
+      - PAC-030
+      - PAC-032
+      - PAC-034
+      - PAC-036
+      - PAC-038
+    execution_strategy: structure_rendering
+    notes: >
+      12 create_new port interface candidates are pure additive. No existing behavior is affected.
+      structure_rendering_required trigger applies. These artifacts are not blocked by
+      characterization_first for their own creation but their consuming artifacts remain blocked
+      until the pre_implementation_gate passes.
+
+  - action_type: reuse_existing
+    affected_candidates:
+      - AC-004
+      - AC-011
+      - AC-012
+      - AC-024
+      - AC-025
+    post_action_candidates:
+      - PAC-004
+      - PAC-011
+      - PAC-012
+      - PAC-024
+      - PAC-025
+    execution_strategy: no_action_required
+    notes: >
+      5 reuse_existing artifacts (domain policies and UnionFindDomainService) are confirmed clean
+      with solid_violations: []. No code-level change is applied. These artifacts are not blocked.
+
+rejected_strategies:
+  - strategy: no_refactor
+    reason: >
+      Refactor-like actions are confirmed in the binding action table: split_existing x2 (AC-010,
+      AC-023) and extract_from_existing x1 (AC-009). SELECT-NO-REFACTOR requires no refactor need
+      — that condition is not met.
+
+  - strategy: split_then_migrate_as_primary
+    reason: >
+      split_then_migrate is a valid execution strategy for the split_existing candidates but it
+      does not address the zero test baseline constraint. SELECT-CHARACTERIZATION-FIRST at priority 2
+      supersedes all execution strategy selections as the blocking primary strategy. split_then_migrate
+      is retained as an execution strategy within characterization_first, not as the primary strategy.
+
+  - strategy: incremental_migration_as_primary
+    reason: >
+      Same reasoning as split_then_migrate_as_primary. The zero test baseline makes
+      incremental_migration insufficient as the sole primary strategy. It is retained as an
+      execution strategy for the 25 modify_existing candidates.
+
+required_behavior_lock:
+  lock_required: true
+  lock_types:
+    - characterization_tests
+    - checkpoint_validation_plan
+    - contract_tests
+    - regression_tests
+  lock_surfaces:
+    - surface: side_effect_contract
+      items:
+        - "RabbitMQ consumer ack/nack behavior (PB-001 related — message topics)"
+        - "S3 put/get/delete operations (PB-003 related — S3 key patterns)"
+      lock_with:
+        - integration_tests
+        - contract_tests
+        - failure_mode_tests
+    - surface: public_contract
+      items:
+        - "RabbitMQ message schemas — topic names and payload field definitions (PB-001)"
+        - "S3 key patterns — bucket and key format (PB-003)"
+      lock_with:
+        - contract_tests
+        - compatibility_decision
+    - surface: workflow_result
+      items:
+        - "Scan orchestration pipeline end-to-end result: VideoReady -> scan -> ScanCompleted flow (PB-004)"
+      lock_with:
+        - integration_tests
+        - acceptance_mapping
+    - surface: data_semantics
+      items:
+        - "Mongoose collection names and field definitions (PB-002)"
+        - "Document shapes for videos, scan_batches, similarity_edges, similarity_groups collections"
+      lock_with:
+        - persistence_tests
+
+required_reports:
+  - behavior-preservation-requirements
+  - characterization-test-plan
+
+required_followups:
+  - call_site_impact_analysis
+  - change_impact_analysis
+  - checkpoint_validation_plan
+  - behavior_lock_required
+  - test_derivation
+
+blocking_items:
+  - id: BLOCK-RS-001
+    description: >
+      characterization-test-plan must be produced by the test_derivation phase and must exist
+      before the pre_implementation_gate passes. No modify_existing, split_existing, or
+      extract_from_existing action may be implemented until this gate is cleared.
+    blocks: pre_implementation_gate
+    required_report: conventions/.ai/reports/characterization-test-plan.yaml
+
+  - id: BLOCK-RS-002
+    description: >
+      checkpoint-validation-plan must exist before the implementation phase begins. HIGH risk
+      level and presence of split_existing actions require checkpoint validation sequencing.
+    blocks: implementation
+    required_report: conventions/.ai/reports/checkpoint-validation-plan.yaml
+
+triggers_emitted:
+  - trigger: refactor_like_action_selected
+    reason: >
+      split_existing x2 (AC-010, AC-023) and extract_from_existing x1 (AC-009) confirmed.
+      These decomposition_change actions require characterization baseline before execution.
+  - trigger: structure_rendering_required
+    reason: >
+      create_new x12 port interface candidates (AC-005, AC-007, AC-013, AC-015, AC-018, AC-026,
+      AC-028, AC-030, AC-032, AC-034, AC-036, AC-038) require structure rendering phase.
+
+evidence_refs:
+  - ref: conventions/.ai/reports/05-artifact-actions.yaml
+    section: artifact_action_table
+    consumed_by: strategy_selection
+  - ref: conventions/.ai/reports/post-action-artifact-candidates.yaml
+    section: post_action_candidates
+    consumed_by: execution_strategy_mapping
+  - ref: conventions/.ai/reports/risk-classification.yaml
+    section: risk_level
+    consumed_by: behavior_lock_requirement
+  - ref: conventions/.ai/reports/assumptions.yaml
+    section: assumptions[ASSUMP-003]
+    consumed_by: coverage_state_determination
+
+gate_result:
+  gate_id: gate.refactor_strategy_selection.output
+  status: pending
+  note: Gate result produced by gate subsystem via run_gate_check route. Not authored here.

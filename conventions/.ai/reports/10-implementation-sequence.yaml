@@ -1,0 +1,792 @@
+report_id: "10-implementation-sequence"
+phase_id: implementation_sequence
+status: complete
+risk_level: high
+summary: >
+  17 ordered implementation steps across 10 groups. Risk level HIGH requires checkpoint
+  after each group. Step 0 (characterization tests — 29 spec files, 37 test cases) is
+  BLOCKING per BLOCK-RS-001 and SEQ-006: no production code may change until all 37
+  characterization test cases pass against the pre-refactor codebase.
+  Groups 1-10 cover: port interface creation (12 new), repository/adapter/schema
+  modifications (implement port interfaces), SharedInfraModule wiring (critical SEQ-002
+  dependency), split/extract operations, consumer/handler/service updates, pipeline
+  submodule wiring, PipelineAppModule wiring, shared barrel update, and final validation.
+  Total: 13 new files created, 38 modified/split/extracted files touched.
+  Cross-package moves: 4 schema files (shared/src/db/ -> capability schemas/),
+  2 adapter files (shared/src/ -> shared-infra/adapters/).
+
+inputs_consumed:
+  - source: conventions/.ai/reports/structure-plan.yaml
+    artifact: structure_plan
+    fields_used: [density_mode_selection, layer_placement_rules, path_normalization_decisions, folders_to_create, boundary_crossing_compliance]
+  - source: conventions/.ai/reports/final-file-tree.yaml
+    artifact: final_file_tree
+    fields_used: [files_to_create, files_to_modify, rendered_file_tree, artifact_count_validation]
+  - source: conventions/.ai/reports/09-test-plan.yaml
+    artifact: test_plan
+    fields_used: [test_obligations, zero_tests_confirmation, risk_signal, blocking_gaps, role_to_obligation_matrix]
+  - source: conventions/.ai/reports/regression-test-plan.yaml
+    artifact: regression_test_plan
+    fields_used: [regression_obligations, pre_refactor_ground_truth, test_case_stubs]
+  - source: conventions/.ai/reports/characterization-test-plan.yaml
+    artifact: characterization_test_plan
+    fields_used: [preserved_behavior_coverage, additional_characterization_tests, implementation_instructions, test_file_summary]
+
+blocked_items:
+  - id: BLOCK-IMPL-001
+    source_constraint: BLOCK-RS-001
+    description: >
+      Characterization tests (37 test cases across 29 spec files) must exist AND pass
+      against the pre-refactor codebase before any production code modification begins.
+      This lifts BLOCK-RS-001 from 06-refactor-strategy.yaml.
+    lifted_by: "Completion of STEP-000: all 29 characterization test files authored and all 37 test cases pass via npx jest --testPathPattern=characterization/"
+    blocks: [STEP-001 through STEP-016, GROUP-1 through GROUP-10]
+
+  - id: BLOCK-IMPL-002
+    source_constraint: SEQ-001
+    description: >
+      Port interfaces (12 new .port.ts files) must exist before any repository, adapter,
+      service, consumer, or handler that implements or injects them is modified.
+    lifted_by: "Completion of STEP-001: all 12 port interface files created and tsc --noEmit passes"
+    blocks: [STEP-002 through STEP-013]
+
+  - id: BLOCK-IMPL-003
+    source_constraint: SEQ-002
+    description: >
+      SharedInfraModule must be modified BEFORE pipeline submodules (staging, scanning,
+      grouping) because it provides the global port tokens (IStoragePort, IEventPublisher,
+      IScanBatchRepository) that submodule providers depend on at DI resolution time.
+    lifted_by: "Completion of STEP-005: SharedInfraModule compiled and exports global port tokens"
+    blocks: [STEP-006 through STEP-011]
+
+ordered_steps:
+
+  # ─── GROUP 0: Characterization tests (BLOCKING) ───────────────────────────
+
+  - step_id: STEP-000
+    group_id: GROUP-0
+    title: "Write all characterization test files (BLOCKING)"
+    step_type: update_tests
+    target_artifacts:
+      - "packages/pipeline-service/test/characterization/video-ready-consumer.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/staging-message-schema.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-completed-consumer.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-completed-schema.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-orchestrator-publish.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/process-scan-publish.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/video.schema.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-batch.schema.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/similarity-edge.schema.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/similarity-group.schema.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/schema-module-wiring.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-orchestrator-s3-key.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/file-staging-adapter-s3-key.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-result-client-s3-key.contract.spec.ts"
+      - "packages/pipeline-service/test/characterization/staging-pipeline.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-orchestrator.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/process-scan-handler.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-completed-consumer.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/error-classes.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/vdf-runner-errors.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/video-ready-consumer-ack-nack.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-completed-consumer-ack-nack.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/stage-video-handler-errors.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/shared-infra-module.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-scheduler-trigger.integration.spec.ts"
+      - "packages/pipeline-service/test/characterization/scan-result-validator.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/union-find.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/similarity-threshold-policy.unit.spec.ts"
+      - "packages/pipeline-service/test/characterization/vdf-manifest-normalizer.unit.spec.ts"
+    depends_on: []
+    allowed_edit_scope:
+      - "packages/pipeline-service/test/characterization/"
+    required_inputs:
+      - conventions/.ai/reports/characterization-test-plan.yaml
+      - conventions/.ai/reports/regression-test-plan.yaml
+    produces:
+      - "29 characterization test spec files"
+      - "37 concrete test cases covering PB-001..PB-005"
+      - "Baseline behavioral coverage for pre_implementation_gate"
+    validation_after_step: "npx jest --testPathPattern=characterization/ (ALL 37 test cases must PASS against pre-refactor source)"
+    risk_level: low
+    rollback_or_reversal_note: "Delete packages/pipeline-service/test/characterization/ directory"
+    notes: >
+      BLOCK-RS-001 and SEQ-006: no production file (any file outside test/) may be
+      created, modified, moved, or deleted until all 37 characterization tests pass.
+      Test cases: TC-CHAR-001..TC-CHAR-037 per characterization-test-plan.yaml.
+      Required test dependencies: @nestjs/testing, mongodb-memory-server, jest.fn().
+      PB-001 contracts: topic='video.ready-for-scan', topic='scan.completed',
+      exchange='scan.events' routing 'scan.completed'/'scan.persisted'.
+      PB-002 contracts: collections videos/scan_batches/similarity_edges/similarity_groups.
+      PB-003 contracts: key template 'scans/${scanId}/result.json'.
+      PB-005 contracts: error class names StagingMessageValidationError,
+      VideoAlreadyStagedError, StagingPermanentFailureError, S3ObjectNotFoundError,
+      ScanAlreadyGroupedError, ScanResultValidationError, VdfTimeoutError,
+      VdfProcessError, VdfOutputMissingError.
+
+  # ─── GROUP 1: Port interface contracts (create_new × 12) ─────────────────
+
+  - step_id: STEP-001
+    group_id: GROUP-1
+    title: "Create 12 port interface files (.port.ts)"
+    step_type: prepare_contracts
+    target_artifacts:
+      # staging/interfaces/ — 2 ports
+      - artifact_id: PAC-005
+        path: "packages/pipeline-service/src/staging/interfaces/i-video-repository.port.ts"
+        consumed_by: [StageVideoHandler, MongoVideoRepository]
+      - artifact_id: PAC-007
+        path: "packages/pipeline-service/src/staging/interfaces/i-file-staging.port.ts"
+        consumed_by: [StageVideoHandler, FileStagingAdapter]
+      # scanning/interfaces/ — 3 ports
+      - artifact_id: PAC-013
+        path: "packages/pipeline-service/src/scanning/interfaces/i-batch-claimer.port.ts"
+        consumed_by: [ScanOrchestrator, BatchClaimerService]
+      - artifact_id: PAC-015
+        path: "packages/pipeline-service/src/scanning/interfaces/i-vdf-runner.port.ts"
+        consumed_by: [ScanOrchestrator, VdfRunnerAdapter]
+      - artifact_id: PAC-018
+        path: "packages/pipeline-service/src/scanning/interfaces/i-video-scan-repository.port.ts"
+        consumed_by: [ScanOrchestrator, MongoVideoScanRepository]
+      # grouping/interfaces/ — 4 ports
+      - artifact_id: PAC-026
+        path: "packages/pipeline-service/src/grouping/interfaces/i-scan-result-loader.port.ts"
+        consumed_by: [ProcessScanHandler, ScanResultClient]
+      - artifact_id: PAC-028
+        path: "packages/pipeline-service/src/grouping/interfaces/i-similarity-edge-repository.port.ts"
+        consumed_by: [ProcessScanHandler, MongoSimilarityEdgeRepository]
+      - artifact_id: PAC-030
+        path: "packages/pipeline-service/src/grouping/interfaces/i-similarity-group-repository.port.ts"
+        consumed_by: [ProcessScanHandler, MongoSimilarityGroupRepository]
+      - artifact_id: PAC-032
+        path: "packages/pipeline-service/src/grouping/interfaces/i-video-similarity-repository.port.ts"
+        consumed_by: [ProcessScanHandler, MongoVideoSimilarityRepository]
+        note: "Single unified interface per DECISION-FR-006 — no ISP split"
+      # shared-infra/interfaces/ — 3 ports (cross-capability shared contracts)
+      - artifact_id: PAC-034
+        path: "packages/pipeline-service/src/shared-infra/interfaces/i-scan-batch-repository.port.ts"
+        consumed_by: [BatchClaimerService (scanning), ProcessScanHandler (grouping)]
+        evidence: "2+ consumers confirmed — shared-infra placement per anti_bloat_check ANTI-BLOAT-002"
+      - artifact_id: PAC-036
+        path: "packages/pipeline-service/src/shared-infra/interfaces/i-storage.port.ts"
+        consumed_by: [FileStagingAdapter (staging), ScanOrchestrator (scanning), ScanPurgerService]
+        evidence: "2+ consumers confirmed — shared-infra placement per ANTI-BLOAT-002"
+      - artifact_id: PAC-038
+        path: "packages/pipeline-service/src/shared-infra/interfaces/i-event-publisher.port.ts"
+        consumed_by: [ScanOrchestrator (scanning), StageVideoHandler (staging)]
+        evidence: "2+ consumers confirmed — shared-infra placement per ANTI-BLOAT-002"
+    depends_on: [STEP-000]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/interfaces/"
+      - "packages/pipeline-service/src/scanning/interfaces/"
+      - "packages/pipeline-service/src/grouping/interfaces/"
+      - "packages/pipeline-service/src/shared-infra/interfaces/"
+    required_inputs:
+      - conventions/.ai/reports/final-file-tree.yaml
+      - conventions/.ai/reports/structure-plan.yaml
+    produces:
+      - "12 TypeScript interface files (.port.ts)"
+      - "New folders: staging/interfaces/, scanning/interfaces/, grouping/interfaces/, shared-infra/interfaces/, shared-infra/"
+    validation_after_step: "npx tsc --noEmit (no type errors from empty interfaces; new folders visible to tsc)"
+    risk_level: low
+    rollback_or_reversal_note: "Delete created interface files and empty interface folders"
+    expected_temporary_failures: []
+    notes: >
+      These are pure additions — no existing code is modified in this step.
+      Folder creation is strictly evidence-driven (every folder hosts at least one port artifact).
+      All 12 files are in interfaces/ subfolders per layer_placement_rules[role=port].
+
+  # ─── GROUP 2: Infrastructure implementations ─────────────────────────────
+
+  - step_id: STEP-002
+    group_id: GROUP-2
+    title: "Modify repositories to implement port interfaces (6 files, includes moves)"
+    step_type: create_or_update_repository
+    target_artifacts:
+      - artifact_id: PAC-006
+        current_path: "packages/pipeline-service/src/staging/infrastructure/video.repository.ts"
+        target_path: "packages/pipeline-service/src/staging/repositories/mongo-video.repository.ts"
+        move_required: true
+        implements: IVideoRepository (PAC-005)
+      - artifact_id: PAC-019
+        current_path: "packages/pipeline-service/src/scanning/infrastructure/video-scan.repository.ts"
+        target_path: "packages/pipeline-service/src/scanning/repositories/mongo-video-scan.repository.ts"
+        move_required: true
+        implements: IVideoScanRepository (PAC-018)
+      - artifact_id: PAC-029
+        current_path: "packages/pipeline-service/src/grouping/infrastructure/similarity-edge.repository.ts"
+        target_path: "packages/pipeline-service/src/grouping/repositories/mongo-similarity-edge.repository.ts"
+        move_required: true
+        implements: ISimilarityEdgeRepository (PAC-028)
+      - artifact_id: PAC-031
+        current_path: "packages/pipeline-service/src/grouping/infrastructure/similarity-group.repository.ts"
+        target_path: "packages/pipeline-service/src/grouping/repositories/mongo-similarity-group.repository.ts"
+        move_required: true
+        implements: ISimilarityGroupRepository (PAC-030)
+      - artifact_id: PAC-033
+        current_path: "packages/pipeline-service/src/grouping/infrastructure/video-similarity.repository.ts"
+        target_path: "packages/pipeline-service/src/grouping/repositories/mongo-video-similarity.repository.ts"
+        move_required: true
+        implements: IVideoSimilarityRepository (PAC-032)
+      - artifact_id: PAC-035
+        current_path: "packages/pipeline-service/src/grouping/infrastructure/scan-batch.repository.ts"
+        target_path: "packages/pipeline-service/src/shared-infra/repositories/mongo-scan-batch.repository.ts"
+        move_required: true
+        cross_subdomain_move: true
+        implements: IScanBatchRepository (PAC-034)
+        note: "Cross-capability move: grouping/infrastructure/ -> shared-infra/repositories/"
+    depends_on: [STEP-001]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/repositories/"
+      - "packages/pipeline-service/src/scanning/repositories/"
+      - "packages/pipeline-service/src/grouping/repositories/"
+      - "packages/pipeline-service/src/shared-infra/repositories/"
+      - "packages/pipeline-service/src/grouping/infrastructure/"
+    produces:
+      - "6 repository files at new target paths implementing port interfaces"
+      - "New folders: staging/repositories/, scanning/repositories/, grouping/repositories/, shared-infra/repositories/"
+    validation_after_step: "npx tsc --noEmit in packages/pipeline-service"
+    risk_level: medium
+    rollback_or_reversal_note: "Revert implements clause; restore files to original paths if moved"
+    expected_temporary_failures:
+      - "DI resolution failures until module wiring updated (resolved in STEP-011)"
+      - "Import errors in consuming classes until their injection tokens updated (resolved in STEP-005)"
+
+  - step_id: STEP-003
+    group_id: GROUP-2
+    title: "Modify adapters, client, and publisher to implement port interfaces (5 files, includes moves)"
+    step_type: create_or_update_adapter
+    target_artifacts:
+      - artifact_id: PAC-008
+        current_path: "packages/pipeline-service/src/staging/infrastructure/file-staging.adapter.ts"
+        target_path: "packages/pipeline-service/src/staging/adapters/file-staging.adapter.ts"
+        move_required: true
+        implements: IFileStagingPort (PAC-007)
+      - artifact_id: PAC-016
+        current_path: "packages/pipeline-service/src/scanning/infrastructure/vdf-runner.adapter.ts"
+        target_path: "packages/pipeline-service/src/scanning/adapters/vdf-runner.adapter.ts"
+        move_required: true
+        implements: IVdfRunnerPort (PAC-015)
+        note: "Absorbs file I/O (readRawOutput) from VdfManifestNormalizer per DECISION-AA-004"
+      - artifact_id: PAC-017
+        current_path: "packages/pipeline-service/src/scanning/infrastructure/vdf-manifest.normalizer.ts"
+        target_path: "packages/pipeline-service/src/scanning/adapters/vdf-manifest.normalizer.ts"
+        move_required: true
+        note: "No port to implement. Remove file I/O concern (moved to VdfRunnerAdapter). Pure string-to-NormalizedScanResult transformation."
+      - artifact_id: PAC-027
+        current_path: "packages/pipeline-service/src/grouping/infrastructure/scan-result.client.ts"
+        target_path: "packages/pipeline-service/src/grouping/clients/scan-result.client.ts"
+        move_required: true
+        implements: IScanResultLoader (PAC-026)
+      - artifact_id: PAC-037
+        current_path: "packages/shared/src/storage/s3.client.ts"
+        target_path: "packages/pipeline-service/src/shared-infra/adapters/s3-storage.adapter.ts"
+        move_required: true
+        cross_package_move: true
+        implements: IStoragePort (PAC-036)
+      - artifact_id: PAC-039
+        current_path: "packages/shared/src/queue/rabbitmq.client.ts"
+        target_path: "packages/pipeline-service/src/shared-infra/adapters/rabbitmq-publisher.publisher.ts"
+        move_required: true
+        cross_package_move: true
+        implements: IEventPublisher (PAC-038)
+    depends_on: [STEP-001]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/adapters/"
+      - "packages/pipeline-service/src/scanning/adapters/"
+      - "packages/pipeline-service/src/grouping/clients/"
+      - "packages/pipeline-service/src/shared-infra/adapters/"
+      - "packages/pipeline-service/src/staging/infrastructure/"
+      - "packages/pipeline-service/src/scanning/infrastructure/"
+      - "packages/pipeline-service/src/grouping/infrastructure/"
+      - "packages/shared/src/storage/"
+      - "packages/shared/src/queue/"
+    produces:
+      - "6 adapter/client/publisher files at new paths implementing port interfaces"
+      - "New folders: staging/adapters/, scanning/adapters/, grouping/clients/, shared-infra/adapters/"
+    validation_after_step: "npx tsc --noEmit in packages/pipeline-service"
+    risk_level: medium
+    rollback_or_reversal_note: "Revert implements clauses; restore files to original paths"
+    expected_temporary_failures:
+      - "Compile errors in consuming code importing from old paths until module wiring updated"
+      - "shared/src/index.ts barrel may error if old paths referenced — resolved in STEP-013"
+
+  # ─── GROUP 3: Schema modules (modify_existing × 4) ───────────────────────
+
+  - step_id: STEP-004
+    group_id: GROUP-3
+    title: "Move and modify 4 Mongoose schema files from shared/src/db/ to capability schemas/"
+    step_type: create_or_update_repository
+    target_artifacts:
+      - artifact_id: PAC-040
+        current_path: "packages/shared/src/db/video.schema.ts"
+        target_path: "packages/pipeline-service/src/staging/schemas/video.schema.ts"
+        move_required: true
+        cross_package_move: true
+        locked_collection_name: "videos"
+        note: "Collection name 'videos' LOCKED — @Schema({ collection: 'videos', timestamps: true }) must be byte-for-byte preserved"
+      - artifact_id: PAC-041
+        current_path: "packages/shared/src/db/scan-batch.schema.ts"
+        target_path: "packages/pipeline-service/src/scanning/schemas/scan-batch.schema.ts"
+        move_required: true
+        cross_package_move: true
+        locked_collection_name: "scan_batches"
+        note: "Collection name 'scan_batches' LOCKED"
+      - artifact_id: PAC-042
+        current_path: "packages/shared/src/db/similarity-edge.schema.ts"
+        target_path: "packages/pipeline-service/src/grouping/schemas/similarity-edge.schema.ts"
+        move_required: true
+        cross_package_move: true
+        locked_collection_name: "similarity_edges"
+        note: "Collection name 'similarity_edges' LOCKED"
+      - artifact_id: PAC-043
+        current_path: "packages/shared/src/db/similarity-group.schema.ts"
+        target_path: "packages/pipeline-service/src/grouping/schemas/similarity-group.schema.ts"
+        move_required: true
+        cross_package_move: true
+        locked_collection_name: "similarity_groups"
+        note: "Collection name 'similarity_groups' LOCKED"
+    depends_on: [STEP-001]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/schemas/"
+      - "packages/pipeline-service/src/scanning/schemas/"
+      - "packages/pipeline-service/src/grouping/schemas/"
+      - "packages/shared/src/db/"
+    produces:
+      - "4 schema files at new capability-scoped paths"
+      - "New folders: staging/schemas/, scanning/schemas/, grouping/schemas/"
+    validation_after_step: "npx tsc --noEmit (both packages); characterization tests TC-CHAR-007..TC-CHAR-011 still pass"
+    risk_level: medium
+    rollback_or_reversal_note: "Restore files to shared/src/db/ original paths"
+    expected_temporary_failures:
+      - "shared/src/index.ts barrel errors from broken re-exports — resolved in STEP-013"
+      - "Module wiring errors in staging/scanning/grouping modules until STEP-011"
+    notes: >
+      CRITICAL: The @Schema({ collection: '...' }) decorator string value for each file
+      must be byte-for-byte identical after the move. This is the ground truth established
+      by TC-CHAR-007..TC-CHAR-010 in characterization-test-plan.yaml.
+      Regression guard: REG-002 (regression-test-plan.yaml).
+
+  # ─── GROUP 4: SharedInfraModule (modify_existing, CRITICAL SEQ-002) ──────
+
+  - step_id: STEP-005
+    group_id: GROUP-4
+    title: "Modify SharedInfraModule: register port-to-adapter bindings and move to shared-infra/"
+    step_type: update_wiring_exports
+    target_artifacts:
+      - artifact_id: PAC-047
+        current_path: "packages/pipeline-service/src/shared-infra.module.ts"
+        target_path: "packages/pipeline-service/src/shared-infra/shared-infra.module.ts"
+        move_required: true
+        note: "Moved from src/ root to shared-infra/ folder root per PATH-NORM-039"
+    changes:
+      - "Register S3StorageAdapter (PAC-037) as provider under IStoragePort (PAC-036) token"
+      - "Register RabbitMQPublisher (PAC-039) as provider under IEventPublisher (PAC-038) token"
+      - "Register MongoScanBatchRepository (PAC-035) as provider under IScanBatchRepository (PAC-034) token"
+      - "Import ScanBatchSchemaModule from scanning/schemas/scan-batch.schema.ts"
+      - "Export all three port tokens globally (@Global decorator ensures visibility to all submodules)"
+      - "Update imports to reference new artifact paths from adapters/ and repositories/"
+    depends_on: [STEP-002, STEP-003, STEP-004]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/shared-infra/"
+      - "packages/pipeline-service/src/"
+    produces:
+      - "SharedInfraModule at shared-infra/shared-infra.module.ts with global port token exports"
+    validation_after_step: "npx tsc --noEmit in packages/pipeline-service (SharedInfraModule compiles with all 3 port bindings)"
+    risk_level: high
+    rollback_or_reversal_note: "Revert SharedInfraModule to pre-step state; restore to src/ root if moved"
+    expected_temporary_failures:
+      - "app.module.ts import path for SharedInfraModule broken until STEP-012"
+    notes: >
+      SEQ-002 CRITICAL: SharedInfraModule must compile and export global tokens BEFORE
+      any pipeline submodule (staging, scanning, grouping) is modified in STEP-011.
+      The @Global annotation causes IStoragePort, IEventPublisher, IScanBatchRepository
+      tokens to be visible without explicit import in every module that imports SharedInfraModule.
+      TC-CHAR-029 in characterization-test-plan.yaml validates this wiring.
+
+  # ─── GROUP 5: Split and extract operations ────────────────────────────────
+
+  - step_id: STEP-006
+    group_id: GROUP-5
+    title: "Split ScanOrchestrator + Extract ScanSchedulerTrigger"
+    step_type: create_or_update_application_logic
+    target_artifacts:
+      - artifact_id: PAC-009
+        target_path: "packages/pipeline-service/src/scanning/services/scan-scheduler.scheduler.ts"
+        action: extract_from_existing
+        source_file: "packages/pipeline-service/src/scanning/application/scan.orchestrator.ts"
+        note: "New file: @Interval(30000) scheduler entry-point. Calls ScanOrchestrator.runScanCycle(). Inject ScanOrchestrator."
+      - artifact_id: PAC-010
+        current_path: "packages/pipeline-service/src/scanning/application/scan.orchestrator.ts"
+        target_path: "packages/pipeline-service/src/scanning/services/scan.orchestrator.ts"
+        action: split_existing
+        move_required: true
+        note: "Remove @Interval scheduling — extracted to ScanSchedulerTrigger. Remaining responsibility: multi-step scan pipeline via IBatchClaimerPort, IVdfRunnerPort, IVideoScanRepository, IStoragePort, IEventPublisher."
+      - artifact_id: PAC-014
+        current_path: "packages/pipeline-service/src/scanning/infrastructure/batch-claimer.service.ts"
+        target_path: "packages/pipeline-service/src/scanning/services/batch-claimer.service.ts"
+        move_required: true
+        implements: IBatchClaimerPort (PAC-013)
+      - artifact_id: PAC-020
+        current_path: "packages/pipeline-service/src/scanning/infrastructure/scan-purger.service.ts"
+        target_path: "packages/pipeline-service/src/scanning/services/scan-purger.service.ts"
+        move_required: true
+        inject_port: IStoragePort (PAC-036)
+    depends_on: [STEP-001, STEP-005]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/scanning/services/"
+      - "packages/pipeline-service/src/scanning/application/"
+      - "packages/pipeline-service/src/scanning/infrastructure/"
+    produces:
+      - "scan-scheduler.scheduler.ts (new extracted file)"
+      - "scan.orchestrator.ts (refactored — scheduling removed, port interfaces injected)"
+      - "batch-claimer.service.ts (moved to services/, implements IBatchClaimerPort)"
+      - "scan-purger.service.ts (moved to services/, injects IStoragePort)"
+      - "New folder: scanning/services/"
+    validation_after_step: "npx tsc --noEmit; characterization tests TC-CHAR-016, TC-CHAR-030, TC-CHAR-031, TC-CHAR-032 still pass"
+    risk_level: high
+    rollback_or_reversal_note: "Revert scan.orchestrator.ts to pre-split; delete scan-scheduler.scheduler.ts"
+    expected_temporary_failures:
+      - "ScanningModule compile errors until STEP-011 updates its provider registrations"
+    notes: >
+      S3 key template 'scans/${scanId}/result.json' (line 109 of current scan.orchestrator.ts)
+      MUST be preserved byte-for-byte after the refactor per REG-003 ground truth.
+      TC-CHAR-012 characterization test validates this.
+      ScanOrchestrator must no longer carry @Interval decorator after this step (TC-CHAR-030).
+
+  - step_id: STEP-007
+    group_id: GROUP-5
+    title: "Split ProcessScanHandler: replace 6 concrete injections with port interfaces"
+    step_type: create_or_update_application_logic
+    target_artifacts:
+      - artifact_id: PAC-023
+        current_path: "packages/pipeline-service/src/grouping/application/process-scan.handler.ts"
+        target_path: "packages/pipeline-service/src/grouping/services/process-scan.handler.ts"
+        action: split_existing
+        move_required: true
+        inject_ports:
+          - IScanResultLoader (PAC-026)
+          - ISimilarityEdgeRepository (PAC-028)
+          - ISimilarityGroupRepository (PAC-030)
+          - IVideoSimilarityRepository (PAC-032)
+          - IScanBatchRepository (PAC-034) — from SharedInfraModule global
+          - IEventPublisher (PAC-038) — from SharedInfraModule global
+    depends_on: [STEP-001, STEP-005]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/grouping/services/"
+      - "packages/pipeline-service/src/grouping/application/"
+    produces:
+      - "process-scan.handler.ts at grouping/services/ with all 6 port interface injections"
+      - "New folder: grouping/services/"
+    validation_after_step: "npx tsc --noEmit; TC-CHAR-017, TC-CHAR-033 still pass"
+    risk_level: high
+    rollback_or_reversal_note: "Revert process-scan.handler.ts to pre-split; restore to application/"
+    expected_temporary_failures:
+      - "GroupingModule compile errors until STEP-011 updates its provider registrations"
+    notes: >
+      RabbitMQ routing key 'scan.persisted' used in publish call (line 73-74 of current
+      process-scan.handler.ts) MUST be preserved after DIP refactor per REG-001 ground truth.
+      TC-CHAR-006 and TC-CHAR-017 validate this. ScanAlreadyGroupedError behavior (ack on
+      idempotent, TC-CHAR-027) must also be preserved.
+
+  # ─── GROUP 6: Consumer and handler updates ────────────────────────────────
+
+  - step_id: STEP-008
+    group_id: GROUP-6
+    title: "Modify consumers: VideoReadyConsumer and ScanCompletedConsumer (move + update)"
+    step_type: create_or_update_transport
+    target_artifacts:
+      - artifact_id: PAC-001
+        current_path: "packages/pipeline-service/src/staging/transport/video-ready.consumer.ts"
+        target_path: "packages/pipeline-service/src/staging/consumers/video-ready.consumer.ts"
+        move_required: true
+        note: "Move from transport/ to consumers/. @EventPattern('video.ready-for-scan') LOCKED. Inject StageVideoHandler via constructor. Update import paths."
+      - artifact_id: PAC-002
+        current_path: "packages/pipeline-service/src/staging/transport/staging-message.validator.ts"
+        target_path: "packages/pipeline-service/src/staging/domain/staging-message.validator.ts"
+        move_required: true
+        note: "Move from transport/ to domain/. StagingMessageValidationError class stays in this file (PB-005). No implementation change beyond path."
+      - artifact_id: PAC-021
+        current_path: "packages/pipeline-service/src/grouping/transport/scan-completed.consumer.ts"
+        target_path: "packages/pipeline-service/src/grouping/consumers/scan-completed.consumer.ts"
+        move_required: true
+        note: "Move from transport/ to consumers/. @EventPattern('scan.completed') LOCKED. Inject ProcessScanHandler. Update import paths."
+    depends_on: [STEP-005]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/consumers/"
+      - "packages/pipeline-service/src/staging/domain/"
+      - "packages/pipeline-service/src/grouping/consumers/"
+      - "packages/pipeline-service/src/staging/transport/"
+      - "packages/pipeline-service/src/grouping/transport/"
+    produces:
+      - "VideoReadyConsumer at staging/consumers/"
+      - "StagingMessageValidator at staging/domain/"
+      - "ScanCompletedConsumer at grouping/consumers/"
+      - "New folders: staging/consumers/, grouping/consumers/"
+    validation_after_step: "npx tsc --noEmit; TC-CHAR-001, TC-CHAR-003, TC-CHAR-026, TC-CHAR-027 still pass"
+    risk_level: medium
+    rollback_or_reversal_note: "Restore files to transport/ paths"
+    expected_temporary_failures:
+      - "StagingModule and GroupingModule compile errors until STEP-011"
+    notes: >
+      LOCKED values per PB-001 / REG-001:
+      - VideoReadyConsumer @EventPattern = 'video.ready-for-scan'
+      - ScanCompletedConsumer @EventPattern = 'scan.completed'
+      Ack/nack behavior for error boundaries must be preserved per PB-005 / REG-005.
+      TC-CHAR-026 and TC-CHAR-027 are the regression guards.
+
+  - step_id: STEP-009
+    group_id: GROUP-6
+    title: "Modify StageVideoHandler: inject port interfaces, move from application/ to services/"
+    step_type: create_or_update_application_logic
+    target_artifacts:
+      - artifact_id: PAC-003
+        current_path: "packages/pipeline-service/src/staging/application/stage-video.handler.ts"
+        target_path: "packages/pipeline-service/src/staging/services/stage-video.handler.ts"
+        move_required: true
+        inject_ports:
+          - IVideoRepository (PAC-005)
+          - IFileStagingPort (PAC-007)
+          - IStoragePort (PAC-036) — from SharedInfraModule global
+        note: "VideoAlreadyStagedError and StagingPermanentFailureError classes stay in this file (PB-005). Error wrapping of S3ObjectNotFoundError -> StagingPermanentFailureError must be preserved."
+    depends_on: [STEP-001, STEP-005]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/services/"
+      - "packages/pipeline-service/src/staging/application/"
+    produces:
+      - "StageVideoHandler at staging/services/ with IVideoRepository, IFileStagingPort, IStoragePort injections"
+      - "New folder: staging/services/"
+    validation_after_step: "npx tsc --noEmit; TC-CHAR-015, TC-CHAR-028 still pass"
+    risk_level: high
+    rollback_or_reversal_note: "Revert port injections; restore to staging/application/"
+    expected_temporary_failures:
+      - "StagingModule compile errors until STEP-011"
+    notes: >
+      S3ObjectNotFoundError wrapping (line 54-55 of current stage-video.handler.ts) MUST
+      be preserved: 'if (err instanceof S3ObjectNotFoundError) throw new StagingPermanentFailureError(videoId, err)'
+      TC-CHAR-028 is the regression guard. Error class .name properties must remain unchanged
+      (PB-005 / TC-CHAR-019..TC-CHAR-022).
+
+  # ─── GROUP 7: Service updates ─────────────────────────────────────────────
+
+  - step_id: STEP-010
+    group_id: GROUP-7
+    title: "Modify ScanResultValidator (grouping/domain/) and ScanResultClient (grouping/clients/) update imports"
+    step_type: create_or_update_application_logic
+    target_artifacts:
+      - artifact_id: PAC-022
+        current_path: "packages/pipeline-service/src/grouping/infrastructure/scan-result.validator.ts"
+        target_path: "packages/pipeline-service/src/grouping/domain/scan-result.validator.ts"
+        move_required: true
+        note: "Move from infrastructure/ to domain/ (domain_constraint family). ScanResultValidationError class stays in this file. No implementation change beyond path and import correction."
+    depends_on: [STEP-001, STEP-005]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/grouping/domain/"
+      - "packages/pipeline-service/src/grouping/infrastructure/"
+    produces:
+      - "ScanResultValidator at grouping/domain/scan-result.validator.ts"
+    validation_after_step: "npx tsc --noEmit; TC-CHAR-024, TC-CHAR-034 still pass"
+    risk_level: low
+    rollback_or_reversal_note: "Restore scan-result.validator.ts to grouping/infrastructure/"
+    expected_temporary_failures:
+      - "GroupingModule compile errors until STEP-011"
+    notes: >
+      ScanResultValidationError.name must remain 'ScanResultValidationError' (PB-005 / TC-CHAR-024).
+      validateScanResult field validation rules must be preserved per TC-CHAR-034.
+
+  # ─── GROUP 8: Module wiring (modify_existing) ─────────────────────────────
+
+  - step_id: STEP-011
+    group_id: GROUP-8
+    title: "Modify pipeline submodules: staging, scanning, grouping (register port tokens)"
+    step_type: update_wiring_exports
+    target_artifacts:
+      - artifact_id: PAC-044
+        path: "packages/pipeline-service/src/staging/staging.module.ts"
+        move_required: false
+        changes:
+          - "Register MongoVideoRepository as provider under IVideoRepository token"
+          - "Register FileStagingAdapter as provider under IFileStagingPort token"
+          - "Import VideoSchemaModule (from staging/schemas/video.schema.ts)"
+          - "Import SharedInfraModule (provides IStoragePort, IEventPublisher globally)"
+          - "Declare: VideoReadyConsumer, StageVideoHandler, StagingMessageValidator"
+      - artifact_id: PAC-045
+        path: "packages/pipeline-service/src/scanning/scanning.module.ts"
+        move_required: false
+        changes:
+          - "Register MongoVideoScanRepository as provider under IVideoScanRepository token"
+          - "Register VdfRunnerAdapter as provider under IVdfRunnerPort token"
+          - "Register BatchClaimerService as provider under IBatchClaimerPort token"
+          - "Import ScanBatchSchemaModule (from scanning/schemas/scan-batch.schema.ts)"
+          - "Import SharedInfraModule"
+          - "Declare: ScanSchedulerTrigger, ScanOrchestrator, ScanPurgerService"
+      - artifact_id: PAC-046
+        path: "packages/pipeline-service/src/grouping/grouping.module.ts"
+        move_required: false
+        changes:
+          - "Register MongoSimilarityEdgeRepository as provider under ISimilarityEdgeRepository token"
+          - "Register MongoSimilarityGroupRepository as provider under ISimilarityGroupRepository token"
+          - "Register MongoVideoSimilarityRepository as provider under IVideoSimilarityRepository token"
+          - "Register ScanResultClient as provider under IScanResultLoader token"
+          - "Import SimilarityEdgeSchemaModule (from grouping/schemas/similarity-edge.schema.ts)"
+          - "Import SimilarityGroupSchemaModule (from grouping/schemas/similarity-group.schema.ts)"
+          - "Import SharedInfraModule (provides IScanBatchRepository, IEventPublisher globally)"
+          - "Declare: ScanCompletedConsumer, ProcessScanHandler, ScanResultValidator"
+    depends_on: [STEP-002, STEP-003, STEP-004, STEP-005, STEP-006, STEP-007, STEP-008, STEP-009, STEP-010]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/staging/staging.module.ts"
+      - "packages/pipeline-service/src/scanning/scanning.module.ts"
+      - "packages/pipeline-service/src/grouping/grouping.module.ts"
+    produces:
+      - "3 submodule files with complete port-to-adapter DI provider registrations"
+    validation_after_step: "npx tsc --noEmit; npx jest --testPathPattern=characterization/ (all 37 still pass)"
+    risk_level: high
+    rollback_or_reversal_note: "Revert provider registration changes in each submodule"
+    expected_temporary_failures:
+      - "app.module.ts errors on SharedInfraModule import path until STEP-012"
+    notes: >
+      This is the first step where all prior temporary type errors should be resolved.
+      All port-to-adapter token bindings for each capability subdomain are declared here.
+      TC-CHAR-029 validates SharedInfraModule global token resolution.
+      TC-CHAR-030 validates ScanSchedulerTrigger registration in ScanningModule.
+
+  - step_id: STEP-012
+    group_id: GROUP-8
+    title: "Modify PipelineAppModule: import updated submodules, fix SharedInfraModule path"
+    step_type: update_wiring_exports
+    target_artifacts:
+      - artifact_id: PAC-048
+        path: "packages/pipeline-service/src/app.module.ts"
+        move_required: false
+        changes:
+          - "Import SharedInfraModule from new path: shared-infra/shared-infra.module.ts"
+          - "Import StagingModule, ScanningModule, GroupingModule (paths unchanged)"
+          - "Remove any direct subdomain provider registrations (delegated to submodules)"
+    depends_on: [STEP-011]
+    allowed_edit_scope:
+      - "packages/pipeline-service/src/app.module.ts"
+    produces:
+      - "app.module.ts with correct imports: SharedInfraModule + 3 submodules"
+    validation_after_step: "npx tsc --noEmit (full pipeline-service compiles cleanly)"
+    risk_level: medium
+    rollback_or_reversal_note: "Revert app.module.ts imports"
+    expected_temporary_failures: []
+    notes: >
+      After this step, all temporary compile errors from GROUP 2-8 should be resolved.
+      Full tsc --noEmit pass expected across packages/pipeline-service.
+
+  # ─── GROUP 9: Shared barrel update ───────────────────────────────────────
+
+  - step_id: STEP-013
+    group_id: GROUP-9
+    title: "Update packages/shared/src/index.ts barrel exports after cross-package moves"
+    step_type: update_wiring_exports
+    target_artifacts:
+      - path: "packages/shared/src/index.ts"
+        note: "Update re-exports for: schema files moved to pipeline-service capability paths, s3.client.ts moved to shared-infra/adapters/, rabbitmq.client.ts moved to shared-infra/adapters/"
+    changes:
+      - "Remove or update re-exports of video.schema.ts (moved to staging/schemas/)"
+      - "Remove or update re-exports of scan-batch.schema.ts (moved to scanning/schemas/)"
+      - "Remove or update re-exports of similarity-edge.schema.ts (moved to grouping/schemas/)"
+      - "Remove or update re-exports of similarity-group.schema.ts (moved to grouping/schemas/)"
+      - "Remove or update re-export of shared/src/storage/s3.client.ts (moved to shared-infra/adapters/)"
+      - "Remove or update re-export of shared/src/queue/rabbitmq.client.ts (moved to shared-infra/adapters/)"
+    depends_on: [STEP-003, STEP-004]
+    allowed_edit_scope:
+      - "packages/shared/src/index.ts"
+    produces:
+      - "Updated barrel with no broken re-export paths"
+    validation_after_step: "npx tsc --noEmit across all packages (no broken imports from @gunea-pig/shared)"
+    risk_level: medium
+    rollback_or_reversal_note: "Revert index.ts barrel changes"
+    expected_temporary_failures: []
+    notes: >
+      This step resolves any compile errors in packages that import from @gunea-pig/shared
+      and were consuming the moved schema files or storage/queue clients.
+      The shared package's own source files (types, constants, etc.) are not modified.
+
+  # ─── GROUP 10: Validation ─────────────────────────────────────────────────
+
+  - step_id: STEP-014
+    group_id: GROUP-10
+    title: "Run TypeScript compilation validation across all packages"
+    step_type: run_validation
+    target_artifacts: []
+    depends_on: [STEP-012, STEP-013]
+    validation_command: "npx tsc --noEmit (run from repo root or each package root)"
+    passes_when: "Zero type errors across packages/pipeline-service and packages/shared"
+    risk_level: low
+    rollback_or_reversal_note: "Fix type errors in affected files"
+    expected_temporary_failures: []
+
+  - step_id: STEP-015
+    group_id: GROUP-10
+    title: "Run characterization test suite (full regression baseline)"
+    step_type: run_validation
+    target_artifacts: []
+    depends_on: [STEP-014]
+    validation_command: "npx jest --testPathPattern=characterization/"
+    passes_when: "All 37 characterization test cases pass (exit code 0)"
+    risk_level: low
+    rollback_or_reversal_note: "Investigate failing tests — they indicate a preserved behavior was broken"
+    notes: >
+      These are the same tests written in STEP-000 and run against the pre-refactor code.
+      They now run against the post-refactor code. Any failure indicates a regression in
+      PB-001..PB-005. REG-001..REG-005 test stubs are the reference for diagnosis.
+
+  - step_id: STEP-016
+    group_id: GROUP-10
+    title: "Run unit and integration tests (OBL-002, OBL-003, OBL-004, OBL-005, OBL-006)"
+    step_type: run_validation
+    target_artifacts: []
+    depends_on: [STEP-015]
+    validation_command: "npx jest (full test suite including unit, integration, contract)"
+    passes_when: "All test suites pass (exit code 0)"
+    risk_level: low
+    rollback_or_reversal_note: "Investigate test failures against obligation IDs (OBL-002..OBL-006)"
+    notes: >
+      Covers obligations from 09-test-plan.yaml:
+      OBL-002 (unit — policies, validators, domain_service, normalizer, handlers, services),
+      OBL-003 (integration — repositories, consumers, orchestrator, modules, adapters, scheduler),
+      OBL-004 (contract — consumers and publisher topic/routing-key contracts),
+      OBL-005 (contract — Mongoose collection names),
+      OBL-006 (contract — S3 key patterns).
+
+evidence_refs:
+  - ref: conventions/.ai/reports/structure-plan.yaml
+    section: path_normalization_decisions
+    consumed_by: step target path derivation
+  - ref: conventions/.ai/reports/structure-plan.yaml
+    section: layer_placement_rules
+    consumed_by: step type assignment
+  - ref: conventions/.ai/reports/final-file-tree.yaml
+    section: files_to_create
+    consumed_by: STEP-001 target artifact enumeration
+  - ref: conventions/.ai/reports/final-file-tree.yaml
+    section: files_to_modify
+    consumed_by: STEP-002 through STEP-013 target artifact enumeration
+  - ref: conventions/.ai/reports/09-test-plan.yaml
+    section: test_obligations
+    consumed_by: STEP-014 through STEP-016 validation step derivation
+  - ref: conventions/.ai/reports/09-test-plan.yaml
+    section: zero_tests_confirmation
+    consumed_by: STEP-000 blocking status determination
+  - ref: conventions/.ai/reports/characterization-test-plan.yaml
+    section: test_file_summary
+    consumed_by: STEP-000 target artifact enumeration (29 spec files)
+  - ref: conventions/.ai/reports/characterization-test-plan.yaml
+    section: implementation_instructions
+    consumed_by: STEP-000 validation command
+  - ref: conventions/.ai/reports/regression-test-plan.yaml
+    section: pre_refactor_ground_truth
+    consumed_by: step notes (locked values per PB-001..PB-005)
+  - ref: conventions/.ai/reports/regression-test-plan.yaml
+    section: regression_obligations
+    consumed_by: step risk notes and validation guards
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.implementation_sequence.output
+  status: pending
+  note: Gate result produced by gate subsystem.

@@ -1,0 +1,205 @@
+report_id: "behavior-preservation-requirements"
+phase_id: refactor_strategy_selection
+status: complete
+summary: >
+  All behavior locks required before implementation are derived from preserved behaviors PB-001
+  through PB-005 (behavior_contract.yaml), the LOCK-HIGH-RISK rule (risk_level = high, zero test
+  baseline), and the LOCK-EXTRACT-SPLIT-REPLACE rule (split_existing x2, extract_from_existing x1).
+  Two behavior locks are active: LOCK-001 (HIGH risk) blocks the pre_implementation_gate and
+  requires characterization_tests plus checkpoint_validation_plan. LOCK-002 (decomposition actions)
+  blocks implementation and requires regression_tests_or_characterization for all split and extract
+  artifacts. characterization_required = true. regression_required = true.
+
+preserved_behaviors:
+  - id: PB-001
+    description: >
+      RabbitMQ message schemas — topic names and payload field definitions must remain unchanged.
+      Applies to all RabbitMQ consumers and publishers: VideoReadyConsumer (PAC-001),
+      ScanCompletedConsumer (PAC-021), RabbitMQPublisher (PAC-039).
+    lock_type: contract_tests
+    surface: public_contract
+    evidence: "conventions/.ai/reports/02-behavior-contract.yaml preserved_behaviors PB-001"
+    mutation_allowed: false
+    verification_approach: >
+      Contract tests asserting exact topic name strings and payload field names/types for
+      NewVideoReadyEvent and ScanCompletedEvent schemas. Tests must pass before and after
+      any modification to consumer or publisher artifacts.
+
+  - id: PB-002
+    description: >
+      Mongoose collection definitions — collection names and field shapes must remain unchanged.
+      Applies to VideoDocument (collection: videos), ScanBatchDocument (collection: scan_batches),
+      SimilarityEdgeDocument (collection: similarity_edges), SimilarityGroupDocument
+      (collection: similarity_groups). Schema move from shared/src/db/ to capability-scoped
+      paths must preserve all @Prop definitions byte-for-byte.
+    lock_type: persistence_tests
+    surface: data_semantics
+    evidence: "conventions/.ai/reports/02-behavior-contract.yaml preserved_behaviors PB-002"
+    mutation_allowed: false
+    verification_approach: >
+      Persistence tests asserting collection names and document shapes. Schema @Prop definitions
+      verified to be unchanged post-move. Collection name strings are locked and must not diverge.
+
+  - id: PB-003
+    description: >
+      S3 key patterns — bucket and key format used by FileStagingAdapter (PAC-008),
+      S3StorageAdapter (PAC-037), and ScanResultClient (PAC-027) must remain unchanged.
+      Key pattern format and bucket naming conventions are an external contract.
+    lock_type: contract_tests
+    surface: public_contract
+    evidence: "conventions/.ai/reports/02-behavior-contract.yaml preserved_behaviors PB-003"
+    mutation_allowed: false
+    verification_approach: >
+      Contract tests asserting S3 key format invariants. Tests capture the exact key pattern
+      construction logic before refactor and verify it is reproduced identically after
+      port interface introduction and DI token wiring.
+
+  - id: PB-004
+    description: >
+      Inter-service event ordering — VideoReady triggers scan, scan result triggers grouping.
+      The sequence VideoReadyConsumer -> StageVideoHandler -> ScanOrchestrator -> ScanCompletedConsumer
+      -> ProcessScanHandler must be preserved end-to-end. Event ordering is a system-level contract.
+    lock_type: integration_tests
+    surface: workflow_result
+    evidence: "conventions/.ai/reports/02-behavior-contract.yaml preserved_behaviors PB-004"
+    mutation_allowed: false
+    verification_approach: >
+      Integration tests covering the full VideoReady -> video staged -> scan triggered ->
+      ScanCompleted -> grouping processed flow. Ack/nack behavior at each consumer must be
+      verified to remain unchanged. Tests must cover the happy path and at least one failure path.
+
+  - id: PB-005
+    description: >
+      Error boundary types — exception classes and error propagation behavior must remain unchanged.
+      Inline error class definitions (e.g. S3ObjectNotFoundError in FileStagingAdapter AC-008,
+      inline error classes in StageVideoHandler AC-003) must be extracted per LC-004 without
+      changing the error type hierarchy or propagation behavior observed by callers.
+    lock_type: unit_tests
+    surface: domain_rule
+    evidence: "conventions/.ai/reports/02-behavior-contract.yaml preserved_behaviors PB-005"
+    mutation_allowed: false
+    verification_approach: >
+      Unit tests asserting error type hierarchy (instanceof checks) and propagation behavior.
+      Tests must verify that extracted error classes produce the same observable throw/catch
+      behavior as the original inline definitions.
+
+allowed_behavior_changes:
+  - "Internal class names (not externally visible to other services)"
+  - "Internal module structure and file organization"
+  - "Injection patterns: concrete class tokens replaced by DI tokens bound to port interfaces"
+  - "File paths and folder structure (schema moves, port interface new directories)"
+  - "Import graph shape: consumers and handlers now import port tokens instead of concrete classes"
+
+behavior_locks:
+  - id: LOCK-001
+    trigger: LOCK-HIGH-RISK
+    condition: "risk_level = high AND test_inventory.coverage_state = zero"
+    requires:
+      - characterization_tests
+      - checkpoint_validation_plan
+    blocks_before: pre_implementation_gate
+    affected_scope: all_decomposition_and_in_place_change_actions
+    note: >
+      Triggered by HIGH risk classification (risk-classification.yaml) combined with confirmed
+      zero test coverage (ASSUMP-003 = FALSE). This lock is the highest-priority active lock.
+      No implementation of modify_existing, split_existing, or extract_from_existing actions
+      may begin until the pre_implementation_gate passes with characterization_tests confirmed.
+
+  - id: LOCK-002
+    trigger: LOCK-EXTRACT-SPLIT-REPLACE
+    condition: "split_existing x2 AND extract_from_existing x1 present in action table"
+    requires:
+      - regression_tests_or_characterization
+    blocks_before: implementation
+    affected_actions:
+      - split_existing
+      - extract_from_existing
+    affected_candidates:
+      - AC-010
+      - AC-023
+      - AC-009
+    note: >
+      Triggered by the presence of decomposition_change family actions. Regression or
+      characterization tests must cover ScanOrchestrator, ProcessScanHandler, and
+      ScanSchedulerTrigger behaviors before any split or extraction step is executed.
+      LOCK-001 subsumes this requirement since characterization_tests satisfy
+      regression_tests_or_characterization.
+
+characterization_required: true
+regression_required: true
+
+characterization_scope:
+  - artifact: ScanOrchestrator
+    source_candidate: AC-010
+    reason: "split_existing — 7 responsibilities; primary orchestration behavior must be characterized before split"
+    key_behaviors:
+      - "claim batch via BatchClaimerService"
+      - "dispatch VDF scan via VdfRunnerAdapter"
+      - "load and normalize scan results"
+      - "upload results to S3"
+      - "emit ScanCompleted event"
+      - "trigger scan purge"
+
+  - artifact: ProcessScanHandler
+    source_candidate: AC-023
+    reason: "split_existing — 6 responsibilities; load/filter/persist/publish flow must be characterized before split"
+    key_behaviors:
+      - "load NormalizedScanResult from IScanResultLoader"
+      - "filter by SimilarityThresholdPolicy"
+      - "persist similarity edges via ISimilarityEdgeRepository"
+      - "merge groups via UnionFindDomainService"
+      - "update batch status via IScanBatchRepository"
+      - "publish ScanCompleted event via IEventPublisher"
+
+  - artifact: VideoReadyConsumer
+    source_candidate: AC-001
+    reason: "modify_existing — ack/nack behavior is a locked surface (PB-001); characterization required before SRP fix"
+    key_behaviors:
+      - "receive NewVideoReadyEvent from RabbitMQ"
+      - "validate message shape via StagingMessageValidator"
+      - "delegate to StageVideoHandler"
+      - "ack on success, nack on failure (message loss prevention)"
+
+  - artifact: ScanCompletedConsumer
+    source_candidate: AC-021
+    reason: "modify_existing — ack/nack behavior locked; inline validateEvent() removal requires characterization"
+    key_behaviors:
+      - "receive ScanCompletedEvent from RabbitMQ"
+      - "validate via ScanResultValidator"
+      - "delegate to ProcessScanHandler"
+      - "ack/nack hygiene per LC-009"
+
+  - artifact: StageVideoHandler
+    source_candidate: AC-003
+    reason: "modify_existing — orchestrates staging flow; DIP injection changes require behavior characterization"
+    key_behaviors:
+      - "idempotency check via IVideoRepository"
+      - "S3 verify via IFileStagingPort"
+      - "file stage via IFileStagingPort"
+      - "mark staged via IVideoRepository"
+
+blocking_items:
+  - "characterization-test-plan must be produced by the test_derivation phase before pre_implementation_gate"
+  - "checkpoint_validation_plan must be produced before the implementation_sequence phase begins"
+  - "All 5 preserved behaviors (PB-001 through PB-005) must have corresponding test entries in characterization-test-plan"
+
+evidence_refs:
+  - ref: conventions/.ai/reports/02-behavior-contract.yaml
+    section: preserved_behaviors
+    consumed_by: behavior_lock_derivation
+  - ref: conventions/.ai/reports/risk-classification.yaml
+    section: risk_level
+    consumed_by: lock_requirement_decision
+  - ref: conventions/.ai/reports/assumptions.yaml
+    section: assumptions[ASSUMP-003]
+    consumed_by: coverage_state_confirmation
+  - ref: conventions/.ai/reports/05-artifact-actions.yaml
+    section: artifact_action_table
+    consumed_by: lock_surface_and_scope_derivation
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.refactor_strategy_selection.output
+  status: pending
+  note: Gate result produced by gate subsystem via run_gate_check route. Not authored here.

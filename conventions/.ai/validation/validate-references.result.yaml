@@ -1,10 +1,6 @@
 script_id: validate-references
-status: fail
-errors:
-  - severity: error
-    code: STALE_REMOVED_REFERENCE
-    message: "Stale removed reference found: scripts/conventions.scripts.yaml"
-    file: scripts/conventions.scripts.yaml
+status: pass
+errors: []
 warnings: []
 info: []
 outputs:

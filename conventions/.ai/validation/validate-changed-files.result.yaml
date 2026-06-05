@@ -1,0 +1,14 @@
+script_id: validate-changed-files
+status: pass
+errors: []
+warnings:
+  - severity: warning
+    code: NO_CHANGED_FILES_PROVIDED
+    message: No changed files were provided; result is informational only
+info: []
+outputs:
+  - .ai/validation/validate-changed-files.result.yaml
+summary:
+  changed_file_count: 0
+  affected_subsystems: []
+  recommended_followup_routes: []

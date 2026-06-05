@@ -1,0 +1,125 @@
+report_id: "post-implementation-validation"
+phase_id: post_implementation_validation
+status: complete
+validation_result: pass
+generated_at: "2026-06-01"
+
+summary: >
+  Post-implementation validation of the PortsAndAdapters DIP refactor for
+  packages/pipeline-service completed with all 6 checks passing. TypeScript
+  compilation succeeds with exit code 0. All 60 changed files (45 created,
+  15 modified) are within the allowed implementation scope — no shared package
+  schema files were touched. All 14 port interface files are present. All 29
+  characterization test files exist. All external contracts are preserved:
+  RabbitMQ topic names, MongoDB collection names, S3 key pattern, and all 9
+  error class names. All 10 checkpoints in checkpoint-results.yaml report pass.
+
+validation_checks:
+
+  - check_id: VAL-001
+    check: scope_adherence
+    status: pass
+    evidence: >
+      All 60 changed files (45 created, 15 modified per changed-file-manifest.yaml)
+      are within packages/pipeline-service/src/ or packages/pipeline-service/test/.
+      git diff on packages/shared/ produced no output — shared package schemas
+      (video.schema.ts, scan-batch.schema.ts, similarity-edge.schema.ts,
+      similarity-group.schema.ts) were not modified. No forbidden writes detected.
+
+  - check_id: VAL-002
+    check: typescript_compilation
+    status: pass
+    evidence: >
+      cd packages/pipeline-service && npx tsc --noEmit returned exit code 0.
+      No type errors. All port interface implementations are structurally
+      compatible with their declared interfaces. @Inject() token types resolve
+      correctly. Return type alignments (Promise<void> for upsertPendingStaging
+      and transitionBatchStatus) satisfy the compiler.
+
+  - check_id: VAL-003
+    check: port_interfaces_exist
+    status: pass
+    evidence: >
+      14 port interface files confirmed present on disk:
+      staging/interfaces/: i-video-repository.port.ts, i-file-staging.port.ts
+      shared-infra/interfaces/: i-storage.port.ts, i-event-publisher.port.ts
+      scanning/interfaces/: i-scan-batch-repository.port.ts, i-batch-claimer.port.ts,
+        i-vdf-runner.port.ts, i-scan-result-loader.port.ts, i-video-scan-repository.port.ts
+      grouping/interfaces/: i-similarity-edge-repository.port.ts,
+        i-similarity-group-repository.port.ts, i-video-similarity-repository.port.ts,
+        i-scan-batch-repository.port.ts, i-scan-result-loader.port.ts
+      Wrapper adapters confirmed: shared-infra/adapters/s3-storage.adapter.ts,
+        shared-infra/adapters/rabbitmq-publisher.adapter.ts
+
+  - check_id: VAL-004
+    check: characterization_tests_exist
+    status: pass
+    evidence: >
+      29 spec files confirmed in packages/pipeline-service/test/characterization/:
+      error-classes.unit.spec.ts, file-staging-adapter-s3-key.contract.spec.ts,
+      process-scan-handler.integration.spec.ts, process-scan-publish.contract.spec.ts,
+      scan-batch.schema.contract.spec.ts, scan-completed-consumer.contract.spec.ts,
+      scan-completed-consumer.integration.spec.ts, scan-completed-consumer-ack-nack.unit.spec.ts,
+      scan-completed-schema.contract.spec.ts, scan-orchestrator.integration.spec.ts,
+      scan-orchestrator-publish.contract.spec.ts, scan-orchestrator-s3-key.contract.spec.ts,
+      scan-result-client-s3-key.contract.spec.ts, scan-result-validator.unit.spec.ts,
+      scan-scheduler-trigger.integration.spec.ts, schema-module-wiring.integration.spec.ts,
+      shared-infra-module.integration.spec.ts, similarity-edge.schema.contract.spec.ts,
+      similarity-group.schema.contract.spec.ts, similarity-threshold-policy.unit.spec.ts,
+      stage-video-handler-errors.unit.spec.ts, staging-message-schema.contract.spec.ts,
+      staging-pipeline.integration.spec.ts, union-find.unit.spec.ts,
+      vdf-manifest-normalizer.unit.spec.ts, vdf-runner-errors.unit.spec.ts,
+      video.schema.contract.spec.ts, video-ready-consumer.contract.spec.ts,
+      video-ready-consumer-ack-nack.unit.spec.ts. Count: 29/29. STEP-000 satisfied.
+
+  - check_id: VAL-005
+    check: contract_preservation
+    status: pass
+    evidence: >
+      @EventPattern('video.ready-for-scan') confirmed in
+        staging/transport/video-ready.consumer.ts:19.
+      @EventPattern('scan.completed') confirmed in
+        grouping/transport/scan-completed.consumer.ts:16.
+      S3 key pattern 'scans/${scanId}/result.json' confirmed in
+        scanning/application/scan.orchestrator.ts:107.
+      MongoDB collection names confirmed in packages/shared/src/db/:
+        'videos' in video.schema.ts, 'scan_batches' in scan-batch.schema.ts,
+        'similarity_edges' in similarity-edge.schema.ts,
+        'similarity_groups' in similarity-group.schema.ts.
+      All 9 error classes confirmed at original source locations:
+        StagingMessageValidationError (staging/transport/staging-message.validator.ts),
+        VideoAlreadyStagedError (staging/application/stage-video.handler.ts),
+        StagingPermanentFailureError (staging/application/stage-video.handler.ts),
+        S3ObjectNotFoundError (staging/infrastructure/file-staging.adapter.ts),
+        ScanAlreadyGroupedError (grouping/application/process-scan.handler.ts),
+        ScanResultValidationError (grouping/infrastructure/scan-result.validator.ts),
+        VdfTimeoutError (scanning/infrastructure/vdf-runner.adapter.ts),
+        VdfProcessError (scanning/infrastructure/vdf-runner.adapter.ts),
+        VdfOutputMissingError (scanning/infrastructure/vdf-runner.adapter.ts).
+
+  - check_id: VAL-006
+    check: checkpoint_results_clean
+    status: pass
+    evidence: >
+      All 10 checkpoints in checkpoint-results.yaml report status: pass.
+      overall_status: all_checkpoints_passed.
+      Blocking checkpoints cleared: CHK-000, CHK-001, CHK-003, CHK-009.
+      Both temporary failures (TF-001, TF-002) resolved at STEP-009 and STEP-002.
+      No open blockers.
+
+failures: []
+
+evidence_refs:
+  - ref: conventions/.ai/reports/changed-file-manifest.yaml
+    consumed_by: scope_adherence_check
+  - ref: conventions/.ai/reports/implementation-result.yaml
+    consumed_by: contract_verification
+  - ref: conventions/.ai/reports/checkpoint-results.yaml
+    consumed_by: checkpoint_verification
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.post_implementation_validation.output
+  status: pending
+  note: Gate result produced by gate subsystem.

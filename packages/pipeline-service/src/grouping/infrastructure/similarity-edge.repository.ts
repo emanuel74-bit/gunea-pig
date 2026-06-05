@@ -2,9 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SimilarityEdgeDocument, ScanResultMatch, NormalizedScanResult } from '@gunea-pig/shared';
+import { ISimilarityEdgeRepository } from '../interfaces/i-similarity-edge-repository.port';
 
 @Injectable()
-export class SimilarityEdgeRepository {
+export class SimilarityEdgeRepository implements ISimilarityEdgeRepository {
   private readonly logger = new Logger(SimilarityEdgeRepository.name);
 
   constructor(

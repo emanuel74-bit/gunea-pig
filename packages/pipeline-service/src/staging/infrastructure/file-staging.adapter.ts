@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
 import { S3Adapter } from '@gunea-pig/shared';
+import { IFileStagingPort } from '../interfaces/i-file-staging.port';
 
 export interface StagingResult {
   stagedPath: string;
@@ -15,7 +16,7 @@ export class S3ObjectNotFoundError extends Error {
 }
 
 @Injectable()
-export class FileStagingAdapter {
+export class FileStagingAdapter implements IFileStagingPort {
   private readonly logger = new Logger(FileStagingAdapter.name);
 
   constructor(

@@ -1,0 +1,18 @@
+script_id: collect-evidence
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/reports/evidence-index.yaml
+  - .ai/reports/evidence-collection-report.yaml
+summary:
+  evidence_count: 197
+  evidence_counts_by_type:
+    bundle: 64
+    unknown: 1
+    gate: 33
+    handoff: 18
+    report: 59
+    topology: 2
+    validation: 20
