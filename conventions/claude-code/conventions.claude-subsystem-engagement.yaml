@@ -75,6 +75,7 @@ sections:
       - reports
       - testing
       - triggers
+      - source
       skills:
       - run-phase
       - validate-phase
@@ -84,6 +85,7 @@ sections:
       - validate_semantic_completeness
       - collect_phase_report
       - collect_evidence
+      - collect_source_artifacts
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -92,6 +94,7 @@ sections:
       artifacts:
       - declared_phase_reports
       - .ai/reports/evidence-index.yaml
+      - .ai/source-artifacts/**
     architecture_design:
       subsystems:
       - architecture
@@ -254,6 +257,7 @@ sections:
   - revisions
   - risk
   - roles
+  - source
   - structure
   - testing
   - transitions

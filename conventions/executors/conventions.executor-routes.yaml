@@ -564,6 +564,34 @@ sections:
         - handoffs
         - revisions
         executor_type: compiler
+      collect_source_artifacts:
+        description: Collect universal source artifact records, source file hashes,
+          and lightweight dependency edges as source-truth evidence for later adapters
+          and quality gates.
+        script: scripts/collect-source-artifacts.ts
+        required_inputs:
+        - project_source_tree
+        - source_artifact_model
+        produced_outputs:
+        - source_artifact_manifest
+        - source_collection_report
+        allowed_write_paths:
+        - .ai/source-artifacts/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - reports
+        - validation
+        - missions
+        - execution
+        - architecture
+        executor_type: compiler
     generator:
       generate_phase_bundle:
         description: Generate minimal phase context bundle from active mission, phase

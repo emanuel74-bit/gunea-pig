@@ -1806,6 +1806,21 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: before_mission_start
+  - artifact_id: ai_source_artifacts_glob
+    path: .ai/source-artifacts/**
+    artifact_type: glob
+    schema: source_artifact_manifest_and_collection_report
+    producer: collect_source_artifacts_route
+    producer_routes:
+    - collect_source_artifacts
+    consumers:
+    - source/conventions.source-artifact-model.yaml
+    - reports/conventions.report-evidence.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: aggregate
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated

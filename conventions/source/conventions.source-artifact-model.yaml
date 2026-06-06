@@ -1,0 +1,110 @@
+version: '1.0'
+file:
+  name: conventions.source-artifact-model.yaml
+  path: source/conventions.source-artifact-model.yaml
+  role: universal_source_artifact_model
+  executability: contract
+purpose: Define the universal source artifact manifest shape used by runtime scripts
+  to collect source-truth evidence before language and framework adapters add deeper
+  semantic interpretation.
+ownership:
+  owns:
+  - universal_source_artifact_model
+  - source_artifact_manifest_contract
+  - source_file_identity_fields
+  - source_dependency_edge_shape
+  does_not_own:
+  - language_specific_ast_rules
+  - framework_specific_architecture_policy
+  - architecture_quality_gate_thresholds
+  - mission_phase_transition_authority
+activation:
+  mode: on_demand
+  activates_when:
+  - source_truth_collection_required
+  - evidence_collection_needs_source_artifacts
+  - later_language_adapter_needs_file_manifest
+  skips_when:
+  - no_source_files_available
+inputs:
+  required:
+  - project_source_tree
+  - source_collection_scope
+  optional:
+  - changed_file_manifest
+  - mission_context
+outputs:
+  produces:
+  - source_artifact_manifest
+  - source_file_records
+  - source_dependency_edges
+  - source_collection_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  optional_files:
+  - validation/conventions.validation-result-contract.yaml
+sections:
+  source_artifact_manifest_contract:
+    artifact: source_artifact_manifest
+    generated_by: collect-source-artifacts
+    status_values:
+    - collected
+    required_fields:
+    - artifact
+    - generated_by
+    - status
+    - source_file_count
+    - dependency_edge_count
+    - files
+    - dependency_edges
+  source_file_record_contract:
+    required_fields:
+    - path
+    - artifact_kind
+    - extension
+    - size_bytes
+    - sha256
+    - line_count
+    optional_fields:
+    - yaml_role
+    - owned_concepts
+    - declared_executor_routes
+    - route_ids
+    - script_id
+  source_dependency_edge_contract:
+    required_fields:
+    - from
+    - to
+    - edge_type
+    allowed_edge_types:
+    - yaml_required_file
+    - yaml_optional_file
+    - executor_route_script
+    - claude_route_reference
+  collection_scope:
+    included_extensions:
+    - .yaml
+    - .yml
+    - .md
+    - .ts
+    - .json
+    excluded_directories:
+    - .ai
+    - .git
+    - node_modules
+    - dist
+    - build
+    excluded_files:
+    - package-lock.json
+    - yarn.lock
+    - pnpm-lock.yaml
+  rollout:
+    mode: collect_only
+    enforcement: none
+    later_phases:
+    - language_adapter_contract
+    - framework_adapter_contract
+    - architecture_quality_gates
