@@ -1,0 +1,67 @@
+version: '1.0'
+file:
+  name: conventions.typescript-adapter.yaml
+  path: adapters/conventions.typescript-adapter.yaml
+  role: typescript_language_adapter
+  executability: contract
+purpose: Define the TypeScript language adapter contract that consumes the universal
+  source artifact manifest and emits TypeScript-specific evidence without becoming
+  core architecture policy.
+ownership:
+  owns:
+  - typescript_language_adapter_contract
+  - typescript_source_analysis_shape
+  - typescript_language_evidence_fields
+  does_not_own:
+  - framework_specific_nestjs_policy
+  - universal_architecture_quality_thresholds
+  - mission_transition_authority
+activation:
+  mode: on_demand
+  activates_when:
+  - typescript_files_present_in_source_artifact_manifest
+  - language_adapter_analysis_required
+  skips_when:
+  - no_typescript_source_files_present
+inputs:
+  required:
+  - source_artifact_manifest
+  - language_adapter_contract
+  optional:
+  - mission_context
+outputs:
+  produces:
+  - typescript_source_analysis
+  - typescript_adapter_report
+dependencies:
+  required_files:
+  - adapters/conventions.language-adapter-contract.yaml
+  - source/conventions.source-artifact-model.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  typescript_analysis_contract:
+    generated_by: analyze-typescript-source
+    produced_artifact: typescript_source_analysis
+    produced_report: typescript_adapter_report
+    required_file_fields:
+    - path
+    - sha256
+    - module_kind
+    - import_count
+    - export_count
+    - symbol_hints
+    symbol_hint_fields:
+    - class_count
+    - interface_count
+    - function_count
+    - enum_count
+    - type_alias_count
+    evidence_flags:
+    - uses_any_keyword
+    - uses_unknown_keyword
+    - has_todo_marker
+    - has_direct_process_env_access
+  rollout:
+    mode: collect_only
+    enforcement: none

@@ -76,6 +76,7 @@ sections:
       - testing
       - triggers
       - source
+      - adapters
       skills:
       - run-phase
       - validate-phase
@@ -86,6 +87,7 @@ sections:
       - collect_phase_report
       - collect_evidence
       - collect_source_artifacts
+      - analyze_typescript_source
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -95,6 +97,7 @@ sections:
       - declared_phase_reports
       - .ai/reports/evidence-index.yaml
       - .ai/source-artifacts/**
+      - .ai/source-artifacts/typescript-source-analysis.yaml
     architecture_design:
       subsystems:
       - architecture

@@ -592,6 +592,35 @@ sections:
         - execution
         - architecture
         executor_type: compiler
+      analyze_typescript_source:
+        description: Consume the universal source artifact manifest and emit TypeScript
+          language-adapter evidence without enforcing framework or architecture quality
+          policy.
+        script: scripts/analyze-typescript-source.ts
+        required_inputs:
+        - source_artifact_manifest
+        - language_adapter_contract
+        - typescript_adapter_contract
+        produced_outputs:
+        - typescript_source_analysis
+        - typescript_adapter_report
+        allowed_write_paths:
+        - .ai/source-artifacts/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts:
+        - source_artifact_manifest
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - source
+        - validation
+        - reports
+        - architecture
+        executor_type: compiler
     generator:
       generate_phase_bundle:
         description: Generate minimal phase context bundle from active mission, phase

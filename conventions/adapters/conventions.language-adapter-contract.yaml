@@ -1,0 +1,77 @@
+version: '1.0'
+file:
+  name: conventions.language-adapter-contract.yaml
+  path: adapters/conventions.language-adapter-contract.yaml
+  role: language_adapter_contract
+  executability: contract
+purpose: Define the universal contract for language adapters that consume the source
+  artifact manifest and produce language-specific source analysis without owning
+  framework policy or architecture quality decisions.
+ownership:
+  owns:
+  - language_adapter_contract
+  - language_analysis_artifact_shape
+  - adapter_input_output_boundary
+  does_not_own:
+  - framework_specific_architecture_policy
+  - architecture_quality_gate_thresholds
+  - mission_phase_transition_authority
+  - source_artifact_manifest_collection
+activation:
+  mode: on_demand
+  activates_when:
+  - source_artifact_manifest_available
+  - language_specific_source_truth_required
+  - adapter_backed_evidence_collection_required
+  skips_when:
+  - source_artifact_manifest_missing
+inputs:
+  required:
+  - source_artifact_manifest
+  - language_adapter_contract
+  optional:
+  - changed_file_manifest
+  - mission_context
+outputs:
+  produces:
+  - language_source_analysis
+  - language_adapter_report
+  - adapter_evidence_records
+dependencies:
+  required_files:
+  - source/conventions.source-artifact-model.yaml
+  - executors/conventions.executor-routes.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  optional_files:
+  - validation/conventions.validation-result-contract.yaml
+sections:
+  language_adapter_contract:
+    required_input_artifacts:
+    - source_artifact_manifest
+    required_output_fields:
+    - artifact
+    - generated_by
+    - status
+    - adapter_kind
+    - language
+    - source_manifest_path
+    - analyzed_file_count
+    - files
+    allowed_status_values:
+    - analyzed
+    - no_matching_files
+    - failed
+  adapter_boundary:
+    must_consume_source_artifact_manifest: true
+    must_not_scan_unbounded_project_roots: true
+    must_not_make_architecture_quality_decisions: true
+    must_not_enforce_framework_rules: true
+    may_extract_language_specific_evidence: true
+  rollout:
+    mode: collect_only
+    enforcement: none
+    later_phases:
+    - framework_adapter_contract
+    - mission_mode_policy_layer
+    - scoring_decision_layer
+    - architecture_quality_gates

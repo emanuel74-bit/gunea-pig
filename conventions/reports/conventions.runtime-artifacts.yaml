@@ -1821,6 +1821,36 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: aggregate
     required: context_dependent
+  - artifact_id: ai_typescript_source_analysis_yaml
+    path: .ai/source-artifacts/typescript-source-analysis.yaml
+    artifact_type: runtime_artifact
+    schema: typescript_source_analysis_schema
+    producer: analyze_typescript_source_route
+    producer_routes:
+    - analyze_typescript_source
+    consumers:
+    - adapters/conventions.typescript-adapter.yaml
+    - adapters/conventions.language-adapter-contract.yaml
+    - reports/conventions.report-evidence.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_typescript_source_analysis_report_yaml
+    path: .ai/reports/typescript-source-analysis-report.yaml
+    artifact_type: runtime_artifact
+    schema: typescript_adapter_report_schema
+    producer: analyze_typescript_source_route
+    producer_routes:
+    - analyze_typescript_source
+    consumers:
+    - adapters/conventions.typescript-adapter.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated
