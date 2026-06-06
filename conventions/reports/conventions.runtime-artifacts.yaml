@@ -1925,6 +1925,52 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_scoring_glob
+    path: .ai/scoring/**
+    artifact_type: glob
+    schema: declared_by_scoring_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes:
+    - evaluate_score_decision
+    consumers:
+    - scoring/conventions.score-decision-contract.yaml
+    - policy/conventions.mission-mode-policy.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_scoring_score_decision_yaml
+    path: .ai/scoring/score-decision.yaml
+    artifact_type: runtime_artifact
+    schema: score_decision_schema
+    producer: evaluate_score_decision_route
+    producer_routes:
+    - evaluate_score_decision
+    consumers:
+    - scoring/conventions.score-decision-contract.yaml
+    - policy/conventions.mission-mode-policy.yaml
+    - reports/conventions.report-evidence.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_score_decision_report_yaml
+    path: .ai/reports/score-decision-report.yaml
+    artifact_type: runtime_artifact
+    schema: score_decision_report_schema
+    producer: evaluate_score_decision_route
+    producer_routes:
+    - evaluate_score_decision
+    consumers:
+    - scoring/conventions.score-decision-contract.yaml
+    - policy/conventions.mission-mode-policy.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated

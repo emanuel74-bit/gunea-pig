@@ -78,6 +78,7 @@ sections:
       - source
       - adapters
       - policy
+      - scoring
       skills:
       - run-phase
       - validate-phase
@@ -91,6 +92,7 @@ sections:
       - analyze_typescript_source
       - analyze_nestjs_source
       - resolve_mission_mode_policy
+      - evaluate_score_decision
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -104,6 +106,8 @@ sections:
       - .ai/source-artifacts/nestjs-source-analysis.yaml
       - .ai/policy/mission-mode-policy.yaml
       - .ai/reports/mission-mode-policy-report.yaml
+      - .ai/scoring/score-decision.yaml
+      - .ai/reports/score-decision-report.yaml
     architecture_design:
       subsystems:
       - architecture
@@ -204,6 +208,7 @@ sections:
       - testing
       - missions
       - policy
+      - scoring
       skills:
       - validate-phase
       - collect-report-evidence
@@ -216,6 +221,7 @@ sections:
       - validate_validation_result
       - validate_references
       - resolve_mission_mode_policy
+      - evaluate_score_decision
       agents:
       - validation_agent
       - testing_agent
@@ -224,6 +230,7 @@ sections:
       - .ai/reports/evidence-index.yaml
       - .ai/reports/final-mission-report.yaml
       - .ai/policy/mission-mode-policy.yaml
+      - .ai/scoring/score-decision.yaml
     claude_native_runtime:
       subsystems:
       - claude-code
@@ -267,6 +274,7 @@ sections:
   - refactoring
   - reports
   - revisions
+  - scoring
   - risk
   - roles
   - source

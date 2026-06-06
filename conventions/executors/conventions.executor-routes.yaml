@@ -680,6 +680,36 @@ sections:
         - gates
         - executors
         executor_type: compiler
+      evaluate_score_decision:
+        description: Evaluate observe-mode score vectors against resolved mission-mode
+          thresholds and emit deterministic decision artifacts without blocking workflow.
+        script: scripts/evaluate-score-decision.ts
+        required_inputs:
+        - resolved_mission_mode_policy
+        - score_decision_contract
+        produced_outputs:
+        - score_decision
+        - score_decision_report
+        allowed_write_paths:
+        - .ai/scoring/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts:
+        - resolved_mission_mode_policy
+        lifecycle_hooks:
+        - before_phase_start
+        - after_file_change
+        - on_gate_check
+        - before_mission_complete
+        failure_behavior: warn
+        consumers:
+        - scoring
+        - policy
+        - missions
+        - validation
+        - reports
+        - gates
+        executor_type: compiler
     generator:
       generate_phase_bundle:
         description: Generate minimal phase context bundle from active mission, phase

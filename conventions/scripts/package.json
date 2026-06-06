@@ -43,7 +43,8 @@
     "collect:source-artifacts": "tsx collect-source-artifacts.ts",
     "analyze:typescript-source": "tsx analyze-typescript-source.ts",
     "analyze:nestjs-source": "tsx analyze-nestjs-source.ts",
-    "resolve:mission-mode-policy": "tsx resolve-mission-mode-policy.ts"
+    "resolve:mission-mode-policy": "tsx resolve-mission-mode-policy.ts",
+    "evaluate:score-decision": "tsx evaluate-score-decision.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

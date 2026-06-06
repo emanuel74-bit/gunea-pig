@@ -1,0 +1,123 @@
+version: '1.0'
+file:
+  name: conventions.score-decision-contract.yaml
+  path: scoring/conventions.score-decision-contract.yaml
+  role: score_decision_contract
+  executability: policy_contract
+purpose: Define observe-mode score-vector and deterministic decision contracts so Claude can emit measurable scores while scripts normalize decisions without blocking workflow yet.
+ownership:
+  owns:
+  - score_vector_schema
+  - deterministic_decision_contract
+  - observe_mode_threshold_comparison
+  - score_decision_artifacts
+  does_not_own:
+  - mission_mode_selection
+  - source_artifact_collection
+  - language_adapter_analysis
+  - framework_adapter_analysis
+  - gate_enforcement
+  - transition_legality
+activation:
+  mode: conditional
+  activates_when:
+  - score_decision_required
+  - mission_mode_policy_resolved
+  - route_evaluate_score_decision_runs
+  skips_when: []
+inputs:
+  required:
+  - resolved_mission_mode_policy
+  optional:
+  - score_vector
+  - validation_result_summary
+  - source_artifact_manifest
+  - language_adapter_analysis
+  - framework_adapter_analysis
+outputs:
+  produces:
+  - score_decision
+  - score_decision_report
+  - universal_validation_result
+dependencies:
+  required_files:
+  - policy/conventions.mission-mode-policy.yaml
+  - validation/conventions.validation-result-contract.yaml
+  optional_files:
+  - source/conventions.source-artifact-model.yaml
+  - adapters/conventions.language-adapter-contract.yaml
+  - adapters/conventions.framework-adapter-contract.yaml
+sections:
+  rollout:
+    mode: observe
+    enforcement: disabled
+    blocking_decisions: forbidden_until_threshold_calibration
+    rule: Score decisions may compare score vectors to mission-mode thresholds and emit deterministic recommendations; scripts must not block workflow solely from score thresholds during observe rollout.
+  score_value_contract:
+    type: number
+    minimum: 0.0
+    maximum: 1.0
+    interpretation: 0 means absent or unacceptable evidence; 1 means fully supported evidence for the named dimension.
+  score_vector_schema:
+    required_fields:
+    - artifact
+    - generated_by
+    - scores
+    optional_fields:
+    - mission_id
+    - mission_mode
+    - evidence
+    - notes
+    scores_field:
+      type: map
+      key_contract: mission_mode_threshold_key_or_quality_dimension
+      value_contract: score_value_contract
+  decision_schema:
+    required_fields:
+    - artifact
+    - generated_by
+    - status
+    - rollout_mode
+    - enforcement
+    - mission_mode
+    - score_threshold_results
+    - deterministic_recommendation
+    - blocking_decision
+    optional_fields:
+    - mission_id
+    - score_vector_path
+    - missing_score_keys
+    - warnings
+  deterministic_recommendations:
+    allowed:
+    - proceed_observe_only
+    - proceed_with_warnings_observe_only
+    - insufficient_scores_observe_only
+    - invalid_scores_failed
+  threshold_result_schema:
+    required_fields:
+    - score_key
+    - threshold
+    - score
+    - result
+    result_enum:
+    - met
+    - below_threshold
+    - missing
+validation:
+  required_checks:
+  - id: SCORE-DECISION-CHECK-001
+    check: score_decision_is_route_backed
+  - id: SCORE-DECISION-CHECK-002
+    check: observe_mode_does_not_block_on_thresholds
+  - id: SCORE-DECISION-CHECK-003
+    check: malformed_scores_fail_schema_validation
+  fail_conditions:
+  - id: SCORE-DECISION-001
+    condition: score_value_outside_zero_to_one
+    message: Score values must be numeric values between 0 and 1.
+    severity: error
+  - id: SCORE-DECISION-002
+    condition: score_vector_shape_invalid
+    message: Score vector must contain a scores map when provided.
+    severity: error
