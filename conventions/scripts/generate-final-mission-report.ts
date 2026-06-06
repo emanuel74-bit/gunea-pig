@@ -48,6 +48,8 @@ const scoreDecisionEvidence = entries.filter((entry: any) => entry?.source_type 
 const scoreDecisionBlocking = scoreDecisionEvidence.filter((entry: any) => entry?.score_decision?.blocking_decision === true);
 const revisionLoopEvidence = entries.filter((entry: any) => entry?.source_type === "revision" && entry?.revision_loop_analysis);
 const revisionLoopBlocking = revisionLoopEvidence.filter((entry: any) => entry?.revision_loop_analysis?.blocking_decision === true);
+const safeStructureEvidence = entries.filter((entry: any) => entry?.source_type === "source_artifact" && entry?.safe_structure_analysis);
+const safeStructureBlocking = safeStructureEvidence.filter((entry: any) => entry?.safe_structure_analysis?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -73,6 +75,7 @@ const reportClaims = [
   optionalClaim("validation_summary_backed", "validation", paths(entries.filter((entry: any) => entry.source_type === "validation")), "No validation evidence entries were present in the evidence manifest."),
   optionalClaim("score_decision_summary_backed", "scoring", paths(scoreDecisionEvidence), "No score decision artifact was present in the evidence manifest."),
   optionalClaim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), "No revision loop analysis artifact was present in the evidence manifest."),
+  optionalClaim("safe_structure_summary_backed", "safe_structure", paths(safeStructureEvidence), "No safe structure analysis artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -101,6 +104,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("validation", "Validation evidence", "validation_summary_backed", `Validation summary is backed by ${counts.validation ?? 0} validation evidence artifact(s).`, "No validation evidence entries were present in the evidence manifest."),
     claimBackedNarrativeSection("score_decision", "Score decision evidence", "score_decision_summary_backed", `Score decision summary is backed by ${scoreDecisionEvidence.length} scoring artifact(s).`, "No score decision artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("revision_loop", "Revision loop evidence", "revision_loop_summary_backed", `Revision loop summary is backed by ${revisionLoopEvidence.length} revision analysis artifact(s).`, "No revision loop analysis artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("safe_structure", "Safe structure evidence", "safe_structure_summary_backed", `Safe structure summary is backed by ${safeStructureEvidence.length} structure analysis artifact(s).`, "No safe structure analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -169,6 +173,24 @@ const finalReport = {
       active_fingerprint_count: entry.revision_loop_analysis?.active_fingerprint_count ?? 0,
       no_progress_suspected: entry.revision_loop_analysis?.no_progress_suspected === true,
       blocking_decision: entry.revision_loop_analysis?.blocking_decision === true,
+    })),
+  },
+  safe_structure_summary: {
+    safe_structure_refs: paths(safeStructureEvidence),
+    safe_structure_count: safeStructureEvidence.length,
+    blocking_safe_structure_refs: paths(safeStructureBlocking),
+    observe_mode_only: safeStructureEvidence.every((entry: any) => entry?.safe_structure_analysis?.blocking_decision !== true),
+    total_inbound_dependency_count: safeStructureEvidence.reduce((total: number, entry: any) => total + Number(entry?.safe_structure_analysis?.inbound_dependency_count ?? 0), 0),
+    warning_codes: Array.from(new Set(safeStructureEvidence.flatMap((entry: any) => Array.isArray(entry?.safe_structure_analysis?.warning_codes) ? entry.safe_structure_analysis.warning_codes : []))).sort(),
+    analyses: safeStructureEvidence.map((entry: any) => ({
+      source: entry.path,
+      change_kind: entry.safe_structure_analysis?.change_kind ?? null,
+      candidate_file: entry.safe_structure_analysis?.candidate_file ?? null,
+      target_file: entry.safe_structure_analysis?.target_file ?? null,
+      inbound_dependency_count: entry.safe_structure_analysis?.inbound_dependency_count ?? 0,
+      outbound_dependency_count: entry.safe_structure_analysis?.outbound_dependency_count ?? 0,
+      warning_codes: entry.safe_structure_analysis?.warning_codes ?? [],
+      blocking_decision: entry.safe_structure_analysis?.blocking_decision === true,
     })),
   },
   transition_evidence: {

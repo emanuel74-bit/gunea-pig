@@ -22,6 +22,7 @@ type EvidenceEntry = {
   validation_result?: JsonMap;
   score_decision?: JsonMap;
   revision_loop_analysis?: JsonMap;
+  safe_structure_analysis?: JsonMap;
   content_sha256: string;
   manifest_entry_schema: "evidence_manifest_v2_entry";
   producer_verified: boolean;
@@ -126,6 +127,19 @@ for (const file of files) {
     enforcement: typeof doc.enforcement === "string" ? doc.enforcement : null,
     warning_codes: Array.isArray(doc.warnings) ? doc.warnings.filter((value: unknown) => typeof value === "string") : [],
   } : undefined;
+  const safeStructureAnalysis = doc.artifact === "safe_structure_change_analysis" ? {
+    change_kind: typeof doc.requested_change?.change_kind === "string" ? doc.requested_change.change_kind : null,
+    candidate_file: typeof doc.requested_change?.candidate_file === "string" ? doc.requested_change.candidate_file : null,
+    target_file: typeof doc.requested_change?.target_file === "string" ? doc.requested_change.target_file : null,
+    rollout_mode: typeof doc.rollout_mode === "string" ? doc.rollout_mode : null,
+    enforcement_mode: typeof doc.enforcement_mode === "string" ? doc.enforcement_mode : null,
+    blocking_decision: doc.blocking_decision === true,
+    inbound_dependency_count: typeof doc.safety_observations?.inbound_dependency_count === "number" ? doc.safety_observations.inbound_dependency_count : 0,
+    outbound_dependency_count: typeof doc.safety_observations?.outbound_dependency_count === "number" ? doc.safety_observations.outbound_dependency_count : 0,
+    candidate_route_ids: Array.isArray(doc.safety_observations?.candidate_route_ids) ? doc.safety_observations.candidate_route_ids.filter((value: unknown) => typeof value === "string") : [],
+    warning_codes: Array.isArray(doc.safety_observations?.warning_codes) ? doc.safety_observations.warning_codes.filter((value: unknown) => typeof value === "string") : [],
+    error_codes: Array.isArray(doc.safety_observations?.error_codes) ? doc.safety_observations.error_codes.filter((value: unknown) => typeof value === "string") : [],
+  } : undefined;
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = buildEvidenceId(relativePath);
   const priorPath = seenIds.get(evidenceId);
@@ -154,6 +168,7 @@ for (const file of files) {
     producer_verified: producerVerified,
     ...(scoreDecision ? { score_decision: scoreDecision, blocking: scoreDecision.blocking_decision } : {}),
     ...(revisionLoopAnalysis ? { revision_loop_analysis: revisionLoopAnalysis, blocking: revisionLoopAnalysis.blocking_decision } : {}),
+    ...(safeStructureAnalysis ? { safe_structure_analysis: safeStructureAnalysis, blocking: safeStructureAnalysis.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {
