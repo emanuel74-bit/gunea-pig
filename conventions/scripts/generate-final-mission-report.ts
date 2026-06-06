@@ -30,6 +30,8 @@ for (const entry of entries) {
 
 const blockingStatuses = new Set(["fail", "failed", "blocked"]);
 const blockingEvidence = entries.filter((entry: any) => entry?.blocking === true || blockingStatuses.has(String(entry?.status ?? "").toLowerCase()));
+const scoreDecisionEvidence = entries.filter((entry: any) => entry?.source_type === "scoring" && entry?.score_decision);
+const scoreDecisionBlocking = scoreDecisionEvidence.filter((entry: any) => entry?.score_decision?.blocking_decision === true);
 const finalReport = {
   artifact: "final_mission_report",
   generated_by: SCRIPT_ID,
@@ -42,6 +44,18 @@ const finalReport = {
     blocking_evidence_count: blockingEvidence.length,
     failed_evidence_refs: blockingEvidence.map((entry: any) => entry.path),
     blocking_validation_refs: blockingEvidence.filter((entry: any) => entry.source_type === "validation").map((entry: any) => entry.path),
+  },
+  score_decision_summary: {
+    score_decision_refs: scoreDecisionEvidence.map((entry: any) => entry.path),
+    score_decision_count: scoreDecisionEvidence.length,
+    blocking_score_decision_refs: scoreDecisionBlocking.map((entry: any) => entry.path),
+    observe_mode_only: scoreDecisionEvidence.every((entry: any) => entry?.score_decision?.blocking_decision !== true),
+    recommendations: scoreDecisionEvidence.map((entry: any) => ({
+      source: entry.path,
+      mission_mode: entry.score_decision?.mission_mode ?? null,
+      deterministic_recommendation: entry.score_decision?.deterministic_recommendation ?? null,
+      blocking_decision: entry.score_decision?.blocking_decision === true,
+    })),
   },
   transition_evidence: {
     gates: entries.filter((entry: any) => entry.source_type === "gate").map((entry: any) => entry.path),
