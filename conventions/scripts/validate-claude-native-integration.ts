@@ -76,6 +76,53 @@ for (const relPath of requiredFiles) {
   }
 }
 
+
+const selectedContextBundleSurfaces = [
+  {
+    relPath: "CLAUDE.md",
+    requiredScope: undefined,
+    description: "root Claude entrypoint",
+  },
+  {
+    relPath: ".claude/commands/start-mission.md",
+    requiredScope: "mission_control",
+    description: "mission start command",
+  },
+  {
+    relPath: ".claude/commands/run-alpha-cycle.md",
+    requiredScope: undefined,
+    description: "Alpha cycle command",
+  },
+  {
+    relPath: ".claude/commands/run-phase.md",
+    requiredScope: undefined,
+    description: "phase execution command",
+  },
+  {
+    relPath: ".claude/skills/start-mission/SKILL.md",
+    requiredScope: "mission_control",
+    description: "mission start skill",
+  },
+  {
+    relPath: ".claude/skills/run-alpha-cycle/SKILL.md",
+    requiredScope: "mission_control",
+    description: "Alpha cycle skill",
+  },
+  {
+    relPath: ".claude/skills/run-phase/SKILL.md",
+    requiredScope: "implementation_and_refactoring",
+    description: "phase execution skill",
+  },
+];
+
+function hasCompiledContextReference(text: string): boolean {
+  return text.includes("compile_context_bundle") && text.includes(".ai/context/compiled-context-bundle.yaml");
+}
+
+function hasContextScope(text: string, scope: string | undefined): boolean {
+  return !scope || text.includes(`--scope ${scope}`) || text.includes(`scope ${scope}`);
+}
+
 const routeWrapperPattern = /npm\s+--prefix\s+conventions\/scripts\s+run\s+invoke:route\s+--\s+--route\s+([a-zA-Z0-9_.-]+)/g;
 const directScriptPattern = /(tsx|node|npx\s+tsx)\s+[^\n]*scripts\/[a-zA-Z0-9_.-]+\.ts/g;
 
@@ -97,6 +144,17 @@ for (const relPath of requiredFiles) {
 
   for (const match of text.matchAll(directScriptPattern)) {
     issues.push(issue("error", "DIRECT_SCRIPT_INVOCATION_IN_CLAUDE_FILE", `Claude project file invokes a script directly instead of the universal invoke_route wrapper: ${match[0]}`, relPath));
+  }
+}
+
+for (const surface of selectedContextBundleSurfaces) {
+  const text = scanText(surface.relPath);
+  if (!text) continue;
+  if (!hasCompiledContextReference(text)) {
+    issues.push(issue("error", "CLAUDE_CONTEXT_BUNDLE_REFERENCE_MISSING", `Selected Claude surface (${surface.description}) must reference compile_context_bundle and .ai/context/compiled-context-bundle.yaml`, surface.relPath));
+  }
+  if (!hasContextScope(text, surface.requiredScope)) {
+    issues.push(issue("error", "CLAUDE_CONTEXT_BUNDLE_SCOPE_MISSING", `Selected Claude surface (${surface.description}) must reference compiled context scope: ${surface.requiredScope}`, surface.relPath));
   }
 }
 
@@ -207,6 +265,7 @@ finish(SCRIPT_ID, issues, [outputPath], {
   required_skill_count: requiredSkills.length,
   route_count: routes.size,
   mapped_subsystem_count: mappedSubsystems.size,
+  selected_context_bundle_surface_count: selectedContextBundleSurfaces.length,
   validation_result: buildUniversalValidationResult(SCRIPT_ID, issues, {
     route_id: "validate_claude_native_integration",
     evidence: [{ evidence_type: "validation_artifact", path: outputPath, producer_route: "validate_claude_native_integration" }],
@@ -216,6 +275,7 @@ finish(SCRIPT_ID, issues, [outputPath], {
       required_skill_count: requiredSkills.length,
       route_count: routes.size,
       mapped_subsystem_count: mappedSubsystems.size,
+      selected_context_bundle_surface_count: selectedContextBundleSurfaces.length,
     },
   }),
 });
