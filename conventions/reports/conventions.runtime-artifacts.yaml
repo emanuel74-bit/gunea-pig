@@ -4,7 +4,9 @@ file:
   path: reports/conventions.runtime-artifacts.yaml
   role: runtime_artifact_identity_registry
   executability: registry
-purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules for runtime artifacts such as .ai reports, manifests, validation summaries, and phase outputs.
+purpose: Define canonical identity, path normalization, ownership, lifecycle, and
+  conflict rules for runtime artifacts such as .ai reports, manifests, validation
+  summaries, and phase outputs.
 ownership:
   owns:
   - runtime_artifact_identity_model
@@ -2160,13 +2162,85 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer
     required: context_dependent
+  - artifact_id: ai_context_compiled_context_bundle_yaml
+    path: .ai/context/compiled-context-bundle.yaml
+    artifact_type: runtime_artifact
+    schema: compiled_context_bundle
+    producer: compile_context_bundle
+    producer_routes:
+    - compile_context_bundle
+    consumers:
+    - claude-code/conventions.claude-subsystem-engagement.yaml
+    - context/conventions.retrieval-context-economy.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: context_dependent
+  - artifact_id: ai_context_load_trace_yaml
+    path: .ai/context/context-load-trace.yaml
+    artifact_type: runtime_artifact
+    schema: context_load_trace
+    producer: compile_context_bundle
+    producer_routes:
+    - compile_context_bundle
+    consumers:
+    - context/conventions.retrieval-context-economy.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: context_dependent
+  - artifact_id: ai_reports_context_bundle_report_yaml
+    path: .ai/reports/context-bundle-report.yaml
+    artifact_type: runtime_artifact
+    schema: context_bundle_report
+    producer: compile_context_bundle
+    producer_routes:
+    - compile_context_bundle
+    consumers:
+    - reports/conventions.report-validation.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: context_dependent
+  - artifact_id: ai_context_glob
+    path: .ai/context/**
+    artifact_type: glob
+    schema: compiled_context_runtime_artifacts
+    producer: executor_route_allowed_write_path
+    producer_routes:
+    - compile_context_bundle
+    consumers:
+    - context/conventions.retrieval-context-economy.yaml
+    - claude-code/conventions.claude-subsystem-engagement.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_prompt_contracts_glob
+    path: .ai/prompt-contracts/**
+    artifact_type: glob
+    schema: prompt_contract_runtime_artifacts
+    producer: executor_route_allowed_write_path
+    producer_routes:
+    - analyze_prompt_contracts
+    consumers:
+    - prompts/conventions.prompt-contract-standardization.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   runtime_artifact_enforcement_model:
-    route_backed_generation: runtime artifacts must be produced by declared executor routes or explicitly marked as runtime-context generated
+    route_backed_generation: runtime artifacts must be produced by declared executor
+      routes or explicitly marked as runtime-context generated
     required_validation_sequence:
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
-    path_authority: runtime artifact paths are normalized and validated by runtime artifact topology scripts
-    script_selection: agents never call artifact scripts directly; they use executor routes
+    path_authority: runtime artifact paths are normalized and validated by runtime
+      artifact topology scripts
+    script_selection: agents never call artifact scripts directly; they use executor
+      routes
   runtime_artifact_allowed_values:
     scope:
     - mission_runtime

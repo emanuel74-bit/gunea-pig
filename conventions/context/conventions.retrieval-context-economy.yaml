@@ -1,0 +1,86 @@
+version: '1.0'
+file:
+  name: conventions.retrieval-context-economy.yaml
+  path: context/conventions.retrieval-context-economy.yaml
+  role: retrieval_context_economy_contract
+  executability: policy
+purpose: Define adapter-neutral compiled runtime context bundles that reduce prompt load while preserving route, artifact, evidence, and authority boundaries.
+ownership:
+  owns:
+  - retrieval_context_economy_policy
+  - compiled_context_bundle_contract
+  - context_load_trace_model
+  does_not_own:
+  - executor_route_definitions
+  - adapter_implementation_logic
+  - phase_execution_logic
+activation:
+  mode: conditional
+  activates_when:
+  - claude_code_needs_compiled_runtime_context
+  - mission_context_must_be_minimized
+  - retrieval_trace_is_required
+  skips_when: []
+inputs:
+  required:
+  - executor_routes
+  - runtime_artifact_registry
+  - claude_subsystem_engagement_map
+  optional:
+  - adapter_topology
+  - evidence_manifest
+  - prompt_contract_analysis
+outputs:
+  produces:
+  - compiled_context_bundle
+  - context_load_trace
+  - context_bundle_report
+dependencies:
+  required_files:
+  - executors/conventions.executor-routes.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  - claude-code/conventions.claude-subsystem-engagement.yaml
+  optional_files:
+  - adapters/conventions.language-adapter-contract.yaml
+  - adapters/conventions.framework-adapter-contract.yaml
+sections:
+  context_economy_principles:
+  - id: SOURCE-OF-TRUTH-PRESERVATION
+    rule: Compiled context bundles must reference canonical routes, artifacts, and conventions rather than restating or weakening them.
+  - id: MINIMAL-SUFFICIENT-CONTEXT
+    rule: Bundles must include only the route, artifact, subsystem, and prompt-surface slices needed for the selected scope.
+  - id: TRACEABLE-RETRIEVAL
+    rule: Every included context slice must record why it was included and which source file or runtime artifact produced it.
+  - id: NO-POLICY-INVENTION
+    rule: Context compilation must not introduce new authority, new route IDs, or new enforcement policy.
+  compiled_context_bundle_contract:
+    required_fields:
+    - artifact
+    - generated_by
+    - schema_version
+    - scope
+    - context_selection
+    - included_routes
+    - included_artifacts
+    - included_subsystems
+    - source_references
+    - retrieval_trace
+    - validation_result
+    mutation_allowed: false
+    enforcement_mode: observe
+  supported_scopes:
+  - mission_control
+  - planning_scope_and_evidence
+  - architecture_design
+  - implementation_and_refactoring
+  - transition_control
+  - validation_reporting_completion
+  - all
+  retrieval_trace_model:
+    required_entry_fields:
+    - trace_id
+    - source_type
+    - source_ref
+    - inclusion_reason
+    - included_item_count
+    - scope

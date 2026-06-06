@@ -4,7 +4,9 @@ file:
   path: claude-code/conventions.claude-subsystem-engagement.yaml
   role: claude_subsystem_engagement_map
   executability: mapping
-purpose: Provide Claude Code with a compact map from workflow lanes to subsystems, native agents, executor routes, and artifacts so Claude engages the whole system without scanning the full convention tree.
+purpose: Provide Claude Code with a compact map from workflow lanes to subsystems,
+  native agents, executor routes, and artifacts so Claude engages the whole system
+  without scanning the full convention tree.
 ownership:
   owns:
   - claude_subsystem_engagement_map
@@ -48,6 +50,7 @@ sections:
       - executors
       - execution
       - prompts
+      - context
       skills:
       - start-mission
       - run-alpha-cycle
@@ -62,11 +65,15 @@ sections:
       - generate_mission_bundle
       - generate_phase_bundle
       - validate_phase_bundle
+      - compile_context_bundle
       agents:
       - alpha_controller
       artifacts:
       - .ai/claude/execution-plan.yaml
       - .ai/bundles/**
+      - .ai/context/compiled-context-bundle.yaml
+      - .ai/context/context-load-trace.yaml
+      - .ai/reports/context-bundle-report.yaml
     planning_scope_and_evidence:
       subsystems:
       - planning
@@ -80,6 +87,7 @@ sections:
       - scoring
       - normalization
       - prompts
+      - context
       skills:
       - run-phase
       - validate-phase
@@ -99,6 +107,7 @@ sections:
       - analyze_architecture_quality
       - analyze_global_normalization
       - analyze_prompt_contracts
+      - compile_context_bundle
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -123,6 +132,9 @@ sections:
       - .ai/reports/global-normalization-report.yaml
       - .ai/prompt-contracts/prompt-contract-analysis.yaml
       - .ai/reports/prompt-contract-report.yaml
+      - .ai/context/compiled-context-bundle.yaml
+      - .ai/context/context-load-trace.yaml
+      - .ai/reports/context-bundle-report.yaml
     architecture_design:
       subsystems:
       - architecture
