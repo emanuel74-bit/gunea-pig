@@ -386,13 +386,12 @@ sections:
         - reports
         executor_type: validation
       validate_report_evidence:
-        description: Validate that generated reports are backed by script-produced
-          evidence records instead of agent-written claims.
+        description: Validate evidence_manifest_v2 and report evidence references
+          before report consumption.
         script: scripts/validate-report-evidence.ts
         required_inputs:
-        - evidence_index
-        - report_outputs
-        - runtime_artifact_topology
+        - evidence_manifest_v2
+        - report_artifacts
         produced_outputs:
         - report_evidence_validation_result
         - report_evidence_validation_report
@@ -884,9 +883,8 @@ sections:
         - multi-agent
         executor_type: report
       collect_evidence:
-        description: Collect script-produced validation, changed-file, gate, handoff,
-          revision, bundle, topology, and phase-report evidence into a canonical evidence
-          index.
+        description: Collect script-produced runtime evidence into validated evidence_manifest_v2
+          plus legacy evidence index compatibility output.
         script: scripts/collect-evidence.ts
         required_inputs:
         - validation_results
@@ -897,6 +895,7 @@ sections:
         - phase_reports
         - runtime_artifact_topology
         produced_outputs:
+        - evidence_manifest_v2
         - evidence_index
         - evidence_collection_report
         allowed_write_paths:

@@ -1,0 +1,80 @@
+version: '1.0'
+file:
+  name: conventions.evidence-manifest.yaml
+  path: reports/conventions.evidence-manifest.yaml
+  role: evidence_manifest_contract
+  executability: contract
+purpose: Define the evidence_manifest_v2 contract used by report generation so final mission reports consume validated script-produced evidence manifests instead of loose evidence indexes.
+ownership:
+  owns:
+  - evidence_manifest_v2_schema
+  - evidence_entry_identity
+  - evidence_hash_requirements
+  - report_consumption_requirements
+  does_not_own:
+  - gate_decision_policy
+  - score_threshold_policy
+  - revision_retry_policy
+activation:
+  mode: when_collect_evidence_runs
+  activates_when:
+  - collect_evidence_route_runs
+  - final_mission_report_generation_requires_evidence
+inputs:
+  required:
+  - script_produced_ai_artifacts
+outputs:
+  produces:
+  - evidence_manifest_v2
+  - evidence_manifest_validation_result
+sections:
+  evidence_manifest_v2:
+    artifact: evidence_manifest_v2
+    schema_version: '2.0'
+    producer_route: collect_evidence
+    canonical_path: .ai/reports/evidence-manifest.yaml
+    legacy_compatibility_path: .ai/reports/evidence-index.yaml
+    required_fields:
+    - artifact
+    - schema_version
+    - generated_by
+    - status
+    - manifest_validation
+    - evidence_count
+    - evidence_counts_by_type
+    - entries
+  evidence_entry_contract:
+    required_fields:
+    - evidence_id
+    - path
+    - source_type
+    - generated_by
+    - status
+    - content_sha256
+    - manifest_entry_schema
+    - producer_verified
+    required_values:
+      manifest_entry_schema: evidence_manifest_v2_entry
+      path_prefix: .ai/
+      content_sha256: lowercase_sha256_hex_64
+  validation_rules:
+  - id: EVIDENCE-MANIFEST-SCRIPT-PRODUCED
+    condition: evidence_manifest_generated_by_is_not_collect_evidence
+    result: invalid
+  - id: EVIDENCE-MANIFEST-SCHEMA-VERSION
+    condition: artifact_or_schema_version_missing_or_wrong
+    result: invalid
+  - id: EVIDENCE-ENTRY-HASH-REQUIRED
+    condition: entry_missing_content_sha256
+    result: invalid
+  - id: EVIDENCE-ENTRY-ID-COLLISION
+    condition: multiple_entries_share_evidence_id_for_different_paths
+    result: invalid
+  - id: FINAL-REPORT-MANIFEST-REQUIRED
+    condition: final_report_generated_without_evidence_manifest_v2
+    result: invalid
+  rollout:
+    mode: enforce_for_report_generation
+    compatibility:
+      evidence_index_yaml: retained_as_legacy_alias
+      final_report_source_of_truth: evidence_manifest_yaml

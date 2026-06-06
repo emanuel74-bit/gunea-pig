@@ -1708,6 +1708,21 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_reports_evidence_manifest_yaml
+    path: .ai/reports/evidence-manifest.yaml
+    artifact_type: report_output
+    schema: evidence_manifest_v2_schema
+    producer: collect_evidence
+    producer_routes:
+    - collect_evidence
+    consumers:
+    - reports/conventions.evidence-manifest.yaml
+    - reports/conventions.report-validation.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: before_final_mission_report
   - artifact_id: ai_reports_evidence_index_yaml
     path: .ai/reports/evidence-index.yaml
     artifact_type: report_output
