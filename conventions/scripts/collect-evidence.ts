@@ -27,6 +27,7 @@ type EvidenceEntry = {
   global_normalization_analysis?: JsonMap;
   prompt_contract_analysis?: JsonMap;
   context_bundle?: JsonMap;
+  runtime_telemetry?: JsonMap;
   content_sha256: string;
   manifest_entry_schema: "evidence_manifest_v2_entry";
   producer_verified: boolean;
@@ -45,6 +46,7 @@ const sourceDirs: Record<string, string> = {
   source_artifact: ".ai/source-artifacts",
   prompt_contract: ".ai/prompt-contracts",
   context: ".ai/context",
+  telemetry: ".ai/telemetry",
 };
 
 const collectorOutputs = new Set([
@@ -222,6 +224,33 @@ for (const file of files) {
     prompt_contract_analysis_present: Array.isArray(doc.trace) ? doc.trace.some((entry: JsonMap) => entry?.trace_id === "prompt_contract_optional" && Number(entry?.included_item_count ?? 0) > 0) : false,
     blocking_decision: false,
   } : undefined;
+  const runtimeTelemetry = doc.artifact === "runtime_telemetry_summary" ? {
+    artifact_kind: "summary",
+    rollout_mode: typeof doc.rollout_mode === "string" ? doc.rollout_mode : null,
+    enforcement_mode: typeof doc.enforcement_mode === "string" ? doc.enforcement_mode : null,
+    mutation_allowed: doc.mutation_allowed === true,
+    event_count: typeof doc.event_count === "number" ? doc.event_count : 0,
+    blocking_event_count: typeof doc.blocking_event_count === "number" ? doc.blocking_event_count : 0,
+    warning_event_count: typeof doc.warning_event_count === "number" ? doc.warning_event_count : 0,
+    error_event_count: typeof doc.error_event_count === "number" ? doc.error_event_count : 0,
+    source_path_count: typeof doc.source_path_count === "number" ? doc.source_path_count : 0,
+    event_type_keys: doc.event_counts_by_type && typeof doc.event_counts_by_type === "object" && !Array.isArray(doc.event_counts_by_type) ? Object.keys(doc.event_counts_by_type).sort() : [],
+    route_event_keys: doc.route_event_counts && typeof doc.route_event_counts === "object" && !Array.isArray(doc.route_event_counts) ? Object.keys(doc.route_event_counts).sort() : [],
+    blocking_decision: doc.validation_result?.blocking === true,
+  } : doc.artifact === "runtime_telemetry_report" ? {
+    artifact_kind: "report",
+    rollout_mode: typeof doc.summary?.rollout_mode === "string" ? doc.summary.rollout_mode : null,
+    enforcement_mode: typeof doc.summary?.enforcement_mode === "string" ? doc.summary.enforcement_mode : null,
+    mutation_allowed: doc.summary?.mutation_allowed === true,
+    event_count: typeof doc.summary?.event_count === "number" ? doc.summary.event_count : 0,
+    blocking_event_count: typeof doc.summary?.blocking_event_count === "number" ? doc.summary.blocking_event_count : 0,
+    warning_event_count: typeof doc.summary?.warning_event_count === "number" ? doc.summary.warning_event_count : 0,
+    error_event_count: typeof doc.summary?.error_event_count === "number" ? doc.summary.error_event_count : 0,
+    source_path_count: typeof doc.summary?.source_path_count === "number" ? doc.summary.source_path_count : 0,
+    event_type_keys: doc.summary?.event_counts_by_type && typeof doc.summary.event_counts_by_type === "object" && !Array.isArray(doc.summary.event_counts_by_type) ? Object.keys(doc.summary.event_counts_by_type).sort() : [],
+    route_event_keys: doc.summary?.route_event_counts && typeof doc.summary.route_event_counts === "object" && !Array.isArray(doc.summary.route_event_counts) ? Object.keys(doc.summary.route_event_counts).sort() : [],
+    blocking_decision: doc.validation_result?.blocking === true,
+  } : undefined;
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = buildEvidenceId(relativePath);
   const priorPath = seenIds.get(evidenceId);
@@ -232,7 +261,7 @@ for (const file of files) {
   const producerVerified = requireProducer(relativePath, generatedBy);
   const producerRouteId = normalizeScriptIdToRouteId(generatedBy);
   const routeProduced = producerRouteId !== null && executorRouteIds.has(producerRouteId);
-  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact", "prompt_contract", "context"].includes(sourceType)) {
+  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact", "prompt_contract", "context", "telemetry"].includes(sourceType)) {
     issues.push(issue("warning", "EVIDENCE_ENTRY_ROUTE_NOT_REGISTERED", `Evidence producer does not map to a registered executor route: ${generatedBy}`, relativePath, { generated_by: generatedBy, expected_route_id: producerRouteId }));
   }
 
@@ -255,6 +284,7 @@ for (const file of files) {
     ...(globalNormalizationAnalysis ? { global_normalization_analysis: globalNormalizationAnalysis, blocking: globalNormalizationAnalysis.blocking_decision } : {}),
     ...(promptContractAnalysis ? { prompt_contract_analysis: promptContractAnalysis, blocking: promptContractAnalysis.blocking_decision } : {}),
     ...(contextBundle ? { context_bundle: contextBundle, blocking: contextBundle.blocking_decision } : {}),
+    ...(runtimeTelemetry ? { runtime_telemetry: runtimeTelemetry, blocking: runtimeTelemetry.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {

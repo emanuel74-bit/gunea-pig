@@ -58,6 +58,8 @@ const promptContractEvidence = entries.filter((entry: any) => entry?.source_type
 const promptContractBlocking = promptContractEvidence.filter((entry: any) => entry?.prompt_contract_analysis?.blocking_decision === true);
 const contextBundleEvidence = entries.filter((entry: any) => entry?.source_type === "context" && entry?.context_bundle);
 const contextBundleBlocking = contextBundleEvidence.filter((entry: any) => entry?.context_bundle?.blocking_decision === true);
+const runtimeTelemetryEvidence = entries.filter((entry: any) => entry?.runtime_telemetry);
+const runtimeTelemetryBlocking = runtimeTelemetryEvidence.filter((entry: any) => entry?.runtime_telemetry?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -88,6 +90,7 @@ const reportClaims = [
   optionalClaim("global_normalization_summary_backed", "global_normalization", paths(globalNormalizationEvidence), "No global normalization analysis artifact was present in the evidence manifest."),
   optionalClaim("prompt_contract_summary_backed", "prompt_contract", paths(promptContractEvidence), "No prompt contract analysis artifact was present in the evidence manifest."),
   optionalClaim("context_bundle_summary_backed", "context", paths(contextBundleEvidence), "No compiled context bundle or context-load trace artifact was present in the evidence manifest."),
+  optionalClaim("runtime_telemetry_summary_backed", "telemetry", paths(runtimeTelemetryEvidence), "No runtime telemetry artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -121,6 +124,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("global_normalization", "Global normalization evidence", "global_normalization_summary_backed", `Global normalization summary is backed by ${globalNormalizationEvidence.length} abstract normalization artifact(s).`, "No global normalization analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("prompt_contracts", "Prompt contract evidence", "prompt_contract_summary_backed", `Prompt contract summary is backed by ${promptContractEvidence.length} prompt contract analysis artifact(s).`, "No prompt contract analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("context_bundle", "Compiled context evidence", "context_bundle_summary_backed", `Compiled context summary is backed by ${contextBundleEvidence.length} context artifact(s).`, "No compiled context bundle or context-load trace artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("runtime_telemetry", "Runtime telemetry evidence", "runtime_telemetry_summary_backed", `Runtime telemetry summary is backed by ${runtimeTelemetryEvidence.length} telemetry artifact(s).`, "No runtime telemetry artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -302,6 +306,35 @@ const finalReport = {
       adapter_topology_present: entry.context_bundle?.adapter_topology_present === true,
       prompt_contract_analysis_present: entry.context_bundle?.prompt_contract_analysis_present === true,
       blocking_decision: entry.context_bundle?.blocking_decision === true,
+    })),
+  },
+
+  runtime_telemetry_summary: {
+    runtime_telemetry_refs: paths(runtimeTelemetryEvidence),
+    runtime_telemetry_count: runtimeTelemetryEvidence.length,
+    blocking_runtime_telemetry_refs: paths(runtimeTelemetryBlocking),
+    observe_mode_only: runtimeTelemetryEvidence.every((entry: any) => entry?.runtime_telemetry?.blocking_decision !== true),
+    mutation_allowed: runtimeTelemetryEvidence.some((entry: any) => entry?.runtime_telemetry?.mutation_allowed === true),
+    total_event_count: runtimeTelemetryEvidence.reduce((total: number, entry: any) => total + Number(entry?.runtime_telemetry?.event_count ?? 0), 0),
+    total_blocking_event_count: runtimeTelemetryEvidence.reduce((total: number, entry: any) => total + Number(entry?.runtime_telemetry?.blocking_event_count ?? 0), 0),
+    total_warning_event_count: runtimeTelemetryEvidence.reduce((total: number, entry: any) => total + Number(entry?.runtime_telemetry?.warning_event_count ?? 0), 0),
+    total_error_event_count: runtimeTelemetryEvidence.reduce((total: number, entry: any) => total + Number(entry?.runtime_telemetry?.error_event_count ?? 0), 0),
+    event_type_keys: Array.from(new Set(runtimeTelemetryEvidence.flatMap((entry: any) => Array.isArray(entry?.runtime_telemetry?.event_type_keys) ? entry.runtime_telemetry.event_type_keys : []))).sort(),
+    route_event_keys: Array.from(new Set(runtimeTelemetryEvidence.flatMap((entry: any) => Array.isArray(entry?.runtime_telemetry?.route_event_keys) ? entry.runtime_telemetry.route_event_keys : []))).sort(),
+    analyses: runtimeTelemetryEvidence.map((entry: any) => ({
+      source: entry.path,
+      artifact_kind: entry.runtime_telemetry?.artifact_kind ?? null,
+      rollout_mode: entry.runtime_telemetry?.rollout_mode ?? null,
+      enforcement_mode: entry.runtime_telemetry?.enforcement_mode ?? null,
+      mutation_allowed: entry.runtime_telemetry?.mutation_allowed === true,
+      event_count: entry.runtime_telemetry?.event_count ?? 0,
+      blocking_event_count: entry.runtime_telemetry?.blocking_event_count ?? 0,
+      warning_event_count: entry.runtime_telemetry?.warning_event_count ?? 0,
+      error_event_count: entry.runtime_telemetry?.error_event_count ?? 0,
+      source_path_count: entry.runtime_telemetry?.source_path_count ?? 0,
+      event_type_keys: entry.runtime_telemetry?.event_type_keys ?? [],
+      route_event_keys: entry.runtime_telemetry?.route_event_keys ?? [],
+      blocking_decision: entry.runtime_telemetry?.blocking_decision === true,
     })),
   },
   transition_evidence: {
