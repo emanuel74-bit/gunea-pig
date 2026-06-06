@@ -28,6 +28,7 @@ type EvidenceEntry = {
   prompt_contract_analysis?: JsonMap;
   context_bundle?: JsonMap;
   runtime_telemetry?: JsonMap;
+  runtime_telemetry_validation?: JsonMap;
   content_sha256: string;
   manifest_entry_schema: "evidence_manifest_v2_entry";
   producer_verified: boolean;
@@ -251,6 +252,18 @@ for (const file of files) {
     route_event_keys: doc.summary?.route_event_counts && typeof doc.summary.route_event_counts === "object" && !Array.isArray(doc.summary.route_event_counts) ? Object.keys(doc.summary.route_event_counts).sort() : [],
     blocking_decision: doc.validation_result?.blocking === true,
   } : undefined;
+
+  const runtimeTelemetryValidation = doc.artifact === "runtime_telemetry_validation_report" ? {
+    artifact_kind: "validation_report",
+    route_id: typeof doc.route_id === "string" ? doc.route_id : null,
+    validation_scope: typeof doc.validation_scope === "string" ? doc.validation_scope : null,
+    workflow_policy_enforced: doc.workflow_policy_enforced === true,
+    event_count: typeof doc.event_count === "number" ? doc.event_count : 0,
+    status: typeof doc.status === "string" ? doc.status : null,
+    blocking_decision: doc.validation_result?.blocking === true,
+    validation_result_status: typeof doc.validation_result?.status === "string" ? doc.validation_result.status : null,
+    validation_result_severity: typeof doc.validation_result?.severity === "string" ? doc.validation_result.severity : null,
+  } : undefined;
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = buildEvidenceId(relativePath);
   const priorPath = seenIds.get(evidenceId);
@@ -285,6 +298,7 @@ for (const file of files) {
     ...(promptContractAnalysis ? { prompt_contract_analysis: promptContractAnalysis, blocking: promptContractAnalysis.blocking_decision } : {}),
     ...(contextBundle ? { context_bundle: contextBundle, blocking: contextBundle.blocking_decision } : {}),
     ...(runtimeTelemetry ? { runtime_telemetry: runtimeTelemetry, blocking: runtimeTelemetry.blocking_decision } : {}),
+    ...(runtimeTelemetryValidation ? { runtime_telemetry_validation: runtimeTelemetryValidation, blocking: runtimeTelemetryValidation.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {
