@@ -56,6 +56,8 @@ const globalNormalizationEvidence = entries.filter((entry: any) => entry?.source
 const globalNormalizationBlocking = globalNormalizationEvidence.filter((entry: any) => entry?.global_normalization_analysis?.blocking_decision === true);
 const promptContractEvidence = entries.filter((entry: any) => entry?.source_type === "prompt_contract" && entry?.prompt_contract_analysis);
 const promptContractBlocking = promptContractEvidence.filter((entry: any) => entry?.prompt_contract_analysis?.blocking_decision === true);
+const contextBundleEvidence = entries.filter((entry: any) => entry?.source_type === "context" && entry?.context_bundle);
+const contextBundleBlocking = contextBundleEvidence.filter((entry: any) => entry?.context_bundle?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -85,6 +87,7 @@ const reportClaims = [
   optionalClaim("architecture_quality_summary_backed", "architecture_quality", paths(architectureQualityEvidence), "No architecture quality analysis artifact was present in the evidence manifest."),
   optionalClaim("global_normalization_summary_backed", "global_normalization", paths(globalNormalizationEvidence), "No global normalization analysis artifact was present in the evidence manifest."),
   optionalClaim("prompt_contract_summary_backed", "prompt_contract", paths(promptContractEvidence), "No prompt contract analysis artifact was present in the evidence manifest."),
+  optionalClaim("context_bundle_summary_backed", "context", paths(contextBundleEvidence), "No compiled context bundle or context-load trace artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -117,6 +120,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("architecture_quality", "Architecture quality evidence", "architecture_quality_summary_backed", `Architecture quality summary is backed by ${architectureQualityEvidence.length} adapter-neutral architecture artifact(s).`, "No architecture quality analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("global_normalization", "Global normalization evidence", "global_normalization_summary_backed", `Global normalization summary is backed by ${globalNormalizationEvidence.length} abstract normalization artifact(s).`, "No global normalization analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("prompt_contracts", "Prompt contract evidence", "prompt_contract_summary_backed", `Prompt contract summary is backed by ${promptContractEvidence.length} prompt contract analysis artifact(s).`, "No prompt contract analysis artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("context_bundle", "Compiled context evidence", "context_bundle_summary_backed", `Compiled context summary is backed by ${contextBundleEvidence.length} context artifact(s).`, "No compiled context bundle or context-load trace artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -271,6 +275,33 @@ const finalReport = {
       unknown_route_behavior: entry.prompt_contract_analysis?.unknown_route_behavior ?? null,
       direct_script_reference_behavior: entry.prompt_contract_analysis?.direct_script_reference_behavior ?? null,
       blocking_decision: entry.prompt_contract_analysis?.blocking_decision === true,
+    })),
+  },
+
+  context_bundle_summary: {
+    context_bundle_refs: paths(contextBundleEvidence),
+    context_bundle_count: contextBundleEvidence.length,
+    blocking_context_bundle_refs: paths(contextBundleBlocking),
+    observe_mode_only: contextBundleEvidence.every((entry: any) => entry?.context_bundle?.blocking_decision !== true),
+    mutation_allowed: contextBundleEvidence.some((entry: any) => entry?.context_bundle?.mutation_allowed === true),
+    total_included_route_count: contextBundleEvidence.reduce((total: number, entry: any) => total + Number(entry?.context_bundle?.included_route_count ?? 0), 0),
+    total_included_artifact_count: contextBundleEvidence.reduce((total: number, entry: any) => total + Number(entry?.context_bundle?.included_artifact_count ?? 0), 0),
+    total_retrieval_trace_count: contextBundleEvidence.reduce((total: number, entry: any) => total + Number(entry?.context_bundle?.retrieval_trace_count ?? 0), 0),
+    scopes: Array.from(new Set(contextBundleEvidence.map((entry: any) => entry?.context_bundle?.scope).filter((value: any) => typeof value === "string"))).sort(),
+    analyses: contextBundleEvidence.map((entry: any) => ({
+      source: entry.path,
+      scope: entry.context_bundle?.scope ?? null,
+      enforcement_mode: entry.context_bundle?.enforcement_mode ?? null,
+      mutation_allowed: entry.context_bundle?.mutation_allowed === true,
+      selected_workflow_lanes: entry.context_bundle?.selected_workflow_lanes ?? [],
+      selection_source: entry.context_bundle?.selection_source ?? null,
+      adapter_discovery_source: entry.context_bundle?.adapter_discovery_source ?? null,
+      included_route_count: entry.context_bundle?.included_route_count ?? 0,
+      included_artifact_count: entry.context_bundle?.included_artifact_count ?? 0,
+      retrieval_trace_count: entry.context_bundle?.retrieval_trace_count ?? 0,
+      adapter_topology_present: entry.context_bundle?.adapter_topology_present === true,
+      prompt_contract_analysis_present: entry.context_bundle?.prompt_contract_analysis_present === true,
+      blocking_decision: entry.context_bundle?.blocking_decision === true,
     })),
   },
   transition_evidence: {
