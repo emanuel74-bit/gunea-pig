@@ -16,8 +16,8 @@ Use this skill when validation, gate, handoff, report evidence, or semantic comp
 
 Revision ladder:
 
-1. `npm --prefix conventions/scripts run executor -- --route create_revision_task`
-2. `npm --prefix conventions/scripts run executor -- --route validate_revision_task`
+1. `npm --prefix conventions/scripts run invoke:route -- --route create_revision_task`
+2. `npm --prefix conventions/scripts run invoke:route -- --route validate_revision_task`
 3. Activate `repair_agent` only if the validated revision task authorizes repair.
 4. Repair only within the revision task scope.
 5. Re-run `validate-phase`.

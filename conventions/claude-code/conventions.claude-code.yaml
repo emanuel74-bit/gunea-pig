@@ -111,7 +111,7 @@ sections:
     - validation-agent
     - failure-analysis-agent
     - repair-agent
-    normal_route_command: npm --prefix conventions/scripts run executor -- --route <route_id>
+    normal_route_command: npm --prefix conventions/scripts run invoke:route -- --route <route_id>
 validation:
   required_checks:
   - mission_controller_initialized_before_mission_execution

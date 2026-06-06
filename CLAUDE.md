@@ -7,7 +7,7 @@ This project uses the Autonomous Agent Activator convention system. Claude Code 
 - Alpha controls mission orchestration. Phase agents perform phase work only after Alpha activates them from a validated phase bundle.
 - Do not call convention scripts directly. Use executor route IDs only:
 
-  `npm --prefix conventions/scripts run executor -- --route <route_id>`
+  `npm --prefix conventions/scripts run invoke:route -- --route <route_id>`
 
 - Work from validated phase bundles. Do not load the full convention package as normal task context.
 - Topologies are script-facing compiled truth. Agents normally consume bundles, route results, and specific convention slices.

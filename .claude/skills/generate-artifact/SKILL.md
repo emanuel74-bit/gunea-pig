@@ -22,12 +22,12 @@ Rules:
 
 Common artifact routes:
 
-- `npm --prefix conventions/scripts run executor -- --route generate_phase_bundle`
-- `npm --prefix conventions/scripts run executor -- --route compile_authority_topology`
-- `npm --prefix conventions/scripts run executor -- --route compile_runtime_artifact_topology`
-- `npm --prefix conventions/scripts run executor -- --route run_gate_check`
-- `npm --prefix conventions/scripts run executor -- --route prepare_agent_handoff`
-- `npm --prefix conventions/scripts run executor -- --route create_revision_task`
-- `npm --prefix conventions/scripts run executor -- --route collect_evidence`
-- `npm --prefix conventions/scripts run executor -- --route generate_final_mission_report`
+- `npm --prefix conventions/scripts run invoke:route -- --route generate_phase_bundle`
+- `npm --prefix conventions/scripts run invoke:route -- --route compile_authority_topology`
+- `npm --prefix conventions/scripts run invoke:route -- --route compile_runtime_artifact_topology`
+- `npm --prefix conventions/scripts run invoke:route -- --route run_gate_check`
+- `npm --prefix conventions/scripts run invoke:route -- --route prepare_agent_handoff`
+- `npm --prefix conventions/scripts run invoke:route -- --route create_revision_task`
+- `npm --prefix conventions/scripts run invoke:route -- --route collect_evidence`
+- `npm --prefix conventions/scripts run invoke:route -- --route generate_final_mission_report`
 

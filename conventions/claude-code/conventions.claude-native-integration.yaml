@@ -113,7 +113,7 @@ sections:
       - Stop
       - StopFailure
     command_wrapper:
-      npm_command: npm --prefix conventions/scripts run executor -- --route <route_id>
+      npm_command: npm --prefix conventions/scripts run invoke:route -- --route <route_id>
       direct_script_invocation: forbidden
     commands:
       location: .claude/commands/*.md

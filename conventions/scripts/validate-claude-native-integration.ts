@@ -74,7 +74,7 @@ for (const relPath of requiredFiles) {
   }
 }
 
-const routeWrapperPattern = /npm\s+--prefix\s+conventions\/scripts\s+run\s+executor\s+--\s+--route\s+([a-zA-Z0-9_.-]+)/g;
+const routeWrapperPattern = /npm\s+--prefix\s+conventions\/scripts\s+run\s+invoke:route\s+--\s+--route\s+([a-zA-Z0-9_.-]+)/g;
 const directScriptPattern = /(tsx|node|npx\s+tsx)\s+[^\n]*scripts\/[a-zA-Z0-9_.-]+\.ts/g;
 
 function scanText(relPath: string): string {
@@ -94,7 +94,7 @@ for (const relPath of requiredFiles) {
   }
 
   for (const match of text.matchAll(directScriptPattern)) {
-    issues.push(issue("error", "DIRECT_SCRIPT_INVOCATION_IN_CLAUDE_FILE", `Claude project file invokes a script directly instead of executor route wrapper: ${match[0]}`, relPath));
+    issues.push(issue("error", "DIRECT_SCRIPT_INVOCATION_IN_CLAUDE_FILE", `Claude project file invokes a script directly instead of the universal invoke_route wrapper: ${match[0]}`, relPath));
   }
 }
 
@@ -110,8 +110,8 @@ if (fs.existsSync(settingsPath)) {
       }
     }
     const settingsText = fs.readFileSync(settingsPath, "utf8");
-    if (!settingsText.includes("npm --prefix conventions/scripts run executor -- --route")) {
-      issues.push(issue("error", "CLAUDE_HOOKS_NOT_ROUTE_BACKED", "Claude hooks must invoke executor route wrapper", ".claude/settings.json"));
+    if (!settingsText.includes("npm --prefix conventions/scripts run invoke:route -- --route")) {
+      issues.push(issue("error", "CLAUDE_HOOKS_NOT_ROUTE_BACKED", "Claude hooks must invoke the universal invoke_route wrapper", ".claude/settings.json"));
     }
   } catch (error) {
     issues.push(issue("error", "CLAUDE_SETTINGS_INVALID_JSON", "Claude settings.json failed to parse", ".claude/settings.json", String(error)));

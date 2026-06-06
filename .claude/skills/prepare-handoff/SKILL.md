@@ -14,8 +14,8 @@ allowed-tools:
 
 Run in order:
 
-1. `npm --prefix conventions/scripts run executor -- --route prepare_agent_handoff`
-2. `npm --prefix conventions/scripts run executor -- --route validate_handoff`
+1. `npm --prefix conventions/scripts run invoke:route -- --route prepare_agent_handoff`
+2. `npm --prefix conventions/scripts run invoke:route -- --route validate_handoff`
 
 Handoff packets are script-produced only. Target agents may consume only validated handoff packets.
 

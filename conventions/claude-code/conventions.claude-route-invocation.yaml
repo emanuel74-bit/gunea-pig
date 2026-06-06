@@ -63,12 +63,12 @@ sections:
     fail_when:
     - required_input_missing
     - required_artifact_missing
-  - step_id: INVOKE_DECLARED_SCRIPT
-    action: execute_resolved_script
-    source: route.script
+  - step_id: INVOKE_VIA_UNIVERSAL_ROUTE_WRAPPER
+    action: execute_universal_route_wrapper
+    source: invoke_route_wrapper
     fail_when:
-    - script_missing
-    - script_exit_nonzero_with_blocking_failure
+    - invoke_route_wrapper_missing
+    - wrapped_route_exit_nonzero_with_blocking_failure
   - step_id: READ_SCRIPT_RESULT
     action: read
     source: .ai/validation/{script_id}.result.yaml
@@ -93,17 +93,17 @@ sections:
   allowed_claude_actions:
   - read_validated_phase_bundle
   - resolve_route_id_through_central_map
-  - execute_script_from_resolved_route
+  - execute_route_through_invoke_route_wrapper
   - consume_script_result_artifact
   - inspect_script_produced_mission_state
   - stop_on_blocking_failure
   - request_revision_route_after_failure
 validation:
   required_checks:
-  - route_id_used_instead_of_script_path
+  - invoke_route_wrapper_used_with_route_id
   - route_result_read_after_script_execution
   - failure_behavior_applied
   fail_conditions:
-  - claude_invoked_unresolved_script
+  - claude_bypassed_invoke_route_wrapper
   - claude_ignored_blocking_failure
   - claude_consumed_missing_script_output

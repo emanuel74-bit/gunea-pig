@@ -14,8 +14,8 @@ allowed-tools:
 
 Run in order:
 
-1. `npm --prefix conventions/scripts run executor -- --route run_gate_check`
-2. `npm --prefix conventions/scripts run executor -- --route validate_gate_result`
+1. `npm --prefix conventions/scripts run invoke:route -- --route run_gate_check`
+2. `npm --prefix conventions/scripts run invoke:route -- --route validate_gate_result`
 
 Gate results are script-produced only. If the gate is blocked or invalid, do not invoke handoff; invoke `revision-loop`.
 

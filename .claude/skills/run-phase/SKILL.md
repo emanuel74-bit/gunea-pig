@@ -25,7 +25,7 @@ Phase execution rules:
 
 Required route-backed checks after phase output:
 
-1. `npm --prefix conventions/scripts run executor -- --route validate_changed_files`
-2. `npm --prefix conventions/scripts run executor -- --route validate_phase_output`
-3. `npm --prefix conventions/scripts run executor -- --route validate_semantic_completeness`
+1. `npm --prefix conventions/scripts run invoke:route -- --route validate_changed_files`
+2. `npm --prefix conventions/scripts run invoke:route -- --route validate_phase_output`
+3. `npm --prefix conventions/scripts run invoke:route -- --route validate_semantic_completeness`
 

@@ -81,7 +81,7 @@ sections:
     - .claude/commands/revision-loop.md
     - .claude/commands/complete-mission.md
   normal_invocation:
-    command: npm --prefix conventions/scripts run executor -- --route <route_id>
+    command: npm --prefix conventions/scripts run invoke:route -- --route <route_id>
     direct_script_path_invocation: forbidden
 validation:
   required_checks:

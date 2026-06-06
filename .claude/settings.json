@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(npm --prefix conventions/scripts run executor -- --route *)",
+      "Bash(npm --prefix conventions/scripts run invoke:route -- --route *)",
       "Bash(npm --prefix conventions/scripts run validate:*)",
       "Bash(npm --prefix conventions/scripts run verify:scripts)",
       "Bash(npm --prefix conventions/scripts run claude:*)",
@@ -28,17 +28,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route validate_executor_routes",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route validate_executor_routes",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route validate_references",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route validate_references",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route validate_runtime_artifacts",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route validate_runtime_artifacts",
             "timeout": 120
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route validate_changed_files",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route validate_changed_files",
             "timeout": 120
           }
         ]
@@ -61,12 +61,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route collect_evidence",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route collect_evidence",
             "timeout": 120
           },
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route validate_report_evidence",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route validate_report_evidence",
             "timeout": 120
           }
         ]
@@ -77,7 +77,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npm --prefix conventions/scripts run executor -- --route collect_evidence",
+            "command": "npm --prefix conventions/scripts run invoke:route -- --route collect_evidence",
             "timeout": 120
           }
         ]
