@@ -26,6 +26,8 @@ const failureResultArg = getArg("failure-result") ?? getArg("failure_result");
 const explicitFingerprint = getArg("failure-fingerprint") ?? getArg("failure_fingerprint");
 const observeRetryBudgetRaw = getArg("observe-retry-budget") ?? getArg("observe_retry_budget") ?? "3";
 const observeRetryBudget = Number(observeRetryBudgetRaw);
+const enforcementMode = getArg("enforcement-mode") ?? getArg("enforcement_mode") ?? "enforce";
+const enforcementModes = new Set(["observe", "warn", "enforce"]);
 
 function asRecord(value: unknown): JsonMap {
   return value && typeof value === "object" && !Array.isArray(value) ? value as JsonMap : {};
@@ -102,6 +104,9 @@ function readRevisionTasks(): JsonMap[] {
 if (Number.isNaN(observeRetryBudget) || observeRetryBudget < 1) {
   issues.push(issue("error", "REVISION_RETRY_BUDGET_INVALID", "observe retry budget must be a positive number."));
 }
+if (!enforcementModes.has(enforcementMode)) {
+  issues.push(issue("error", "REVISION_LOOP_ENFORCEMENT_MODE_INVALID", "enforcement mode must be observe, warn, or enforce.", undefined, { enforcement_mode: enforcementMode }));
+}
 
 const revisionTask = readOptionalYaml(revisionTaskArg);
 if (revisionTaskArg && !revisionTask) {
@@ -119,7 +124,7 @@ const activeFingerprint = explicitFingerprint
   ?? null;
 
 if (!activeFingerprint) {
-  issues.push(issue("warning", "REVISION_FAILURE_FINGERPRINT_MISSING", "No revision task, failure result, or explicit fingerprint was available; emitting baseline observe-mode analysis."));
+  issues.push(issue("warning", "REVISION_FAILURE_FINGERPRINT_MISSING", "No revision task, failure result, or explicit fingerprint was available; emitting baseline revision-loop analysis without blocking first-pass setup."));
 }
 
 const tasks = readRevisionTasks().map(task => ({
@@ -147,10 +152,17 @@ if (activeFingerprint && activeFingerprintCount > 1) {
   issues.push(issue("warning", "REVISION_FAILURE_FINGERPRINT_REPEATED", "The active failure fingerprint appears in more than one revision task; observe potential retry loop.", undefined, { fingerprint: activeFingerprint, count: activeFingerprintCount }));
 }
 if (activeFingerprint && activeFingerprintCount >= observeRetryBudget) {
-  issues.push(issue("warning", "REVISION_RETRY_BUDGET_OBSERVED", "The active failure fingerprint has reached or exceeded the observe retry budget; no blocking is applied in observe mode.", undefined, { fingerprint: activeFingerprint, count: activeFingerprintCount, observe_retry_budget: observeRetryBudget }));
+  if (enforcementMode === "enforce") {
+    issues.push(issue("error", "REVISION_RETRY_BUDGET_EXCEEDED", "The active failure fingerprint reached the retry budget; blocking repeated no-progress revision loop.", undefined, { fingerprint: activeFingerprint, count: activeFingerprintCount, observe_retry_budget: observeRetryBudget, enforcement_mode: enforcementMode }));
+  } else {
+    issues.push(issue("warning", "REVISION_RETRY_BUDGET_OBSERVED", "The active failure fingerprint has reached or exceeded the observe retry budget; no blocking is applied outside enforce mode.", undefined, { fingerprint: activeFingerprint, count: activeFingerprintCount, observe_retry_budget: observeRetryBudget, enforcement_mode: enforcementMode }));
+  }
 }
 
 const noProgressSuspected = Boolean(activeFingerprint && activeFingerprintCount >= observeRetryBudget);
+const blockingDecision = Boolean(enforcementMode === "enforce" && noProgressSuspected);
+const rolloutMode = enforcementMode === "enforce" ? "enforce" : enforcementMode;
+const enforcement = enforcementMode === "enforce" ? "retry_budget" : "disabled";
 const analysisOut = ".ai/revisions/revision-loop-analysis.yaml";
 const reportOut = ".ai/reports/revision-loop-analysis-report.yaml";
 const validationOut = ".ai/validation/analyze-revision-loop.result.yaml";
@@ -158,15 +170,15 @@ const validationOut = ".ai/validation/analyze-revision-loop.result.yaml";
 const analysis = {
   artifact: "revision_loop_analysis",
   generated_by: SCRIPT_ID,
-  rollout_mode: "observe",
-  enforcement: "disabled",
+  rollout_mode: rolloutMode,
+  enforcement,
   mission_id: missionId,
   active_failure_fingerprint: activeFingerprint,
   observe_retry_budget: observeRetryBudget,
   active_fingerprint_count: activeFingerprintCount,
   repeated_fingerprints: repeatedFingerprints,
   no_progress_suspected: noProgressSuspected,
-  blocking_decision: false,
+  blocking_decision: blockingDecision,
   revision_task_count: tasks.length,
   revision_tasks: tasks,
   warnings: issues.filter(entry => entry.severity === "warning").map(entry => entry.code).sort(),
@@ -200,7 +212,7 @@ finish(SCRIPT_ID, issues, [analysisOut, reportOut, validationOut], {
   active_fingerprint_count: activeFingerprintCount,
   repeated_fingerprint_count: repeatedFingerprints.length,
   no_progress_suspected: noProgressSuspected,
-  blocking_decision: false,
+  blocking_decision: blockingDecision,
   validation_result: buildUniversalValidationResult(SCRIPT_ID, issues, {
     route_id: ROUTE_ID,
     mission_id: missionId ?? undefined,
@@ -213,7 +225,7 @@ finish(SCRIPT_ID, issues, [analysisOut, reportOut, validationOut], {
       active_fingerprint_count: activeFingerprintCount,
       repeated_fingerprint_count: repeatedFingerprints.length,
       no_progress_suspected: noProgressSuspected,
-      blocking_decision: false,
+      blocking_decision: blockingDecision,
     },
   }),
 });

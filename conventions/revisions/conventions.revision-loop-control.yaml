@@ -3,13 +3,13 @@ file:
   name: conventions.revision-loop-control.yaml
   path: revisions/conventions.revision-loop-control.yaml
   role: revision_loop_control_contract
-  executability: observe_policy
-purpose: Define observe-mode revision loop control, failure fingerprinting, retry-budget visibility, and no-progress detection without blocking revision work yet.
+  executability: warn_then_enforce_policy
+purpose: Define controlled revision loop enforcement, failure fingerprinting, retry-budget visibility, and no-progress blocking for selected safe repeated-failure cases.
 ownership:
   owns:
   - revision_failure_fingerprint_model
-  - revision_loop_observation_policy
-  - revision_retry_budget_observation
+  - revision_loop_enforcement_policy
+  - revision_retry_budget_control
   - revision_loop_analysis_schema
   does_not_own:
   - revision_task_authority
@@ -53,25 +53,33 @@ sections:
     - validation_result.blocking
     stability_rule: Same logical failure evidence must produce the same fingerprint across retry attempts.
     privacy_rule: Fingerprints must summarize failure shape, not store large source content.
-  revision_loop_observation_policy:
-    rollout_mode: observe
-    enforcement: disabled
-    blocking_decision: false
+  revision_loop_enforcement_policy:
+    rollout_modes:
+    - observe
+    - warn
+    - enforce
+    default_runtime_mode: enforce
+    enforcement: retry_budget
     absolute_rules:
-    - id: REVISION-LOOP-OBS-001
-      rule: analyze_revision_loop records repeated fingerprints and no-progress suspicion as warnings only during observe rollout.
-      fail_condition: revision_loop_observe_warning_blocked_work
+    - id: REVISION-LOOP-ENF-001
+      rule: analyze_revision_loop must block selected safe cases where the same active failure fingerprint reaches or exceeds the configured retry budget in enforce mode.
+      fail_condition: revision_retry_budget_exceeded_without_blocking
       severity: error
-    - id: REVISION-LOOP-OBS-002
+    - id: REVISION-LOOP-ENF-002
+      rule: analyze_revision_loop must keep missing fingerprint discovery as a non-blocking warning so first-pass revision setup is not blocked.
+      fail_condition: missing_fingerprint_blocked_revision_setup
+      severity: error
+    - id: REVISION-LOOP-ENF-003
       rule: Revision tasks may include failure_fingerprint and retry_control metadata, but create_revision_task remains the only authoritative revision task producer.
       fail_condition: revision_loop_metadata_authored_by_agent
       severity: error
-  retry_budget_observation:
+  retry_budget_control:
     default_observe_retry_budget: 3
     repeated_fingerprint_warning: REVISION_FAILURE_FINGERPRINT_REPEATED
     retry_budget_warning: REVISION_RETRY_BUDGET_OBSERVED
+    retry_budget_blocking_error: REVISION_RETRY_BUDGET_EXCEEDED
     no_progress_signal: no_progress_suspected
-    enforcement_transition: later_phase_warn_then_enforce
+    enforcement_transition: selected_safe_cases_enforced
   revision_loop_analysis_schema:
     required_fields:
     - artifact
@@ -97,6 +105,10 @@ validation:
       revision_loop_control_contract: true
   fail_conditions:
   - id: REVISION-LOOP-CONTROL-001
-    condition: revision_loop_observe_warning_blocked_work
-    message: Observe-mode revision loop control must not block revision work.
+    condition: revision_retry_budget_exceeded_without_blocking
+    message: Enforce-mode revision loop control must block repeated active failure fingerprints that reach the retry budget.
+    severity: error
+  - id: REVISION-LOOP-CONTROL-002
+    condition: missing_fingerprint_blocked_revision_setup
+    message: Missing failure fingerprints remain warnings so first-pass revision setup can continue.
     severity: error
