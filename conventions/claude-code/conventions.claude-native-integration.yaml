@@ -129,16 +129,24 @@ sections:
       - complete-mission
   required_executor_routes:
     before_mission_start:
+    - initialize_mission
+    - inspect_mission_state
     - generate_claude_execution_plan
     - validate_claude_execution_plan
+    - generate_mission_bundle
     - validate_executor_routes
     - validate_references
     after_file_change:
     - validate_changed_files
     before_phase_start:
+    - inspect_mission_state
     - generate_phase_bundle
     - validate_phase_bundle
+    before_transition_advance:
+    - advance_mission
+    - inspect_mission_state
     before_mission_complete:
+    - inspect_mission_state
     - collect_evidence
     - validate_report_evidence
     - generate_final_mission_report

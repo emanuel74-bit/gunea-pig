@@ -71,8 +71,11 @@ sections:
       not author transition decisions.
   required_executor_routes:
     before_mission_start:
+    - initialize_mission
+    - inspect_mission_state
     - generate_claude_execution_plan
     - validate_claude_execution_plan
+    - generate_mission_bundle
   native_integration_summary:
     project_memory: CLAUDE.md
     project_settings: .claude/settings.json
@@ -111,6 +114,7 @@ sections:
     normal_route_command: npm --prefix conventions/scripts run executor -- --route <route_id>
 validation:
   required_checks:
+  - mission_controller_initialized_before_mission_execution
   - claude_execution_plan_generated_before_mission_execution
   - claude_execution_plan_validated_before_phase_execution
   - claude_uses_executor_routes_not_direct_scripts

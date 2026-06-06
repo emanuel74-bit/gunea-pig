@@ -53,8 +53,11 @@ sections:
       - run-alpha-cycle
       - activate-agent
       routes:
+      - initialize_mission
+      - inspect_mission_state
       - generate_claude_execution_plan
       - validate_claude_execution_plan
+      - generate_mission_bundle
       - generate_phase_bundle
       - validate_phase_bundle
       agents:
@@ -160,6 +163,8 @@ sections:
       - validate_gate_result
       - prepare_agent_handoff
       - validate_handoff
+      - advance_mission
+      - inspect_mission_state
       - create_revision_task
       - validate_revision_task
       agents:

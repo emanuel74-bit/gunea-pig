@@ -57,6 +57,18 @@ sections:
     fail_when:
     - executor_route_map_missing
     - route_contract_invalid
+  - step_id: INITIALIZE_MISSION_STATE
+    action: invoke_executor_route
+    required_executor_routes:
+    - initialize_mission
+    fail_when:
+    - mission_state_missing_or_invalid
+  - step_id: INSPECT_INITIAL_MISSION_STATE
+    action: invoke_executor_route
+    required_executor_routes:
+    - inspect_mission_state
+    fail_when:
+    - mission_state_inspection_missing
   - step_id: GENERATE_CLAUDE_EXECUTION_PLAN
     action: invoke_executor_route
     required_executor_routes:
@@ -89,6 +101,12 @@ sections:
     fail_when:
     - any_route_returns_blocking_failure
   phase_execution_sequence:
+  - step_id: INSPECT_CURRENT_MISSION_STATE
+    action: invoke_executor_route
+    required_executor_routes:
+    - inspect_mission_state
+    fail_when:
+    - mission_state_inspection_missing
   - step_id: GENERATE_PHASE_BUNDLE
     action: invoke_executor_route
     required_executor_routes:
@@ -135,10 +153,18 @@ sections:
     fail_when:
     - output_gate_blocked
     - handoff_invalid
+  - step_id: OBSERVE_MISSION_ADVANCEMENT
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - advance_mission
+    - inspect_mission_state
+    fail_when:
+    - mission_advancement_observation_missing
   completion_sequence:
   - step_id: COLLECT_FINAL_EVIDENCE
     action: invoke_executor_routes_in_declared_order
     required_executor_routes:
+    - inspect_mission_state
     - collect_evidence
     - validate_report_evidence
     fail_when:
@@ -158,6 +184,7 @@ sections:
     - final_report_not_script_generated
 validation:
   required_checks:
+  - mission_controller_routes_declared
   - mission_start_routes_declared
   - phase_execution_routes_declared
   - completion_routes_declared

@@ -80,6 +80,8 @@ sections:
   - validate-phase
   - run-gate
   - prepare-handoff
+  - advance_mission
+  - inspect_mission_state
   - generate_next_phase_bundle
   - validate_next_phase_bundle
   - run-alpha-cycle
@@ -93,6 +95,7 @@ sections:
   - collect_phase_report
   - collect_evidence
   - validate_report_evidence
+  - inspect_mission_state
   - generate_final_mission_report
 validation:
   required_checks:

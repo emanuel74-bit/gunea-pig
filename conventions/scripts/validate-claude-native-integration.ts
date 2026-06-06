@@ -168,6 +168,10 @@ for (const agentId of agentIds) {
 }
 
 const requiredRouteMentions = [
+  "initialize_mission",
+  "inspect_mission_state",
+  "advance_mission",
+  "generate_mission_bundle",
   "generate_claude_execution_plan",
   "validate_claude_execution_plan",
   "generate_phase_bundle",

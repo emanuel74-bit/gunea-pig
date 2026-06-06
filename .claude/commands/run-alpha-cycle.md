@@ -1,5 +1,5 @@
 # /run-alpha-cycle
 
-Use the `run-alpha-cycle` skill to let Alpha select/activate the next phase agent.
+Use the `run-alpha-cycle` skill to let Alpha inspect mission state, read the active validated phase bundle, select/activate the next phase agent, and continue the route-backed workflow cycle.
 
 Do not bypass executor routes or native subagents.

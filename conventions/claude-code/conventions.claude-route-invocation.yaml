@@ -30,6 +30,7 @@ inputs:
   optional:
   - phase_bundle
   - mission_bundle
+  - mission_state
   - runtime_artifacts
 outputs:
   produces:
@@ -85,6 +86,8 @@ sections:
   - manual_gate_pass_or_fail
   - manual_handoff_packet_authoring
   - manual_revision_decision_authoring
+  - manual_mission_state_authoring
+  - manual_mission_advancement
   - manual_final_report_authoring
   - loading_full_topology_as_phase_context_when_phase_bundle_exists
   allowed_claude_actions:
@@ -92,6 +95,7 @@ sections:
   - resolve_route_id_through_central_map
   - execute_script_from_resolved_route
   - consume_script_result_artifact
+  - inspect_script_produced_mission_state
   - stop_on_blocking_failure
   - request_revision_route_after_failure
 validation:
