@@ -19,8 +19,8 @@ Transition ladder:
 1. Invoke `run-gate`.
 2. If gate is blocked, invoke `revision-loop` and stop transition.
 3. Invoke `prepare-handoff`.
-4. Run `npm --prefix conventions/scripts run executor -- --route advance_mission` to record the observed transition proposal.
-5. Run `npm --prefix conventions/scripts run executor -- --route inspect_mission_state`.
+4. Run `npm --prefix conventions/scripts run executor -- --route advance_mission --mission-id <mission_id> --to-phase <next_phase_id>` to record the observed transition proposal.
+5. Run `npm --prefix conventions/scripts run executor -- --route inspect_mission_state --mission-id <mission_id>`.
 6. Run `npm --prefix conventions/scripts run executor -- --route generate_phase_bundle` for the next phase.
 7. Run `npm --prefix conventions/scripts run executor -- --route validate_phase_bundle`.
 8. Invoke `run-alpha-cycle` for the next phase.

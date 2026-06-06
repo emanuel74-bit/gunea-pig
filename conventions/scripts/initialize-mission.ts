@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { finish, issue, resolveConventionsRoot, type Issue } from "./lib/common.js";
-import { appendMissionEvent, baseMissionState, missionIdFromArgs, missionJournalPath, missionStatePath, nowIso, readMissionState, writeMissionState } from "./mission-controller-common.js";
+import { appendMissionEvent, baseMissionState, hasBlockingMissionStateIssue, missionIdFromArgs, missionJournalPath, missionStatePath, nowIso, readMissionState, validateMissionStateShape, writeMissionState } from "./mission-controller-common.js";
 
 const SCRIPT_ID = "initialize-mission";
 const root = resolveConventionsRoot();
@@ -13,9 +13,11 @@ if (!missionId) {
 }
 
 const existing = readMissionState(root, missionId);
-if (existing && existing.mission_id !== missionId) {
-  issues.push(issue("error", "MISSION_STATE_ID_MISMATCH", `Existing mission state id does not match requested mission id ${missionId}`));
-  finish(SCRIPT_ID, issues, [], { initialized: false, mission_id: missionId });
+if (existing) {
+  issues.push(...validateMissionStateShape(existing, missionId));
+  if (hasBlockingMissionStateIssue(issues)) {
+    finish(SCRIPT_ID, issues, [], { initialized: false, mission_id: missionId, existing_state: true });
+  }
 }
 
 const timestamp = nowIso();

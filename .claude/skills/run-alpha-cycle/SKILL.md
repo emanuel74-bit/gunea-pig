@@ -16,7 +16,7 @@ Use this skill for every workflow cycle after mission start and after every tran
 
 Alpha responsibilities:
 
-1. Run `npm --prefix conventions/scripts run executor -- --route inspect_mission_state`.
+1. Run `npm --prefix conventions/scripts run executor -- --route inspect_mission_state --mission-id <mission_id>`.
 2. Read the validated phase bundle and active phase plan.
 3. Identify `owner_agent` from the bundle/agent phase ownership records.
 4. Use `activate-agent` to delegate to the matching Claude subagent.

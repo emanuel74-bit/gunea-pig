@@ -1,5 +1,5 @@
 import { finish, getArg, issue, resolveConventionsRoot, type Issue, type JsonMap } from "./lib/common.js";
-import { appendMissionEvent, missionIdFromArgs, nowIso, readMissionState, writeMissionState } from "./mission-controller-common.js";
+import { appendMissionEvent, hasBlockingMissionStateIssue, missionIdFromArgs, nowIso, readMissionState, validateMissionStateShape, writeMissionState } from "./mission-controller-common.js";
 
 const SCRIPT_ID = "advance-mission";
 const root = resolveConventionsRoot();
@@ -14,8 +14,8 @@ if (!missionId) {
 }
 
 const state = readMissionState(root, missionId);
-if (!state) {
-  issues.push(issue("error", "MISSION_STATE_MISSING", `Mission state is missing for mission ${missionId}; run initialize_mission first`, `.ai/missions/${missionId}/mission-state.yaml`));
+issues.push(...validateMissionStateShape(state, missionId));
+if (!state || hasBlockingMissionStateIssue(issues)) {
   finish(SCRIPT_ID, issues, [], { advanced: false, mission_id: missionId });
 }
 
