@@ -4,7 +4,7 @@ file:
   path: architecture/conventions.architecture-quality-gates.yaml
   role: architecture_quality_gate_contract
   executability: policy_contract
-purpose: Define observe-mode architecture quality gates that consume source truth and generated adapter topology before using optional adapter evidence in later enforcement phases.
+purpose: Define adapter-neutral architecture quality gates that consume source truth and generated adapter topology, with controlled enforcement only for source-truth-backed blocking cases.
 ownership:
   owns:
   - architecture_quality_gate_dimensions
@@ -38,9 +38,13 @@ outputs:
   - architecture_quality_report
 sections:
   rollout:
-    default_mode: observe
-    enforcement_default: false
-    blocking_allowed_in_this_phase: false
+    default_mode: controlled_enforce
+    enforcement_default: controlled_enforce
+    blocking_allowed_in_this_phase: selected_source_truth_backed_cases_only
+    selected_blocking_cases:
+    - existing_safe_structure_blocking_decision
+    - malformed_or_missing_required_source_truth
+    observe_mode_override: "--enforcement-mode observe"
     later_enforcement_requires:
     - calibrated_score_thresholds
     - adapter_contract_certification
@@ -89,8 +93,8 @@ sections:
     observe_signal: adapter_reported_logger_or_instrumentation_presence
   output_contract:
     artifact: architecture_quality_analysis
-    rollout_mode: observe
-    blocking_decision: false
+    rollout_mode: controlled
+    blocking_decision: derived_from_selected_source_truth_backed_enforcement
     required_summary_fields:
     - analyzed_file_count
     - warning_count
@@ -101,7 +105,9 @@ validation:
   - source_artifact_manifest_required
   - generated_adapter_topology_required
   - language_and_framework_adapter_outputs_optional_but_reported
-  - warnings_do_not_block_in_observe_mode
+  - ordinary_quality_warnings_do_not_block
+  - explicit_observe_mode_preserves_warning_only_behavior
+  - controlled_enforcement_blocks_existing_safe_structure_blocking_decision
   - output_includes_universal_validation_result
   - core_contract_contains_no_language_or_framework_specific_required_input
   - architecture_quality_consumes_generated_adapter_topology_not_hardcoded_adapter_paths

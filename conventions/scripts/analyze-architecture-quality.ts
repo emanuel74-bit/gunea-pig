@@ -3,6 +3,7 @@ import path from "node:path";
 import {
   buildUniversalValidationResult,
   finish,
+  getArg,
   issue,
   readYamlFile,
   resolveConventionsRoot,
@@ -15,6 +16,13 @@ const SCRIPT_ID = "analyze-architecture-quality";
 const ROUTE_ID = "analyze_architecture_quality";
 const root = resolveConventionsRoot();
 const issues: Issue[] = [];
+const enforcementModeArg = getArg("enforcement-mode") ?? "controlled_enforce";
+const validEnforcementModes = new Set(["observe", "controlled_enforce"]);
+if (!validEnforcementModes.has(enforcementModeArg)) {
+  issues.push(issue("error", "ARCHITECTURE_QUALITY_ENFORCEMENT_MODE_INVALID", "Architecture quality enforcement mode must be observe or controlled_enforce.", undefined, { enforcement_mode: enforcementModeArg }));
+}
+const enforcementMode = validEnforcementModes.has(enforcementModeArg) ? enforcementModeArg : "controlled_enforce";
+const controlledEnforce = enforcementMode === "controlled_enforce";
 
 const manifestPath = path.join(root, ".ai", "source-artifacts", "source-artifact-manifest.yaml");
 const policyPath = path.join(root, ".ai", "policy", "mission-mode-policy.yaml");
@@ -113,6 +121,10 @@ function fileBase(filePath: string): string {
 
 function warnWhen(condition: boolean, code: string, message: string, file?: string, detail?: JsonMap): void {
   if (condition) issues.push(issue("warning", code, message, file, detail));
+}
+
+function enforceWhen(condition: boolean, code: string, message: string, file?: string, detail?: JsonMap): void {
+  if (condition) issues.push(issue(controlledEnforce ? "error" : "warning", code, message, file, { ...(detail ?? {}), enforcement_mode: enforcementMode }));
 }
 
 function asAdapterTopologyEntries(value: unknown): AdapterTopologyEntry[] {
@@ -245,11 +257,11 @@ warnWhen(envFiles.length > 0, "ARCH_DIRECT_CONFIG_ACCESS_SIGNAL", "Adapter evide
 warnWhen(adapterFiles.length > 0 && loggerEvidenceFiles.length === 0, "ARCH_OBSERVABILITY_EVIDENCE_MISSING", "No logger/telemetry evidence was detected in available adapter outputs.", undefined, { analyzed_file_count: adapterFiles.length });
 warnWhen(frameworkFiles.length > 0 && componentFileCount === 0, "ARCH_FRAMEWORK_COMPONENT_EVIDENCE_MISSING", "Framework adapter files were detected without framework component evidence.", undefined, { framework_file_count: frameworkFiles.length });
 warnWhen(componentFileCount > 0 && injectionEvidenceCount === 0, "ARCH_FRAMEWORK_DEPENDENCY_EVIDENCE_MISSING", "Framework component evidence exists without dependency injection or equivalent wiring evidence.", undefined, { framework_component_file_count: componentFileCount });
-warnWhen(safeStructure?.artifact === "safe_structure_change_analysis" && safeStructure.blocking_decision === true, "ARCH_SAFE_STRUCTURE_BLOCKING_SIGNAL", "Safe-structure analysis reports a blocking structural decision.", ".ai/source-artifacts/safe-structure-change-analysis.yaml");
+enforceWhen(safeStructure?.artifact === "safe_structure_change_analysis" && safeStructure.blocking_decision === true, "ARCH_SAFE_STRUCTURE_BLOCKING_SIGNAL", "Safe-structure analysis reports a blocking structural decision and architecture quality must not claim safe structure quality until it is resolved.", ".ai/source-artifacts/safe-structure-change-analysis.yaml");
 
 const warningCodes = issues.filter(entry => entry.severity === "warning").map(entry => entry.code);
 const errorCodes = issues.filter(entry => entry.severity === "error" || entry.severity === "critical").map(entry => entry.code);
-const blockingDecision = false;
+const blockingDecision = controlledEnforce && errorCodes.length > 0;
 
 const aggregateNumber = (key: string): number => adapterInputs.reduce((total, adapter) => total + numberValue(adapter.aggregate[key]), 0);
 const qualityDimensions = [
@@ -276,8 +288,8 @@ const evidenceInputs = {
 const analysis = {
   artifact: "architecture_quality_analysis",
   generated_by: SCRIPT_ID,
-  rollout_mode: "observe",
-  enforcement_mode: "observe",
+  rollout_mode: "controlled",
+  enforcement_mode: enforcementMode,
   blocking_decision: blockingDecision,
   core_contract: {
     adapter_neutral: true,
@@ -317,8 +329,8 @@ const report = {
   generated_by: SCRIPT_ID,
   status: errorCodes.length ? "fail" : warningCodes.length ? "pass_with_warnings" : "pass",
   summary: {
-    rollout_mode: "observe",
-    enforcement_mode: "observe",
+    rollout_mode: "controlled",
+    enforcement_mode: enforcementMode,
     blocking_decision: blockingDecision,
     analyzed_file_count: manifestFiles.length,
     adapter_reported_file_count: adapterFiles.length,
@@ -333,8 +345,8 @@ writeYamlFile(path.join(root, analysisOut), analysis);
 writeYamlFile(path.join(root, reportOut), report);
 
 finish(SCRIPT_ID, issues, [analysisOut, reportOut], {
-  rollout_mode: "observe",
-  enforcement_mode: "observe",
+  rollout_mode: "controlled",
+  enforcement_mode: enforcementMode,
   warning_count: warningCodes.length,
   error_count: errorCodes.length,
   blocking_decision: blockingDecision,
@@ -349,6 +361,6 @@ finish(SCRIPT_ID, issues, [analysisOut, reportOut], {
       ...frameworkAdapters.map(adapter => ({ evidence_type: "framework_adapter_analysis", adapter_id: adapter.adapter_id, path: adapter.path })),
       { evidence_type: "architecture_quality_analysis", path: analysisOut, producer_route: ROUTE_ID },
     ],
-    summary: { rollout_mode: "observe", warning_count: warningCodes.length, error_count: errorCodes.length, blocking_decision: blockingDecision, quality_dimension_count: qualityDimensions.length, adapter_neutral_core: true },
+    summary: { rollout_mode: "controlled", enforcement_mode: enforcementMode, warning_count: warningCodes.length, error_count: errorCodes.length, blocking_decision: blockingDecision, quality_dimension_count: qualityDimensions.length, adapter_neutral_core: true },
   }),
 });
