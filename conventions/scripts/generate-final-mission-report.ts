@@ -51,17 +51,38 @@ const revisionLoopBlocking = revisionLoopEvidence.filter((entry: any) => entry?.
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
-function claim(claim_id: string, claim_type: string, evidenceRefs: string[], claim_status = "supported"): any {
-  return { claim_id, claim_type, claim_status, evidence_refs: evidenceRefs };
+function claim(claim_id: string, claim_type: string, evidenceRefs: string[], claim_status = "supported", notApplicableReason?: string): any {
+  return {
+    claim_schema_version: "1.0",
+    claim_id,
+    claim_type,
+    claim_status,
+    support_mode: claim_status === "supported" ? "manifest_backed" : "not_applicable",
+    evidence_refs: evidenceRefs,
+    ...(notApplicableReason ? { not_applicable_reason: notApplicableReason } : {}),
+  };
+}
+function optionalClaim(claim_id: string, claim_type: string, evidenceRefs: string[], notApplicableReason: string): any {
+  return evidenceRefs.length
+    ? claim(claim_id, claim_type, evidenceRefs)
+    : claim(claim_id, claim_type, [], "not_applicable", notApplicableReason);
 }
 const allEvidenceRefs = paths(entries);
 const reportClaims = [
-  claim("evidence_manifest_validated", "manifest_integrity", allEvidenceRefs, issues.length ? "blocked" : "supported"),
-  claim("validation_summary_backed", "validation", paths(entries.filter((entry: any) => entry.source_type === "validation"))),
-  claim("score_decision_summary_backed", "scoring", paths(scoreDecisionEvidence), scoreDecisionEvidence.length ? "supported" : "not_applicable"),
-  claim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), revisionLoopEvidence.length ? "supported" : "not_applicable"),
-  claim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type))))),
-].filter(entry => entry.claim_status === "not_applicable" || entry.evidence_refs.length > 0);
+  claim("evidence_manifest_validated", "manifest_integrity", allEvidenceRefs),
+  optionalClaim("validation_summary_backed", "validation", paths(entries.filter((entry: any) => entry.source_type === "validation")), "No validation evidence entries were present in the evidence manifest."),
+  optionalClaim("score_decision_summary_backed", "scoring", paths(scoreDecisionEvidence), "No score decision artifact was present in the evidence manifest."),
+  optionalClaim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), "No revision loop analysis artifact was present in the evidence manifest."),
+  optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
+];
+const unsupportedReportClaims = reportClaims.filter((entry: any) => {
+  if (entry.claim_status === "supported") return !Array.isArray(entry.evidence_refs) || entry.evidence_refs.length === 0;
+  if (entry.claim_status === "not_applicable") return typeof entry.not_applicable_reason !== "string" || !entry.not_applicable_reason.trim();
+  return true;
+});
+for (const unsupported of unsupportedReportClaims) {
+  issues.push(issue("error", "REPORT_CLAIM_UNSUPPORTED", `Final report claim is unsupported or missing evidence: ${String(unsupported.claim_id ?? "unknown_claim")}`, ".ai/reports/final-mission-report.yaml"));
+}
 const finalReport = {
   artifact: "final_mission_report",
   generated_by: SCRIPT_ID,
@@ -70,6 +91,13 @@ const finalReport = {
   evidence_manifest: ".ai/reports/evidence-manifest.yaml",
   evidence_index: ".ai/reports/evidence-index.yaml",
   evidence_refs: allEvidenceRefs,
+  report_claim_schema: {
+    schema_version: "1.0",
+    unsupported_claim_policy: "block_report_validation",
+    supported_claim_count: reportClaims.filter((entry: any) => entry.claim_status === "supported").length,
+    not_applicable_claim_count: reportClaims.filter((entry: any) => entry.claim_status === "not_applicable").length,
+    unsupported_claim_count: unsupportedReportClaims.length,
+  },
   report_claims: reportClaims,
   evidence_counts_by_type: counts,
   evidence_manifest_summary: {

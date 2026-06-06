@@ -86,12 +86,38 @@ for (const name of reportFiles) {
     if (report.evidence_manifest !== ".ai/reports/evidence-manifest.yaml") {
       issues.push(issue("error", "FINAL_REPORT_MANIFEST_REF_MISSING", "Final mission report must reference evidence-manifest.yaml.", relative));
     }
+    if (!report.report_claim_schema || report.report_claim_schema.schema_version !== "1.0") {
+      issues.push(issue("error", "FINAL_REPORT_CLAIM_SCHEMA_MISSING", "Final mission report must declare report_claim_schema schema_version 1.0.", relative));
+    }
     if (!Array.isArray(report.report_claims) || report.report_claims.length === 0) {
       issues.push(issue("error", "FINAL_REPORT_CLAIMS_MISSING", "Final mission report must include manifest-backed report_claims.", relative));
     } else {
+      const allowedClaimStatuses = new Set(["supported", "not_applicable"]);
       for (const claim of report.report_claims) {
         const claimId = String(claim?.claim_id ?? "unknown_claim");
-        if (String(claim?.claim_status ?? "") === "not_applicable") continue;
+        const claimStatus = String(claim?.claim_status ?? "");
+        if (claim?.claim_schema_version !== "1.0") {
+          issues.push(issue("error", "REPORT_CLAIM_SCHEMA_INVALID", `Report claim must declare claim_schema_version 1.0: ${claimId}`, relative));
+        }
+        if (!/^[a-z][a-z0-9_]*$/.test(claimId)) {
+          issues.push(issue("error", "REPORT_CLAIM_ID_INVALID", `Report claim ID must be lowercase snake case: ${claimId}`, relative));
+        }
+        if (!allowedClaimStatuses.has(claimStatus)) {
+          issues.push(issue("error", "REPORT_CLAIM_UNSUPPORTED", `Final report claim has unsupported claim_status: ${claimId}`, relative));
+          continue;
+        }
+        if (claimStatus === "not_applicable") {
+          if (typeof claim?.not_applicable_reason !== "string" || !claim.not_applicable_reason.trim()) {
+            issues.push(issue("error", "REPORT_CLAIM_NOT_APPLICABLE_REASON_MISSING", `Not-applicable report claim must include an explicit reason: ${claimId}`, relative));
+          }
+          if (Array.isArray(claim?.evidence_refs) && claim.evidence_refs.length > 0) {
+            issues.push(issue("error", "REPORT_CLAIM_NOT_APPLICABLE_HAS_EVIDENCE", `Not-applicable report claim must not cite evidence refs: ${claimId}`, relative));
+          }
+          continue;
+        }
+        if (claim?.support_mode !== "manifest_backed") {
+          issues.push(issue("error", "REPORT_CLAIM_SUPPORT_MODE_INVALID", `Supported report claim must use manifest_backed support_mode: ${claimId}`, relative));
+        }
         if (!Array.isArray(claim?.evidence_refs) || claim.evidence_refs.length === 0) {
           issues.push(issue("error", "REPORT_CLAIM_EVIDENCE_REFS_MISSING", `Report claim must reference at least one evidence manifest entry: ${claimId}`, relative));
           continue;

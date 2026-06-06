@@ -1,0 +1,89 @@
+version: '1.0'
+file:
+  name: conventions.report-claim-schema.yaml
+  path: reports/conventions.report-claim-schema.yaml
+  role: report_claim_schema_contract
+  executability: contract
+purpose: Define evidence-backed final report claim semantics so final mission reports cannot contain unsupported narrative claims.
+ownership:
+  owns:
+  - final_report_claim_schema
+  - supported_claim_status_policy
+  - unsupported_claim_blocking_policy
+  - claim_to_manifest_reference_requirements
+  does_not_own:
+  - evidence_manifest_collection
+  - route_execution_policy
+  - mission_gate_decision_policy
+activation:
+  mode: when_final_report_generated_or_validated
+  activates_when:
+  - generate_final_mission_report_runs
+  - validate_report_evidence_runs
+inputs:
+  required:
+  - evidence_manifest_v2
+  - final_mission_report
+outputs:
+  produces:
+  - report_claim_schema_v1_validation
+sections:
+  report_claim_schema_v1:
+    schema_version: '1.0'
+    canonical_field: report_claims
+    required_fields:
+    - claim_id
+    - claim_type
+    - claim_status
+    - evidence_refs
+    - claim_schema_version
+    - support_mode
+    allowed_claim_statuses:
+    - supported
+    - not_applicable
+    blocking_statuses:
+    - unsupported
+    - unverified
+    - missing_evidence
+    claim_id_pattern: lowercase_snake_case
+    evidence_reference_rule: supported_claims_must_reference_manifest_entries
+  supported_claim_contract:
+    required:
+    - claim_status_is_supported
+    - evidence_refs_non_empty
+    - every_evidence_ref_exists
+    - every_evidence_ref_is_listed_in_evidence_manifest_v2
+    - support_mode_is_manifest_backed
+  not_applicable_claim_contract:
+    required:
+    - claim_status_is_not_applicable
+    - explicit_not_applicable_reason
+    - evidence_refs_empty_or_omitted
+  unsupported_claim_policy:
+    rule: Final mission reports must not contain unsupported, unverified, or missing-evidence claims.
+    result: block_report_evidence_validation
+    validation_codes:
+    - REPORT_CLAIM_UNSUPPORTED
+    - REPORT_CLAIM_SCHEMA_INVALID
+    - REPORT_CLAIM_EVIDENCE_REFS_MISSING
+  validation_rules:
+  - id: REPORT-CLAIM-SCHEMA-VERSION
+    condition: claim_schema_version_missing_or_not_1_0
+    result: invalid
+    severity: blocking
+  - id: REPORT-CLAIM-STATUS-ALLOWED
+    condition: claim_status_not_supported_or_not_applicable
+    result: invalid
+    severity: blocking
+  - id: REPORT-CLAIM-SUPPORTED-EVIDENCE
+    condition: supported_claim_missing_manifest_backed_evidence_refs
+    result: invalid
+    severity: blocking
+  - id: REPORT-CLAIM-NOT-APPLICABLE-REASON
+    condition: not_applicable_claim_missing_reason
+    result: invalid
+    severity: blocking
+rollout:
+  mode: enforce_for_final_report_validation
+  compatibility:
+    legacy_report_claims_without_schema: invalid_for_final_report
