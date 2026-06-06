@@ -42,7 +42,8 @@
     "validate:validation-result": "tsx validate-validation-result.ts",
     "collect:source-artifacts": "tsx collect-source-artifacts.ts",
     "analyze:typescript-source": "tsx analyze-typescript-source.ts",
-    "analyze:nestjs-source": "tsx analyze-nestjs-source.ts"
+    "analyze:nestjs-source": "tsx analyze-nestjs-source.ts",
+    "resolve:mission-mode-policy": "tsx resolve-mission-mode-policy.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

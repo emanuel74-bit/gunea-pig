@@ -1,0 +1,209 @@
+version: '1.0'
+file:
+  name: conventions.mission-mode-policy.yaml
+  path: policy/conventions.mission-mode-policy.yaml
+  role: mission_mode_policy_contract
+  executability: policy_contract
+purpose: Define mission-mode policy resolution in observe mode so missions can receive mode-specific validation, scoring, evidence, and threshold guidance without blocking decisions yet.
+ownership:
+  owns:
+  - mission_mode_enum
+  - mission_mode_policy_records
+  - mission_profile_to_mode_mapping
+  - observe_mode_threshold_guidance
+  - mission_mode_resolution_contract
+  does_not_own:
+  - mission_profile_selection
+  - score_calculation
+  - deterministic_score_decisions
+  - gate_enforcement
+  - transition_legality
+activation:
+  mode: conditional
+  activates_when:
+  - mission_mode_policy_required
+  - mission_profile_selected
+  - route_resolve_mission_mode_policy_runs
+  skips_when: []
+inputs:
+  required:
+  - mission_profile
+  - mission_context
+  optional:
+  - mission_state
+  - source_artifact_manifest
+  - language_adapter_analysis
+  - framework_adapter_analysis
+outputs:
+  produces:
+  - resolved_mission_mode_policy
+  - mission_mode_policy_report
+  - observe_mode_threshold_guidance
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-profile-taxonomy.yaml
+  - missions/conventions.mission-profiles.yaml
+  optional_files:
+  - source/conventions.source-artifact-model.yaml
+  - adapters/conventions.language-adapter-contract.yaml
+  - adapters/conventions.framework-adapter-contract.yaml
+sections:
+  rollout:
+    mode: observe
+    enforcement: disabled
+    blocking_decisions: forbidden_until_scoring_decision_layer
+    rule: Mission-mode policy may classify and recommend thresholds; scripts must not block solely on mission-mode policy during observe rollout.
+  mission_mode_enum:
+    allowed:
+    - refactor
+    - greenfield
+    - bugfix
+    - architecture_change
+    - cleanup
+    - migration
+    - validation_only
+    - dry_run
+  mission_profile_to_mode_mapping:
+    small_feature: greenfield
+    medium_feature: greenfield
+    bugfix: bugfix
+    large_refactor: refactor
+    cleanup_only: cleanup
+    api_contract_change: architecture_change
+    integration_change: architecture_change
+    persistence_change: migration
+    test_only: validation_only
+    convention_system_edit: architecture_change
+  mission_mode_policy_records:
+    refactor:
+      intent: Preserve externally observable behavior while improving internal structure.
+      observe_thresholds:
+        behavior_preservation_min: 0.95
+        decomposition_pressure_min: 0.70
+        deletion_confidence_min: 0.85
+      required_evidence:
+      - behavior_contract
+      - changed_file_manifest
+      - source_artifact_manifest
+      - validation_summary
+      warning_signals:
+      - broad_change_without_characterization_evidence
+      - behavior_preservation_score_missing
+    greenfield:
+      intent: Add new behavior with coherent contracts, tests, and source evidence.
+      observe_thresholds:
+        contract_completeness_min: 0.80
+        test_plan_confidence_min: 0.75
+        architecture_fit_min: 0.70
+      required_evidence:
+      - behavior_contract
+      - architecture_blueprint
+      - test_plan
+      - source_artifact_manifest
+      warning_signals:
+      - missing_test_plan
+      - missing_contract_evidence
+    bugfix:
+      intent: Correct incorrect behavior with regression evidence.
+      observe_thresholds:
+        reproduction_confidence_min: 0.85
+        regression_coverage_min: 0.80
+        blast_radius_confidence_min: 0.75
+      required_evidence:
+      - failure_classification
+      - behavior_contract
+      - regression_test_plan
+      - validation_summary
+      warning_signals:
+      - missing_reproduction_evidence
+      - missing_regression_expectation
+    architecture_change:
+      intent: Change system structure, contracts, boundaries, or public architecture with impact evidence.
+      observe_thresholds:
+        impact_analysis_min: 0.85
+        compatibility_confidence_min: 0.80
+        boundary_integrity_min: 0.80
+      required_evidence:
+      - change_impact_analysis
+      - architecture_blueprint
+      - boundary_contract_classification
+      - validation_summary
+      warning_signals:
+      - missing_consumer_impact
+      - unclear_boundary_change
+    cleanup:
+      intent: Simplify, delete, rename, or consolidate without behavior change.
+      observe_thresholds:
+        no_behavior_change_confidence_min: 0.90
+        deletion_safety_min: 0.85
+        reference_absence_min: 0.95
+      required_evidence:
+      - changed_file_manifest
+      - behavior_preservation_requirements
+      - source_artifact_manifest
+      warning_signals:
+      - deletion_without_reference_evidence
+      - production_behavior_change_detected
+    migration:
+      intent: Change persistence, data shape, runtime dependency, or migration path with rollback safety.
+      observe_thresholds:
+        data_safety_min: 0.90
+        rollback_plan_min: 0.80
+        compatibility_confidence_min: 0.80
+      required_evidence:
+      - change_impact_analysis
+      - risk_classification
+      - migration_plan
+      - validation_summary
+      warning_signals:
+      - missing_rollback_plan
+      - data_loss_risk_unresolved
+    validation_only:
+      intent: Validate, test, or inspect without production behavior changes.
+      observe_thresholds:
+        production_change_absence_min: 0.98
+        validation_relevance_min: 0.75
+      required_evidence:
+      - changed_file_manifest
+      - validation_summary
+      warning_signals:
+      - production_file_changed
+      - validation_scope_unclear
+    dry_run:
+      intent: Exercise workflow behavior without relying on production changes.
+      observe_thresholds:
+        workflow_coverage_min: 0.80
+        artifact_completeness_min: 0.75
+      required_evidence:
+      - mission_journal
+      - route_execution_trace
+      - validation_summary
+      warning_signals:
+      - missing_route_trace
+      - missing_expected_failure_fixture
+  resolved_policy_schema:
+    required_fields:
+    - artifact
+    - generated_by
+    - status
+    - rollout_mode
+    - mission_mode
+    - source_profile
+    - policy
+    - warnings
+    optional_fields:
+    - mission_id
+    - selected_profile_source
+    - adapter_evidence
+validation:
+  required_checks:
+  - id: MISSION-MODE-POLICY-CHECK-001
+    check: mission_mode_policy_resolution_is_route_backed
+  - id: MISSION-MODE-POLICY-CHECK-002
+    check: observe_mode_does_not_block
+  fail_conditions:
+  - id: MISSION-MODE-POLICY-001
+    condition: unknown_mission_profile_without_explicit_mode
+    message: Mission-mode policy cannot resolve an unknown mission profile without explicit mission mode.
+    severity: error

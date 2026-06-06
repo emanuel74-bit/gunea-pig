@@ -1881,6 +1881,50 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_policy_glob
+    path: .ai/policy/**
+    artifact_type: glob
+    schema: declared_by_policy_runtime_artifact_registry_extension
+    producer: executor_route_allowed_write_path
+    producer_routes:
+    - resolve_mission_mode_policy
+    consumers:
+    - policy/conventions.mission-mode-policy.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_policy_mission_mode_policy_yaml
+    path: .ai/policy/mission-mode-policy.yaml
+    artifact_type: runtime_artifact
+    schema: resolved_mission_mode_policy_schema
+    producer: resolve_mission_mode_policy_route
+    producer_routes:
+    - resolve_mission_mode_policy
+    consumers:
+    - policy/conventions.mission-mode-policy.yaml
+    - missions/conventions.mission-state.yaml
+    - reports/conventions.report-evidence.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_mission_mode_policy_report_yaml
+    path: .ai/reports/mission-mode-policy-report.yaml
+    artifact_type: runtime_artifact
+    schema: mission_mode_policy_report_schema
+    producer: resolve_mission_mode_policy_route
+    producer_routes:
+    - resolve_mission_mode_policy
+    consumers:
+    - policy/conventions.mission-mode-policy.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated
