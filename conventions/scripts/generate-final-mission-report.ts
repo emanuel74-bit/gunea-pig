@@ -28,7 +28,8 @@ for (const entry of entries) {
   counts[type] = (counts[type] ?? 0) + 1;
 }
 
-const blockingEvidence = entries.filter((entry: any) => String(entry?.status ?? "").toLowerCase() === "fail");
+const blockingStatuses = new Set(["fail", "failed", "blocked"]);
+const blockingEvidence = entries.filter((entry: any) => entry?.blocking === true || blockingStatuses.has(String(entry?.status ?? "").toLowerCase()));
 const finalReport = {
   artifact: "final_mission_report",
   generated_by: SCRIPT_ID,
@@ -40,13 +41,14 @@ const finalReport = {
   validation_summary: {
     blocking_evidence_count: blockingEvidence.length,
     failed_evidence_refs: blockingEvidence.map((entry: any) => entry.path),
+    blocking_validation_refs: blockingEvidence.filter((entry: any) => entry.source_type === "validation").map((entry: any) => entry.path),
   },
   transition_evidence: {
     gates: entries.filter((entry: any) => entry.source_type === "gate").map((entry: any) => entry.path),
     handoffs: entries.filter((entry: any) => entry.source_type === "handoff").map((entry: any) => entry.path),
     revisions: entries.filter((entry: any) => entry.source_type === "revision").map((entry: any) => entry.path),
   },
-  unresolved_issues: blockingEvidence.map((entry: any) => ({ source: entry.path, status: entry.status })),
+  unresolved_issues: blockingEvidence.map((entry: any) => ({ source: entry.path, status: entry.status, blocking: entry.blocking === true })),
 };
 
 writeYamlFile(path.join(root, ".ai", "reports", "final-mission-report.yaml"), finalReport);

@@ -311,3 +311,50 @@ export function extractAiArtifactPathsFromText(text: string): string[] {
   const matches = text.match(/\.ai\/[A-Za-z0-9_./{}*?\-]+[A-Za-z0-9_./{}*?\-]*/g) ?? [];
   return [...new Set(matches.map(normalizeRelPath))].sort();
 }
+
+export interface ValidationDecision {
+  validation_id?: string;
+  status: string;
+  severity?: Severity | string;
+  blocking: boolean;
+  source_shape: "universal" | "normalized_summary" | "legacy_script_result" | "unknown";
+}
+
+export function extractValidationDecision(doc: JsonMap): ValidationDecision {
+  const normalized = isJsonMap(doc?.summary?.normalized_result) ? doc.summary.normalized_result as JsonMap : undefined;
+  const source = normalized ?? doc;
+
+  if (normalized && typeof normalized.status === "string") {
+    return {
+      validation_id: typeof normalized.validation_id === "string" ? normalized.validation_id : undefined,
+      status: normalized.status,
+      severity: typeof normalized.severity === "string" ? normalized.severity : undefined,
+      blocking: normalized.blocking === true || ["failed", "blocked"].includes(String(normalized.status)),
+      source_shape: "normalized_summary",
+    };
+  }
+
+  if (typeof source.validation_id === "string" && typeof source.status === "string") {
+    return {
+      validation_id: source.validation_id,
+      status: source.status,
+      severity: typeof source.severity === "string" ? source.severity : undefined,
+      blocking: source.blocking === true || ["failed", "blocked"].includes(String(source.status)),
+      source_shape: "universal",
+    };
+  }
+
+  if (typeof source.script_id === "string" && typeof source.status === "string") {
+    const errors = Array.isArray(source.errors) ? source.errors : [];
+    const criticalOrError = errors.some((entry: any) => ["error", "critical"].includes(String(entry?.severity)));
+    return {
+      validation_id: source.script_id,
+      status: source.status,
+      severity: criticalOrError ? "error" : Array.isArray(source.warnings) && source.warnings.length ? "warning" : "info",
+      blocking: source.status === "fail" || criticalOrError,
+      source_shape: "legacy_script_result",
+    };
+  }
+
+  return { status: "unknown", blocking: false, source_shape: "unknown" };
+}

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { finish, getArg, issue, readYamlFile, resolveConventionsRoot, writeYamlFile, type Issue } from "./lib/common.js";
+import { extractValidationDecision, finish, getArg, issue, readYamlFile, resolveConventionsRoot, writeYamlFile, type Issue, type JsonMap } from "./lib/common.js";
 
 const SCRIPT_ID = "run-gate-check";
 const root = resolveConventionsRoot();
@@ -12,12 +12,21 @@ if (!gateId) {
 }
 
 let validationStatus = "not_provided";
+let validationDecision: JsonMap | null = null;
 if (validationResultPath) {
   try {
     const validation = readYamlFile(path.join(root, validationResultPath));
-    validationStatus = String(validation.status ?? validation.result?.status ?? "unknown");
-    if (validationStatus === "fail" || validationStatus === "blocked") {
-      issues.push(issue("error", "GATE_INPUT_VALIDATION_FAILED", "Gate cannot pass because a provided validation result failed.", validationResultPath));
+    const decision = extractValidationDecision(validation);
+    validationDecision = {
+      validation_id: decision.validation_id ?? null,
+      status: decision.status,
+      severity: decision.severity ?? null,
+      blocking: decision.blocking,
+      source_shape: decision.source_shape,
+    };
+    validationStatus = decision.status;
+    if (decision.blocking) {
+      issues.push(issue("error", "GATE_INPUT_VALIDATION_BLOCKING", "Gate cannot pass because a provided validation result is blocking.", validationResultPath, validationDecision));
     }
   } catch (error) {
     issues.push(issue("error", "GATE_VALIDATION_RESULT_UNREADABLE", "Gate validation input could not be read.", validationResultPath, { error: String(error) }));
@@ -33,9 +42,10 @@ const gateResult = {
   gate_id: gateId ?? null,
   status,
   validation_status: validationStatus,
+  validation_result_contract: validationDecision,
   decision: status === "pass" ? "allow_transition" : "block_transition",
   evidence_refs: validationResultPath ? [validationResultPath] : [],
   errors: issues.filter(i => i.severity === "error" || i.severity === "critical"),
 };
 writeYamlFile(path.join(root, outputRel), gateResult);
-finish(SCRIPT_ID, issues, [outputRel], { gate_id: gateId ?? null, status, decision: gateResult.decision });
+finish(SCRIPT_ID, issues, [outputRel], { gate_id: gateId ?? null, status, decision: gateResult.decision, validation_result_contract: validationDecision });

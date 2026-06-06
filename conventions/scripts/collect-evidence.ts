@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { finish, findFiles, readYamlFile, rel, resolveConventionsRoot, writeYamlFile, type Issue } from "./lib/common.js";
+import { extractValidationDecision, finish, findFiles, readYamlFile, rel, resolveConventionsRoot, writeYamlFile, type Issue, type JsonMap } from "./lib/common.js";
 
 const SCRIPT_ID = "collect-evidence";
 const root = resolveConventionsRoot();
@@ -13,6 +13,8 @@ type EvidenceEntry = {
   generated_by: string;
   status: string;
   artifact?: string;
+  blocking?: boolean;
+  validation_result?: JsonMap;
 };
 
 const sourceDirs: Record<string, string> = {
@@ -51,7 +53,8 @@ for (const file of files) {
   if (relativePath === ".ai/reports/evidence-index.yaml" || relativePath === ".ai/reports/evidence-collection-report.yaml") continue;
   const doc = safeReadYaml(file);
   const generatedBy = String(doc.generated_by ?? doc.script_id ?? doc.summary?.generated_by ?? "unknown");
-  const status = String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
+  const validationDecision = classify(relativePath) === "validation" ? extractValidationDecision(doc) : undefined;
+  const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = relativePath.replace(/^\.ai\//, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
   entries.push({
     evidence_id: evidenceId || path.basename(file),
@@ -60,6 +63,16 @@ for (const file of files) {
     generated_by: generatedBy,
     status,
     artifact: typeof doc.artifact === "string" ? doc.artifact : undefined,
+    ...(validationDecision ? {
+      blocking: validationDecision.blocking,
+      validation_result: {
+        validation_id: validationDecision.validation_id ?? null,
+        status: validationDecision.status,
+        severity: validationDecision.severity ?? null,
+        blocking: validationDecision.blocking,
+        source_shape: validationDecision.source_shape,
+      },
+    } : {}),
   });
 }
 
