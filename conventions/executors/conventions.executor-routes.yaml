@@ -652,8 +652,8 @@ sections:
         executor_type: compiler
       analyze_safe_structure_change:
         description: Analyze proposed decomposition, deletion, or consolidation changes
-          against the universal source artifact manifest in observe mode without
-          executing structural changes or enforcing architecture gates.
+          against the universal source artifact manifest in observe mode without executing
+          structural changes or enforcing architecture gates.
         script: scripts/analyze-safe-structure-change.ts
         required_inputs:
         - source_artifact_manifest
@@ -734,6 +734,40 @@ sections:
         - scoring
         - policy
         - missions
+        - validation
+        - reports
+        - gates
+        executor_type: compiler
+      analyze_architecture_quality:
+        description: Analyze architecture quality evidence from source artifacts,
+          TypeScript adapter, NestJS adapter, mission-mode policy, and safe-structure
+          outputs in observe mode without enforcing architecture quality gates.
+        script: scripts/analyze-architecture-quality.ts
+        required_inputs:
+        - source_artifact_manifest
+        - typescript_source_analysis
+        - nestjs_source_analysis
+        - mission_mode_policy
+        - architecture_quality_gate_contract
+        produced_outputs:
+        - architecture_quality_analysis
+        - architecture_quality_report
+        allowed_write_paths:
+        - .ai/source-artifacts/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts:
+        - source_artifact_manifest
+        lifecycle_hooks:
+        - before_phase_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: warn
+        consumers:
+        - architecture
+        - source
+        - adapters
+        - policy
         - validation
         - reports
         - gates

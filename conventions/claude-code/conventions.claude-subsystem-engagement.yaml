@@ -94,6 +94,7 @@ sections:
       - analyze_nestjs_source
       - resolve_mission_mode_policy
       - evaluate_score_decision
+      - analyze_architecture_quality
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -109,6 +110,8 @@ sections:
       - .ai/reports/mission-mode-policy-report.yaml
       - .ai/scoring/score-decision.yaml
       - .ai/reports/score-decision-report.yaml
+      - .ai/source-artifacts/architecture-quality-analysis.yaml
+      - .ai/reports/architecture-quality-report.yaml
     architecture_design:
       subsystems:
       - architecture
@@ -128,6 +131,7 @@ sections:
       - validate_semantic_completeness
       - collect_phase_report
       - analyze_safe_structure_change
+      - analyze_architecture_quality
       agents:
       - architecture_agent
       - role_agent
@@ -140,6 +144,8 @@ sections:
       - structure_plan
       - role_assignments
       - pattern_decisions
+      - .ai/source-artifacts/architecture-quality-analysis.yaml
+      - .ai/reports/architecture-quality-report.yaml
     implementation_and_refactoring:
       subsystems:
       - execution
@@ -228,6 +234,7 @@ sections:
       - validate_references
       - resolve_mission_mode_policy
       - evaluate_score_decision
+      - analyze_architecture_quality
       agents:
       - validation_agent
       - testing_agent
@@ -237,6 +244,8 @@ sections:
       - .ai/reports/final-mission-report.yaml
       - .ai/policy/mission-mode-policy.yaml
       - .ai/scoring/score-decision.yaml
+      - .ai/source-artifacts/architecture-quality-analysis.yaml
+      - .ai/reports/architecture-quality-report.yaml
     claude_native_runtime:
       subsystems:
       - claude-code

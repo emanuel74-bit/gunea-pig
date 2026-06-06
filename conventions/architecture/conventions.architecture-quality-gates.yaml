@@ -1,0 +1,107 @@
+version: '1.0'
+file:
+  name: conventions.architecture-quality-gates.yaml
+  path: architecture/conventions.architecture-quality-gates.yaml
+  role: architecture_quality_gate_contract
+  executability: policy_contract
+purpose: Define observe-mode architecture quality gates that consume source truth and adapter evidence before later enforcement phases.
+ownership:
+  owns:
+  - architecture_quality_gate_dimensions
+  - architecture_quality_evidence_requirements
+  - architecture_quality_observe_rollout
+  does_not_own:
+  - language_specific_parsing_rules
+  - framework_specific_parsing_rules
+  - mission_state_mutation
+  - final_gate_enforcement
+activation:
+  mode: on_demand
+  activates_when:
+  - architecture_quality_analysis_required
+  - source_artifact_evidence_available
+  - before_architecture_quality_enforcement_rollout
+  skips_when:
+  - no_source_artifact_manifest_available
+inputs:
+  required:
+  - source_artifact_manifest
+  optional:
+  - language_analysis_outputs
+  - framework_analysis_outputs
+  - mission_mode_policy
+  - safe_structure_change_analysis
+outputs:
+  produces:
+  - architecture_quality_analysis
+  - architecture_quality_report
+sections:
+  rollout:
+    default_mode: observe
+    enforcement_default: false
+    blocking_allowed_in_this_phase: false
+    later_enforcement_requires:
+    - calibrated_score_thresholds
+    - adapter_contract_certification
+    - mission_mode_threshold_mapping
+    - evidence_backed_report_validation
+  quality_dimensions:
+  - id: role_shape_integrity
+    evidence_sources:
+    - source_artifact_manifest
+    - language_analysis_outputs
+    observe_signal: adapter_reported_multi_role_or_low_symbol_clarity_files
+  - id: layer_boundary_integrity
+    evidence_sources:
+    - source_artifact_manifest
+    - dependency_edges
+    - framework_analysis_outputs
+    observe_signal: dependency_and_adapter_reported_boundary_risk
+  - id: duplication_and_normalization
+    evidence_sources:
+    - source_artifact_manifest
+    - language_analysis_outputs
+    observe_signal: repeated_file_shapes_or_parallel_component_names
+  - id: srp_and_file_shape
+    evidence_sources:
+    - source_artifact_manifest
+    - language_analysis_outputs
+    observe_signal: large_files_or_adapter_reported_many_symbols
+  - id: abstraction_economics
+    evidence_sources:
+    - language_analysis_outputs
+    observe_signal: adapter_reported_abstraction_density_and_low_value_abstraction_risk
+  - id: contract_integrity
+    evidence_sources:
+    - language_analysis_outputs
+    - source_artifact_manifest
+    observe_signal: adapter_reported_contract_and_configuration_boundary_signals
+  - id: unsafe_constructs_and_magic_values
+    evidence_sources:
+    - language_analysis_outputs
+    observe_signal: adapter_reported_unsafe_construct_or_magic_value_signals
+  - id: observability_coverage
+    evidence_sources:
+    - language_analysis_outputs
+    - framework_analysis_outputs
+    observe_signal: adapter_reported_logger_or_instrumentation_presence
+  output_contract:
+    artifact: architecture_quality_analysis
+    rollout_mode: observe
+    blocking_decision: false
+    required_summary_fields:
+    - analyzed_file_count
+    - warning_count
+    - quality_dimensions
+    - evidence_inputs
+validation:
+  required_checks:
+  - source_artifact_manifest_required
+  - language_and_framework_adapter_outputs_optional_but_reported
+  - warnings_do_not_block_in_observe_mode
+  - output_includes_universal_validation_result
+  - core_contract_contains_no_language_or_framework_specific_required_input
+  fail_conditions:
+  - missing_source_artifact_manifest
+  - malformed_source_artifact_manifest
+  - malformed_architecture_quality_analysis
