@@ -45,3 +45,7 @@ Use these Claude skills instead of improvising the workflow:
 ## Subsystem engagement rule
 
 Use `claude-code/conventions.claude-subsystem-engagement.yaml` as the compact workflow map. It tells Claude which subsystem slices, agents, routes, and artifacts are relevant to each workflow lane.
+## Compiled Context Bundles
+
+When a workflow lane is active, prefer `npm --prefix conventions/scripts run invoke:route -- --route compile_context_bundle --scope <scope>` before loading broad convention context. Read `.ai/context/compiled-context-bundle.yaml` and `.ai/context/context-load-trace.yaml` as compact supporting context. Compiled context never replaces executor routes, mission state, or validated phase bundles.
+

@@ -124,3 +124,10 @@ validation:
   - claude_execution_without_validated_plan
   - claude_direct_script_invocation_detected
   - claude_continued_after_blocking_route_failure
+
+compiled_context_bundle_preference:
+  rule: Claude Code should prefer route-produced compiled context bundles as compact supporting context before loading broad convention surfaces.
+  route: compile_context_bundle
+  artifact: .ai/context/compiled-context-bundle.yaml
+  authority_boundary: Compiled context bundles do not replace executor routes, mission state, or validated phase bundles.
+  enforcement_mode: observe

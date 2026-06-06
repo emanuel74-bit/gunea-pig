@@ -179,6 +179,7 @@ const requiredRouteMentions = [
   "validate_claude_execution_plan",
   "generate_phase_bundle",
   "validate_phase_bundle",
+  "compile_context_bundle",
   "validate_changed_files",
   "validate_phase_output",
   "validate_semantic_completeness",

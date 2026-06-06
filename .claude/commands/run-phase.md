@@ -1,5 +1,5 @@
 # /run-phase
 
-Use the `run-phase` skill to execute the current phase from the validated bundle.
+Use the `run-phase` skill to execute the current phase from the validated bundle, preferring a compiled `implementation_and_refactoring` context bundle as supporting compact context when available.
 
-Do not bypass executor routes or native subagents.
+Do not bypass executor routes, validated phase bundles, or native subagents. Compiled context bundles are supporting context only.
