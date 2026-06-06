@@ -1,0 +1,14 @@
+script_id: validate-phase-bundle
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/validation/validate-phase-bundle.result.yaml
+summary:
+  bundle_present: true
+  bundle: .ai/bundles/phases/mission/final_validation.bundle.yaml
+  required_route_count: 7
+  allowed_convention_ref_count: 14
+  required_output_count: 2
+  manifest_present: true

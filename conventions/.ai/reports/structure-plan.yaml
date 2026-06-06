@@ -1,0 +1,99 @@
+report_id: structure-plan
+phase_id: structure_rendering
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Structure plan for VDF pipeline monorepo with npm workspaces. 4 packages:
+  shared-types, vss-service, vbs-service, sgs-service. All 52 post-action
+  artifacts placed. 4 root support files (package.json, tsconfig.base.json,
+  .nvmrc, .eslintrc.js) added. Each service gets main.ts, package.json,
+  tsconfig.json, and a barrel index.ts (shared-types only). Feature modules
+  group domain + application artifacts. Infrastructure directory holds all
+  adapters and repositories. No pattern added (NoPattern confirmed).
+
+inputs_consumed:
+  - source: .ai/reports/08-final-role-assignment.yaml
+    type: final_role_assignment
+  - source: .ai/reports/post-action-artifact-candidates.yaml
+    type: post_action_artifact_candidates
+  - source: .ai/reports/pattern-decision-log.yaml
+    type: pattern_decision
+  - source: .ai/reports/local-alignment.yaml
+    type: local_alignment
+
+structure_decisions:
+
+  - decision_id: STR-001
+    topic: Monorepo root structure
+    decision: npm workspaces with packages/ subdirectory
+    rationale: Local alignment CC-001 selected npm workspaces; Node 18.8.0 native workspace support
+    evidence_ref: .ai/reports/local-alignment.yaml#CC-001
+
+  - decision_id: STR-002
+    topic: TypeScript configuration
+    decision: Root tsconfig.base.json extended by per-package tsconfig.json
+    rationale: Strict TypeScript (CC-002); shared compiler options with per-package path overrides
+    evidence_ref: .ai/reports/local-alignment.yaml#CC-002
+
+  - decision_id: STR-003
+    topic: Service directory layout
+    decision: "Feature-first within each service: feature/{module,service,consumer,policy}, infrastructure/{rabbitmq,vdf,adapters,repositories}"
+    rationale: Groups related artifacts by capability boundary; infrastructure directory isolates adapters from feature modules
+    evidence_ref: .ai/reports/architecture-blueprint.yaml
+
+  - decision_id: STR-004
+    topic: Shared schema placement
+    decision: ScanStateSchema in packages/shared-types/src/schemas/
+    rationale: ACT-SCHEMA-001 resolution; single source of truth for scan_states Mongoose schema
+    evidence_ref: .ai/reports/05-artifact-actions.yaml#ACT-SCHEMA-001
+
+  - decision_id: STR-005
+    topic: Port interfaces placement
+    decision: Port interfaces declared inline as TypeScript abstract classes or interfaces in each service's feature or infrastructure directory
+    rationale: Ports are private to each service; no port needs to be in shared-types since they are not cross-service contracts
+    evidence_ref: .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+
+  - decision_id: STR-006
+    topic: SGS health module
+    decision: Add SgsHealthModule as a support artifact (not in original candidate list) by analogy with VSS and VBS
+    rationale: NFR-005 requires /health endpoint for all three services; architecture blueprint NFR is universal
+    evidence_ref: .ai/reports/02-behavior-contract.yaml#NFR-005
+
+  - decision_id: STR-007
+    topic: RabbitMQ connection module naming
+    decision: rabbitmq.module.ts in each service's infrastructure/rabbitmq/ subdirectory
+    rationale: Consistent naming; each service's RabbitMQ module is independent (separate channels, queues)
+    evidence_ref: .ai/reports/local-alignment.yaml#CC-007
+
+  - decision_id: STR-008
+    topic: Entry point files
+    decision: main.ts in each service's src/ root; bootstraps NestFactory
+    rationale: NestJS convention; each service is an independent deployable
+    evidence_ref: .ai/reports/02-behavior-contract.yaml#NFR-001
+
+support_files_added:
+  - file: package.json (root)
+    purpose: npm workspaces configuration, workspace scripts
+  - file: .nvmrc (root)
+    purpose: Pins Node 18.8.0 per CC-012
+  - file: tsconfig.base.json (root)
+    purpose: Shared TypeScript strict config base
+  - file: .eslintrc.js (root)
+    purpose: ESLint + Prettier config per CC-003
+  - file: .prettierrc (root)
+    purpose: Prettier formatting config per CC-003
+  - file: jest.config.js (root)
+    purpose: Jest base config per CC-004
+  - file: main.ts (each service)
+    purpose: NestJS bootstrap entry point
+  - file: index.ts (shared-types only)
+    purpose: Public API barrel export for shared-types package
+  - file: SgsHealthModule (sgs-service/src/health/)
+    purpose: SGS /health endpoint per NFR-005 (STR-006)
+
+triggers_emitted: []
+
+produced_outputs:
+  - .ai/reports/structure-plan.yaml
+  - .ai/reports/final-file-tree.yaml

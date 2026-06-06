@@ -1,0 +1,10 @@
+script_id: validate-executor-routes
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/validation/validate-executor-routes.result.yaml
+summary:
+  route_count: 26
+  local_requirement_blocks: 39

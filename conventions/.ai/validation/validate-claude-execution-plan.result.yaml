@@ -1,0 +1,13 @@
+script_id: validate-claude-execution-plan
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/validation/validate-claude-execution-plan.result.yaml
+  - .ai/reports/claude-execution-plan-validation.yaml
+summary:
+  artifact: claude_execution_plan_validation_report
+  generated_by: validate-claude-execution-plan
+  status: pass
+  checked_plan: true

@@ -1,0 +1,262 @@
+report_id: "09-test-plan"
+phase_id: test_derivation
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Test plan for VDF pipeline derived from behavior contract, dependency validation,
+  and call-site impact analysis. 8 blocking dependency checks from DV-001 through
+  DV-008 each require at least one unit or integration test. Key test obligations:
+  (1) VDF adapter isolation, (2) consumer idempotency (VSS + SGS), (3) S3-before-RabbitMQ
+  ordering (VBS), (4) config startup validation (all services), (5) VDF error handling.
+  Jest with ts-jest; integration tests use real MongoDB and RabbitMQ (no mocks for
+  infrastructure — per local alignment CC-004 and risk classification risk signal RS-002).
+
+inputs_consumed:
+  - source: .ai/reports/final-file-tree.yaml
+    type: final_file_tree
+  - source: .ai/reports/dependency-validation.yaml
+    type: dependency_validation
+  - source: .ai/reports/02-behavior-contract.yaml
+    type: behavior_contract
+  - source: .ai/reports/call-site-impact.yaml
+    type: call_site_impact
+
+test_obligations:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # DV-001 — VDF adapter isolation (blocking)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - obligation_id: TO-001
+    source_ref: .ai/reports/dependency-validation.yaml#DV-001
+    description: VdfCliAdapter is the SOLE importer of child_process in VBS codebase
+    test_type: unit_test
+    artifact_under_test: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.ts
+    test_file: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.spec.ts
+    test_cases:
+      - name: "spawns VDF process with correct arguments"
+        setup: mock child_process.spawn to return successful exit
+        assertion: verify spawn called with correct VDF CLI path and arguments
+      - name: "returns normalized output on VDF exit code 0"
+        setup: mock spawn to emit stdout JSON and exit 0
+        assertion: returns raw output string without error
+      - name: "throws retryable error on VDF exit code != 0"
+        setup: mock spawn to exit with code 1 and stderr message
+        assertion: throws VdfRetryableError (or equivalent); no crash
+
+  - obligation_id: TO-002
+    source_ref: .ai/reports/dependency-validation.yaml#DV-001
+    description: No application or domain file imports child_process
+    test_type: architecture_test
+    test_file: packages/vbs-service/src/vdf-isolation.arch-spec.ts
+    test_cases:
+      - name: "only VdfCliAdapter imports child_process"
+        setup: use ts-morph or grep-based test to scan all .ts files
+        assertion: zero imports of child_process outside vdf-cli.adapter.ts
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # DV-004 — Consumer idempotency (blocking)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - obligation_id: TO-003
+    source_ref: .ai/reports/dependency-validation.yaml#DV-004
+    description: VSS StagingService skips processing for already-staged videos
+    test_type: unit_test
+    artifact_under_test: packages/vss-service/src/staging/staging.service.ts
+    test_file: packages/vss-service/src/staging/staging.service.spec.ts
+    test_cases:
+      - name: "skips staging when scan state is already 'staged'"
+        setup: mock ScanStateRepository to return state=staged
+        assertion: no S3 download, no filesystem write, no state transition called; returns already_staged result
+      - name: "skips staging when scan state is 'claimed' or beyond"
+        setup: mock ScanStateRepository to return state=claimed
+        assertion: same as above — no processing, returns already_staged result
+      - name: "proceeds with staging when scan state is 'awaiting_staging'"
+        setup: mock all dependencies to succeed; ScanStateRepository returns awaiting_staging
+        assertion: full workflow executes; state transitions to staged
+
+  - obligation_id: TO-004
+    source_ref: .ai/reports/dependency-validation.yaml#DV-004
+    description: SGS ScanResultIngestionService skips processing for already-ingested scans
+    test_type: unit_test
+    artifact_under_test: packages/sgs-service/src/grouping/scan-result-ingestion.service.ts
+    test_file: packages/sgs-service/src/grouping/scan-result-ingestion.service.spec.ts
+    test_cases:
+      - name: "skips ingestion when scan state is 'grouping_complete' or beyond"
+        setup: mock ScanStateRepository to return state=grouping_complete
+        assertion: no S3 load, no edge persist, no group write called; returns already_ingested
+      - name: "processes normally when scan state is 'scan_complete'"
+        setup: all dependencies mocked to succeed; state=scan_complete
+        assertion: full ingestion workflow executes
+
+  - obligation_id: TO-005
+    source_ref: .ai/reports/dependency-validation.yaml#DV-004
+    description: Duplicate RabbitMQ message delivery produces no duplicate side effects (integration)
+    test_type: integration_test
+    artifact_under_test: packages/vss-service/src/staging/staging.service.ts
+    test_file: packages/vss-service/test/staging-idempotency.integration.spec.ts
+    test_cases:
+      - name: "delivering new-video-ready-for-scan twice produces one staged state"
+        setup: real MongoDB; publish same message twice via amqplib
+        assertion: scan_states has exactly one document with state=staged; filesystem has one file
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # DV-005 — S3-before-RabbitMQ ordering (blocking)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - obligation_id: TO-006
+    source_ref: .ai/reports/dependency-validation.yaml#DV-005
+    description: VBS ResultPublicationService does not publish to RabbitMQ if S3 write fails
+    test_type: unit_test
+    artifact_under_test: packages/vbs-service/src/result-publication/result-publication.service.ts
+    test_file: packages/vbs-service/src/result-publication/result-publication.service.spec.ts
+    test_cases:
+      - name: "does NOT publish to RabbitMQ when S3 write throws"
+        setup: mock S3ScanResultWriterAdapter to throw; mock ScanCompletedPublisher
+        assertion: ScanCompletedPublisher.publish never called; error propagated
+      - name: "publishes to RabbitMQ only after S3 write succeeds"
+        setup: mock S3 write to succeed; mock RabbitMQ publisher
+        assertion: S3 write called BEFORE publisher; state transition called after
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # DV-007 — Config startup validation (blocking)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - obligation_id: TO-007
+    source_ref: .ai/reports/dependency-validation.yaml#DV-007
+    description: VssConfig fails startup with missing required env var
+    test_type: unit_test
+    artifact_under_test: packages/vss-service/src/config/vss.config.ts
+    test_file: packages/vss-service/src/config/vss.config.spec.ts
+    test_cases:
+      - name: "throws ConfigValidationError when RABBITMQ_URL is missing"
+        setup: process.env without RABBITMQ_URL
+        assertion: class-validator throws on validation
+      - name: "resolves to typed config object when all required env vars present"
+        setup: all required env vars set
+        assertion: returns validated VssConfig object with correct types
+
+  - obligation_id: TO-008
+    source_ref: .ai/reports/dependency-validation.yaml#DV-007
+    description: VbsConfig and SgsConfig fail startup with missing required env vars
+    test_type: unit_test
+    test_file_vbs: packages/vbs-service/src/config/vbs.config.spec.ts
+    test_file_sgs: packages/sgs-service/src/config/sgs.config.spec.ts
+    test_cases:
+      - name: "VbsConfig fails when VDF_SCAN_PATH missing"
+        assertion: class-validator throws on missing VDF_SCAN_PATH
+      - name: "SgsConfig fails when STORE_EDGE_SCORE_THRESHOLD missing"
+        assertion: class-validator throws on missing threshold value
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # DV-008 — VDF error handling (blocking)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - obligation_id: TO-009
+    source_ref: .ai/reports/dependency-validation.yaml#DV-008
+    description: VBS handles VDF exit code != 0 without crashing the service
+    test_type: unit_test
+    artifact_under_test: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.ts
+    test_file: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.spec.ts
+    test_cases:
+      - name: "classifies non-zero exit as retryable VdfError"
+        setup: mock spawn to exit with code 1
+        assertion: throws VdfExecutionError with is_retryable=true
+      - name: "classifies spawn ENOENT as permanent VdfError"
+        setup: mock spawn to emit ENOENT error event
+        assertion: throws VdfExecutionError with is_retryable=false
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # Additional behavior obligations from behavior contract
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - obligation_id: TO-010
+    source_ref: .ai/reports/02-behavior-contract.yaml#VSS-F-003
+    description: StagingIdempotencyPolicy returns correct boolean for each state
+    test_type: unit_test
+    artifact_under_test: packages/vss-service/src/staging/staging-idempotency.policy.ts
+    test_file: packages/vss-service/src/staging/staging-idempotency.policy.spec.ts
+    test_cases:
+      - name: "returns true (should_stage) for awaiting_staging state"
+      - name: "returns false (skip) for staged state"
+      - name: "returns false (skip) for all states beyond staged"
+
+  - obligation_id: TO-011
+    source_ref: .ai/reports/02-behavior-contract.yaml#VBS-F-002
+    description: ClaimOwnershipPolicy returns correct is_claimable result
+    test_type: unit_test
+    artifact_under_test: packages/vbs-service/src/batch-claim/claim-ownership.policy.ts
+    test_file: packages/vbs-service/src/batch-claim/claim-ownership.policy.spec.ts
+    test_cases:
+      - name: "returns true when no claim exists"
+      - name: "returns true when claim exists but expired"
+      - name: "returns false when active non-expired claim exists"
+
+  - obligation_id: TO-012
+    source_ref: .ai/reports/02-behavior-contract.yaml#SGS-F-004
+    description: GroupMergePolicy returns correct GroupAction for each similarity score combination
+    test_type: unit_test
+    artifact_under_test: packages/sgs-service/src/grouping/group-merge.policy.ts
+    test_file: packages/sgs-service/src/grouping/group-merge.policy.spec.ts
+    test_cases:
+      - name: "returns merge_existing when score >= autoMergeGroupScore"
+      - name: "returns create_new when score >= storeEdgeScore but < autoMergeGroupScore"
+      - name: "returns manual_review when score < requireManualReviewBelow"
+      - name: "returns no_group when score below storeEdgeScore"
+
+  - obligation_id: TO-013
+    source_ref: .ai/reports/02-behavior-contract.yaml#SGS-F-003
+    description: ScanResultSchemaValidator rejects unsupported schema versions
+    test_type: unit_test
+    artifact_under_test: packages/sgs-service/src/grouping/scan-result-schema.validator.ts
+    test_file: packages/sgs-service/src/grouping/scan-result-schema.validator.spec.ts
+    test_cases:
+      - name: "accepts supported schema version '1.0'"
+      - name: "rejects unsupported schema version '2.0' with validation error"
+      - name: "rejects missing schema_version field"
+
+  - obligation_id: TO-014
+    source_ref: .ai/reports/02-behavior-contract.yaml#VBS-F-003
+    description: VdfOutputNormalizerAdapter correctly parses VDF JSON output to NormalizedScanResult
+    test_type: unit_test
+    artifact_under_test: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.ts
+    test_file: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.spec.ts
+    test_cases:
+      - name: "maps VDF JSON output fields to NormalizedScanResult schema"
+        setup: provide sample VDF output fixture
+        assertion: NormalizedScanResult has scan_id, scanner_version, video_pairs with correct fields
+      - name: "throws NormalizationError for unrecognized VDF output format"
+        setup: provide malformed VDF output
+        assertion: throws with clear message about format mismatch
+
+  - obligation_id: TO-015
+    source_ref: .ai/reports/02-behavior-contract.yaml#NFR-005
+    description: Health endpoints return 200 with MongoDB and RabbitMQ status
+    test_type: integration_test
+    test_files:
+      - packages/vss-service/test/health.integration.spec.ts
+      - packages/vbs-service/test/health.integration.spec.ts
+      - packages/sgs-service/test/health.integration.spec.ts
+    test_cases:
+      - name: "GET /health returns 200 with status 'ok' when all checks pass"
+      - name: "GET /health returns degraded status when MongoDB is unreachable"
+
+testing_framework:
+  framework: jest
+  transformer: ts-jest
+  unit_test_pattern: "**/*.spec.ts"
+  integration_test_pattern: "test/**/*.integration.spec.ts"
+  config_ref: .ai/reports/local-alignment.yaml#CC-004
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.test_derivation.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/09-test-plan.yaml
+  - .ai/reports/regression-test-plan.yaml
+  - .ai/reports/characterization-test-plan.yaml

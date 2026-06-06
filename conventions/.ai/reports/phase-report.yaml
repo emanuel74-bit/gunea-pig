@@ -1,0 +1,6 @@
+artifact: phase_report
+generated_by: collect-phase-report
+status: collected
+evidence_sources:
+  - .ai/validation/**
+  - .ai/gates/**

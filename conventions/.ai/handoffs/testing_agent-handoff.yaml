@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: testing_agent-handoff
+status: prepared
+source_output: .ai/reports/final-file-tree.yaml
+target_agent: testing_agent
+evidence_refs:
+  - .ai/reports/final-file-tree.yaml
+source_summary: {}

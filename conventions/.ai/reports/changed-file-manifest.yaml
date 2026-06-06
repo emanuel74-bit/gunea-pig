@@ -1,0 +1,335 @@
+report_id: "changed-file-manifest"
+phase_id: implementation
+schema_version: "1.0"
+status: complete
+
+summary: >
+  All files created during the implementation phase across 4 packages and the
+  project root. 75 files total: 6 root scaffolding, 10 shared-types, 17 VSS,
+  26 VBS, 16 SGS.
+
+changed_files:
+
+  root:
+    - path: package.json
+      action: created
+      wave: 1
+    - path: .nvmrc
+      action: created
+      wave: 1
+    - path: tsconfig.base.json
+      action: created
+      wave: 1
+    - path: .eslintrc.js
+      action: created
+      wave: 1
+    - path: .prettierrc
+      action: created
+      wave: 1
+    - path: jest.config.js
+      action: created
+      wave: 1
+
+  shared_types:
+    - path: packages/shared-types/package.json
+      action: created
+      wave: 1
+    - path: packages/shared-types/tsconfig.json
+      action: created
+      wave: 1
+    - path: packages/shared-types/src/enums/scan-state.enum.ts
+      action: created
+      wave: 2
+      artifact_id: AC-SHARED-003
+    - path: packages/shared-types/src/interfaces/similarity-threshold-config.interface.ts
+      action: created
+      wave: 2
+      artifact_id: AC-SHARED-004
+    - path: packages/shared-types/src/interfaces/normalized-scan-result.interface.ts
+      action: created
+      wave: 2
+      artifact_id: AC-SHARED-005
+    - path: packages/shared-types/src/events/new-video-ready-for-scan.event.ts
+      action: created
+      wave: 2
+      artifact_id: AC-SHARED-001
+    - path: packages/shared-types/src/events/scan-completed.event.ts
+      action: created
+      wave: 2
+      artifact_id: AC-SHARED-002
+    - path: packages/shared-types/src/schemas/scan-state.schema.ts
+      action: created
+      wave: 2
+      artifact_id: AC-SHARED-SCHEMA-001
+    - path: packages/shared-types/src/index.ts
+      action: created
+      wave: 2
+
+  vss_service:
+    - path: packages/vss-service/package.json
+      action: created
+      wave: 1
+    - path: packages/vss-service/tsconfig.json
+      action: created
+      wave: 1
+    - path: packages/vss-service/src/config/vss.config.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VSS-009
+    - path: packages/vss-service/src/config/vss.config.spec.ts
+      action: created
+      wave: 3
+    - path: packages/vss-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VSS-012
+    - path: packages/vss-service/src/infrastructure/scan-state.repository.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VSS-007
+    - path: packages/vss-service/src/infrastructure/video-metadata.repository.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VSS-008
+    - path: packages/vss-service/src/infrastructure/s3-video-downloader.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VSS-005
+    - path: packages/vss-service/src/infrastructure/filesystem-staging-writer.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VSS-006
+    - path: packages/vss-service/src/staging/staging-idempotency.policy.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VSS-004
+    - path: packages/vss-service/src/staging/staging-idempotency.policy.spec.ts
+      action: created
+      wave: 4
+    - path: packages/vss-service/src/staging/staging.service.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VSS-003
+    - path: packages/vss-service/src/staging/staging.service.spec.ts
+      action: created
+      wave: 4
+    - path: packages/vss-service/src/staging/new-video.consumer.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VSS-002
+    - path: packages/vss-service/src/staging/staging.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VSS-001
+    - path: packages/vss-service/src/health/vss-health.controller.ts
+      action: created
+      wave: 5
+    - path: packages/vss-service/src/health/vss-health.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VSS-010
+    - path: packages/vss-service/src/app.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VSS-011
+    - path: packages/vss-service/src/main.ts
+      action: created
+      wave: 5
+
+  vbs_service:
+    - path: packages/vbs-service/package.json
+      action: created
+      wave: 1
+    - path: packages/vbs-service/tsconfig.json
+      action: created
+      wave: 1
+    - path: packages/vbs-service/src/config/vbs.config.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-017
+    - path: packages/vbs-service/src/config/vbs.config.spec.ts
+      action: created
+      wave: 3
+    - path: packages/vbs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-INFRA-001
+    - path: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-007
+    - path: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.spec.ts
+      action: created
+      wave: 3
+    - path: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-008
+    - path: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.spec.ts
+      action: created
+      wave: 3
+    - path: packages/vbs-service/src/infrastructure/s3-scan-result-writer.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-011
+    - path: packages/vbs-service/src/infrastructure/rabbitmq/scan-completed.publisher.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-012
+    - path: packages/vbs-service/src/infrastructure/scan-state.repository.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-013
+    - path: packages/vbs-service/src/infrastructure/batch-claim.repository.ts
+      action: created
+      wave: 3
+      artifact_id: AC-VBS-014
+    - path: packages/vbs-service/src/batch-claim/claim-ownership.policy.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VBS-004
+    - path: packages/vbs-service/src/batch-claim/claim-ownership.policy.spec.ts
+      action: created
+      wave: 4
+    - path: packages/vbs-service/src/batch-claim/batch-claim.service.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VBS-003
+    - path: packages/vbs-service/src/scan-execution/scan-execution.service.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VBS-006
+    - path: packages/vbs-service/src/result-publication/result-publication.service.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VBS-010
+    - path: packages/vbs-service/src/result-publication/result-publication.service.spec.ts
+      action: created
+      wave: 4
+    - path: packages/vbs-service/src/cleanup/cleanup.service.ts
+      action: created
+      wave: 4
+      artifact_id: AC-VBS-016
+    - path: packages/vbs-service/src/batch-claim/batch-claim.scheduler.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-002
+    - path: packages/vbs-service/src/batch-claim/batch-claim.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-001
+    - path: packages/vbs-service/src/scan-execution/scan-execution.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-005
+    - path: packages/vbs-service/src/result-publication/result-publication.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-009
+    - path: packages/vbs-service/src/cleanup/cleanup.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-015
+    - path: packages/vbs-service/src/health/vbs-health.controller.ts
+      action: created
+      wave: 5
+    - path: packages/vbs-service/src/health/vbs-health.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-018
+    - path: packages/vbs-service/src/app.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-VBS-019
+    - path: packages/vbs-service/src/main.ts
+      action: created
+      wave: 5
+    - path: packages/vbs-service/src/vdf-isolation.arch-spec.ts
+      action: created
+      wave: 5
+
+  sgs_service:
+    - path: packages/sgs-service/package.json
+      action: created
+      wave: 1
+    - path: packages/sgs-service/tsconfig.json
+      action: created
+      wave: 1
+    - path: packages/sgs-service/src/config/sgs.config.ts
+      action: created
+      wave: 3
+      artifact_id: AC-SGS-011
+    - path: packages/sgs-service/src/config/sgs.config.spec.ts
+      action: created
+      wave: 3
+    - path: packages/sgs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+      action: created
+      wave: 3
+      artifact_id: AC-SGS-INFRA-001
+    - path: packages/sgs-service/src/infrastructure/s3-scan-result-loader.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-SGS-005
+    - path: packages/sgs-service/src/infrastructure/similarity-edge.repository.ts
+      action: created
+      wave: 3
+      artifact_id: AC-SGS-008
+    - path: packages/sgs-service/src/infrastructure/similarity-group.repository.ts
+      action: created
+      wave: 3
+      artifact_id: AC-SGS-009
+    - path: packages/sgs-service/src/infrastructure/grouping-completion-writer.adapter.ts
+      action: created
+      wave: 3
+      artifact_id: AC-SGS-010
+    - path: packages/sgs-service/src/grouping/scan-result-schema.validator.ts
+      action: created
+      wave: 4
+      artifact_id: AC-SGS-004
+    - path: packages/sgs-service/src/grouping/scan-result-schema.validator.spec.ts
+      action: created
+      wave: 4
+    - path: packages/sgs-service/src/grouping/similarity-edge.factory.ts
+      action: created
+      wave: 4
+      artifact_id: AC-SGS-006
+    - path: packages/sgs-service/src/grouping/group-merge.policy.ts
+      action: created
+      wave: 4
+      artifact_id: AC-SGS-007
+    - path: packages/sgs-service/src/grouping/group-merge.policy.spec.ts
+      action: created
+      wave: 4
+    - path: packages/sgs-service/src/grouping/scan-result-ingestion.service.ts
+      action: created
+      wave: 4
+      artifact_id: AC-SGS-003
+    - path: packages/sgs-service/src/grouping/scan-result-ingestion.service.spec.ts
+      action: created
+      wave: 4
+    - path: packages/sgs-service/src/grouping/scan-completed.consumer.ts
+      action: created
+      wave: 5
+      artifact_id: AC-SGS-002
+    - path: packages/sgs-service/src/grouping/grouping.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-SGS-001
+    - path: packages/sgs-service/src/health/sgs-health.controller.ts
+      action: created
+      wave: 5
+    - path: packages/sgs-service/src/health/sgs-health.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-SGS-HEALTH-001
+    - path: packages/sgs-service/src/app.module.ts
+      action: created
+      wave: 5
+      artifact_id: AC-SGS-012
+    - path: packages/sgs-service/src/main.ts
+      action: created
+      wave: 5
+
+total_files_created: 75
+produced_outputs:
+  - .ai/reports/changed-file-manifest.yaml

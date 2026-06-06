@@ -1,0 +1,212 @@
+report_id: "pre-implementation-gate"
+phase_id: pre_implementation_gate
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Pre-implementation gate decision for VDF pipeline mission. All 21 pre-implementation
+  planning phases are complete, all gates passed, no blockers present, no active
+  triggers blocking the gate, and implementation sequence + checkpoint validation
+  plan are present. Decision: ALLOW IMPLEMENTATION.
+
+decision: allow_implementation
+
+inputs_checked:
+  required_reports:
+    - report: .ai/reports/00-mission-profile.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/01-active-context-manifest.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/02-behavior-contract.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/03-codebase-reconnaissance.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/local-alignment.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/risk-classification.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/boundary-contract-classification.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/dependency-classification.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/architecture-blueprint.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/04-draft-role-signals.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/pattern-pressure.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/artifact-reuse-analysis.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/05-artifact-actions.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/post-action-artifact-candidates.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/call-site-impact.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/07-change-impact.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/consumer-impact.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/08-final-role-assignment.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/pattern-decision-log.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/role-collision-resolution.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/final-file-tree.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/09-test-plan.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/regression-test-plan.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/characterization-test-plan.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/10-implementation-sequence.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/checkpoint-groups.yaml
+      present: true
+      status: complete
+    - report: .ai/reports/checkpoint-validation-plan.yaml
+      present: true
+      status: complete
+
+  gate_checks:
+    - gate_id: gate.implementation_sequence.output
+      result: pass
+      gate_result_file: .ai/gates/gate.implementation_sequence.output.gate-result.yaml
+    - gate_id: gate.checkpoint_validation_plan.output
+      result: pass
+      gate_result_file: .ai/gates/gate.checkpoint_validation_plan.output.gate-result.yaml
+
+  blocker_check:
+    active_blockers: []
+    blocked_phases: []
+    blocked_items: []
+    result: no_blockers
+
+  trigger_check:
+    active_triggers: []
+    blocking_triggers: []
+    result: no_blocking_triggers
+
+  sequence_check:
+    required_pre_implementation_phases: 21
+    completed_phases: 21
+    missing_phases: []
+    result: all_phases_complete
+
+  scope_check:
+    scope_is_greenfield: true
+    implementation_allowed_currently: false
+    reason_for_false: "pre_implementation_gate has not yet set implementation_allowed"
+    authorization_granted_by: this_report
+
+gate_findings:
+  - finding_id: PIG-001
+    type: confirmation
+    description: All 27 required planning reports are present and complete
+    severity: info
+
+  - finding_id: PIG-002
+    type: confirmation
+    description: All prior gates passed — no blocked or failed gates in history
+    severity: info
+
+  - finding_id: PIG-003
+    type: confirmation
+    description: Greenfield project confirmed; no existing codebase interference risk
+    evidence_ref: .ai/reports/03-codebase-reconnaissance.yaml#CR-001
+    severity: info
+
+  - finding_id: PIG-004
+    type: confirmation
+    description: Implementation sequence defines 5 waves with clear build order; shared-types first
+    evidence_ref: .ai/reports/10-implementation-sequence.yaml#SEQ-C001
+    severity: info
+
+  - finding_id: PIG-005
+    type: confirmation
+    description: Checkpoint validation plan defines 5 checkpoints with wave-gated validation
+    evidence_ref: .ai/reports/checkpoint-validation-plan.yaml
+    severity: info
+
+  - finding_id: PIG-006
+    type: note
+    description: >
+      Implementation agent must follow wave sequence strictly. CG-002 is a hard gate —
+      do not implement service code before shared-types tsc passes.
+    severity: advisory
+
+  - finding_id: PIG-007
+    type: note
+    description: >
+      52 artifacts across 4 packages. 15 test obligations (TO-001 through TO-015).
+      Integration tests require real MongoDB and RabbitMQ per local-alignment CC-004.
+    severity: advisory
+
+  - finding_id: PIG-008
+    type: note
+    description: >
+      VDF CLI path is an external assumption (ARCH-ASMP-004). VdfCliAdapter must be
+      configurable via VDF_CLI_PATH env var validated in VbsConfig.
+    evidence_ref: .ai/reports/architecture-blueprint.yaml#ARCH-ASMP-004
+    severity: advisory
+
+implementation_constraints:
+  must_follow_wave_order: true
+  shared_types_must_compile_before_services: true
+  vdf_cli_isolation_required: true
+  mongodb_cas_for_state_transitions: true
+  s3_before_rabbitmq_invariant: true
+  manual_ack_required_for_amqplib: true
+  no_nestjs_microservices_transport: true
+  integration_tests_require_real_dependencies: true
+
+authorization:
+  implementation_allowed: true
+  authorized_scope: all 52 artifacts in final-file-tree.yaml
+  authorized_packages:
+    - packages/shared-types
+    - packages/vss-service
+    - packages/vbs-service
+    - packages/sgs-service
+  forbidden_scope:
+    - modification of convention system files
+    - modification of .ai/reports/ (except implementation-produced test files)
+  authorized_by: pre_implementation_gate_agent
+  evidence_base: all gate results, all required reports, no blockers
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.pre_implementation_gate.output
+  status: pass
+  decision: allow_transition
+
+produced_outputs:
+  - .ai/reports/pre-implementation-gate.yaml

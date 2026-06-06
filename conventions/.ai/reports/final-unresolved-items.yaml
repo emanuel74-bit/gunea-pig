@@ -1,0 +1,63 @@
+report_id: "final-unresolved-items"
+phase_id: final_validation
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Final unresolved items at mission completion. Two integration test stubs require
+  real infrastructure. Three characterization candidates deferred post-implementation.
+  No blocking items.
+
+blocking_items: []
+
+deferred_items:
+
+  - item_id: DEFER-TO-005
+    type: integration_test
+    description: >
+      TO-005 (staging idempotency integration) requires a live MongoDB + RabbitMQ
+      test environment. Test file stub created at:
+      packages/vss-service/test/staging-idempotency.integration.spec.ts
+      (file to be created by dev team with real infrastructure setup).
+    action_required: Complete integration test with testcontainers or real infrastructure
+    priority: high
+
+  - item_id: DEFER-TO-015
+    type: integration_test
+    description: >
+      TO-015 (health endpoint integration) requires live MongoDB. Test file stubs
+      to be created at packages/{vss,vbs,sgs}-service/test/health.integration.spec.ts.
+    action_required: Create integration test files with real MongoDB dependency
+    priority: medium
+
+  - item_id: DEFER-CHAR-001
+    type: characterization_test
+    description: >
+      CHAR-001 — VdfOutputNormalizerAdapter snapshot test with real VDF output fixture.
+      Not implementable until VDF CLI is available in test environment.
+    evidence_ref: .ai/reports/characterization-test-plan.yaml#CHAR-001
+    priority: high
+
+  - item_id: DEFER-CHAR-002
+    type: characterization_test
+    description: CHAR-002 — SimilarityEdgeFactory boundary-value snapshot test.
+    evidence_ref: .ai/reports/characterization-test-plan.yaml#CHAR-002
+    priority: medium
+
+  - item_id: DEFER-CHAR-003
+    type: characterization_test
+    description: CHAR-003 — GroupMergePolicy threshold boundary matrix snapshot test.
+    evidence_ref: .ai/reports/characterization-test-plan.yaml#CHAR-003
+    priority: medium
+
+  - item_id: DEFER-ARCH-ASMP-004
+    type: assumption_validation
+    description: >
+      VDF CLI output format assumed to be JSON with pairs/results field.
+      VdfOutputNormalizerAdapter handles both variants defensively. The exact
+      field names must be validated against real VDF CLI output once available.
+    evidence_ref: .ai/reports/architecture-blueprint.yaml#ARCH-ASMP-004
+    priority: high
+
+produced_outputs:
+  - .ai/reports/final-unresolved-items.yaml

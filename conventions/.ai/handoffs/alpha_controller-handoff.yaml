@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: alpha_controller-handoff
+status: prepared
+source_output: .ai/reports/01-active-context-manifest.yaml
+target_agent: alpha_controller
+evidence_refs:
+  - .ai/reports/01-active-context-manifest.yaml
+source_summary: {}

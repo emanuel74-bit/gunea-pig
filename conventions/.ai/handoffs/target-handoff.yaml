@@ -1,0 +1,8 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: target-handoff
+status: invalid
+source_output: null
+target_agent: null
+evidence_refs: []
+source_summary: {}

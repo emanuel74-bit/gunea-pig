@@ -1,0 +1,161 @@
+report_id: phase-accounting
+phase_id: phase_accounting
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Phase accounting snapshot for mission vdf-video-similarity-pipeline at
+  phase_accounting checkpoint. Three phases complete (mission_profile_selection,
+  mission_initialization, active_context_manifest). Twenty-four phases pending.
+  No skipped, blocked, invalidated, or rerun phases. No active triggers.
+
+inputs_consumed: []
+
+decisions:
+  - decision_id: PA-001
+    decision_type: phase_status_accounting
+    selected_value: all_pending_phases_unblocked
+    reason_summary: >
+      All completed phases passed gates and produced required outputs. No
+      triggers are active. No phases are blocked or skipped. All 24 remaining
+      phases are eligible to execute in declared order per medium_feature plan.
+    evidence: .ai/mission-state.yaml
+
+evidence_refs:
+  - .ai/mission-state.yaml
+  - .ai/reports/00-mission-profile.yaml
+  - .ai/reports/report-registry.yaml
+  - .ai/reports/01-active-context-manifest.yaml
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.phase_accounting.output
+  status: pass
+  failures: []
+
+phase_statuses:
+  - phase_id: mission_profile_selection
+    status: complete
+    report_ref: .ai/reports/00-mission-profile.yaml
+    gate_status: pass
+    notes: Profile medium_feature selected.
+  - phase_id: mission_initialization
+    status: complete
+    report_ref: .ai/reports/report-registry.yaml
+    gate_status: pass
+    notes: Report registry initialized with 18 required reports.
+  - phase_id: active_context_manifest
+    status: complete
+    report_ref: .ai/reports/01-active-context-manifest.yaml
+    gate_status: pass
+    notes: Active context manifest produced; 17 allowed agents registered.
+  - phase_id: phase_accounting
+    status: in_progress
+    report_ref: .ai/reports/phase-accounting.yaml
+    gate_status: pending
+    notes: This report.
+  - phase_id: local_alignment
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: boundary_contract_classification
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: dependency_classification
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: call_site_impact_analysis
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: change_impact_analysis
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: behavior_contract
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: codebase_reconnaissance
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: architecture_decomposition
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: draft_role_pass
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: pattern_pressure_detection
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: artifact_reuse_analysis
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: artifact_action_resolution
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: final_role_assignment
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: pattern_selection
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: structure_rendering
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: test_derivation
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: implementation_sequence
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: checkpoint_validation_plan
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: pre_implementation_gate
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: implementation
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: post_implementation_validation
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: trigger_review
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: report_artifact_validation
+    status: pending
+    report_ref: null
+    gate_status: not_run
+  - phase_id: final_validation
+    status: pending
+    report_ref: null
+    gate_status: not_run
+
+skipped_phases: []
+blocked_phases: []
+invalidated_phases: []
+rerun_requests: []
+
+produced_outputs:
+  - .ai/reports/phase-accounting.yaml

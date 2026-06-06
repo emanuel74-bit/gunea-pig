@@ -1,0 +1,9 @@
+artifact: agent_handoff_packet
+generated_by: prepare-agent-handoff
+handoff_id: validation_agent-handoff
+status: prepared
+source_output: .ai/reports/report-artifact-validation.yaml
+target_agent: validation_agent
+evidence_refs:
+  - .ai/reports/report-artifact-validation.yaml
+source_summary: {}

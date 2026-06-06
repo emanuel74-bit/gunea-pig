@@ -1,0 +1,699 @@
+report_id: "08-final-role-assignment"
+phase_id: final_role_assignment
+schema_version: "1.0"
+status: complete
+authority: binding
+
+summary: >
+  Binding final role assignment for all 52 post-action artifacts. All roles confirmed
+  from draft_role_pass. Two deferred decisions resolved: (1) Use_case orchestrators
+  retain .service.ts suffix per NestJS convention (ACT-NAME-001); (2) ScanStateSchema
+  consolidated in shared-types (ACT-SCHEMA-001). Role collision ROLE-COLLISION-SCAN-STATE-REPO
+  resolved: separate repository instances are correct design; schema definition in shared-types.
+
+inputs_consumed:
+  - source: .ai/reports/04-draft-role-signals.yaml
+    type: draft_role_signals
+  - source: .ai/reports/05-artifact-actions.yaml
+    type: artifact_action_table
+  - source: .ai/reports/post-action-artifact-candidates.yaml
+    type: post_action_artifact_candidates
+  - source: .ai/reports/07-change-impact.yaml
+    type: change_impact
+
+role_assignment_table:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SHARED-TYPES PACKAGE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-SHARED-001
+    artifact_path: packages/shared-types/src/events/new-video-ready-for-scan.event.ts
+    assigned_role: integration_event
+    role_family: integration_async
+    suffix: .event.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SHARED-001
+      - .ai/reports/02-behavior-contract.yaml#shared_requirements.messaging.new_video_ready_for_scan
+    rejected_roles: [dto, interface]
+    split_required: false
+
+  - artifact_id: AC-SHARED-002
+    artifact_path: packages/shared-types/src/events/scan-completed.event.ts
+    assigned_role: integration_event
+    role_family: integration_async
+    suffix: .event.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SHARED-002
+    rejected_roles: [dto]
+    split_required: false
+
+  - artifact_id: AC-SHARED-003
+    artifact_path: packages/shared-types/src/enums/scan-state.enum.ts
+    assigned_role: enum
+    role_family: type_static
+    suffix: .enum.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SHARED-003
+    rejected_roles: [constants]
+    split_required: false
+
+  - artifact_id: AC-SHARED-004
+    artifact_path: packages/shared-types/src/interfaces/similarity-threshold-config.interface.ts
+    assigned_role: interface
+    role_family: type_static
+    suffix: .interface.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SHARED-004
+    rejected_roles: [config]
+    split_required: false
+
+  - artifact_id: AC-SHARED-005
+    artifact_path: packages/shared-types/src/interfaces/normalized-scan-result.interface.ts
+    assigned_role: interface
+    role_family: type_static
+    suffix: .interface.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SHARED-005
+    rejected_roles: [dto, model]
+    split_required: false
+
+  - artifact_id: AC-SHARED-SCHEMA-001
+    artifact_path: packages/shared-types/src/schemas/scan-state.schema.ts
+    assigned_role: schema
+    role_family: persistence_data
+    suffix: .schema.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/05-artifact-actions.yaml#ACT-SCHEMA-001
+      - .ai/reports/architecture-blueprint.yaml#ARCH-ASMP-005
+    rejected_roles: [model]
+    split_required: false
+    notes: Consolidated from AC-VSS-013; single shared definition imported by VSS and VBS
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VSS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-VSS-001
+    artifact_path: packages/vss-service/src/staging/staging.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-001]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VSS-002
+    artifact_path: packages/vss-service/src/staging/new-video.consumer.ts
+    assigned_role: consumer
+    role_family: integration_async
+    suffix: .consumer.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VSS-002
+      - .ai/reports/boundary-contract-classification.yaml#BND-VSS-001
+    rejected_roles: [listener, controller]
+    split_required: false
+
+  - artifact_id: AC-VSS-003
+    artifact_path: packages/vss-service/src/staging/staging.service.ts
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .service.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-001
+      - .ai/reports/05-artifact-actions.yaml#ACT-NAME-001
+    rejected_roles: [service]
+    split_required: false
+    notes: Role is use_case; file suffix .service.ts retained per NestJS convention (ACT-NAME-001)
+
+  - artifact_id: AC-VSS-004
+    artifact_path: packages/vss-service/src/staging/staging-idempotency.policy.ts
+    assigned_role: policy
+    role_family: decision
+    suffix: .policy.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-004]
+    rejected_roles: [validator]
+    split_required: false
+
+  - artifact_id: AC-VSS-005
+    artifact_path: packages/vss-service/src/infrastructure/s3-video-downloader.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VSS-005
+      - .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+    rejected_roles: [client]
+    split_required: false
+
+  - artifact_id: AC-VSS-006
+    artifact_path: packages/vss-service/src/infrastructure/filesystem-staging-writer.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-006]
+    rejected_roles: [util]
+    split_required: false
+
+  - artifact_id: AC-VSS-007
+    artifact_path: packages/vss-service/src/infrastructure/scan-state.repository.ts
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VSS-007
+      - .ai/reports/role-collision-resolution.yaml#RCR-001
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VSS-008
+    artifact_path: packages/vss-service/src/infrastructure/video-metadata.repository.ts
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-008]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VSS-009
+    artifact_path: packages/vss-service/src/config/vss.config.ts
+    assigned_role: config
+    role_family: type_static
+    suffix: .config.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-009]
+    rejected_roles: [dto]
+    split_required: false
+
+  - artifact_id: AC-VSS-010
+    artifact_path: packages/vss-service/src/health/vss-health.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-010]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VSS-011
+    artifact_path: packages/vss-service/src/app.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VSS-011]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VSS-012
+    artifact_path: packages/vss-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VSS-012
+      - .ai/reports/04-draft-role-signals.yaml#MR-003
+    rejected_roles: [provider]
+    split_required: false
+
+  - artifact_id: AC-VSS-013
+    artifact_path: packages/shared-types/src/schemas/scan-state.schema.ts
+    assigned_role: schema
+    role_family: persistence_data
+    suffix: .schema.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs: [.ai/reports/05-artifact-actions.yaml#ACT-SCHEMA-001]
+    rejected_roles: []
+    split_required: false
+    notes: Consolidated with AC-SHARED-SCHEMA-001; same file
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VBS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-VBS-001
+    artifact_path: packages/vbs-service/src/batch-claim/batch-claim.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-001]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-002
+    artifact_path: packages/vbs-service/src/batch-claim/batch-claim.scheduler.ts
+    assigned_role: scheduler
+    role_family: integration_async
+    suffix: .scheduler.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-002]
+    rejected_roles: [consumer]
+    split_required: false
+
+  - artifact_id: AC-VBS-003
+    artifact_path: packages/vbs-service/src/batch-claim/batch-claim.service.ts
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .service.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-001
+      - .ai/reports/05-artifact-actions.yaml#ACT-NAME-001
+    rejected_roles: [service]
+    split_required: false
+    notes: Role use_case; .service.ts suffix per ACT-NAME-001
+
+  - artifact_id: AC-VBS-004
+    artifact_path: packages/vbs-service/src/batch-claim/claim-ownership.policy.ts
+    assigned_role: policy
+    role_family: decision
+    suffix: .policy.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-004]
+    rejected_roles: [validator]
+    split_required: false
+
+  - artifact_id: AC-VBS-005
+    artifact_path: packages/vbs-service/src/scan-execution/scan-execution.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-005]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-006
+    artifact_path: packages/vbs-service/src/scan-execution/scan-execution.service.ts
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .service.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-001
+      - .ai/reports/05-artifact-actions.yaml#ACT-NAME-001
+    rejected_roles: [service]
+    split_required: false
+    notes: Role use_case; .service.ts suffix per ACT-NAME-001
+
+  - artifact_id: AC-VBS-007
+    artifact_path: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VBS-007
+      - .ai/reports/architecture-blueprint.yaml#PORT-VDF-SCANNER
+    rejected_roles: [client]
+    split_required: false
+
+  - artifact_id: AC-VBS-008
+    artifact_path: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-002
+      - .ai/reports/architecture-blueprint.yaml#PORT-VDF-NORMALIZER
+    rejected_roles: [parser]
+    split_required: false
+
+  - artifact_id: AC-VBS-009
+    artifact_path: packages/vbs-service/src/result-publication/result-publication.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-009]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-010
+    artifact_path: packages/vbs-service/src/result-publication/result-publication.service.ts
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .service.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-001
+      - .ai/reports/05-artifact-actions.yaml#ACT-NAME-001
+    rejected_roles: [service]
+    split_required: false
+    notes: Role use_case; .service.ts suffix per ACT-NAME-001
+
+  - artifact_id: AC-VBS-011
+    artifact_path: packages/vbs-service/src/infrastructure/s3-scan-result-writer.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VBS-011
+      - .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+    rejected_roles: [client]
+    split_required: false
+
+  - artifact_id: AC-VBS-012
+    artifact_path: packages/vbs-service/src/infrastructure/rabbitmq/scan-completed.publisher.ts
+    assigned_role: publisher
+    role_family: integration_async
+    suffix: .publisher.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-012]
+    rejected_roles: [producer]
+    split_required: false
+
+  - artifact_id: AC-VBS-013
+    artifact_path: packages/vbs-service/src/infrastructure/scan-state.repository.ts
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-VBS-013
+      - .ai/reports/role-collision-resolution.yaml#RCR-001
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-014
+    artifact_path: packages/vbs-service/src/infrastructure/batch-claim.repository.ts
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-014]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-015
+    artifact_path: packages/vbs-service/src/cleanup/cleanup.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-015]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-016
+    artifact_path: packages/vbs-service/src/cleanup/cleanup.service.ts
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .service.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-001
+      - .ai/reports/05-artifact-actions.yaml#ACT-NAME-001
+    rejected_roles: [service]
+    split_required: false
+    notes: Role use_case; .service.ts suffix per ACT-NAME-001
+
+  - artifact_id: AC-VBS-017
+    artifact_path: packages/vbs-service/src/config/vbs.config.ts
+    assigned_role: config
+    role_family: type_static
+    suffix: .config.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-017]
+    rejected_roles: [dto]
+    split_required: false
+
+  - artifact_id: AC-VBS-018
+    artifact_path: packages/vbs-service/src/health/vbs-health.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-018]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-019
+    artifact_path: packages/vbs-service/src/app.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-VBS-019]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-VBS-INFRA-001
+    artifact_path: packages/vbs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/05-artifact-actions.yaml#AC-VBS-INFRA-001]
+    rejected_roles: []
+    split_required: false
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SGS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-SGS-001
+    artifact_path: packages/sgs-service/src/grouping/grouping.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-SGS-001]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-SGS-002
+    artifact_path: packages/sgs-service/src/grouping/scan-completed.consumer.ts
+    assigned_role: consumer
+    role_family: integration_async
+    suffix: .consumer.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SGS-002
+      - .ai/reports/boundary-contract-classification.yaml#BND-SGS-001
+    rejected_roles: [listener]
+    split_required: false
+
+  - artifact_id: AC-SGS-003
+    artifact_path: packages/sgs-service/src/grouping/scan-result-ingestion.service.ts
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .service.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#MR-001
+      - .ai/reports/05-artifact-actions.yaml#ACT-NAME-001
+    rejected_roles: [service]
+    split_required: false
+    notes: Role use_case; .service.ts suffix per ACT-NAME-001
+
+  - artifact_id: AC-SGS-004
+    artifact_path: packages/sgs-service/src/grouping/scan-result-schema.validator.ts
+    assigned_role: validator
+    role_family: domain_constraint
+    suffix: .validator.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-SGS-004]
+    rejected_roles: [policy]
+    split_required: false
+
+  - artifact_id: AC-SGS-005
+    artifact_path: packages/sgs-service/src/infrastructure/s3-scan-result-loader.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SGS-005
+      - .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+    rejected_roles: [client]
+    split_required: false
+
+  - artifact_id: AC-SGS-006
+    artifact_path: packages/sgs-service/src/grouping/similarity-edge.factory.ts
+    assigned_role: factory
+    role_family: construction_resolution
+    suffix: .factory.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-CONSTRUCTION
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-SGS-006]
+    rejected_roles: [adapter, mapper]
+    split_required: false
+
+  - artifact_id: AC-SGS-007
+    artifact_path: packages/sgs-service/src/grouping/group-merge.policy.ts
+    assigned_role: policy
+    role_family: decision
+    suffix: .policy.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-SGS-007]
+    rejected_roles: [validator]
+    split_required: false
+
+  - artifact_id: AC-SGS-008
+    artifact_path: packages/sgs-service/src/infrastructure/similarity-edge.repository.ts
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SGS-008
+      - .ai/reports/architecture-blueprint.yaml#REPO-SIMILARITY-DATA
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-SGS-009
+    artifact_path: packages/sgs-service/src/infrastructure/similarity-group.repository.ts
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SGS-009
+      - .ai/reports/architecture-blueprint.yaml#REPO-SIMILARITY-DATA
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-SGS-010
+    artifact_path: packages/sgs-service/src/infrastructure/grouping-completion-writer.adapter.ts
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/04-draft-role-signals.yaml#AC-SGS-010
+      - .ai/reports/architecture-blueprint.yaml#ARCH-ASMP-002
+    rejected_roles: [repository]
+    split_required: false
+
+  - artifact_id: AC-SGS-011
+    artifact_path: packages/sgs-service/src/config/sgs.config.ts
+    assigned_role: config
+    role_family: type_static
+    suffix: .config.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-SGS-011]
+    rejected_roles: [dto]
+    split_required: false
+
+  - artifact_id: AC-SGS-012
+    artifact_path: packages/sgs-service/src/app.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/04-draft-role-signals.yaml#AC-SGS-012]
+    rejected_roles: []
+    split_required: false
+
+  - artifact_id: AC-SGS-INFRA-001
+    artifact_path: packages/sgs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs: [.ai/reports/05-artifact-actions.yaml#AC-SGS-INFRA-001]
+    rejected_roles: []
+    split_required: false
+
+summary_counts:
+  total: 52
+  by_role:
+    module: 15
+    use_case: 6
+    adapter: 8
+    repository: 5
+    policy: 3
+    consumer: 2
+    integration_event: 2
+    interface: 2
+    enum: 1
+    config: 3
+    schema: 1
+    scheduler: 1
+    publisher: 1
+    validator: 1
+    factory: 1
+  high_confidence: 52
+  medium_confidence: 0
+  split_required: 0
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.final_role_assignment.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/08-final-role-assignment.yaml
+  - .ai/reports/role-collision-resolution.yaml

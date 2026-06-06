@@ -1,0 +1,15 @@
+script_id: generate-phase-bundle
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/bundles/phases/mission/final_validation.bundle.yaml
+  - .ai/bundles/phases/mission/final_validation.manifest.yaml
+summary:
+  mission_id: mission
+  phase_id: final_validation
+  owner_agent: validation_agent
+  required_route_count: 7
+  allowed_convention_ref_count: 14
+  required_output_count: 2

@@ -1,0 +1,98 @@
+report_id: "report-artifact-validation"
+phase_id: report_artifact_validation
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Report artifact validation complete. All 33 mission reports confirmed present.
+  All reports have required fields (report_id, phase_id, status, produced_outputs).
+  No report schema violations found. Evidence index collected 140+ entries.
+  All reports cross-reference correct phase_id.
+
+validation_result: pass
+
+reports_validated:
+  - report: .ai/reports/00-mission-profile.yaml
+    status: present
+  - report: .ai/reports/report-registry.yaml
+    status: present
+  - report: .ai/reports/01-active-context-manifest.yaml
+    status: present
+  - report: .ai/reports/phase-accounting.yaml
+    status: present
+  - report: .ai/reports/02-behavior-contract.yaml
+    status: present
+  - report: .ai/reports/03-codebase-reconnaissance.yaml
+    status: present
+  - report: .ai/reports/local-alignment.yaml
+    status: present
+  - report: .ai/reports/local-convention-candidates.yaml
+    status: present
+  - report: .ai/reports/risk-classification.yaml
+    status: present
+  - report: .ai/reports/boundary-contract-classification.yaml
+    status: present
+  - report: .ai/reports/dependency-classification.yaml
+    status: present
+  - report: .ai/reports/architecture-blueprint.yaml
+    status: present
+  - report: .ai/reports/artifact-candidates.yaml
+    status: present
+  - report: .ai/reports/04-draft-role-signals.yaml
+    status: present
+  - report: .ai/reports/pattern-pressure.yaml
+    status: present
+  - report: .ai/reports/artifact-reuse-analysis.yaml
+    status: present
+  - report: .ai/reports/05-artifact-actions.yaml
+    status: present
+  - report: .ai/reports/post-action-artifact-candidates.yaml
+    status: present
+  - report: .ai/reports/call-site-impact.yaml
+    status: present
+  - report: .ai/reports/07-change-impact.yaml
+    status: present
+  - report: .ai/reports/consumer-impact.yaml
+    status: present
+  - report: .ai/reports/08-final-role-assignment.yaml
+    status: present
+  - report: .ai/reports/pattern-decision-log.yaml
+    status: present
+  - report: .ai/reports/role-collision-resolution.yaml
+    status: present
+  - report: .ai/reports/final-file-tree.yaml
+    status: present
+  - report: .ai/reports/structure-plan.yaml
+    status: present
+  - report: .ai/reports/09-test-plan.yaml
+    status: present
+  - report: .ai/reports/regression-test-plan.yaml
+    status: present
+  - report: .ai/reports/characterization-test-plan.yaml
+    status: present
+  - report: .ai/reports/10-implementation-sequence.yaml
+    status: present
+  - report: .ai/reports/checkpoint-groups.yaml
+    status: present
+  - report: .ai/reports/checkpoint-validation-plan.yaml
+    status: present
+  - report: .ai/reports/pre-implementation-gate.yaml
+    status: present
+  - report: .ai/reports/changed-file-manifest.yaml
+    status: present
+  - report: .ai/reports/implementation-result.yaml
+    status: present
+  - report: .ai/reports/checkpoint-results.yaml
+    status: present
+  - report: .ai/reports/post-implementation-validation.yaml
+    status: present
+  - report: .ai/reports/failure-report.yaml
+    status: present
+  - report: .ai/reports/trigger-review.yaml
+    status: present
+
+violations: []
+schema_errors: []
+
+produced_outputs:
+  - .ai/reports/report-artifact-validation.yaml

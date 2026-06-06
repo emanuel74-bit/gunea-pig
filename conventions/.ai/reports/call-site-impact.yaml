@@ -1,0 +1,300 @@
+report_id: call-site-impact
+phase_id: call_site_impact_analysis
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Call site impact analysis for VDF pipeline. Greenfield project — no existing call
+  sites, imports, or consumers exist. This report documents the planned call relationships
+  between post-action artifacts for sequencing purposes. 3 high-risk call sites
+  identified: (1) VdfCliAdapter child_process.spawn — sole boundary for VDF invocation,
+  (2) ResultPublicationService S3→RabbitMQ ordering — procedural enforcement only,
+  (3) ScanResultIngestionService MongoDB state read before ack — idempotency guarantee.
+
+inputs_consumed:
+  - source: .ai/reports/05-artifact-actions.yaml
+    type: artifact_action_table
+
+existing_call_sites:
+  found: false
+  reason: Greenfield project confirmed by 03-codebase-reconnaissance.yaml#CR-001
+
+planned_call_relationships:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VSS SERVICE CALL CHAIN
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - call_id: CS-VSS-001
+    caller: NewVideoConsumer (AC-VSS-002)
+    callee: StagingService (AC-VSS-003)
+    call_type: direct_injection
+    description: Consumer delegates to StagingService after amqplib message receipt
+    risk: low
+    implementation_note: Manual ack/nack must happen AFTER StagingService resolves
+
+  - call_id: CS-VSS-002
+    caller: StagingService (AC-VSS-003)
+    callee: ScanStateRepository / VSS (AC-VSS-007)
+    call_type: direct_injection
+    description: Reads current scan state for idempotency check before any processing
+    risk: high
+    implementation_note: State must be read FIRST; all subsequent steps conditional on idempotency check result
+
+  - call_id: CS-VSS-003
+    caller: StagingService (AC-VSS-003)
+    callee: StagingIdempotencyPolicy (AC-VSS-004)
+    call_type: direct_call
+    description: Pure policy evaluation — should_stage given current ScanState
+    risk: low
+    implementation_note: Must be called before any state-changing operation
+
+  - call_id: CS-VSS-004
+    caller: StagingService (AC-VSS-003)
+    callee: VideoMetadataRepository (AC-VSS-008)
+    call_type: direct_injection
+    description: Loads video metadata (S3 reference, original_filename) from MongoDB
+    risk: low
+    implementation_note: Only called if idempotency check passes
+
+  - call_id: CS-VSS-005
+    caller: StagingService (AC-VSS-003)
+    callee: S3VideoDownloaderAdapter (AC-VSS-005)
+    call_type: direct_injection
+    description: Downloads video content from S3 using S3Ref from metadata
+    risk: low
+    implementation_note: S3 GetObject; failure must nack message
+
+  - call_id: CS-VSS-006
+    caller: StagingService (AC-VSS-003)
+    callee: FilesystemStagingWriterAdapter (AC-VSS-006)
+    call_type: direct_injection
+    description: Writes downloaded video to VDF scan path on shared filesystem
+    risk: low
+    implementation_note: Filesystem write failure must clean up partial state
+
+  - call_id: CS-VSS-007
+    caller: StagingService (AC-VSS-003)
+    callee: ScanStateRepository / VSS (AC-VSS-007)
+    call_type: direct_injection
+    description: Writes staged state via MongoDB CAS (awaiting_staging → staged)
+    risk: medium
+    implementation_note: CAS condition must verify current state is still awaiting_staging to guard against concurrent staging
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VBS SERVICE CALL CHAIN
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - call_id: CS-VBS-001
+    caller: BatchClaimScheduler (AC-VBS-002)
+    callee: BatchClaimService (AC-VBS-003)
+    call_type: direct_injection
+    description: Scheduler triggers batch claim on NestJS @Cron interval
+    risk: low
+    implementation_note: Scheduler delegates only; no business logic
+
+  - call_id: CS-VBS-002
+    caller: BatchClaimService (AC-VBS-003)
+    callee: ScanStateRepository / VBS (AC-VBS-013)
+    call_type: direct_injection
+    description: Queries staged videos available for claiming
+    risk: low
+
+  - call_id: CS-VBS-003
+    caller: BatchClaimService (AC-VBS-003)
+    callee: ClaimOwnershipPolicy (AC-VBS-004)
+    call_type: direct_call
+    description: Checks is_claimable for each candidate
+    risk: low
+
+  - call_id: CS-VBS-004
+    caller: BatchClaimService (AC-VBS-003)
+    callee: BatchClaimRepository (AC-VBS-014)
+    call_type: direct_injection
+    description: Writes atomic batch claim document (MongoDB findOneAndUpdate)
+    risk: medium
+    implementation_note: CAS must use scan_state condition to prevent double-claiming
+
+  - call_id: CS-VBS-005
+    caller: BatchClaimService (AC-VBS-003)
+    callee: ScanExecutionService (AC-VBS-006)
+    call_type: direct_injection
+    description: Triggers scan execution for each successfully claimed batch
+    risk: low
+
+  - call_id: CS-VBS-006
+    caller: ScanExecutionService (AC-VBS-006)
+    callee: VdfCliAdapter (AC-VBS-007)
+    call_type: direct_injection
+    description: Invokes VDF CLI via child_process.spawn
+    risk: high
+    implementation_note: SOLE boundary for child_process; VDF exit code != 0 must be classified retryable vs permanent
+
+  - call_id: CS-VBS-007
+    caller: ScanExecutionService (AC-VBS-006)
+    callee: VdfOutputNormalizerAdapter (AC-VBS-008)
+    call_type: direct_injection
+    description: Normalizes raw VDF output to NormalizedScanResult
+    risk: medium
+    implementation_note: VDF format assumption (ARCH-ASMP-004) — format change would break this boundary
+
+  - call_id: CS-VBS-008
+    caller: ScanExecutionService (AC-VBS-006)
+    callee: ResultPublicationService (AC-VBS-010)
+    call_type: direct_injection
+    description: Hands normalized result to publication flow
+    risk: low
+
+  - call_id: CS-VBS-009
+    caller: ResultPublicationService (AC-VBS-010)
+    callee: S3ScanResultWriterAdapter (AC-VBS-011)
+    call_type: direct_injection
+    description: Writes scan result JSON to S3 (MUST complete before RabbitMQ publish)
+    risk: high
+    implementation_note: S3 write must be confirmed before ScanCompletedPublisher is called. No transactional guarantee — ordering is procedural only.
+
+  - call_id: CS-VBS-010
+    caller: ResultPublicationService (AC-VBS-010)
+    callee: ScanCompletedPublisher (AC-VBS-012)
+    call_type: direct_injection
+    description: Publishes scan-completed event to vdf.pipeline.scan exchange
+    risk: medium
+    implementation_note: Called ONLY after S3 write confirmed (CS-VBS-009)
+
+  - call_id: CS-VBS-011
+    caller: ResultPublicationService (AC-VBS-010)
+    callee: ScanStateRepository / VBS (AC-VBS-013)
+    call_type: direct_injection
+    description: Transitions state to scan_complete after successful publication
+    risk: low
+
+  - call_id: CS-VBS-012
+    caller: CleanupService (AC-VBS-016)
+    callee: ScanStateRepository / VBS (AC-VBS-013)
+    call_type: direct_injection
+    description: Polls for cleanup_allowed state and transitions to cleaned after filesystem purge
+    risk: low
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SGS SERVICE CALL CHAIN
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - call_id: CS-SGS-001
+    caller: ScanCompletedConsumer (AC-SGS-002)
+    callee: ScanResultIngestionService (AC-SGS-003)
+    call_type: direct_injection
+    description: Consumer delegates to ingestion service after amqplib message receipt
+    risk: low
+    implementation_note: Manual ack/nack AFTER ingestion service resolves
+
+  - call_id: CS-SGS-002
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: ScanStateRepository / VBS (AC-VBS-013)
+    call_type: cross_service_mongodb
+    description: Reads scan state to check if already processed (idempotency)
+    risk: high
+    implementation_note: >
+      Cross-service MongoDB access to scan_states collection. SGS reads VBS-owned
+      states to detect duplicates. State read must happen FIRST before any processing.
+      This is the idempotency guard for SGS.
+
+  - call_id: CS-SGS-003
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: S3ScanResultLoaderAdapter (AC-SGS-005)
+    call_type: direct_injection
+    description: Loads NormalizedScanResult JSON from S3 using result_location from event
+    risk: low
+
+  - call_id: CS-SGS-004
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: ScanResultSchemaValidator (AC-SGS-004)
+    call_type: direct_call
+    description: Validates schema_version of loaded scan result
+    risk: low
+
+  - call_id: CS-SGS-005
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: SimilarityEdgeFactory (AC-SGS-006)
+    call_type: direct_call
+    description: Creates SimilarityEdge objects from NormalizedScanResult applying storeEdgeScore threshold
+    risk: low
+
+  - call_id: CS-SGS-006
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: SimilarityEdgeRepository (AC-SGS-008)
+    call_type: direct_injection
+    description: Idempotent upsert of similarity edges (unique index on scan_id + video_pair_key)
+    risk: low
+
+  - call_id: CS-SGS-007
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: GroupMergePolicy (AC-SGS-007)
+    call_type: direct_call
+    description: Determines group action (merge_existing | create_new | no_group | manual_review)
+    risk: low
+
+  - call_id: CS-SGS-008
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: SimilarityGroupRepository (AC-SGS-009)
+    call_type: direct_injection
+    description: Creates or updates similarity group documents
+    risk: low
+
+  - call_id: CS-SGS-009
+    caller: ScanResultIngestionService (AC-SGS-003)
+    callee: GroupingCompletionWriterAdapter (AC-SGS-010)
+    call_type: direct_injection
+    description: Writes grouping_complete state to scan_states (cleanup authorization)
+    risk: medium
+    implementation_note: This is the signal VBS polls to authorize cleanup; must write atomically
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # CROSS-SERVICE SHARED DEPENDENCIES
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - call_id: CS-SHARED-001
+    caller: VSS / VBS / SGS (all services)
+    callee: ScanStateSchema (AC-SHARED-SCHEMA-001)
+    call_type: import
+    description: All three services import ScanStateSchema from shared-types
+    risk: medium
+    implementation_note: shared-types changes trigger cross-service build; must maintain stable interface
+
+  - call_id: CS-SHARED-002
+    caller: VSS NewVideoConsumer (AC-VSS-002)
+    callee: NewVideoReadyForScanEvent (AC-SHARED-001)
+    call_type: import
+    description: VSS deserializes RabbitMQ message into NewVideoReadyForScanEvent DTO
+    risk: low
+
+  - call_id: CS-SHARED-003
+    caller: VBS ScanCompletedPublisher (AC-VBS-012) + SGS ScanCompletedConsumer (AC-SGS-002)
+    callee: ScanCompletedEvent (AC-SHARED-002)
+    call_type: import
+    description: VBS publishes and SGS consumes the same ScanCompletedEvent DTO from shared-types
+    risk: medium
+    implementation_note: Schema version field must be included; SGS validates it
+
+high_risk_call_sites:
+  - call_id: CS-VBS-006
+    risk_reason: Sole child_process boundary; VDF exit codes must be mapped to retry/fail
+    mitigation: VdfCliAdapter wraps all child_process interaction; DV-008 test obligation
+  - call_id: CS-VBS-009
+    risk_reason: S3-before-RabbitMQ ordering with no transactional guarantee
+    mitigation: Procedural ordering in ResultPublicationService; DV-005 test obligation
+  - call_id: CS-SGS-002
+    risk_reason: Idempotency check via cross-service MongoDB state read
+    mitigation: State read is the FIRST operation; DV-004 test obligation
+  - call_id: CS-VSS-002
+    risk_reason: Idempotency check before any processing in StagingService
+    mitigation: State read FIRST, policy evaluation before any mutation; DV-004 test obligation
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.call_site_impact_analysis.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/call-site-impact.yaml

@@ -1,0 +1,398 @@
+report_id: 02-behavior-contract
+phase_id: behavior_contract
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Behavior contract for the VDF-Based Video Similarity Pipeline. The system
+  consists of three independent NestJS microservices: Video Scan Staging
+  Service (VSS), VDF Batch Scanner Service (VBS), and Similarity Grouping
+  Service (SGS). Greenfield implementation. Technology stack: TypeScript,
+  NestJS, Node.js 18.8.0, RabbitMQ, MongoDB, S3-compatible storage, VDF.
+
+inputs_consumed:
+  - source: .ai/reports/01-active-context-manifest.yaml
+    type: active_context_manifest
+  - source: docs/system-requirements.md
+    type: mission_request
+    notes: Primary source for all behavior specifications.
+
+decisions:
+  - decision_id: BC-001
+    decision_type: request_classification
+    selected_value: greenfield_multi_service_implementation
+    reason_summary: >
+      No existing codebase. Three new NestJS services built from scratch per
+      section 3 of system-requirements.md. All behavior is additive.
+    evidence: docs/system-requirements.md section 3
+
+  - decision_id: BC-002
+    decision_type: scope_boundary
+    selected_value: three_bounded_services_no_upstream
+    reason_summary: >
+      Scope is strictly the three services defined in sections 3.1–3.3. The
+      upstream ingest pipeline is out of scope (preconditions guaranteed).
+      VDF is treated as an external tool, not implemented.
+    evidence: docs/system-requirements.md section 2
+
+evidence_refs:
+  - docs/system-requirements.md
+  - .ai/reports/01-active-context-manifest.yaml
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.behavior_contract.output
+  status: pass
+  failures: []
+
+requested_behavior:
+
+  video_scan_staging_service:
+    purpose: >
+      Consume ingest-ready events from RabbitMQ and materialize video files
+      into the VDF scan path.
+    behaviors:
+      - id: VSS-F-001
+        description: >
+          Consume `new-video-ready-for-scan` messages from RabbitMQ.
+      - id: VSS-F-002
+        description: >
+          Load video metadata from MongoDB using the video ID in the message.
+      - id: VSS-F-003
+        description: >
+          Verify the referenced S3 object exists before attempting to copy.
+      - id: VSS-F-004
+        description: >
+          Copy or materialize the video file from S3 into the configured
+          mounted filesystem path for staged videos.
+      - id: VSS-F-005
+        description: >
+          Record video scan state in MongoDB after successful staging.
+      - id: VSS-F-006
+        description: >
+          Mark the video as ready for batch scanning after successful staging.
+      - id: VSS-I-001
+        description: >
+          Idempotent: if the same message is delivered more than once, do not
+          stage the same video a second time.
+      - id: VSS-I-002
+        description: >
+          Check existing scan state in MongoDB before staging to detect and
+          skip already-staged videos.
+      - id: VSS-E-001
+        description: >
+          Report structured failure when MongoDB metadata for the video ID is
+          missing.
+      - id: VSS-E-002
+        description: >
+          Report structured failure when the referenced S3 object does not
+          exist.
+      - id: VSS-E-003
+        description: >
+          Report structured failure when the file cannot be copied to the
+          staging path.
+    boundaries:
+      - VSS must not invoke VDF directly.
+      - VSS must not create, update, or delete similarity groups.
+
+  vdf_batch_scanner_service:
+    purpose: >
+      Claim batches of staged videos, run VDF, produce normalized scan results,
+      and publish lightweight scan-completed events.
+    behaviors:
+      - id: VBS-F-001
+        description: >
+          Periodically claim a batch of staged videos for scanning.
+      - id: VBS-F-002
+        description: >
+          Use VDF to scan all claimed videos against the configured scan set or
+          reference library.
+      - id: VBS-F-003
+        description: >
+          Produce normalized scan output containing video-to-video similarity
+          relationships.
+      - id: VBS-F-004
+        description: >
+          Write normalized scan results to durable S3-compatible storage.
+      - id: VBS-F-005
+        description: >
+          Publish a lightweight `scan-completed` RabbitMQ event containing
+          scan ID and durable result location.
+      - id: VBS-F-006
+        description: >
+          Maintain clear scan status transitions in MongoDB throughout the scan
+          lifecycle.
+      - id: VBS-F-007
+        description: >
+          Support retryable failure handling for failed scan attempts.
+      - id: VBS-C-001
+        description: >
+          Record batch ownership in MongoDB before beginning a scan.
+      - id: VBS-C-002
+        description: >
+          Prevent concurrent processing of the same batch by multiple workers.
+      - id: VBS-C-003
+        description: >
+          Batch claim record includes: scan_id, claimed_video_ids, owner_id,
+          claim_timestamp, claim_expiration_timestamp, status.
+      - id: VBS-C-004
+        description: >
+          Support recovery of expired or abandoned claims. A claim past its
+          expiration timestamp is reclaimable by another worker.
+      - id: VBS-C-005
+        description: >
+          Filesystem-level moves must not be the sole locking mechanism.
+      - id: VBS-H-001
+        description: >
+          Write normalized scan results to durable S3 storage BEFORE publishing
+          the `scan-completed` event.
+      - id: VBS-H-002
+        description: >
+          The `scan-completed` message must not contain large inline result
+          payloads.
+      - id: VBS-H-003
+        description: >
+          Result payload must remain in durable storage until grouping confirms
+          success or retention period expires.
+      - id: VBS-H-004
+        description: >
+          Result payload must be reloadable on grouping service retry.
+      - id: VBS-P-001
+        description: >
+          Must not purge local scan files, VDF state, or artifacts immediately
+          after publishing scan-completed event.
+      - id: VBS-P-002
+        description: >
+          Cleanup allowed only after: (a) SGS confirms persistence, or (b)
+          configured retention period expires and scan is recorded as safely
+          expired.
+      - id: VBS-P-003
+        description: >
+          Track cleanup state per scan: pending_cleanup, cleanup_allowed,
+          cleaned, cleanup_failed.
+      - id: VBS-P-004
+        description: >
+          Retain enough information to retry grouping before cleanup occurs.
+    boundaries:
+      - VBS must not directly merge similarity groups.
+      - VBS must not treat a successful RabbitMQ publish as proof of
+        persistence in MongoDB.
+
+  similarity_grouping_service:
+    purpose: >
+      Load normalized scan results, persist similarity edges, and maintain
+      similarity group membership in MongoDB.
+    behaviors:
+      - id: SGS-F-001
+        description: >
+          Consume `scan-completed` events from RabbitMQ.
+      - id: SGS-F-002
+        description: >
+          Load the normalized scan result payload from the durable result
+          location referenced in the event.
+      - id: SGS-F-003
+        description: >
+          Validate the scan result schema and version before processing.
+      - id: SGS-F-004
+        description: >
+          Convert VDF scan output into MongoDB similarity edge documents.
+      - id: SGS-F-005
+        description: >
+          Store similarity edges between videos in MongoDB.
+      - id: SGS-F-006
+        description: >
+          Merge videos into an existing similarity group when the configured
+          merge threshold is met.
+      - id: SGS-F-007
+        description: >
+          Create a new similarity group when no existing group meets the merge
+          threshold.
+      - id: SGS-F-008
+        description: >
+          Update each affected video document with its similarity status, group
+          membership, and relevant match summaries.
+      - id: SGS-F-009
+        description: >
+          Handle videos with no matches by marking them as successfully scanned
+          with zero matches.
+      - id: SGS-F-010
+        description: >
+          After successful persistence, emit a confirmation signal (RabbitMQ
+          event or MongoDB state transition) indicating cleanup is now allowed.
+      - id: SGS-I-001
+        description: >
+          Idempotent: if the same `scan-completed` event is delivered more than
+          once, must not produce duplicate edges or corrupt group state.
+    boundaries:
+      - SGS must not invoke VDF.
+      - SGS must not copy files from S3.
+      - SGS must use normalized scan result payloads and MongoDB state as the
+        source of truth, not VDF internal state.
+
+  shared_requirements:
+    messaging:
+      new_video_ready_for_scan:
+        fields: [event_id, schema_version, video_id, s3_reference, timestamp,
+                 correlation_id]
+      scan_completed:
+        fields: [event_id, schema_version, scan_id, result_location,
+                 scanned_video_ids, scanner_profile, scanner_version,
+                 timestamp, correlation_id]
+        constraint: must not contain large inline result payload
+      scan_persisted_grouping_completed:
+        fields: [event_id, scan_id, timestamp, correlation_id]
+        alternatives: [rabbitmq_message, mongodb_state_transition]
+
+    scan_state_machine:
+      states:
+        - awaiting_staging
+        - staged
+        - claimed
+        - scanning
+        - scan_complete
+        - grouping_complete
+        - pending_cleanup
+        - cleanup_allowed
+        - cleaned
+        - failed
+      constraint: >
+        Valid transitions must be enforced. A video must not move backward
+        through states except under an explicit retry or revision policy.
+
+    similarity_threshold_policy:
+      configurable_thresholds:
+        - storeEdgeScore
+        - autoMergeGroupScore
+        - strongDuplicateScore
+        - requireManualReviewBelow
+      constraint: all threshold values configurable without code changes
+
+    non_functional:
+      - "NFR-001: All three services independently deployable NestJS applications"
+      - "NFR-002: All inter-service communication via RabbitMQ; no direct HTTP calls for core pipeline flow"
+      - "NFR-003: MongoDB write operations with appropriate write concerns"
+      - "NFR-004: Structured error logging with video_id, scan_id, correlation_id"
+      - "NFR-005: Each service exposes a health check endpoint"
+      - "NFR-006: Tolerate temporary RabbitMQ/MongoDB unavailability via retry"
+
+scope:
+  in_scope:
+    - VideoScanStagingService NestJS application (new)
+    - VDFBatchScannerService NestJS application (new)
+    - SimilarityGroupingService NestJS application (new)
+    - RabbitMQ consumers and producers for all three services
+    - MongoDB schemas, repositories, and state machines
+    - S3 client integration in VSS and VBS
+    - VDF CLI invocation wrapper in VBS
+    - Scan result normalization layer in VBS
+    - Similarity edge and group persistence logic in SGS
+    - Similarity threshold policy configuration
+    - Cleanup state tracking in VBS
+    - Health check endpoints on all services
+  out_of_scope:
+    - Upstream video ingest pipeline
+    - VDF implementation itself
+    - REST/GraphQL API for querying similarity data
+    - Authentication or authorization
+    - Front-end or admin UI
+    - Multi-tenancy
+    - Horizontal scaling infrastructure configuration
+
+acceptance_criteria:
+  - id: AC-001
+    description: >
+      VSS consumes new-video-ready-for-scan messages and idempotently stages
+      video files to the VDF scan path. Duplicate messages do not re-stage.
+  - id: AC-002
+    description: >
+      VSS produces structured errors for missing MongoDB metadata, missing S3
+      objects, and failed file copies.
+  - id: AC-003
+    description: >
+      VBS claims batches with MongoDB-backed ownership; concurrent workers
+      cannot claim the same batch. Expired claims are recoverable.
+  - id: AC-004
+    description: >
+      VBS writes normalized scan results to S3 before publishing scan-completed.
+      The RabbitMQ message contains only the result location reference.
+  - id: AC-005
+    description: >
+      VBS tracks cleanup state per scan (pending_cleanup, cleanup_allowed,
+      cleaned, cleanup_failed) and does not purge artifacts until cleanup is
+      authorized.
+  - id: AC-006
+    description: >
+      SGS idempotently consumes scan-completed events, persists similarity
+      edges and group membership in MongoDB, and emits a cleanup authorization
+      signal.
+  - id: AC-007
+    description: >
+      All services track and enforce the scan status state machine transitions
+      (awaiting_staging → staged → claimed → scanning → scan_complete →
+      grouping_complete → pending_cleanup → cleanup_allowed → cleaned).
+  - id: AC-008
+    description: >
+      Similarity thresholds (storeEdgeScore, autoMergeGroupScore,
+      strongDuplicateScore, requireManualReviewBelow) are configurable via
+      environment configuration without code changes.
+  - id: AC-009
+    description: >
+      All services expose health check endpoints. All services log structured
+      errors with video_id, scan_id, and correlation_id context.
+  - id: AC-010
+    description: >
+      Each service is independently deployable as a NestJS application.
+
+non_goals:
+  - Implementing the upstream video ingest pipeline
+  - Implementing or modifying VDF itself
+  - Building a query API for similarity data
+  - Authentication, authorization, or multi-tenancy
+  - Front-end or admin interfaces
+  - Horizontal scaling configuration or container orchestration
+
+unresolved_ambiguity:
+  - id: UA-001
+    description: >
+      VDF CLI invocation: exact flags, output file format, and output schema
+      version. Normalization logic depends on this.
+    blocking: false
+    resolution_approach: >
+      VDF output format must be discovered during codebase_reconnaissance or
+      documented in an assumption. The normalization layer should be designed
+      to isolate this risk.
+  - id: UA-002
+    description: >
+      RabbitMQ exchange topology: exchange names, routing keys, queue names,
+      dead-letter configuration, acknowledgment strategy.
+    blocking: false
+    resolution_approach: >
+      Define exchange/queue topology as configurable (environment variables).
+      Use conventional naming as defaults during architecture phase.
+  - id: UA-003
+    description: >
+      MongoDB collection names, indexes, and write concern levels.
+    blocking: false
+    resolution_approach: >
+      Define during architecture decomposition. Indexes derived from query
+      patterns (scan status lookups, group membership lookups, claim expiry
+      lookups).
+  - id: UA-004
+    description: >
+      Scan result S3 bucket, key prefix, and retention policy configuration.
+    blocking: false
+    resolution_approach: >
+      Treat as configurable. Architecture phase defines the key schema.
+  - id: UA-005
+    description: >
+      Batch claiming: whether to use MongoDB findOneAndUpdate with atomic
+      write, optimistic locking, or a distributed lock service.
+    blocking: false
+    resolution_approach: >
+      Use MongoDB findOneAndUpdate with atomic status CAS (compare-and-swap)
+      to claim batches. Evaluate during architecture phase.
+
+produced_outputs:
+  - .ai/reports/02-behavior-contract.yaml
+  - .ai/reports/assumptions.yaml

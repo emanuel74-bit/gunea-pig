@@ -1,0 +1,446 @@
+report_id: artifact-reuse-analysis
+phase_id: artifact_reuse_analysis
+schema_version: "1.0"
+status: complete
+authority: advisory
+
+summary: >
+  Artifact reuse analysis for all 49 artifact candidates across 4 packages. Greenfield
+  project confirmed (03-codebase-reconnaissance.yaml: no src/, packages/, services/,
+  no package.json, no tsconfig files). No existing artifacts were found. All 49
+  candidates receive create_new action. No reuse, modification, extraction, split,
+  merge, rename, move, deprecation, or deletion actions apply. Local convention
+  candidates (12, from local-convention-candidates.yaml) are now resolved in
+  local-alignment.yaml — they inform implementation but generate no artifact actions
+  themselves (they define patterns for how to write new artifacts, not what to do
+  with existing ones).
+
+inputs_consumed:
+  - source: .ai/reports/04-draft-role-signals.yaml
+    type: draft_role_signals
+  - source: .ai/reports/03-codebase-reconnaissance.yaml
+    type: codebase_reconnaissance
+  - source: .ai/reports/local-convention-candidates.yaml
+    type: local_convention_candidates
+
+reuse_scan:
+  existing_artifacts_found: false
+  scan_method: codebase_reconnaissance_greenfield_confirmation
+  evidence_ref: .ai/reports/03-codebase-reconnaissance.yaml#CR-001
+  decisions:
+    - id: RA-DECISION-001
+      finding: No src/, packages/, services/ directories exist
+      conclusion: No existing artifacts to consider for reuse, modification, extraction, split, merge, or rename
+    - id: RA-DECISION-002
+      finding: No package.json or tsconfig*.json at project root or sub-directories
+      conclusion: No existing dependency or TypeScript configuration to reuse or wrap
+    - id: RA-DECISION-003
+      finding: 12 local convention candidates established in local-alignment.yaml
+      conclusion: >
+        Convention decisions (naming, tooling, library choices) inform how new artifacts
+        are written, not what action to take on existing artifacts. All convention
+        candidates generate no artifact actions; they are referenced by implementation
+        as authoring constraints.
+
+artifact_action_table:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SHARED-TYPES PACKAGE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-SHARED-001
+    proposed_name: NewVideoReadyForScanEvent
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — no existing event contract; must be created in shared-types package
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SHARED-002
+    proposed_name: ScanCompletedEvent
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — no existing event contract
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SHARED-003
+    proposed_name: ScanState
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — no existing scan state enum
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SHARED-004
+    proposed_name: SimilarityThresholdConfig
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — no existing threshold config interface
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SHARED-005
+    proposed_name: NormalizedScanResult
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — no existing normalized scan result interface
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VSS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-VSS-001
+    proposed_name: StagingModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-002
+    proposed_name: NewVideoConsumer
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-003
+    proposed_name: StagingService
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — draft role signals flagged use_case as more specific; final name to be confirmed in final_role_assignment
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VSS-003]
+
+  - artifact_id: AC-VSS-004
+    proposed_name: StagingIdempotencyPolicy
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-005
+    proposed_name: S3VideoDownloader
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-006
+    proposed_name: FilesystemStagingWriter
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-007
+    proposed_name: ScanStateRepository (VSS)
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — VSS-scoped repository instance
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#ROLE-COLLISION-SCAN-STATE-REPO]
+
+  - artifact_id: AC-VSS-008
+    proposed_name: VideoMetadataRepository
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-009
+    proposed_name: StagingConfigDto
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-010
+    proposed_name: VssHealthModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-011
+    proposed_name: VssAppModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VSS-012
+    proposed_name: RabbitMqConnectionModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — module role confirmed over provider in draft role signals
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VSS-012]
+
+  - artifact_id: AC-VSS-013
+    proposed_name: ScanStateSchema
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — schema placement (shared vs per-service) deferred to structure_rendering
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#ROLE-COLLISION-SCAN-STATE-REPO]
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VBS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-VBS-001
+    proposed_name: BatchClaimModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-002
+    proposed_name: BatchClaimScheduler
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-003
+    proposed_name: BatchClaimService
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — draft role signals flagged use_case; final name confirmed in final_role_assignment
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VBS-003]
+
+  - artifact_id: AC-VBS-004
+    proposed_name: ClaimOwnershipPolicy
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-005
+    proposed_name: ScanExecutionModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-006
+    proposed_name: ScanExecutionService
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — draft role signals flagged use_case
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VBS-006]
+
+  - artifact_id: AC-VBS-007
+    proposed_name: VdfCliAdapter
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-008
+    proposed_name: VdfOutputNormalizerAdapter
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — dual signal resolved to adapter in draft role signals
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VBS-008]
+
+  - artifact_id: AC-VBS-009
+    proposed_name: ResultPublicationModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-010
+    proposed_name: ResultPublicationService
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — draft role signals flagged use_case
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VBS-010]
+
+  - artifact_id: AC-VBS-011
+    proposed_name: S3ScanResultWriter
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-012
+    proposed_name: ScanCompletedPublisher
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-013
+    proposed_name: ScanStateRepository (VBS)
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — VBS-scoped repository instance; same collection as VSS instance
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#ROLE-COLLISION-SCAN-STATE-REPO]
+
+  - artifact_id: AC-VBS-014
+    proposed_name: BatchClaimRepository
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-015
+    proposed_name: CleanupModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-016
+    proposed_name: CleanupService
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — draft role signals flagged use_case
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-VBS-016]
+
+  - artifact_id: AC-VBS-017
+    proposed_name: VbsConfigDto
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-018
+    proposed_name: VbsHealthModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-VBS-019
+    proposed_name: VbsAppModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SGS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-SGS-001
+    proposed_name: GroupingModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-002
+    proposed_name: ScanCompletedConsumer
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-003
+    proposed_name: ScanResultIngestionService
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield — draft role signals flagged use_case
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001, .ai/reports/04-draft-role-signals.yaml#AC-SGS-003]
+
+  - artifact_id: AC-SGS-004
+    proposed_name: ScanResultSchemaValidator
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-005
+    proposed_name: S3ScanResultLoader
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-006
+    proposed_name: SimilarityEdgeFactory
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-007
+    proposed_name: GroupMergePolicy
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-008
+    proposed_name: SimilarityEdgeRepository
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-009
+    proposed_name: SimilarityGroupRepository
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-010
+    proposed_name: GroupingCompletionWriter
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-011
+    proposed_name: SgsConfigDto
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+  - artifact_id: AC-SGS-012
+    proposed_name: SgsAppModule
+    action: create_new
+    action_family: additive_change
+    reason: Greenfield
+    evidence_refs: [.ai/reports/03-codebase-reconnaissance.yaml#CR-001]
+
+action_summary:
+  total_candidates: 49
+  create_new: 49
+  reuse_existing: 0
+  modify_existing: 0
+  rename_existing: 0
+  move_existing: 0
+  extract_from_existing: 0
+  split_existing: 0
+  merge_existing: 0
+  replace_existing: 0
+  deprecate_existing: 0
+  delete_existing: 0
+  no_code_change: 0
+
+deferred_decisions:
+  - decision_id: DEFER-001
+    topic: ScanStateSchema placement
+    affected_artifacts: [AC-VSS-013, AC-VSS-007, AC-VBS-013]
+    description: Whether the shared Mongoose schema definition lives in shared-types or is mirrored per service
+    defer_to: structure_rendering
+    evidence_ref: .ai/reports/04-draft-role-signals.yaml#ROLE-COLLISION-SCAN-STATE-REPO
+
+  - decision_id: DEFER-002
+    topic: Orchestration use_case final naming
+    affected_artifacts: [AC-VSS-003, AC-VBS-003, AC-VBS-006, AC-VBS-010, AC-VBS-016, AC-SGS-003]
+    description: >
+      Draft role signals flagged these as use_case (not service). Final file name suffix
+      (StagingUseCase vs StagingService) and whether NestJS convention favors keeping
+      "Service" suffix even for use_case role to be resolved in final_role_assignment.
+    defer_to: final_role_assignment
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.artifact_reuse_analysis.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/artifact-reuse-analysis.yaml

@@ -1,0 +1,108 @@
+report_id: consumer-impact
+phase_id: change_impact_analysis
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Consumer impact analysis for VDF pipeline. No existing external consumers.
+  Internal consumers (services consuming shared-types and each other) documented
+  for implementation sequencing. shared-types must be built and stable before
+  VSS, VBS, and SGS can implement their consumer artifacts.
+
+inputs_consumed:
+  - source: .ai/reports/07-change-impact.yaml
+    type: change_impact
+  - source: .ai/reports/call-site-impact.yaml
+    type: call_site_impact
+
+external_consumers: []
+reason: Greenfield — no external system currently consumes VDF pipeline output
+
+internal_consumers:
+
+  - consumer_id: IC-001
+    consumer: packages/vss-service (all artifacts)
+    produces: NewVideoReadyForScanEvent consumer, ScanStateSchema user
+    consumes_from: packages/shared-types
+    consumed_artifacts:
+      - NewVideoReadyForScanEvent (AC-SHARED-001)
+      - ScanState enum (AC-SHARED-003)
+      - ScanStateSchema (AC-SHARED-SCHEMA-001)
+    impact_if_changed: Rebuild and redeploy VSS required for any shared-types change
+    build_dependency: shared-types must be built first
+
+  - consumer_id: IC-002
+    consumer: packages/vbs-service (all artifacts)
+    produces: ScanCompletedEvent publisher, ScanStateSchema user
+    consumes_from: packages/shared-types
+    consumed_artifacts:
+      - ScanCompletedEvent (AC-SHARED-002)
+      - ScanState enum (AC-SHARED-003)
+      - NormalizedScanResult interface (AC-SHARED-005)
+      - ScanStateSchema (AC-SHARED-SCHEMA-001)
+    impact_if_changed: Rebuild and redeploy VBS required for any shared-types change
+    build_dependency: shared-types must be built first
+
+  - consumer_id: IC-003
+    consumer: packages/sgs-service (all artifacts)
+    produces: ScanCompletedEvent consumer, grouping logic
+    consumes_from: packages/shared-types
+    consumed_artifacts:
+      - ScanCompletedEvent (AC-SHARED-002)
+      - ScanState enum (AC-SHARED-003)
+      - NormalizedScanResult interface (AC-SHARED-005)
+      - SimilarityThresholdConfig interface (AC-SHARED-004)
+    impact_if_changed: Rebuild and redeploy SGS required for any shared-types change
+    build_dependency: shared-types must be built first
+
+  - consumer_id: IC-004
+    consumer: SGS ScanResultIngestionService (AC-SGS-003)
+    produces: Idempotency check consumer
+    consumes_from: VBS ScanStateRepository (AC-VBS-013) via shared MongoDB scan_states collection
+    consumed_artifacts:
+      - scan_states collection (MongoDB, managed by VBS schema)
+    impact_if_changed: SGS cross-service MongoDB query breaks if scan_states field names change
+    build_dependency: No code dependency; runtime dependency on MongoDB collection shape
+
+  - consumer_id: IC-005
+    consumer: VBS CleanupService (AC-VBS-016)
+    produces: Cleanup authorization consumer
+    consumes_from: SGS GroupingCompletionWriterAdapter (AC-SGS-010) via shared MongoDB scan_states
+    consumed_artifacts:
+      - grouping_complete state value in scan_states (MongoDB)
+    impact_if_changed: >
+      VBS polls for cleanup_allowed state; SGS writes grouping_complete. If grouping_complete
+      state value changes or is removed from ScanState enum, cleanup authorization breaks.
+    build_dependency: No code dependency; runtime MongoDB state dependency
+
+build_order:
+  - step: 1
+    package: packages/shared-types
+    reason: All three services import from shared-types; must build first
+  - step: 2
+    package: packages/vss-service
+    reason: No dependency on VBS or SGS; can build in parallel with step 2b and 2c
+  - step: 2
+    package: packages/vbs-service
+    reason: No dependency on VSS or SGS (beyond shared-types); parallel with step 2
+  - step: 2
+    package: packages/sgs-service
+    reason: No code dependency on VSS or VBS (beyond shared-types); parallel with step 2
+
+deployment_order:
+  recommended:
+    - step: 1
+      service: vss-service
+      reason: Produces staged events; must be up before VBS can claim batches
+    - step: 2
+      service: vbs-service
+      reason: Consumes staged state from VSS; produces scan-completed events for SGS
+    - step: 3
+      service: sgs-service
+      reason: Consumes scan-completed events from VBS; writes cleanup authorization for VBS
+
+triggers_emitted: []
+
+produced_outputs:
+  - .ai/reports/07-change-impact.yaml
+  - .ai/reports/consumer-impact.yaml

@@ -1,0 +1,149 @@
+report_id: compatibility-decision
+phase_id: boundary_contract_classification
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Greenfield project. No existing contract consumers to break. All seven
+  contracts (CNT-001 through CNT-007) are new (additive change type). No
+  compatibility obligation for existing consumers exists. Forward-facing
+  compatibility discipline required: once these contracts are published (RabbitMQ
+  schemas) or deployed (MongoDB schemas, env vars), they become durable contracts
+  that downstream consumers depend on. Strict schema versioning and additive-only
+  evolution policy recommended for all external_public and workspace_public surfaces.
+
+inputs_consumed:
+  - source: .ai/reports/boundary-contract-classification.yaml
+    type: boundary_contract_classification
+  - source: .ai/reports/03-codebase-reconnaissance.yaml
+    type: codebase_reconnaissance
+
+compatibility_decisions:
+
+  - contract_id: CNT-001
+    contract_surface: new-video-ready-for-scan (RabbitMQ event)
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      Once schema is published and consumed by VSS, treat as durable external contract.
+      Future changes: additive fields only. Breaking changes require schema_version bump
+      and migration window with multi-version consumer support.
+    migration_required: false
+    risk_level: low
+    decision: proceed_with_new_contract
+
+  - contract_id: CNT-002
+    contract_surface: scan-completed (RabbitMQ event)
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      Once VBS publishes and SGS consumes, treat as durable cross-service contract.
+      Future changes: additive fields only. schema_version field in payload enables
+      SGS to detect and reject incompatible versions (SGS-F-003).
+    migration_required: false
+    risk_level: low
+    decision: proceed_with_new_contract
+
+  - contract_id: CNT-003
+    contract_surface: scan-persisted-grouping-completed (cleanup signal)
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      Internal workspace contract. Mechanism (MongoDB state vs. RabbitMQ event)
+      TBD in architecture_decomposition. Once decided, treat as stable internal
+      cross-service protocol.
+    migration_required: false
+    risk_level: low
+    decision: defer_mechanism_to_architecture
+
+  - contract_id: CNT-004
+    contract_surface: MongoDB scan_states collection
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      Shared cross-service persistence contract. Schema changes require coordinated
+      deployment of all three services. New state values must be handled gracefully
+      by all consumers (unknown state → treat as non-actionable, do not transition).
+      Write concerns: majority for all state machine writes.
+    migration_required: false
+    risk_level: medium
+    decision: proceed_with_new_schema_strict_write_concerns
+
+  - contract_id: CNT-005
+    contract_surface: MongoDB scan_batch_claims collection
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      VBS-owned collection. No cross-service reads required. Schema evolution
+      is internal to VBS. Add fields additively; never remove claim fields
+      referenced by active claims.
+    migration_required: false
+    risk_level: low
+    decision: proceed_with_new_schema
+
+  - contract_id: CNT-006
+    contract_surface: "MongoDB similarity_edges, similarity_groups, video_documents"
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      SGS-owned collections. No cross-service writes. Schema evolution is internal
+      to SGS. Idempotency key strategy must be locked before implementation to
+      prevent duplicate-edge creation on retry.
+    migration_required: false
+    risk_level: low
+    decision: proceed_with_new_schema
+
+  - contract_id: CNT-007
+    contract_surface: Environment variable configuration
+    change_type: additive
+    existing_consumers: none
+    compatibility_obligation: none_for_existing_consumers
+    forward_compatibility_policy: >
+      Configuration contracts require coordinated operator action on each deployment.
+      New required env vars must be documented. Renaming env vars without deprecation
+      window is a breaking change for operators. Prefer additive env var additions.
+    migration_required: false
+    risk_level: low
+    decision: proceed_with_new_config_schema
+
+overall_compatibility_status: no_existing_consumers_all_additive
+
+blocking_compatibility_issues: []
+
+required_forward_policies:
+  - policy_id: COMPAT-FWD-001
+    applies_to: [CNT-001, CNT-002]
+    policy: >
+      RabbitMQ event schemas must include schema_version field. SGS must validate
+      schema_version on scan-completed messages (SGS-F-003). Future schema changes
+      to external_public event contracts require version bump and migration window.
+  - policy_id: COMPAT-FWD-002
+    applies_to: [CNT-004]
+    policy: >
+      MongoDB scan_states schema is a shared cross-service contract. All three
+      services must be deployed together when state machine schema changes.
+      Unknown state values must be handled gracefully (no crash, no spurious
+      transition).
+  - policy_id: COMPAT-FWD-003
+    applies_to: [CNT-003]
+    policy: >
+      Cleanup signal mechanism (MongoDB state vs. RabbitMQ event) must be decided
+      during architecture_decomposition before implementation. Once decided, the
+      mechanism is a cross-service protocol contract.
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.boundary_contract_classification.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/boundary-contract-classification.yaml
+  - .ai/reports/compatibility-decision.yaml

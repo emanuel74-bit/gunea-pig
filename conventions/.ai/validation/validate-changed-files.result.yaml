@@ -1,0 +1,16 @@
+script_id: validate-changed-files
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/validation/validate-changed-files.result.yaml
+summary:
+  changed_file_count: 1
+  affected_subsystems:
+    - D:\codeShit\gunea-pig\.ai\mission-state.yaml
+  recommended_followup_routes:
+    - validate_executor_routes
+    - validate_references
+    - compile_authority_topology
+    - validate_authority_topology

@@ -1,0 +1,690 @@
+report_id: architecture-blueprint
+phase_id: architecture_decomposition
+schema_version: "1.0"
+status: complete
+
+blueprint_id: vdf-pipeline-architecture-v1
+source_behavior_ref: .ai/reports/02-behavior-contract.yaml
+
+summary: >
+  Architecture decomposition for three independent NestJS microservices: VSS, VBS, SGS.
+  Each service follows a layered architecture (transport → application → domain/decision →
+  infrastructure). VDF CLI invocation is isolated behind VdfScannerPort. S3 access is
+  isolated behind StoragePort. RabbitMQ is isolated behind MessagingPort. MongoDB
+  persistence is isolated behind typed repository abstractions. A shared-types package
+  holds cross-service contracts (event DTOs, scan state enum, threshold config interface).
+  Cleanup authorization flows from SGS to VBS via MongoDB state transition
+  (grouping_complete triggers pending_cleanup → cleanup_allowed). All four similarity
+  thresholds are runtime-configurable via environment variables validated at startup.
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CAPABILITIES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+capabilities:
+
+  - capability_id: CAP-VSS-001
+    name: VideoStaging
+    business_purpose: >
+      Materialize ingest-ready video files from S3 onto the shared VDF scan filesystem
+      path so they are available for batch scanning.
+    source_requirements: [VSS-F-001, VSS-F-002, VSS-F-003, VSS-F-004, VSS-F-005, VSS-F-006, VSS-I-001, VSS-I-002, VSS-E-001, VSS-E-002, VSS-E-003]
+    included_behaviors:
+      - Consume new-video-ready-for-scan RabbitMQ messages
+      - Load video metadata from MongoDB
+      - Verify S3 object exists
+      - Download video from S3 to VDF scan path
+      - Record scan state transition (awaiting_staging → staged)
+      - Idempotency: skip already-staged videos
+      - Structured failure on missing metadata, missing S3 object, filesystem write failure
+    excluded_behaviors:
+      - VDF invocation
+      - Similarity grouping
+      - Batch scan coordination
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#video_scan_staging_service
+
+  - capability_id: CAP-VBS-001
+    name: BatchClaiming
+    business_purpose: >
+      Exclusively claim a batch of staged videos for scanning using MongoDB-backed
+      atomic ownership; prevent concurrent workers from processing the same batch.
+    source_requirements: [VBS-F-001, VBS-C-001, VBS-C-002, VBS-C-003, VBS-C-004, VBS-C-005]
+    included_behaviors:
+      - Poll MongoDB for staged videos
+      - Atomically claim batch with owner_id, scan_id, expiration timestamp
+      - Prevent concurrent claiming of same batch
+      - Recover expired or abandoned claims
+    excluded_behaviors:
+      - Actual VDF scan execution
+      - Result publication
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#vdf_batch_scanner_service
+
+  - capability_id: CAP-VBS-002
+    name: VDFScanExecution
+    business_purpose: >
+      Invoke VDF CLI on claimed video batch, capture output, and normalize pairwise
+      similarity results into a stable internal schema.
+    source_requirements: [VBS-F-002, VBS-F-003, VBS-F-007]
+    included_behaviors:
+      - Invoke VDF CLI via adapter (child_process isolation)
+      - Parse VDF output via normalizer adapter
+      - Produce normalized scan result payload
+      - Handle retryable VDF failures
+    excluded_behaviors:
+      - Writing results to S3 (CAP-VBS-003)
+      - State machine transitions beyond scanning → scan_complete
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#VBS-F-002,VBS-F-003
+      - .ai/reports/risk-classification.yaml#RS-001
+
+  - capability_id: CAP-VBS-003
+    name: DurableResultPublication
+    business_purpose: >
+      Write normalized scan results to S3 durably BEFORE publishing the scan-completed
+      event so SGS can reload results on retry.
+    source_requirements: [VBS-F-004, VBS-F-005, VBS-F-006, VBS-H-001, VBS-H-002, VBS-H-003, VBS-H-004]
+    included_behaviors:
+      - Write normalized JSON result to S3 with stable scan_id-based key
+      - Confirm S3 write success before publishing
+      - Publish lightweight scan-completed event (scan_id + result_location only)
+      - Maintain scan status: scanning → scan_complete → pending_cleanup
+    excluded_behaviors:
+      - Cleanup authorization (CAP-VBS-004)
+      - Similarity grouping
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#VBS-H-001,VBS-H-002,VBS-H-003
+
+  - capability_id: CAP-VBS-004
+    name: SafeCleanup
+    business_purpose: >
+      Track per-scan cleanup authorization state and only purge local VDF artifacts
+      after SGS confirms successful persistence or retention period expires.
+    source_requirements: [VBS-P-001, VBS-P-002, VBS-P-003, VBS-P-004]
+    included_behaviors:
+      - Track cleanup state: pending_cleanup → cleanup_allowed → cleaned / cleanup_failed
+      - Gate cleanup on SGS confirmation (grouping_complete state or event)
+      - Implement retention-based fallback cleanup after configurable period
+    excluded_behaviors:
+      - Deciding when grouping is complete (SGS responsibility)
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#VBS-P-001,VBS-P-002
+
+  - capability_id: CAP-SGS-001
+    name: ScanResultIngestion
+    business_purpose: >
+      Consume scan-completed events, load normalized scan results from S3, and validate
+      schema/version before processing.
+    source_requirements: [SGS-F-001, SGS-F-002, SGS-F-003, SGS-I-001]
+    included_behaviors:
+      - Consume scan-completed RabbitMQ messages with manual ack
+      - Load scan result payload from S3 result_location
+      - Validate schema version
+      - Idempotency: detect already-processed scans
+    excluded_behaviors:
+      - Edge/group persistence logic (CAP-SGS-002, CAP-SGS-003)
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#SGS-F-001,SGS-F-002,SGS-F-003
+
+  - capability_id: CAP-SGS-002
+    name: SimilarityEdgePersistence
+    business_purpose: >
+      Convert normalized VDF scan output into MongoDB similarity edge documents and
+      persist pairwise similarity scores for all video pairs.
+    source_requirements: [SGS-F-004, SGS-F-005, SGS-F-009]
+    included_behaviors:
+      - Map scan result to SimilarityEdge domain records
+      - Persist similarity edges with idempotency (upsert on scan_id + video pair key)
+      - Handle zero-match videos as successfully scanned
+    excluded_behaviors:
+      - Group merge/create logic (CAP-SGS-003)
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#SGS-F-004,SGS-F-005
+
+  - capability_id: CAP-SGS-003
+    name: GroupManagement
+    business_purpose: >
+      Evaluate similarity thresholds and merge videos into existing similarity groups
+      or create new groups. Update video documents with group membership.
+    source_requirements: [SGS-F-006, SGS-F-007, SGS-F-008]
+    included_behaviors:
+      - Apply autoMergeGroupScore threshold to decide merge vs. new group
+      - Merge into existing group or create new SimilarityGroup document
+      - Update each video document with group_id, status, match summary
+      - Apply strongDuplicateScore and requireManualReviewBelow classifications
+    excluded_behaviors:
+      - Edge persistence (CAP-SGS-002)
+      - Cleanup authorization (CAP-SGS-004)
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#SGS-F-006,SGS-F-007,SGS-F-008
+      - .ai/reports/02-behavior-contract.yaml#shared_requirements.similarity_threshold_policy
+
+  - capability_id: CAP-SGS-004
+    name: CleanupAuthorization
+    business_purpose: >
+      Signal VBS that scan results have been durably persisted and cleanup is now safe.
+    source_requirements: [SGS-F-010]
+    included_behaviors:
+      - After successful group persistence, transition scan state to grouping_complete
+      - MongoDB state write (grouping_complete) triggers VBS cleanup gate
+    excluded_behaviors:
+      - Performing the actual cleanup (VBS responsibility)
+    evidence_refs:
+      - .ai/reports/02-behavior-contract.yaml#SGS-F-010
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ATOMIC UNITS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+atomic_units:
+
+  # VSS
+  - unit_id: AU-VSS-001
+    intent: entry_intent
+    capability_ref: CAP-VSS-001
+    input_contract: new-video-ready-for-scan RabbitMQ message (amqplib Channel + message buffer)
+    output_contract: parsed NewVideoReadyForScanEvent DTO passed to staging service
+    side_effects: none (delegates only)
+    layer_candidate: transport
+    evidence_refs: [VSS-F-001]
+
+  - unit_id: AU-VSS-002
+    intent: orchestration_intent
+    capability_ref: CAP-VSS-001
+    input_contract: NewVideoReadyForScanEvent DTO
+    output_contract: StagingResult (success | structured error)
+    side_effects: MongoDB scan state write, filesystem file write, RabbitMQ ack/nack
+    layer_candidate: application
+    depends_on_units: [AU-VSS-003, AU-VSS-004, AU-VSS-005, AU-VSS-006, AU-VSS-007]
+    evidence_refs: [VSS-F-002, VSS-F-003, VSS-F-004, VSS-F-005, VSS-F-006, VSS-I-001, VSS-I-002]
+
+  - unit_id: AU-VSS-003
+    intent: decision_intent
+    capability_ref: CAP-VSS-001
+    input_contract: video_id + current scan state
+    output_contract: should_stage boolean
+    side_effects: none
+    layer_candidate: domain
+    evidence_refs: [VSS-I-001, VSS-I-002]
+
+  - unit_id: AU-VSS-004
+    intent: integration_intent
+    capability_ref: CAP-VSS-001
+    input_contract: S3Ref (bucket, key)
+    output_contract: readable stream or buffered content
+    side_effects: S3 GetObject API call
+    layer_candidate: infrastructure
+    evidence_refs: [VSS-F-003, VSS-F-004]
+
+  - unit_id: AU-VSS-005
+    intent: integration_intent
+    capability_ref: CAP-VSS-001
+    input_contract: video content stream + target path
+    output_contract: write success or failure
+    side_effects: filesystem write to VDF scan path
+    layer_candidate: infrastructure
+    evidence_refs: [VSS-F-004, VSS-E-003]
+
+  - unit_id: AU-VSS-006
+    intent: persistence_intent
+    capability_ref: CAP-VSS-001
+    input_contract: video_id + target state
+    output_contract: updated ScanState document
+    side_effects: MongoDB findOneAndUpdate (atomic state CAS)
+    layer_candidate: infrastructure
+    evidence_refs: [VSS-F-005, VSS-F-006]
+
+  - unit_id: AU-VSS-007
+    intent: persistence_intent
+    capability_ref: CAP-VSS-001
+    input_contract: video_id
+    output_contract: VideoMetadata domain object
+    side_effects: MongoDB read
+    layer_candidate: infrastructure
+    evidence_refs: [VSS-F-002, VSS-E-001]
+
+  # VBS
+  - unit_id: AU-VBS-001
+    intent: entry_intent
+    capability_ref: CAP-VBS-001
+    input_contract: scheduler tick (NestJS @Cron or setInterval)
+    output_contract: triggers batch claim service invocation
+    side_effects: none (delegates only)
+    layer_candidate: transport
+    evidence_refs: [VBS-F-001]
+
+  - unit_id: AU-VBS-002
+    intent: orchestration_intent
+    capability_ref: CAP-VBS-001
+    input_contract: scheduled trigger
+    output_contract: BatchClaimResult (claimed batch or no-op)
+    side_effects: MongoDB atomic batch claim write
+    layer_candidate: application
+    depends_on_units: [AU-VBS-003, AU-VBS-009, AU-VBS-010]
+    evidence_refs: [VBS-C-001, VBS-C-002, VBS-C-003, VBS-C-004]
+
+  - unit_id: AU-VBS-003
+    intent: decision_intent
+    capability_ref: CAP-VBS-001
+    input_contract: claim record + current timestamp
+    output_contract: is_claimable boolean
+    side_effects: none
+    layer_candidate: domain
+    evidence_refs: [VBS-C-004, VBS-C-005]
+
+  - unit_id: AU-VBS-004
+    intent: orchestration_intent
+    capability_ref: CAP-VBS-002
+    input_contract: BatchClaim (scan_id, video_ids, scan path)
+    output_contract: NormalizedScanResult
+    side_effects: VDF CLI invocation, scan state transitions
+    layer_candidate: application
+    depends_on_units: [AU-VBS-005, AU-VBS-006, AU-VBS-009]
+    evidence_refs: [VBS-F-002, VBS-F-003, VBS-F-006, VBS-F-007]
+
+  - unit_id: AU-VBS-005
+    intent: integration_intent
+    capability_ref: CAP-VBS-002
+    input_contract: VDF invocation parameters (scan path, video_ids, config)
+    output_contract: raw VDF output (file/stdout)
+    side_effects: child_process.spawn (VDF CLI)
+    layer_candidate: infrastructure
+    evidence_refs: [VBS-F-002, A-001, A-005]
+
+  - unit_id: AU-VBS-006
+    intent: transformation_intent
+    capability_ref: CAP-VBS-002
+    input_contract: raw VDF output (format TBD)
+    output_contract: NormalizedScanResult (stable internal schema)
+    side_effects: none (pure transformation)
+    layer_candidate: infrastructure
+    evidence_refs: [VBS-F-003, A-005]
+    notes: Isolated adapter — VDF output format is the high-risk boundary
+
+  - unit_id: AU-VBS-007
+    intent: orchestration_intent
+    capability_ref: CAP-VBS-003
+    input_contract: NormalizedScanResult + scan_id
+    output_contract: publication confirmation
+    side_effects: S3 PutObject + RabbitMQ publish + MongoDB state write (scan_complete → pending_cleanup)
+    layer_candidate: application
+    depends_on_units: [AU-VBS-008_s3, AU-VBS-008_pub, AU-VBS-009]
+    evidence_refs: [VBS-H-001, VBS-H-002, VBS-F-004, VBS-F-005]
+
+  - unit_id: AU-VBS-008-s3
+    intent: integration_intent
+    capability_ref: CAP-VBS-003
+    input_contract: NormalizedScanResult + S3 key schema
+    output_contract: S3ResultRef (bucket + key)
+    side_effects: S3 PutObject
+    layer_candidate: infrastructure
+    evidence_refs: [VBS-F-004, VBS-H-003]
+
+  - unit_id: AU-VBS-008-pub
+    intent: integration_intent
+    capability_ref: CAP-VBS-003
+    input_contract: ScanCompletedEvent DTO (scan_id, result_location, scanned_video_ids, ...)
+    output_contract: publish confirmation
+    side_effects: RabbitMQ publish
+    layer_candidate: infrastructure
+    evidence_refs: [VBS-F-005, VBS-H-002]
+
+  - unit_id: AU-VBS-009
+    intent: persistence_intent
+    capability_ref: CAP-VBS-001
+    input_contract: video_id / scan_id + target state + conditions
+    output_contract: updated ScanState document
+    side_effects: MongoDB findOneAndUpdate with CAS conditions
+    layer_candidate: infrastructure
+    evidence_refs: [VBS-F-006, VBS-C-001, VBS-C-002]
+
+  - unit_id: AU-VBS-010
+    intent: persistence_intent
+    capability_ref: CAP-VBS-001
+    input_contract: BatchClaim record
+    output_contract: stored / updated / found claim
+    side_effects: MongoDB findOneAndUpdate (atomic claim)
+    layer_candidate: infrastructure
+    evidence_refs: [VBS-C-003, VBS-C-004]
+
+  - unit_id: AU-VBS-011
+    intent: orchestration_intent
+    capability_ref: CAP-VBS-004
+    input_contract: cleanup_allowed state event from MongoDB (grouping_complete) or expiry timer
+    output_contract: cleaned scan artifacts or cleanup_failed record
+    side_effects: filesystem delete + MongoDB state write (cleaned / cleanup_failed)
+    layer_candidate: application
+    depends_on_units: [AU-VBS-009]
+    evidence_refs: [VBS-P-002, VBS-P-003, VBS-P-004]
+
+  # SGS
+  - unit_id: AU-SGS-001
+    intent: entry_intent
+    capability_ref: CAP-SGS-001
+    input_contract: scan-completed RabbitMQ message
+    output_contract: parsed ScanCompletedEvent DTO passed to ingestion service
+    side_effects: none (delegates only)
+    layer_candidate: transport
+    evidence_refs: [SGS-F-001]
+
+  - unit_id: AU-SGS-002
+    intent: orchestration_intent
+    capability_ref: CAP-SGS-001
+    input_contract: ScanCompletedEvent DTO
+    output_contract: IngestionResult (success | idempotent skip | failure)
+    side_effects: S3 GetObject, MongoDB writes, RabbitMQ ack/nack
+    layer_candidate: application
+    depends_on_units: [AU-SGS-003, AU-SGS-004, AU-SGS-005, AU-SGS-006, AU-SGS-007, AU-SGS-008, AU-SGS-009, AU-SGS-010]
+    evidence_refs: [SGS-F-001, SGS-F-002, SGS-F-003, SGS-I-001]
+
+  - unit_id: AU-SGS-003
+    intent: decision_intent
+    capability_ref: CAP-SGS-001
+    input_contract: scan result payload header (schema_version, format)
+    output_contract: valid | invalid ScanResultSchema decision
+    side_effects: none
+    layer_candidate: domain
+    evidence_refs: [SGS-F-003]
+
+  - unit_id: AU-SGS-004
+    intent: integration_intent
+    capability_ref: CAP-SGS-001
+    input_contract: S3ResultRef (bucket, key)
+    output_contract: NormalizedScanResult JSON
+    side_effects: S3 GetObject
+    layer_candidate: infrastructure
+    evidence_refs: [SGS-F-002, VBS-H-004]
+
+  - unit_id: AU-SGS-005
+    intent: transformation_intent
+    capability_ref: CAP-SGS-002
+    input_contract: NormalizedScanResult + similarity threshold config
+    output_contract: list of SimilarityEdge domain objects
+    side_effects: none
+    layer_candidate: domain
+    evidence_refs: [SGS-F-004]
+
+  - unit_id: AU-SGS-006
+    intent: decision_intent
+    capability_ref: CAP-SGS-003
+    input_contract: SimilarityEdge scores + threshold config (autoMergeGroupScore, strongDuplicateScore, requireManualReviewBelow)
+    output_contract: GroupAction (merge_into_existing | create_new | no_group | manual_review)
+    side_effects: none
+    layer_candidate: domain
+    evidence_refs: [SGS-F-006, SGS-F-007]
+
+  - unit_id: AU-SGS-007
+    intent: persistence_intent
+    capability_ref: CAP-SGS-002
+    input_contract: list of SimilarityEdge domain objects + idempotency key (scan_id + video pair)
+    output_contract: persisted edge count
+    side_effects: MongoDB upsert (idempotent)
+    layer_candidate: infrastructure
+    evidence_refs: [SGS-F-005, SGS-I-001]
+
+  - unit_id: AU-SGS-008
+    intent: persistence_intent
+    capability_ref: CAP-SGS-003
+    input_contract: GroupAction + affected video_ids + group_id (if merge)
+    output_contract: updated SimilarityGroup + video document refs
+    side_effects: MongoDB write (group upsert + video document update)
+    layer_candidate: infrastructure
+    evidence_refs: [SGS-F-006, SGS-F-007, SGS-F-008]
+
+  - unit_id: AU-SGS-009
+    intent: integration_intent
+    capability_ref: CAP-SGS-004
+    input_contract: scan_id + confirmation that persistence completed
+    output_contract: grouping_complete state transition written to MongoDB
+    side_effects: MongoDB state write (grouping_complete)
+    layer_candidate: infrastructure
+    evidence_refs: [SGS-F-010]
+
+  - unit_id: AU-SGS-010
+    intent: decision_intent
+    capability_ref: CAP-SGS-001
+    input_contract: scan_id + MongoDB scan state
+    output_contract: already_processed boolean
+    side_effects: MongoDB read
+    layer_candidate: domain
+    evidence_refs: [SGS-I-001]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTENTS SUMMARY
+# ═══════════════════════════════════════════════════════════════════════════════
+
+intents:
+  entry_intent: [AU-VSS-001, AU-VBS-001, AU-SGS-001]
+  orchestration_intent: [AU-VSS-002, AU-VBS-002, AU-VBS-004, AU-VBS-007, AU-VBS-011, AU-SGS-002]
+  decision_intent: [AU-VSS-003, AU-VBS-003, AU-SGS-003, AU-SGS-006, AU-SGS-010]
+  persistence_intent: [AU-VSS-006, AU-VSS-007, AU-VBS-009, AU-VBS-010, AU-SGS-007, AU-SGS-008]
+  integration_intent: [AU-VSS-004, AU-VSS-005, AU-VBS-005, AU-VBS-008-s3, AU-VBS-008-pub, AU-SGS-004, AU-SGS-009]
+  transformation_intent: [AU-VBS-006, AU-SGS-005]
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# LAYER ASSIGNMENTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+layer_assignments:
+  transport:
+    units: [AU-VSS-001, AU-VBS-001, AU-SGS-001]
+    notes: RabbitMQ consumer handlers only; delegate immediately to application service
+  application:
+    units: [AU-VSS-002, AU-VBS-002, AU-VBS-004, AU-VBS-007, AU-VBS-011, AU-SGS-002]
+    notes: Orchestration services coordinate domain policies and infrastructure ports
+  domain:
+    units: [AU-VSS-003, AU-VBS-003, AU-SGS-003, AU-SGS-005, AU-SGS-006, AU-SGS-010]
+    notes: Pure business rules — no NestJS decorators, no MongoDB/S3/RabbitMQ imports
+  infrastructure:
+    units: [AU-VSS-004, AU-VSS-005, AU-VSS-006, AU-VSS-007, AU-VBS-005, AU-VBS-006, AU-VBS-008-s3, AU-VBS-008-pub, AU-VBS-009, AU-VBS-010, AU-SGS-004, AU-SGS-007, AU-SGS-008, AU-SGS-009]
+    notes: Adapters, repositories, clients — implement ports defined at application/domain boundary
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOUNDARY REFS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+boundary_refs:
+  - boundary_id: PORT-MESSAGING
+    boundary_type: message_queue_boundary
+    description: Abstract messaging port for RabbitMQ consumers and producers
+    required_by: [AU-VSS-001, AU-VBS-008-pub, AU-SGS-001]
+    implemented_by: RabbitMqMessagingAdapter (infrastructure layer, each service)
+    evidence_ref: .ai/reports/boundary-contract-classification.yaml#BND-VSS-001,BND-VBS-004,BND-SGS-001
+
+  - boundary_id: PORT-STORAGE
+    boundary_type: file_storage_boundary
+    description: Abstract storage port for S3 read/write operations
+    required_by: [AU-VSS-004, AU-VBS-008-s3, AU-SGS-004]
+    implemented_by: S3StorageAdapter (infrastructure layer, each service)
+    evidence_ref: .ai/reports/boundary-contract-classification.yaml#BND-VSS-003,BND-VBS-003,BND-SGS-002
+
+  - boundary_id: PORT-VDF-SCANNER
+    boundary_type: external_system_boundary
+    description: Abstract port for VDF CLI invocation and output retrieval
+    required_by: [AU-VBS-004]
+    implemented_by: VdfCliAdapter (infrastructure layer, VBS only)
+    evidence_ref: .ai/reports/risk-classification.yaml#RF-001
+
+  - boundary_id: PORT-VDF-NORMALIZER
+    boundary_type: external_system_boundary
+    description: Abstract port for VDF output normalization (isolates format changes)
+    required_by: [AU-VBS-004]
+    implemented_by: VdfOutputNormalizerAdapter (infrastructure layer, VBS only)
+    evidence_ref: .ai/reports/assumptions.yaml#A-005
+
+  - boundary_id: REPO-SCAN-STATE
+    boundary_type: persistence_boundary
+    description: Repository abstraction for scan state machine document
+    required_by: [AU-VSS-002, AU-VBS-002, AU-VBS-004, AU-VBS-007, AU-VBS-011, AU-SGS-002]
+    implemented_by: ScanStateRepository (MongoDB + Mongoose, shared collection schema from shared-types)
+    evidence_ref: .ai/reports/boundary-contract-classification.yaml#CNT-004
+
+  - boundary_id: REPO-BATCH-CLAIM
+    boundary_type: persistence_boundary
+    description: Repository abstraction for VBS batch claim records
+    required_by: [AU-VBS-002]
+    implemented_by: BatchClaimRepository (MongoDB + Mongoose, VBS-owned)
+    evidence_ref: .ai/reports/boundary-contract-classification.yaml#CNT-005
+
+  - boundary_id: REPO-SIMILARITY-DATA
+    boundary_type: persistence_boundary
+    description: Repository abstractions for similarity edges, groups, video documents
+    required_by: [AU-SGS-002]
+    implemented_by: SimilarityEdgeRepository + SimilarityGroupRepository (MongoDB, SGS-owned)
+    evidence_ref: .ai/reports/boundary-contract-classification.yaml#CNT-006
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEPENDENCY CONSTRAINTS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+dependency_constraints:
+  required_edges:
+    - source: transport_layer
+      target: application_layer
+      mechanism: constructor_injection via NestJS DI
+    - source: application_layer
+      target: domain_layer
+      mechanism: direct call (pure functions / class methods)
+    - source: application_layer
+      target: declared_ports
+      mechanism: constructor_injection (interface token, not concrete class)
+    - source: infrastructure_layer
+      target: declared_ports
+      mechanism: implements port interface
+    - source: infrastructure_layer
+      target: external_systems
+      mechanism: SDK clients (@aws-sdk/client-s3, amqplib, Mongoose)
+
+  forbidden_edges:
+    - source: domain_layer
+      target: infrastructure_layer
+      reason: domain must be framework-independent
+    - source: domain_layer
+      target: transport_layer
+      reason: domain must be callable by any transport
+    - source: application_layer
+      target: raw_mongodb_models
+      reason: application must depend on port interfaces, not Mongoose documents
+    - source: transport_layer
+      target: infrastructure_layer
+      reason: consumers must not call repositories or clients directly
+    - source: vss_service
+      target: vbs_service
+      reason: services must not import each other; communicate only via RabbitMQ/MongoDB
+    - source: vbs_service
+      target: sgs_service
+      reason: same — no direct cross-service import
+    - source: sgs_service
+      target: vss_service
+      reason: same — no direct cross-service import
+
+  required_ports:
+    - PORT-MESSAGING (all three services)
+    - PORT-STORAGE (VSS, VBS, SGS)
+    - PORT-VDF-SCANNER (VBS only)
+    - PORT-VDF-NORMALIZER (VBS only)
+    - REPO-SCAN-STATE (all three services — shared collection)
+    - REPO-BATCH-CLAIM (VBS only)
+    - REPO-SIMILARITY-DATA (SGS only)
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# KEY ARCHITECTURAL DECISIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+assumptions:
+  - id: ARCH-ASMP-001
+    statement: >
+      Monorepo with npm workspaces: packages/vss-service, packages/vbs-service,
+      packages/sgs-service, packages/shared-types. shared-types holds message DTOs,
+      scan state enum, and threshold config interface only.
+    evidence: .ai/reports/local-alignment.yaml#CC-001
+
+  - id: ARCH-ASMP-002
+    statement: >
+      Cleanup authorization mechanism: SGS writes grouping_complete state to MongoDB
+      scan_states collection. VBS cleanup worker polls for scans in grouping_complete
+      state and transitions to cleanup_allowed, then performs cleanup. No separate
+      RabbitMQ event needed — MongoDB state is the signal.
+    evidence: .ai/reports/02-behavior-contract.yaml#SGS-F-010,VBS-P-002
+
+  - id: ARCH-ASMP-003
+    statement: >
+      RabbitMQ exchange topology: Two direct exchanges (vdf.pipeline.ingest and
+      vdf.pipeline.scan). Exchange vdf.pipeline.ingest routes new-video-ready-for-scan
+      to VSS queue. Exchange vdf.pipeline.scan routes scan-completed to SGS queue.
+      Dead-letter exchange: vdf.pipeline.dlx with per-queue DLQ binding.
+    evidence: .ai/reports/02-behavior-contract.yaml#UA-002
+
+  - id: ARCH-ASMP-004
+    statement: >
+      VDF CLI output format: Assumed to be a JSON file written to a configurable
+      output directory with pairwise similarity records. Normalizer adapter parses
+      this file. If format changes, only VdfOutputNormalizerAdapter changes.
+    evidence: .ai/reports/assumptions.yaml#A-005
+
+  - id: ARCH-ASMP-005
+    statement: >
+      MongoDB collection names: scan_states, scan_batch_claims, similarity_edges,
+      similarity_groups. All write operations on scan_states use write concern majority.
+      Indexes: scan_states on (video_id, status), (status, updated_at);
+      scan_batch_claims on (status, claim_expiration_timestamp);
+      similarity_edges on (scan_id, video_pair_key) unique;
+      similarity_groups on (group_id) unique.
+    evidence: .ai/reports/02-behavior-contract.yaml#UA-003
+
+  - id: ARCH-ASMP-006
+    statement: >
+      S3 result key schema: scan-results/{scan_id}/normalized-result.json.
+      Bucket name configurable via SCAN_RESULT_S3_BUCKET env var.
+    evidence: .ai/reports/02-behavior-contract.yaml#UA-004
+
+rejected_alternatives:
+  - alternative: Use @nestjs/microservices RMQ transport instead of amqplib
+    reason: >
+      @nestjs/microservices RMQ transport abstracts manual ack/nack, preventing
+      the precise ack discipline required for idempotency (VSS-I-001, SGS-I-001).
+      amqplib via amqp-connection-manager provides explicit ack control.
+    evidence: .ai/reports/local-alignment.yaml#CC-007
+
+  - alternative: Use a separate RabbitMQ event for cleanup authorization instead of MongoDB state
+    reason: >
+      MongoDB state transition (grouping_complete) is already authoritative for
+      scan lifecycle. Adding a separate RabbitMQ event creates dual-mechanism complexity
+      and a potential ordering race between the state write and the event publish.
+      MongoDB-based polling by VBS cleanup worker is simpler and auditable.
+    evidence: .ai/reports/boundary-contract-classification.yaml#CNT-003
+
+  - alternative: Polyrepo structure (three separate git repositories)
+    reason: >
+      Shared message DTOs, scan state enums, and threshold config interfaces would
+      require package publication for cross-repo sharing. Monorepo with npm workspaces
+      provides these benefits without the overhead.
+    evidence: .ai/reports/local-alignment.yaml#CC-001
+
+  - alternative: Place VDF output normalization inside the scan execution service
+    reason: >
+      Mixing integration_intent (child_process invocation) with transformation_intent
+      (output normalization) violates single-intent rule. Separating them allows
+      independent testing of normalization without invoking VDF CLI.
+    evidence: conventions.architecture.yaml#ATOMIC-UNIT-003
+
+evidence_refs:
+  - .ai/reports/02-behavior-contract.yaml
+  - .ai/reports/assumptions.yaml
+  - .ai/reports/03-codebase-reconnaissance.yaml
+  - .ai/reports/risk-classification.yaml
+  - .ai/reports/boundary-contract-classification.yaml
+  - .ai/reports/dependency-classification.yaml
+  - .ai/reports/local-alignment.yaml
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.architecture_decomposition.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/architecture-blueprint.yaml
+  - .ai/reports/artifact-candidates.yaml

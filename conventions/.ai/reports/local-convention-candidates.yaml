@@ -1,0 +1,153 @@
+report_id: local-convention-candidates
+phase_id: codebase_reconnaissance
+schema_version: "1.0"
+status: complete
+
+summary: >
+  No existing local implementation conventions detected. The project is a
+  confirmed greenfield with no TypeScript source files, no linting or formatter
+  configuration, no test framework setup, and no deployment convention files.
+  All conventions enumerated below are candidates to establish (not pre-existing
+  discoveries). They will be resolved and committed during the local_alignment phase.
+
+inputs_consumed:
+  - source: .ai/reports/03-codebase-reconnaissance.yaml
+    type: codebase_reconnaissance
+  - source: .ai/reports/02-behavior-contract.yaml
+    type: behavior_contract
+
+detection_basis: >
+  Zero existing implementation files were found. All candidate conventions
+  below are derived from the behavior contract, technology constraints
+  (system-requirements.md section 1), and greenfield NestJS community defaults.
+  None are observed from existing code.
+
+existing_local_conventions: []
+
+convention_candidates:
+  - id: CC-001
+    category: project_structure
+    description: >
+      Monorepo vs. polyrepo: Whether to organize VSS, VBS, and SGS as
+      three separate repositories, an npm workspaces monorepo, or a flat
+      monorepo with service subdirectories.
+    status: to_be_decided_in_local_alignment
+    evidence: no_evidence (greenfield decision)
+
+  - id: CC-002
+    category: typescript_configuration
+    description: >
+      TypeScript strict mode, target ES version, module system (CommonJS vs.
+      ESM), and path aliases. NestJS typically uses CommonJS with
+      tsconfig.json strict mode enabled.
+    status: to_be_decided_in_local_alignment
+    evidence: no_evidence (greenfield decision)
+
+  - id: CC-003
+    category: code_style
+    description: >
+      ESLint + Prettier configuration. NestJS CLI scaffolds with
+      @nestjs/eslint-config and prettier by default.
+    status: to_be_decided_in_local_alignment
+    evidence: no_evidence (greenfield decision)
+
+  - id: CC-004
+    category: testing_framework
+    description: >
+      Test framework selection: Jest (NestJS default) or Vitest.
+      Unit test co-location (*.spec.ts next to source) vs. separate test/
+      directory.
+    status: to_be_decided_in_local_alignment
+    evidence: no_evidence (greenfield decision)
+
+  - id: CC-005
+    category: naming_conventions
+    description: >
+      File naming: NestJS convention uses kebab-case for file names
+      (e.g., video-scan-staging.service.ts). Class names use PascalCase.
+      Module names follow domain-first pattern.
+    status: to_be_decided_in_local_alignment
+    evidence: no_evidence (greenfield, NestJS community default)
+
+  - id: CC-006
+    category: environment_configuration
+    description: >
+      Environment variable naming convention and validation. NestJS
+      ConfigModule with @nestjs/config and class-validator for config DTOs
+      is a common pattern.
+    status: to_be_decided_in_local_alignment
+    evidence: system-requirements.md section 7 (configurable thresholds)
+
+  - id: CC-007
+    category: rabbitmq_client
+    description: >
+      RabbitMQ client library: @nestjs/microservices with RMQ transport vs.
+      amqplib directly vs. amqp-connection-manager. Message acknowledgment
+      strategy (manual ack required for at-least-once delivery).
+    status: to_be_decided_in_local_alignment
+    evidence: docs/system-requirements.md section 4
+
+  - id: CC-008
+    category: mongodb_client
+    description: >
+      MongoDB client: @nestjs/mongoose (Mongoose ODM) vs. native mongodb
+      driver (@nestjs/mongoose preferred for schema validation and repository
+      pattern).
+    status: to_be_decided_in_local_alignment
+    evidence: docs/system-requirements.md section 1
+
+  - id: CC-009
+    category: s3_client
+    description: >
+      S3 client: @aws-sdk/client-s3 (AWS SDK v3 modular) for S3-compatible
+      storage. Endpoint configurable for non-AWS S3-compatible services.
+    status: to_be_decided_in_local_alignment
+    evidence: docs/system-requirements.md section 1
+
+  - id: CC-010
+    category: logging
+    description: >
+      Structured logging with video_id, scan_id, correlation_id context fields
+      (NFR-004). NestJS Logger vs. external structured logger (pino, winston).
+    status: to_be_decided_in_local_alignment
+    evidence: .ai/reports/02-behavior-contract.yaml (NFR-004)
+
+  - id: CC-011
+    category: health_checks
+    description: >
+      Health check endpoint pattern: @nestjs/terminus for /health endpoint
+      with RabbitMQ and MongoDB readiness probes (NFR-005).
+    status: to_be_decided_in_local_alignment
+    evidence: .ai/reports/02-behavior-contract.yaml (NFR-005)
+
+  - id: CC-012
+    category: node_version
+    description: >
+      Node.js 18.8.0 pinned. .nvmrc or .node-version file should pin this
+      for local development. Package engines field in package.json should
+      enforce constraint.
+    status: to_be_established
+    evidence: docs/system-requirements.md section 1 (pinned constraint)
+
+global_convention_alignment:
+  typescript: aligned — system-requirements mandates TypeScript
+  nestjs: aligned — system-requirements mandates NestJS
+  rabbitmq: aligned — system-requirements mandates RabbitMQ for all IPC
+  mongodb: aligned — system-requirements mandates MongoDB
+  node_18_8_0: aligned — pinned version from system-requirements
+
+alignment_gaps:
+  - gap: monorepo_structure
+    description: Not specified in system-requirements. To be resolved in local_alignment.
+  - gap: vdf_cli_interface
+    description: VDF CLI output format unknown. Isolation required in VBS normalization layer.
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.codebase_reconnaissance.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/local-convention-candidates.yaml

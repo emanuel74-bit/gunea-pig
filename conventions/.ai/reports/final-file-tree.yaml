@@ -1,0 +1,357 @@
+report_id: final-file-tree
+phase_id: structure_rendering
+schema_version: "1.0"
+status: complete
+authority: binding
+
+summary: >
+  Binding final file tree for VDF pipeline monorepo. 4 packages, 53 source artifacts
+  plus support files. All paths are relative to project root.
+
+root_files:
+  - path: package.json
+    role: config
+    purpose: npm workspaces root — declares workspace packages and shared scripts
+  - path: .nvmrc
+    role: config
+    purpose: Node version pin (18.8.0)
+  - path: tsconfig.base.json
+    role: config
+    purpose: Shared TypeScript strict compiler options base
+  - path: .eslintrc.js
+    role: config
+    purpose: ESLint + @typescript-eslint + Prettier config
+  - path: .prettierrc
+    role: config
+    purpose: Prettier formatting rules
+  - path: jest.config.js
+    role: config
+    purpose: Jest base config with ts-jest transformer
+
+packages:
+
+  shared_types:
+    root: packages/shared-types
+    files:
+      - path: packages/shared-types/package.json
+        role: config
+        purpose: Package manifest for @vdf/shared-types
+      - path: packages/shared-types/tsconfig.json
+        role: config
+        purpose: Extends tsconfig.base.json; declares composite:true for project references
+      - path: packages/shared-types/src/index.ts
+        role: config
+        purpose: Public API barrel export
+      - path: packages/shared-types/src/events/new-video-ready-for-scan.event.ts
+        artifact_id: AC-SHARED-001
+        assigned_role: integration_event
+        role_family: integration_async
+      - path: packages/shared-types/src/events/scan-completed.event.ts
+        artifact_id: AC-SHARED-002
+        assigned_role: integration_event
+        role_family: integration_async
+      - path: packages/shared-types/src/enums/scan-state.enum.ts
+        artifact_id: AC-SHARED-003
+        assigned_role: enum
+        role_family: type_static
+      - path: packages/shared-types/src/interfaces/similarity-threshold-config.interface.ts
+        artifact_id: AC-SHARED-004
+        assigned_role: interface
+        role_family: type_static
+      - path: packages/shared-types/src/interfaces/normalized-scan-result.interface.ts
+        artifact_id: AC-SHARED-005
+        assigned_role: interface
+        role_family: type_static
+      - path: packages/shared-types/src/schemas/scan-state.schema.ts
+        artifact_id: AC-SHARED-SCHEMA-001
+        assigned_role: schema
+        role_family: persistence_data
+
+  vss_service:
+    root: packages/vss-service
+    files:
+      - path: packages/vss-service/package.json
+        role: config
+        purpose: Package manifest for @vdf/vss-service
+      - path: packages/vss-service/tsconfig.json
+        role: config
+        purpose: Extends tsconfig.base.json; references shared-types
+      - path: packages/vss-service/src/main.ts
+        role: config
+        purpose: NestJS bootstrap entry point
+      - path: packages/vss-service/src/app.module.ts
+        artifact_id: AC-VSS-011
+        assigned_role: module
+        role_family: structural_framework
+        layer: transport
+      - path: packages/vss-service/src/config/vss.config.ts
+        artifact_id: AC-VSS-009
+        assigned_role: config
+        role_family: type_static
+        layer: infrastructure
+      - path: packages/vss-service/src/health/vss-health.module.ts
+        artifact_id: AC-VSS-010
+        assigned_role: module
+        role_family: structural_framework
+        layer: infrastructure
+      - path: packages/vss-service/src/staging/staging.module.ts
+        artifact_id: AC-VSS-001
+        assigned_role: module
+        role_family: structural_framework
+        layer: application
+      - path: packages/vss-service/src/staging/new-video.consumer.ts
+        artifact_id: AC-VSS-002
+        assigned_role: consumer
+        role_family: integration_async
+        layer: transport
+      - path: packages/vss-service/src/staging/staging.service.ts
+        artifact_id: AC-VSS-003
+        assigned_role: use_case
+        role_family: application_execution
+        layer: application
+      - path: packages/vss-service/src/staging/staging-idempotency.policy.ts
+        artifact_id: AC-VSS-004
+        assigned_role: policy
+        role_family: decision
+        layer: domain
+      - path: packages/vss-service/src/infrastructure/s3-video-downloader.adapter.ts
+        artifact_id: AC-VSS-005
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+      - path: packages/vss-service/src/infrastructure/filesystem-staging-writer.adapter.ts
+        artifact_id: AC-VSS-006
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+      - path: packages/vss-service/src/infrastructure/scan-state.repository.ts
+        artifact_id: AC-VSS-007
+        assigned_role: repository
+        role_family: persistence_data
+        layer: infrastructure
+      - path: packages/vss-service/src/infrastructure/video-metadata.repository.ts
+        artifact_id: AC-VSS-008
+        assigned_role: repository
+        role_family: persistence_data
+        layer: infrastructure
+      - path: packages/vss-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+        artifact_id: AC-VSS-012
+        assigned_role: module
+        role_family: structural_framework
+        layer: infrastructure
+
+  vbs_service:
+    root: packages/vbs-service
+    files:
+      - path: packages/vbs-service/package.json
+        role: config
+        purpose: Package manifest for @vdf/vbs-service
+      - path: packages/vbs-service/tsconfig.json
+        role: config
+        purpose: Extends tsconfig.base.json; references shared-types
+      - path: packages/vbs-service/src/main.ts
+        role: config
+        purpose: NestJS bootstrap entry point
+      - path: packages/vbs-service/src/app.module.ts
+        artifact_id: AC-VBS-019
+        assigned_role: module
+        role_family: structural_framework
+        layer: transport
+      - path: packages/vbs-service/src/config/vbs.config.ts
+        artifact_id: AC-VBS-017
+        assigned_role: config
+        role_family: type_static
+        layer: infrastructure
+      - path: packages/vbs-service/src/health/vbs-health.module.ts
+        artifact_id: AC-VBS-018
+        assigned_role: module
+        role_family: structural_framework
+        layer: infrastructure
+      - path: packages/vbs-service/src/batch-claim/batch-claim.module.ts
+        artifact_id: AC-VBS-001
+        assigned_role: module
+        role_family: structural_framework
+        layer: application
+      - path: packages/vbs-service/src/batch-claim/batch-claim.scheduler.ts
+        artifact_id: AC-VBS-002
+        assigned_role: scheduler
+        role_family: integration_async
+        layer: transport
+      - path: packages/vbs-service/src/batch-claim/batch-claim.service.ts
+        artifact_id: AC-VBS-003
+        assigned_role: use_case
+        role_family: application_execution
+        layer: application
+      - path: packages/vbs-service/src/batch-claim/claim-ownership.policy.ts
+        artifact_id: AC-VBS-004
+        assigned_role: policy
+        role_family: decision
+        layer: domain
+      - path: packages/vbs-service/src/scan-execution/scan-execution.module.ts
+        artifact_id: AC-VBS-005
+        assigned_role: module
+        role_family: structural_framework
+        layer: application
+      - path: packages/vbs-service/src/scan-execution/scan-execution.service.ts
+        artifact_id: AC-VBS-006
+        assigned_role: use_case
+        role_family: application_execution
+        layer: application
+      - path: packages/vbs-service/src/result-publication/result-publication.module.ts
+        artifact_id: AC-VBS-009
+        assigned_role: module
+        role_family: structural_framework
+        layer: application
+      - path: packages/vbs-service/src/result-publication/result-publication.service.ts
+        artifact_id: AC-VBS-010
+        assigned_role: use_case
+        role_family: application_execution
+        layer: application
+      - path: packages/vbs-service/src/cleanup/cleanup.module.ts
+        artifact_id: AC-VBS-015
+        assigned_role: module
+        role_family: structural_framework
+        layer: application
+      - path: packages/vbs-service/src/cleanup/cleanup.service.ts
+        artifact_id: AC-VBS-016
+        assigned_role: use_case
+        role_family: application_execution
+        layer: application
+      - path: packages/vbs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+        artifact_id: AC-VBS-INFRA-001
+        assigned_role: module
+        role_family: structural_framework
+        layer: infrastructure
+      - path: packages/vbs-service/src/infrastructure/rabbitmq/scan-completed.publisher.ts
+        artifact_id: AC-VBS-012
+        assigned_role: publisher
+        role_family: integration_async
+        layer: infrastructure
+      - path: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.ts
+        artifact_id: AC-VBS-007
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+      - path: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.ts
+        artifact_id: AC-VBS-008
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+      - path: packages/vbs-service/src/infrastructure/s3-scan-result-writer.adapter.ts
+        artifact_id: AC-VBS-011
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+      - path: packages/vbs-service/src/infrastructure/scan-state.repository.ts
+        artifact_id: AC-VBS-013
+        assigned_role: repository
+        role_family: persistence_data
+        layer: infrastructure
+      - path: packages/vbs-service/src/infrastructure/batch-claim.repository.ts
+        artifact_id: AC-VBS-014
+        assigned_role: repository
+        role_family: persistence_data
+        layer: infrastructure
+
+  sgs_service:
+    root: packages/sgs-service
+    files:
+      - path: packages/sgs-service/package.json
+        role: config
+        purpose: Package manifest for @vdf/sgs-service
+      - path: packages/sgs-service/tsconfig.json
+        role: config
+        purpose: Extends tsconfig.base.json; references shared-types
+      - path: packages/sgs-service/src/main.ts
+        role: config
+        purpose: NestJS bootstrap entry point
+      - path: packages/sgs-service/src/app.module.ts
+        artifact_id: AC-SGS-012
+        assigned_role: module
+        role_family: structural_framework
+        layer: transport
+      - path: packages/sgs-service/src/config/sgs.config.ts
+        artifact_id: AC-SGS-011
+        assigned_role: config
+        role_family: type_static
+        layer: infrastructure
+      - path: packages/sgs-service/src/health/sgs-health.module.ts
+        artifact_id: AC-SGS-HEALTH-001
+        assigned_role: module
+        role_family: structural_framework
+        layer: infrastructure
+        notes: Support artifact added per STR-006 (NFR-005 requires health endpoint for all services)
+      - path: packages/sgs-service/src/grouping/grouping.module.ts
+        artifact_id: AC-SGS-001
+        assigned_role: module
+        role_family: structural_framework
+        layer: application
+      - path: packages/sgs-service/src/grouping/scan-completed.consumer.ts
+        artifact_id: AC-SGS-002
+        assigned_role: consumer
+        role_family: integration_async
+        layer: transport
+      - path: packages/sgs-service/src/grouping/scan-result-ingestion.service.ts
+        artifact_id: AC-SGS-003
+        assigned_role: use_case
+        role_family: application_execution
+        layer: application
+      - path: packages/sgs-service/src/grouping/scan-result-schema.validator.ts
+        artifact_id: AC-SGS-004
+        assigned_role: validator
+        role_family: domain_constraint
+        layer: domain
+      - path: packages/sgs-service/src/grouping/similarity-edge.factory.ts
+        artifact_id: AC-SGS-006
+        assigned_role: factory
+        role_family: construction_resolution
+        layer: domain
+      - path: packages/sgs-service/src/grouping/group-merge.policy.ts
+        artifact_id: AC-SGS-007
+        assigned_role: policy
+        role_family: decision
+        layer: domain
+      - path: packages/sgs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+        artifact_id: AC-SGS-INFRA-001
+        assigned_role: module
+        role_family: structural_framework
+        layer: infrastructure
+      - path: packages/sgs-service/src/infrastructure/s3-scan-result-loader.adapter.ts
+        artifact_id: AC-SGS-005
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+      - path: packages/sgs-service/src/infrastructure/similarity-edge.repository.ts
+        artifact_id: AC-SGS-008
+        assigned_role: repository
+        role_family: persistence_data
+        layer: infrastructure
+      - path: packages/sgs-service/src/infrastructure/similarity-group.repository.ts
+        artifact_id: AC-SGS-009
+        assigned_role: repository
+        role_family: persistence_data
+        layer: infrastructure
+      - path: packages/sgs-service/src/infrastructure/grouping-completion-writer.adapter.ts
+        artifact_id: AC-SGS-010
+        assigned_role: adapter
+        role_family: integration_boundary
+        layer: infrastructure
+
+file_count_summary:
+  root_support_files: 6
+  shared_types_files: 10
+  vss_service_files: 16
+  vbs_service_files: 25
+  sgs_service_files: 18
+  total_files: 75
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.structure_rendering.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/structure-plan.yaml
+  - .ai/reports/final-file-tree.yaml

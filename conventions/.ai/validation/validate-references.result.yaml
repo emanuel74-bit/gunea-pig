@@ -1,0 +1,12 @@
+script_id: validate-references
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/topologies/reference-topology.yaml
+  - .ai/validation/validate-references.result.yaml
+summary:
+  scanned_files: 159
+  route_reference_blocks: 39
+  runtime_artifact_reference_count: 551

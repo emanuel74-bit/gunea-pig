@@ -1,0 +1,322 @@
+report_id: risk-classification
+phase_id: risk_classification
+schema_version: "1.0"
+status: complete
+
+summary: >
+  VDF-Based Video Similarity Pipeline classified at overall risk level MEDIUM.
+  Primary escalation signals: unknown VDF CLI output format (integration_risk),
+  distributed state machine correctness across three services (concurrency_consistency,
+  data_safety), idempotency requirements for VSS and SGS consumers, and safe cleanup
+  sequencing dependent on cross-service coordination. Primary de-escalation signals:
+  greenfield (no existing code or consumers to break), no data migration required,
+  no authentication/security surface, explicit RabbitMQ-only service boundaries.
+  Gate strictness: strict. Implementation blocked until impact analysis and test plans
+  are validated.
+
+inputs_consumed:
+  - source: .ai/reports/02-behavior-contract.yaml
+    type: behavior_contract
+  - source: .ai/reports/assumptions.yaml
+    type: assumptions
+
+risk_level: medium
+
+risk_contexts:
+  - integration_risk
+  - design_risk
+  - runtime_risk
+  - testing_risk
+  - operational_risk
+
+risk_concerns:
+  - concurrency_consistency
+  - data_safety
+  - boundary_integrity
+  - test_coverage
+  - operational_rollout
+
+normalized_signals:
+
+  - signal_id: RS-001
+    signal_type: escalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/assumptions.yaml#A-005
+    risk_context: integration_risk
+    risk_concern: boundary_integrity
+    weight: high
+    confidence: high
+    reason: >
+      VDF CLI output format is unknown and not discoverable from the codebase.
+      The VBS normalization layer depends entirely on VDF output schema. If VDF
+      produces non-parseable or non-deterministic output, VBS scan result
+      normalization fails. This is an unresolvable uncertainty until VDF is
+      actually invoked during implementation. The normalization adapter must
+      be designed to isolate this risk boundary.
+    supports_level: medium
+
+  - signal_id: RS-002
+    signal_type: escalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#VBS-C-001,VBS-C-002
+    risk_context: runtime_risk
+    risk_concern: concurrency_consistency
+    weight: high
+    confidence: high
+    reason: >
+      VBS batch claim requires MongoDB-backed exclusive ownership (findOneAndUpdate
+      with CAS conditions). Concurrent workers must not claim the same batch.
+      Expired claim recovery must not allow double-processing. This is a
+      distributed concurrency correctness requirement with no existing implementation
+      to reference.
+    supports_level: medium
+
+  - signal_id: RS-003
+    signal_type: escalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#VSS-I-001,SGS-I-001
+    risk_context: integration_risk
+    risk_concern: concurrency_consistency
+    weight: medium
+    confidence: high
+    reason: >
+      Both VSS and SGS must be idempotent: duplicate RabbitMQ message delivery
+      must not produce duplicate side-effects (double staging, duplicate similarity
+      edges). Idempotency with MongoDB state checks requires careful ordering of
+      read-then-write with appropriate isolation.
+    supports_level: medium
+
+  - signal_id: RS-004
+    signal_type: escalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#VBS-P-001,VBS-P-002,VBS-P-003,VBS-P-004
+    risk_context: runtime_risk
+    risk_concern: data_safety
+    weight: high
+    confidence: high
+    reason: >
+      Safe cleanup of scan artifacts requires cross-service coordination: VBS
+      must not purge local scan files or VDF artifacts until SGS confirms
+      successful persistence OR a configured retention period expires. Premature
+      cleanup causes ungroupable scan results. Cleanup state machine (pending_cleanup,
+      cleanup_allowed, cleaned, cleanup_failed) must be correctly implemented.
+    supports_level: medium
+
+  - signal_id: RS-005
+    signal_type: escalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#VBS-H-001,VBS-H-002,VBS-H-003
+    risk_context: integration_risk
+    risk_concern: data_safety
+    weight: medium
+    confidence: high
+    reason: >
+      Durable handoff ordering: VBS must write scan results to S3 BEFORE publishing
+      scan-completed event. Out-of-order execution risks SGS receiving an event
+      before the result payload is available in S3 (causing ungroupable scans).
+      This is a cross-service ordering constraint with no transactional guarantee.
+    supports_level: medium
+
+  - signal_id: RS-006
+    signal_type: escalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#scan_state_machine
+    risk_context: design_risk
+    risk_concern: data_safety
+    weight: medium
+    confidence: high
+    reason: >
+      10-state scan state machine shared across three services. Invalid state
+      transitions must be prevented. Forward-only constraint with exception for
+      retry/revision paths requires careful enforcement in each service.
+    supports_level: medium
+
+  - signal_id: RS-007
+    signal_type: absence_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#UA-002
+    risk_context: design_risk
+    risk_concern: boundary_integrity
+    weight: medium
+    confidence: medium
+    reason: >
+      RabbitMQ exchange topology (exchange names, routing keys, queue names,
+      dead-letter configuration, ack strategy) is undefined. Design risk if
+      topology choices create tight coupling or make consumer configuration
+      inflexible. Must be resolved in architecture_decomposition.
+    supports_level: medium
+
+  - signal_id: RS-008
+    signal_type: absence_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml
+    risk_context: testing_risk
+    risk_concern: test_coverage
+    weight: medium
+    confidence: high
+    reason: >
+      Greenfield: no test infrastructure exists. All acceptance criteria
+      (AC-001 through AC-010) require test derivation before implementation.
+      Distributed behavior (state machine transitions, batch claiming atomicity,
+      cross-service cleanup coordination) is difficult to validate without
+      integration test harness.
+    supports_level: medium
+
+  - signal_id: RS-009
+    signal_type: deescalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/03-codebase-reconnaissance.yaml#CR-001
+    risk_context: change_risk
+    risk_concern: behavior_preservation
+    weight: high
+    confidence: high
+    reason: >
+      Greenfield project. No existing code to preserve. No existing consumers
+      of VSS, VBS, or SGS. No data migration required. Blast radius is zero
+      for existing systems — all work is additive.
+    supports_level: medium
+
+  - signal_id: RS-010
+    signal_type: deescalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/02-behavior-contract.yaml#BC-002
+    risk_context: integration_risk
+    risk_concern: boundary_integrity
+    weight: medium
+    confidence: high
+    reason: >
+      Service boundaries are explicit and enforced by RabbitMQ topology. No
+      direct HTTP calls between services. No shared in-process state. Cross-service
+      contracts are limited to RabbitMQ message schemas and MongoDB state transitions.
+    supports_level: medium
+
+  - signal_id: RS-011
+    signal_type: deescalation_signal
+    source_subsystem: planning
+    source_ref: .ai/reports/assumptions.yaml#A-006
+    risk_context: runtime_risk
+    risk_concern: concurrency_consistency
+    weight: low
+    confidence: medium
+    reason: >
+      MongoDB 4.x+ supports findOneAndUpdate with conditional writes (CAS) and
+      appropriate write concerns. Standard capability; no exotic distributed
+      transaction required.
+    supports_level: low
+
+classification_decisions:
+
+  - decision_id: RC-001
+    decision_type: overall_risk_level
+    selected_level: medium
+    reason_summary: >
+      Escalation signals (RS-001 through RS-008) establish material integration,
+      concurrency, and data safety risks. However, de-escalation signals (RS-009,
+      RS-010, RS-011) establish that blast radius is zero (greenfield), no migration
+      is required, and all service boundaries are explicit. The integration_risk and
+      concurrency_consistency concerns are real but bounded to well-understood
+      MongoDB and RabbitMQ patterns with known resolution paths. Medium is the
+      correct classification: requires explicit impact review and test plans before
+      implementation, but does not block on unknown failure modes with no resolution path.
+    signals_used: [RS-001, RS-002, RS-003, RS-004, RS-005, RS-006, RS-007, RS-008, RS-009, RS-010, RS-011]
+    evidence: .ai/reports/02-behavior-contract.yaml, .ai/reports/assumptions.yaml
+
+  - decision_id: RC-002
+    decision_type: integration_risk_elevation
+    selected_level: high
+    reason_summary: >
+      Integration risk is elevated to HIGH within the medium overall envelope.
+      VDF CLI format unknown (RS-001) and cross-service durable handoff ordering
+      (RS-005) are the primary integration risk contributors. These require explicit
+      architectural isolation (adapter pattern for VDF output, S3-before-publish
+      ordering guarantee) during architecture_decomposition.
+    signals_used: [RS-001, RS-005]
+    evidence: .ai/reports/assumptions.yaml#A-005, .ai/reports/02-behavior-contract.yaml#VBS-H-001
+
+  - decision_id: RC-003
+    decision_type: concurrency_risk_elevation
+    selected_level: high
+    reason_summary: >
+      Concurrency/consistency risk is elevated to HIGH within the medium overall
+      envelope. Batch claim CAS (RS-002) and consumer idempotency (RS-003) are
+      correctness-critical requirements that must be explicitly modeled in
+      architecture_decomposition and verified in test_derivation.
+    signals_used: [RS-002, RS-003]
+    evidence: .ai/reports/02-behavior-contract.yaml#VBS-C-001,VBS-C-002,VSS-I-001,SGS-I-001
+
+required_followups:
+  - followup_id: RF-001
+    phase: architecture_decomposition
+    requirement: >
+      Define VDF CLI adapter/isolation boundary. Architecture must isolate
+      VDF output parsing behind an adapter interface so normalization logic
+      is decoupled from VDF format changes.
+    blocking_if_skipped: true
+
+  - followup_id: RF-002
+    phase: architecture_decomposition
+    requirement: >
+      Define MongoDB batch claim CAS strategy and atomic state machine transition
+      patterns. Document findOneAndUpdate condition patterns for each critical
+      state transition.
+    blocking_if_skipped: true
+
+  - followup_id: RF-003
+    phase: architecture_decomposition
+    requirement: >
+      Define RabbitMQ exchange topology with dead-letter exchange, manual ack
+      strategy, and consumer registration pattern for all three services.
+    blocking_if_skipped: true
+
+  - followup_id: RF-004
+    phase: architecture_decomposition
+    requirement: >
+      Define S3-before-publish ordering guarantee mechanism in VBS. Document
+      how VBS ensures scan results are durably written to S3 before the
+      scan-completed event is published.
+    blocking_if_skipped: true
+
+  - followup_id: RF-005
+    phase: test_derivation
+    requirement: >
+      Derive integration test cases for: (a) batch claim CAS with concurrent
+      workers, (b) VSS idempotency with duplicate messages, (c) SGS idempotency
+      with duplicate scan-completed events, (d) cleanup authorization sequencing.
+    blocking_if_skipped: true
+
+  - followup_id: RF-006
+    phase: test_derivation
+    requirement: >
+      Derive unit test cases for VDF output normalization adapter.
+      Tests must cover: valid output, malformed output, empty output, and
+      schema version mismatch scenarios.
+    blocking_if_skipped: false
+
+gate_strictness_hint: strict
+
+blocking_status:
+  blocks_implementation: false
+  reason: >
+    Medium risk level per taxonomy: allowed_after_impact_and_test_plans_validate.
+    Implementation proceeds after call_site_impact_analysis, change_impact_analysis,
+    and test_derivation phases complete with required followups validated.
+
+accepted_risks: []
+
+unresolved_risks:
+  - risk_id: UR-001
+    description: >
+      VDF CLI output format. Cannot be resolved before implementation begins.
+      Mitigated by adapter isolation boundary (RF-001).
+    mitigation: adapter pattern isolating VDF output parsing
+    resolution_phase: implementation
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.risk_classification.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/risk-classification.yaml

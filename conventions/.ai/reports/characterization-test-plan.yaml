@@ -1,0 +1,54 @@
+report_id: characterization-test-plan
+phase_id: test_derivation
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Characterization test plan for VDF pipeline. Greenfield project — no existing
+  implementation to characterize. Characterization tests are not applicable in the
+  standard sense (no legacy behavior to lock down). This plan documents which artifacts
+  have behaviors that benefit from characterization-style snapshot tests after
+  initial implementation to prevent unintended future changes.
+
+inputs_consumed:
+  - source: .ai/reports/09-test-plan.yaml
+    type: primary_test_plan
+
+existing_implementation_to_characterize:
+  exists: false
+  reason: Greenfield project — implementation has not been written yet
+
+post_implementation_characterization_candidates:
+
+  - candidate_id: CHAR-001
+    artifact: VdfOutputNormalizerAdapter
+    path: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.ts
+    rationale: >
+      VDF output format is an external assumption (ARCH-ASMP-004). Once the real VDF
+      output format is discovered and normalized, a snapshot test of the normalization
+      output for a sample VDF result should be written to lock down the mapping.
+    characterization_approach: snapshot test with real VDF output fixture
+    priority: high
+
+  - candidate_id: CHAR-002
+    artifact: SimilarityEdgeFactory
+    path: packages/sgs-service/src/grouping/similarity-edge.factory.ts
+    rationale: >
+      Threshold application logic (storeEdgeScore filter) should be characterized
+      with a snapshot of the factory output for known input pairs at boundary threshold values.
+    characterization_approach: snapshot test with boundary-value NormalizedScanResult input
+    priority: medium
+
+  - candidate_id: CHAR-003
+    artifact: GroupMergePolicy
+    path: packages/sgs-service/src/grouping/group-merge.policy.ts
+    rationale: >
+      Group action decision table is a policy — threshold boundary values should be
+      characterized once finalized to prevent silent behavior drift.
+    characterization_approach: parameterized snapshot test across threshold boundary matrix
+    priority: medium
+
+triggers_emitted: []
+
+produced_outputs:
+  - .ai/reports/characterization-test-plan.yaml

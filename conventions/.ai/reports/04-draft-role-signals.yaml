@@ -1,0 +1,854 @@
+report_id: "04-draft-role-signals"
+phase_id: draft_role_pass
+schema_version: "1.0"
+status: complete
+authority: advisory
+
+summary: >
+  Draft role signals for all 49 artifact candidates across 4 packages. 6 "service"
+  candidates flagged as DRAFT-ROLE-MIXED-RESPONSIBILITY — use_case is more specific
+  per specific-before-generic rule. 1 adapter candidate (VdfOutputNormalizerAdapter)
+  has dual transformation+boundary signal — adapter wins because port implementation
+  is primary. 1 module candidate (RabbitMqConnectionModule) flagged for
+  candidate_role_pressure mismatch (was "provider"). ScanStateRepository exists in
+  both VSS and VBS as separate instances — flagged for structure_rendering resolution.
+
+inputs_consumed:
+  - source: .ai/reports/architecture-blueprint.yaml
+    type: architecture_blueprint
+  - source: .ai/reports/artifact-candidates.yaml
+    type: artifact_candidates
+
+draft_role_signals:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SHARED-TYPES PACKAGE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-SHARED-001
+    proposed_name: NewVideoReadyForScanEvent
+    assigned_role: integration_event
+    role_family: integration_async
+    suffix: .event.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SHARED-001
+      - .ai/reports/02-behavior-contract.yaml#shared_requirements.messaging.new_video_ready_for_scan
+    rejected_roles:
+      - dto (rejected: transport direction is known — cross-service async event, not HTTP request/response)
+      - interface (rejected: integration_event is more specific for cross-boundary async contract)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SHARED-002
+    proposed_name: ScanCompletedEvent
+    assigned_role: integration_event
+    role_family: integration_async
+    suffix: .event.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SHARED-002
+      - .ai/reports/02-behavior-contract.yaml#shared_requirements.messaging.scan_completed
+    rejected_roles:
+      - dto (rejected: cross-service async event, not HTTP request/response)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SHARED-003
+    proposed_name: ScanState
+    assigned_role: enum
+    role_family: type_static
+    suffix: .enum.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SHARED-003
+      - .ai/reports/02-behavior-contract.yaml#shared_requirements.scan_state_machine
+    rejected_roles:
+      - constants (rejected: enum is more specific for typed value sets with named members)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SHARED-004
+    proposed_name: SimilarityThresholdConfig
+    assigned_role: interface
+    role_family: type_static
+    suffix: .interface.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SHARED-004
+      - .ai/reports/02-behavior-contract.yaml#shared_requirements.similarity_threshold_policy
+    rejected_roles:
+      - config (rejected: config role applies to runtime validated env-var DTO classes, not shared pure type interfaces)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SHARED-005
+    proposed_name: NormalizedScanResult
+    assigned_role: interface
+    role_family: type_static
+    suffix: .interface.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SHARED-005
+      - .ai/reports/architecture-blueprint.yaml#ARCH-ASMP-004
+    rejected_roles:
+      - dto (rejected: no transport context; shared internal schema, not HTTP request/response)
+      - model (rejected: no persistence shape; pure type contract)
+    mixed_responsibility: false
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VSS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-VSS-001
+    proposed_name: StagingModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-001
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-002
+    proposed_name: NewVideoConsumer
+    assigned_role: consumer
+    role_family: integration_async
+    suffix: .consumer.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-002
+      - .ai/reports/boundary-contract-classification.yaml#BND-VSS-001
+    rejected_roles:
+      - listener (rejected: consumer is more specific for RabbitMQ message consumption with ack/nack)
+      - controller (rejected: RabbitMQ transport, not HTTP)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-003
+    proposed_name: StagingService
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .use-case.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-003
+      - .ai/reports/architecture-blueprint.yaml#AU-VSS-002
+    rejected_roles:
+      - service (rejected: use_case is more specific per specific-before-generic rule; service is generic fallback when use_case/command/handler do not apply)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "service" but artifact orchestrates a single
+      named workflow (staging). use_case is the specific-before-generic winner.
+      Final name should be StagingUseCase or StagingOrchestrator; to be confirmed
+      in final_role_assignment after action resolution.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - artifact_id: AC-VSS-004
+    proposed_name: StagingIdempotencyPolicy
+    assigned_role: policy
+    role_family: decision
+    suffix: .policy.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-004
+      - .ai/reports/architecture-blueprint.yaml#AU-VSS-003
+    rejected_roles:
+      - validator (rejected: policy is more specific when artifact returns a decision rather than a validation error; no side effects, pure boolean output from business rules)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-005
+    proposed_name: S3VideoDownloader
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-005
+      - .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+    rejected_roles:
+      - client (rejected: implements an inward-facing port contract, not a standalone outbound client wrapper)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-006
+    proposed_name: FilesystemStagingWriter
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-006
+      - .ai/reports/architecture-blueprint.yaml#AU-VSS-005
+    rejected_roles:
+      - util (rejected: implements a specific port/boundary contract, not a generic utility)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-007
+    proposed_name: ScanStateRepository
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-007
+      - .ai/reports/architecture-blueprint.yaml#REPO-SCAN-STATE
+    rejected_roles: []
+    mixed_responsibility: false
+    notes: >
+      VSS-scoped instance of ScanStateRepository. VBS also has its own instance
+      (AC-VBS-013). Both share the same MongoDB collection (scan_states).
+      Schema definition placement to be resolved in structure_rendering.
+    collision_ref: ROLE-COLLISION-SCAN-STATE-REPO
+
+  - artifact_id: AC-VSS-008
+    proposed_name: VideoMetadataRepository
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-008
+      - .ai/reports/architecture-blueprint.yaml#AU-VSS-007
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-009
+    proposed_name: StagingConfigDto
+    assigned_role: config
+    role_family: type_static
+    suffix: .config.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-009
+      - .ai/reports/local-alignment.yaml#CC-006
+    rejected_roles:
+      - dto (rejected: config is more specific for startup-validated env-var DTO classes)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-010
+    proposed_name: VssHealthModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-010
+      - .ai/reports/02-behavior-contract.yaml#NFR-005
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-011
+    proposed_name: VssAppModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-011
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VSS-012
+    proposed_name: RabbitMqConnectionModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: medium
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-012
+      - .ai/reports/local-alignment.yaml#CC-007
+    rejected_roles:
+      - provider (rejected: artifact groups connection setup and channel provisioning in a NestJS module; module is more accurate than provider for this grouping role)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "provider" but the artifact is a NestJS module
+      that also handles channel provisioning. Module is the correct role; the
+      exported channel provider is a detail internal to the module.
+    required_followups:
+      - final_role_assignment
+
+  - artifact_id: AC-VSS-013
+    proposed_name: ScanStateSchema
+    assigned_role: schema
+    role_family: persistence_data
+    suffix: .schema.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VSS-013
+      - .ai/reports/architecture-blueprint.yaml#REPO-SCAN-STATE
+    rejected_roles:
+      - model (rejected: schema is more specific for Mongoose schema definition artifacts)
+    mixed_responsibility: false
+    notes: Shared schema definition — placement in shared-types vs mirrored per service to be resolved in structure_rendering.
+    collision_ref: ROLE-COLLISION-SCAN-STATE-REPO
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # VBS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-VBS-001
+    proposed_name: BatchClaimModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-001
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-002
+    proposed_name: BatchClaimScheduler
+    assigned_role: scheduler
+    role_family: integration_async
+    suffix: .scheduler.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-002
+      - .ai/reports/architecture-blueprint.yaml#AU-VBS-001
+    rejected_roles:
+      - consumer (rejected: trigger is a timer interval, not a message queue)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-003
+    proposed_name: BatchClaimService
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .use-case.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-003
+      - .ai/reports/architecture-blueprint.yaml#AU-VBS-002
+    rejected_roles:
+      - service (rejected: use_case is more specific; artifact orchestrates a single named workflow — batch claim)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "service" but artifact orchestrates a single
+      named atomic workflow. use_case wins per specific-before-generic rule.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - artifact_id: AC-VBS-004
+    proposed_name: ClaimOwnershipPolicy
+    assigned_role: policy
+    role_family: decision
+    suffix: .policy.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-004
+      - .ai/reports/architecture-blueprint.yaml#AU-VBS-003
+    rejected_roles:
+      - validator (rejected: policy is more specific — artifact returns a boolean business decision, not a validation error list)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-005
+    proposed_name: ScanExecutionModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-005
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-006
+    proposed_name: ScanExecutionService
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .use-case.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-006
+      - .ai/reports/architecture-blueprint.yaml#AU-VBS-004
+    rejected_roles:
+      - service (rejected: use_case is more specific; single named workflow — VDF scan execution)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "service" but artifact orchestrates a single
+      named VDF scan workflow. use_case wins per specific-before-generic rule.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - artifact_id: AC-VBS-007
+    proposed_name: VdfCliAdapter
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-007
+      - .ai/reports/architecture-blueprint.yaml#PORT-VDF-SCANNER
+      - .ai/reports/dependency-classification.yaml#DEP-011
+    rejected_roles:
+      - client (rejected: implements inward port contract, not a standalone outbound client)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-008
+    proposed_name: VdfOutputNormalizerAdapter
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-008
+      - .ai/reports/architecture-blueprint.yaml#PORT-VDF-NORMALIZER
+    rejected_roles:
+      - parser (rejected: implements VdfNormalizerPort, making adapter more specific than parser)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Dual role signal: transformation (pure input→output mapping) and boundary
+      (implements VdfNormalizerPort). Adapter wins because port implementation
+      is the primary structural signal; transformation is the mechanism, not
+      the role. No split required.
+    required_followups:
+      - final_role_assignment
+
+  - artifact_id: AC-VBS-009
+    proposed_name: ResultPublicationModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-009
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-010
+    proposed_name: ResultPublicationService
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .use-case.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-010
+      - .ai/reports/architecture-blueprint.yaml#AU-VBS-007
+    rejected_roles:
+      - service (rejected: use_case is more specific; single named workflow — durable result publication)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "service" but artifact orchestrates a single
+      named publication workflow (S3 write → RabbitMQ publish → state transition).
+      use_case wins per specific-before-generic rule.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - artifact_id: AC-VBS-011
+    proposed_name: S3ScanResultWriter
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-011
+      - .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+    rejected_roles:
+      - client (rejected: implements inward port contract)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-012
+    proposed_name: ScanCompletedPublisher
+    assigned_role: publisher
+    role_family: integration_async
+    suffix: .publisher.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-012
+      - .ai/reports/architecture-blueprint.yaml#PORT-MESSAGING
+    rejected_roles:
+      - producer (rejected: publisher is more specific — artifact publishes named domain events, not raw message production)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-013
+    proposed_name: ScanStateRepository
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-013
+      - .ai/reports/architecture-blueprint.yaml#REPO-SCAN-STATE
+    rejected_roles: []
+    mixed_responsibility: false
+    notes: >
+      VBS-scoped instance of ScanStateRepository (owns VBS state transitions:
+      claimed → scanning → scan_complete → pending_cleanup → cleanup_allowed → cleaned).
+      VSS also has an instance (AC-VSS-007). Schema sharing to be resolved in structure_rendering.
+    collision_ref: ROLE-COLLISION-SCAN-STATE-REPO
+
+  - artifact_id: AC-VBS-014
+    proposed_name: BatchClaimRepository
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-014
+      - .ai/reports/architecture-blueprint.yaml#REPO-BATCH-CLAIM
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-015
+    proposed_name: CleanupModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-015
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-016
+    proposed_name: CleanupService
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .use-case.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-016
+      - .ai/reports/architecture-blueprint.yaml#AU-VBS-011
+    rejected_roles:
+      - service (rejected: use_case is more specific; single named workflow — safe cleanup)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "service" but artifact orchestrates a single
+      named cleanup workflow. use_case wins per specific-before-generic rule.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - artifact_id: AC-VBS-017
+    proposed_name: VbsConfigDto
+    assigned_role: config
+    role_family: type_static
+    suffix: .config.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-017
+      - .ai/reports/local-alignment.yaml#CC-006
+    rejected_roles:
+      - dto (rejected: config is more specific for startup env-var validation classes)
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-018
+    proposed_name: VbsHealthModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-018
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-VBS-019
+    proposed_name: VbsAppModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-VBS-019
+    rejected_roles: []
+    mixed_responsibility: false
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # SGS SERVICE
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - artifact_id: AC-SGS-001
+    proposed_name: GroupingModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-001
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-002
+    proposed_name: ScanCompletedConsumer
+    assigned_role: consumer
+    role_family: integration_async
+    suffix: .consumer.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-002
+      - .ai/reports/boundary-contract-classification.yaml#BND-SGS-001
+    rejected_roles:
+      - listener (rejected: consumer is more specific for RabbitMQ ack/nack)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-003
+    proposed_name: ScanResultIngestionService
+    assigned_role: use_case
+    role_family: application_execution
+    suffix: .use-case.ts
+    confidence: medium
+    decision_rule_id: ROLE-RESOLVE-APPLICATION-EXECUTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-003
+      - .ai/reports/architecture-blueprint.yaml#AU-SGS-002
+    rejected_roles:
+      - service (rejected: use_case is more specific; single named workflow — scan result ingestion)
+    mixed_responsibility: true
+    mixed_responsibility_signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    mixed_responsibility_reason: >
+      Candidate role pressure was "service" but artifact orchestrates a single
+      named ingestion workflow. use_case wins per specific-before-generic rule.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - artifact_id: AC-SGS-004
+    proposed_name: ScanResultSchemaValidator
+    assigned_role: validator
+    role_family: domain_constraint
+    suffix: .validator.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-004
+      - .ai/reports/architecture-blueprint.yaml#AU-SGS-003
+    rejected_roles:
+      - policy (rejected: validator is more specific when artifact validates input format/schema rather than returning a business decision)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-005
+    proposed_name: S3ScanResultLoader
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-005
+      - .ai/reports/architecture-blueprint.yaml#PORT-STORAGE
+    rejected_roles:
+      - client (rejected: implements inward port contract, not a standalone client)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-006
+    proposed_name: SimilarityEdgeFactory
+    assigned_role: factory
+    role_family: construction_resolution
+    suffix: .factory.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-CONSTRUCTION
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-006
+      - .ai/reports/architecture-blueprint.yaml#AU-SGS-005
+    rejected_roles:
+      - adapter (rejected: no port/boundary contract; pure transformation creating domain objects)
+      - mapper (rejected: factory is more specific — constructs new domain objects, not just remaps representation)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-007
+    proposed_name: GroupMergePolicy
+    assigned_role: policy
+    role_family: decision
+    suffix: .policy.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-DOMAIN
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-007
+      - .ai/reports/architecture-blueprint.yaml#AU-SGS-006
+    rejected_roles:
+      - validator (rejected: policy is more specific — artifact returns a GroupAction decision enum, not a validation error)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-008
+    proposed_name: SimilarityEdgeRepository
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-008
+      - .ai/reports/architecture-blueprint.yaml#REPO-SIMILARITY-DATA
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-009
+    proposed_name: SimilarityGroupRepository
+    assigned_role: repository
+    role_family: persistence_data
+    suffix: .repository.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-PERSISTENCE
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-009
+      - .ai/reports/architecture-blueprint.yaml#REPO-SIMILARITY-DATA
+    rejected_roles: []
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-010
+    proposed_name: GroupingCompletionWriter
+    assigned_role: adapter
+    role_family: integration_boundary
+    suffix: .adapter.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-BOUNDARY
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-010
+      - .ai/reports/architecture-blueprint.yaml#ARCH-ASMP-002
+    rejected_roles:
+      - repository (rejected: artifact writes a single state transition for cleanup authorization, not a general-purpose collection manager)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-011
+    proposed_name: SgsConfigDto
+    assigned_role: config
+    role_family: type_static
+    suffix: .config.ts
+    confidence: high
+    decision_rule_id: ROLE-RESOLVE-STATIC
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-011
+      - .ai/reports/local-alignment.yaml#CC-006
+    rejected_roles:
+      - dto (rejected: config is more specific for startup env-var validation classes)
+    mixed_responsibility: false
+
+  - artifact_id: AC-SGS-012
+    proposed_name: SgsAppModule
+    assigned_role: module
+    role_family: structural_framework
+    suffix: .module.ts
+    confidence: high
+    decision_rule_id: structural
+    evidence_refs:
+      - .ai/reports/artifact-candidates.yaml#AC-SGS-012
+    rejected_roles: []
+    mixed_responsibility: false
+
+mixed_responsibility_findings:
+
+  - finding_id: MR-001
+    signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    affected_artifacts: [AC-VSS-003, AC-VBS-003, AC-VBS-006, AC-VBS-010, AC-VBS-016, AC-SGS-003]
+    description: >
+      6 orchestration artifacts have candidate_role_pressure "service" but satisfy
+      use_case role signals. All are single-named-workflow orchestrators with no
+      state of their own. use_case wins by specific-before-generic rule. Final
+      names (StagingUseCase vs StagingService) to be confirmed in final_role_assignment.
+    required_followups:
+      - artifact_action_resolution
+      - final_role_assignment
+
+  - finding_id: MR-002
+    signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    affected_artifacts: [AC-VBS-008]
+    description: >
+      VdfOutputNormalizerAdapter has dual signals: transformation (pure input→output)
+      and boundary (implements VdfNormalizerPort). Adapter wins because port
+      implementation is the structural primary signal. No split required.
+    required_followups:
+      - final_role_assignment
+
+  - finding_id: MR-003
+    signal: DRAFT-ROLE-MIXED-RESPONSIBILITY
+    affected_artifacts: [AC-VSS-012]
+    description: >
+      RabbitMqConnectionModule candidate_role_pressure was "provider" but artifact
+      groups connection setup in a NestJS module. Module is the correct primary role.
+    required_followups:
+      - final_role_assignment
+
+role_collision_risks:
+
+  - collision_id: ROLE-COLLISION-SCAN-STATE-REPO
+    affected_artifacts: [AC-VSS-007, AC-VBS-013, AC-VSS-013]
+    description: >
+      ScanStateRepository role is claimed by both VSS (AC-VSS-007) and VBS (AC-VBS-013),
+      both targeting the same MongoDB collection (scan_states) and both using the same
+      Mongoose schema (AC-VSS-013). This is not a role collision (separate instances
+      are correct by design) but a structural question: where does the shared schema
+      definition live? Options: shared-types, mirrored per service, or extracted to
+      a shared database package. To be resolved in structure_rendering.
+    severity: advisory
+    resolution_required_by: structure_rendering
+
+summary_counts:
+  total_candidates: 49
+  high_confidence: 42
+  medium_confidence: 7
+  mixed_responsibility_signals: 8
+  role_collision_risks: 1
+  roles_assigned:
+    module: 13
+    use_case: 7
+    adapter: 8
+    repository: 5
+    policy: 3
+    consumer: 2
+    integration_event: 2
+    interface: 2
+    enum: 1
+    config: 3
+    schema: 1
+    scheduler: 1
+    publisher: 1
+    validator: 1
+    factory: 1
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.draft_role_pass.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/04-draft-role-signals.yaml

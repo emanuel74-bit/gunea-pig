@@ -1,0 +1,9 @@
+script_id: collect-phase-report
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/reports/phase-report.yaml
+summary:
+  status: collected

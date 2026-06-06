@@ -1,0 +1,61 @@
+report_id: regression-test-plan
+phase_id: test_derivation
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Regression test plan for VDF pipeline. Greenfield project — no existing behavior
+  baseline exists to regress against. Regression test plan defines what regression
+  testing will look like after initial implementation is complete. Key regression
+  surfaces: shared-types interface changes, MongoDB state machine transitions,
+  RabbitMQ topology, and VDF output format.
+
+inputs_consumed:
+  - source: .ai/reports/09-test-plan.yaml
+    type: primary_test_plan
+  - source: .ai/reports/07-change-impact.yaml
+    type: change_impact
+
+existing_regression_baseline:
+  exists: false
+  reason: Greenfield project — no prior implementation to regress against
+
+post_implementation_regression_plan:
+
+  - regression_id: RG-001
+    trigger: shared-types interface or schema change
+    scope: all three services (VSS, VBS, SGS)
+    regression_tests_required:
+      - Re-run all unit tests for artifacts that import from shared-types
+      - Re-run integration tests for consumer idempotency (TO-005)
+      - Verify schema migration compatibility if ScanStateSchema changes
+    evidence_ref: .ai/reports/07-change-impact.yaml#CI-001
+
+  - regression_id: RG-002
+    trigger: VDF CLI version upgrade
+    scope: VdfCliAdapter + VdfOutputNormalizerAdapter (VBS only)
+    regression_tests_required:
+      - Re-run TO-001 (adapter isolation), TO-009 (error handling), TO-014 (output normalization)
+      - Add new VDF output format fixture if format changes
+    evidence_ref: .ai/reports/07-change-impact.yaml#CI-002
+
+  - regression_id: RG-003
+    trigger: MongoDB scan_states schema change
+    scope: VSS ScanStateRepository, VBS ScanStateRepository, SGS idempotency check
+    regression_tests_required:
+      - Re-run TO-003, TO-004, TO-005 (idempotency obligations)
+      - Verify CAS query conditions still match new schema fields
+    evidence_ref: .ai/reports/07-change-impact.yaml#CI-003
+
+  - regression_id: RG-004
+    trigger: RabbitMQ exchange or queue topology change
+    scope: all RabbitMQ consumers and publishers
+    regression_tests_required:
+      - Re-run integration tests for consumer message delivery
+      - Verify DLX routing still works after topology change
+    evidence_ref: .ai/reports/07-change-impact.yaml#CI-004
+
+triggers_emitted: []
+
+produced_outputs:
+  - .ai/reports/regression-test-plan.yaml

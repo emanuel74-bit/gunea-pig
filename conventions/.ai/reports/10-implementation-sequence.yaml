@@ -1,0 +1,472 @@
+report_id: "10-implementation-sequence"
+phase_id: implementation_sequence
+schema_version: "1.0"
+status: complete
+
+summary: >
+  Implementation sequence for VDF pipeline monorepo. 5 waves. Wave 1: project
+  scaffolding (root package.json, workspaces, tsconfig, ESLint). Wave 2: shared-types
+  package (all 6 artifacts — must complete before service implementation). Wave 3:
+  infrastructure adapters and repositories for all three services (parallel within wave).
+  Wave 4: domain and application layers for all three services. Wave 5: transport
+  layer, module wiring, and entry points. Critical constraint: shared-types Wave 2
+  must complete before Waves 3-5 begin. Within waves 3-5, artifacts within each
+  service are sequential; services can be implemented in parallel.
+
+inputs_consumed:
+  - source: .ai/reports/final-file-tree.yaml
+    type: final_file_tree
+  - source: .ai/reports/09-test-plan.yaml
+    type: test_plan
+  - source: .ai/reports/consumer-impact.yaml
+    type: consumer_impact
+
+critical_constraints:
+  - constraint_id: SEQ-C001
+    description: packages/shared-types must be built before any service imports from it
+    blocking: [wave_3, wave_4, wave_5]
+    evidence_ref: .ai/reports/consumer-impact.yaml#build_order
+
+  - constraint_id: SEQ-C002
+    description: VdfCliAdapter must be implemented before VdfOutputNormalizerAdapter and ScanExecutionService
+    blocking: [AC-VBS-008, AC-VBS-006]
+    evidence_ref: .ai/reports/call-site-impact.yaml#CS-VBS-006
+
+  - constraint_id: SEQ-C003
+    description: Port interfaces (StoragePort, VdfScannerPort, VdfNormalizerPort, MessagingPort) must be defined as TypeScript interfaces in the same file or alongside their first adapter
+    note: Interfaces are co-located or in a ports/ subdirectory created during Wave 3
+
+implementation_waves:
+
+  wave_1:
+    name: Project Scaffolding
+    parallelizable: false
+    order:
+      - seq: 1
+        artifact: package.json (root)
+        description: npm workspaces config with packages/*, shared scripts (build, test, lint)
+        test_obligation: none
+
+      - seq: 2
+        artifact: .nvmrc
+        description: Echo "18.8.0"
+        test_obligation: none
+
+      - seq: 3
+        artifact: tsconfig.base.json
+        description: Strict TypeScript config — strict:true, target:ES2020, module:CommonJS, experimentalDecorators:true, emitDecoratorMetadata:true
+        test_obligation: none
+
+      - seq: 4
+        artifact: .eslintrc.js
+        description: "@typescript-eslint/recommended + prettier integration"
+        test_obligation: none
+
+      - seq: 5
+        artifact: .prettierrc
+        description: Prettier formatting rules (tabWidth:2, singleQuote:true, trailingComma:all)
+        test_obligation: none
+
+      - seq: 6
+        artifact: jest.config.js (root)
+        description: Base jest config with ts-jest preset, projects pointing to each package
+        test_obligation: none
+
+      - seq: 7
+        artifact: packages/shared-types/package.json
+        description: "@vdf/shared-types package manifest; peerDeps: @nestjs/mongoose, mongoose"
+        test_obligation: none
+
+      - seq: 8
+        artifact: packages/vss-service/package.json
+        description: "@vdf/vss-service package manifest with NestJS, amqplib, @aws-sdk deps"
+        test_obligation: none
+
+      - seq: 9
+        artifact: packages/vbs-service/package.json
+        description: "@vdf/vbs-service package manifest with NestJS, @nestjs/schedule, amqplib, @aws-sdk deps"
+        test_obligation: none
+
+      - seq: 10
+        artifact: packages/sgs-service/package.json
+        description: "@vdf/sgs-service package manifest"
+        test_obligation: none
+
+      - seq: 11
+        artifact: tsconfig.json (per package — all 4)
+        description: Each extends tsconfig.base.json; shared-types uses composite:true; services reference shared-types
+        test_obligation: none
+
+  wave_2:
+    name: shared-types Package
+    depends_on: wave_1
+    parallelizable: false
+    order:
+      - seq: 1
+        artifact_id: AC-SHARED-003
+        artifact: packages/shared-types/src/enums/scan-state.enum.ts
+        description: 10-state ScanState enum (awaiting_staging, staged, claimed, scanning, scan_complete, grouping_complete, pending_cleanup, cleanup_allowed, cleaned, failed)
+        test_obligation: none (pure enum)
+
+      - seq: 2
+        artifact_id: AC-SHARED-004
+        artifact: packages/shared-types/src/interfaces/similarity-threshold-config.interface.ts
+        description: SimilarityThresholdConfig interface with 4 threshold fields
+        test_obligation: none (pure interface)
+
+      - seq: 3
+        artifact_id: AC-SHARED-005
+        artifact: packages/shared-types/src/interfaces/normalized-scan-result.interface.ts
+        description: NormalizedScanResult interface (scan_id, scanner_version, video_pairs[])
+        test_obligation: none (pure interface)
+
+      - seq: 4
+        artifact_id: AC-SHARED-001
+        artifact: packages/shared-types/src/events/new-video-ready-for-scan.event.ts
+        description: NewVideoReadyForScanEvent class (event_id, schema_version, video_id, s3_reference, timestamp, correlation_id)
+        test_obligation: none (plain DTO)
+
+      - seq: 5
+        artifact_id: AC-SHARED-002
+        artifact: packages/shared-types/src/events/scan-completed.event.ts
+        description: ScanCompletedEvent class (scan_id, result_location, scanned_video_ids, scanner_profile, scanner_version, timestamp, correlation_id)
+        test_obligation: none (plain DTO)
+
+      - seq: 6
+        artifact_id: AC-SHARED-SCHEMA-001
+        artifact: packages/shared-types/src/schemas/scan-state.schema.ts
+        description: Mongoose ScanStateSchema with all fields (video_id, state, updated_at, batch_claim_id, etc.) + @nestjs/mongoose decorators
+        test_obligation: none (schema definition)
+
+      - seq: 7
+        artifact: packages/shared-types/src/index.ts
+        description: Barrel export of all shared-types artifacts
+        test_obligation: none
+
+  wave_3:
+    name: Infrastructure Layer (all 3 services)
+    depends_on: wave_2
+    parallelizable: true
+    note: VSS, VBS, and SGS infrastructure can be implemented in parallel after wave_2
+
+    vss_infrastructure:
+      - seq: 1
+        artifact_id: AC-VSS-009
+        artifact: packages/vss-service/src/config/vss.config.ts
+        description: VssConfig class with @nestjs/config + class-validator; validates RABBITMQ_URL, MONGODB_URI, S3 config, VDF_SCAN_PATH
+        test_obligation: TO-007
+
+      - seq: 2
+        artifact_id: AC-VSS-012
+        artifact: packages/vss-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+        description: RabbitMQ NestJS module using amqp-connection-manager; declares vdf.pipeline.ingest exchange + queue bindings
+        test_obligation: none (wiring; integration tested via TO-005)
+
+      - seq: 3
+        artifact_id: AC-VSS-007
+        artifact: packages/vss-service/src/infrastructure/scan-state.repository.ts
+        description: ScanStateRepository (VSS) — findOneAndUpdate CAS for awaiting_staging→staged; imports ScanStateSchema from shared-types
+        test_obligation: none (integration tested via TO-005)
+
+      - seq: 4
+        artifact_id: AC-VSS-008
+        artifact: packages/vss-service/src/infrastructure/video-metadata.repository.ts
+        description: VideoMetadataRepository — reads video collection for S3 reference and metadata
+        test_obligation: none
+
+      - seq: 5
+        artifact_id: AC-VSS-005
+        artifact: packages/vss-service/src/infrastructure/s3-video-downloader.adapter.ts
+        description: S3VideoDownloaderAdapter implementing StoragePort; uses @aws-sdk/client-s3 GetObject
+        test_obligation: none (mocked in TO-003)
+
+      - seq: 6
+        artifact_id: AC-VSS-006
+        artifact: packages/vss-service/src/infrastructure/filesystem-staging-writer.adapter.ts
+        description: FilesystemStagingWriterAdapter — writes to VDF_SCAN_PATH on mounted filesystem
+        test_obligation: none (mocked in TO-003)
+
+    vbs_infrastructure:
+      - seq: 1
+        artifact_id: AC-VBS-017
+        artifact: packages/vbs-service/src/config/vbs.config.ts
+        description: VbsConfig — validates RABBITMQ_URL, MONGODB_URI, S3 config, VDF_CLI_PATH, VDF_SCAN_PATH, BATCH_SIZE, BATCH_CLAIM_TTL
+        test_obligation: TO-008
+
+      - seq: 2
+        artifact_id: AC-VBS-INFRA-001
+        artifact: packages/vbs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+        description: VBS RabbitMQ module; declares vdf.pipeline.scan exchange
+        test_obligation: none
+
+      - seq: 3
+        artifact_id: AC-VBS-007
+        artifact: packages/vbs-service/src/infrastructure/vdf/vdf-cli.adapter.ts
+        description: VdfCliAdapter implementing VdfScannerPort; spawns VDF CLI via child_process.spawn; maps exit codes to VdfExecutionError
+        test_obligation: TO-001, TO-002, TO-009
+
+      - seq: 4
+        artifact_id: AC-VBS-008
+        artifact: packages/vbs-service/src/infrastructure/vdf/vdf-output-normalizer.adapter.ts
+        description: VdfOutputNormalizerAdapter implementing VdfNormalizerPort; parses VDF JSON to NormalizedScanResult
+        test_obligation: TO-014
+
+      - seq: 5
+        artifact_id: AC-VBS-011
+        artifact: packages/vbs-service/src/infrastructure/s3-scan-result-writer.adapter.ts
+        description: S3ScanResultWriterAdapter implementing StoragePort for write; PutObject with JSON body
+        test_obligation: none (tested via TO-006)
+
+      - seq: 6
+        artifact_id: AC-VBS-012
+        artifact: packages/vbs-service/src/infrastructure/rabbitmq/scan-completed.publisher.ts
+        description: ScanCompletedPublisher implementing MessagingPort; publishes ScanCompletedEvent to vdf.pipeline.scan exchange
+        test_obligation: none (tested via TO-006)
+
+      - seq: 7
+        artifact_id: AC-VBS-013
+        artifact: packages/vbs-service/src/infrastructure/scan-state.repository.ts
+        description: ScanStateRepository (VBS) — CAS transitions for staged→...→cleaned/failed states
+        test_obligation: none
+
+      - seq: 8
+        artifact_id: AC-VBS-014
+        artifact: packages/vbs-service/src/infrastructure/batch-claim.repository.ts
+        description: BatchClaimRepository — atomic claim write + expiry query against scan_batch_claims collection
+        test_obligation: none
+
+    sgs_infrastructure:
+      - seq: 1
+        artifact_id: AC-SGS-011
+        artifact: packages/sgs-service/src/config/sgs.config.ts
+        description: SgsConfig — validates RABBITMQ_URL, MONGODB_URI, S3 config, and all 4 similarity threshold values
+        test_obligation: TO-008
+
+      - seq: 2
+        artifact_id: AC-SGS-INFRA-001
+        artifact: packages/sgs-service/src/infrastructure/rabbitmq/rabbitmq.module.ts
+        description: SGS RabbitMQ module; binds to vdf.pipeline.scan exchange queue
+        test_obligation: none
+
+      - seq: 3
+        artifact_id: AC-SGS-005
+        artifact: packages/sgs-service/src/infrastructure/s3-scan-result-loader.adapter.ts
+        description: S3ScanResultLoaderAdapter implementing StoragePort; GetObject and parse JSON to NormalizedScanResult
+        test_obligation: none
+
+      - seq: 4
+        artifact_id: AC-SGS-008
+        artifact: packages/sgs-service/src/infrastructure/similarity-edge.repository.ts
+        description: SimilarityEdgeRepository — idempotent upsert with unique index on scan_id+video_pair_key
+        test_obligation: none
+
+      - seq: 5
+        artifact_id: AC-SGS-009
+        artifact: packages/sgs-service/src/infrastructure/similarity-group.repository.ts
+        description: SimilarityGroupRepository — create or update SimilarityGroup documents
+        test_obligation: none
+
+      - seq: 6
+        artifact_id: AC-SGS-010
+        artifact: packages/sgs-service/src/infrastructure/grouping-completion-writer.adapter.ts
+        description: GroupingCompletionWriterAdapter — atomic write of grouping_complete to scan_states for cleanup auth
+        test_obligation: none
+
+  wave_4:
+    name: Domain and Application Layers (all 3 services)
+    depends_on: wave_3
+    parallelizable: true
+    note: Domain → Application order within each service
+
+    vss_domain_application:
+      - seq: 1
+        artifact_id: AC-VSS-004
+        artifact: packages/vss-service/src/staging/staging-idempotency.policy.ts
+        description: "StagingIdempotencyPolicy — pure: should_stage(currentState) returns boolean"
+        test_obligation: TO-010
+
+      - seq: 2
+        artifact_id: AC-VSS-003
+        artifact: packages/vss-service/src/staging/staging.service.ts
+        description: StagingService (use_case) — orchestrates idempotency→metadata→S3→filesystem→state
+        test_obligation: TO-003
+
+    vbs_domain_application:
+      - seq: 1
+        artifact_id: AC-VBS-004
+        artifact: packages/vbs-service/src/batch-claim/claim-ownership.policy.ts
+        description: ClaimOwnershipPolicy — is_claimable(batchClaim, now) returns boolean
+        test_obligation: TO-011
+
+      - seq: 2
+        artifact_id: AC-VBS-003
+        artifact: packages/vbs-service/src/batch-claim/batch-claim.service.ts
+        description: BatchClaimService (use_case) — queries staged, checks claimability, writes atomic claim
+        test_obligation: none (integration coverage)
+
+      - seq: 3
+        artifact_id: AC-VBS-006
+        artifact: packages/vbs-service/src/scan-execution/scan-execution.service.ts
+        description: ScanExecutionService (use_case) — invokes VDF adapter, normalizes output, updates state
+        test_obligation: none (adapter tests cover units; integration covers flow)
+
+      - seq: 4
+        artifact_id: AC-VBS-010
+        artifact: packages/vbs-service/src/result-publication/result-publication.service.ts
+        description: ResultPublicationService (use_case) — S3 write THEN RabbitMQ publish THEN state transition
+        test_obligation: TO-006
+
+      - seq: 5
+        artifact_id: AC-VBS-016
+        artifact: packages/vbs-service/src/cleanup/cleanup.service.ts
+        description: CleanupService (use_case) — polls cleanup_allowed, deletes filesystem files, transitions to cleaned
+        test_obligation: none
+
+    sgs_domain_application:
+      - seq: 1
+        artifact_id: AC-SGS-004
+        artifact: packages/sgs-service/src/grouping/scan-result-schema.validator.ts
+        description: ScanResultSchemaValidator — validates schema_version string is supported
+        test_obligation: TO-013
+
+      - seq: 2
+        artifact_id: AC-SGS-006
+        artifact: packages/sgs-service/src/grouping/similarity-edge.factory.ts
+        description: SimilarityEdgeFactory — maps NormalizedScanResult pairs to SimilarityEdge[] applying storeEdgeScore filter
+        test_obligation: none (snapshot test post-implementation per CHAR-002)
+
+      - seq: 3
+        artifact_id: AC-SGS-007
+        artifact: packages/sgs-service/src/grouping/group-merge.policy.ts
+        description: GroupMergePolicy — returns GroupAction enum from similarity scores + thresholds
+        test_obligation: TO-012
+
+      - seq: 4
+        artifact_id: AC-SGS-003
+        artifact: packages/sgs-service/src/grouping/scan-result-ingestion.service.ts
+        description: ScanResultIngestionService (use_case) — full ingestion workflow with idempotency guard
+        test_obligation: TO-004
+
+  wave_5:
+    name: Transport, Module Wiring, Entry Points
+    depends_on: wave_4
+    parallelizable: true
+
+    vss_transport:
+      - seq: 1
+        artifact_id: AC-VSS-002
+        artifact: packages/vss-service/src/staging/new-video.consumer.ts
+        description: NewVideoConsumer — amqplib message handler; delegates to StagingService; ack/nack
+        test_obligation: none (integration tested via TO-005)
+
+      - seq: 2
+        artifact_id: AC-VSS-001
+        artifact: packages/vss-service/src/staging/staging.module.ts
+        description: StagingModule — providers StagingService, StagingIdempotencyPolicy; imports RabbitMqModule, MongooseModule, S3 provider
+        test_obligation: none
+
+      - seq: 3
+        artifact_id: AC-VSS-010
+        artifact: packages/vss-service/src/health/vss-health.module.ts
+        description: VssHealthModule — @nestjs/terminus HealthController + MongooseHealthIndicator
+        test_obligation: TO-015
+
+      - seq: 4
+        artifact_id: AC-VSS-011
+        artifact: packages/vss-service/src/app.module.ts
+        description: VssAppModule — root module composing StagingModule, HealthModule, ConfigModule
+        test_obligation: none
+
+      - seq: 5
+        artifact: packages/vss-service/src/main.ts
+        description: NestFactory.create(VssAppModule); listen on PORT env var
+        test_obligation: none
+
+    vbs_transport:
+      - seq: 1
+        artifact_id: AC-VBS-002
+        artifact: packages/vbs-service/src/batch-claim/batch-claim.scheduler.ts
+        description: BatchClaimScheduler — @Cron(BATCH_CLAIM_INTERVAL) calls BatchClaimService
+        test_obligation: none
+
+      - seq: 2
+        artifact_id: AC-VBS-001
+        artifact: packages/vbs-service/src/batch-claim/batch-claim.module.ts
+        description: BatchClaimModule — providers BatchClaimService, ClaimOwnershipPolicy, BatchClaimScheduler, BatchClaimRepository, ScanStateRepository
+        test_obligation: none
+
+      - seq: 3
+        artifact_id: AC-VBS-005
+        artifact: packages/vbs-service/src/scan-execution/scan-execution.module.ts
+        description: ScanExecutionModule — providers ScanExecutionService, VdfCliAdapter, VdfOutputNormalizerAdapter
+        test_obligation: none
+
+      - seq: 4
+        artifact_id: AC-VBS-009
+        artifact: packages/vbs-service/src/result-publication/result-publication.module.ts
+        description: ResultPublicationModule — providers ResultPublicationService, S3ScanResultWriterAdapter, ScanCompletedPublisher
+        test_obligation: none
+
+      - seq: 5
+        artifact_id: AC-VBS-015
+        artifact: packages/vbs-service/src/cleanup/cleanup.module.ts
+        description: CleanupModule — providers CleanupService, ScanStateRepository
+        test_obligation: none
+
+      - seq: 6
+        artifact_id: AC-VBS-018
+        artifact: packages/vbs-service/src/health/vbs-health.module.ts
+        description: VbsHealthModule — terminus health checks
+        test_obligation: TO-015
+
+      - seq: 7
+        artifact_id: AC-VBS-019
+        artifact: packages/vbs-service/src/app.module.ts
+        description: VbsAppModule — composes all VBS feature modules
+        test_obligation: none
+
+      - seq: 8
+        artifact: packages/vbs-service/src/main.ts
+        description: NestJS bootstrap
+        test_obligation: none
+
+    sgs_transport:
+      - seq: 1
+        artifact_id: AC-SGS-002
+        artifact: packages/sgs-service/src/grouping/scan-completed.consumer.ts
+        description: ScanCompletedConsumer — amqplib message handler; delegates to ScanResultIngestionService
+        test_obligation: none
+
+      - seq: 2
+        artifact_id: AC-SGS-001
+        artifact: packages/sgs-service/src/grouping/grouping.module.ts
+        description: GroupingModule — providers all SGS grouping artifacts; imports RabbitMqModule, MongooseModule
+        test_obligation: none
+
+      - seq: 3
+        artifact_id: AC-SGS-HEALTH-001
+        artifact: packages/sgs-service/src/health/sgs-health.module.ts
+        description: SgsHealthModule — terminus health checks
+        test_obligation: TO-015
+
+      - seq: 4
+        artifact_id: AC-SGS-012
+        artifact: packages/sgs-service/src/app.module.ts
+        description: SgsAppModule — composes GroupingModule, HealthModule, ConfigModule
+        test_obligation: none
+
+      - seq: 5
+        artifact: packages/sgs-service/src/main.ts
+        description: NestJS bootstrap
+        test_obligation: none
+
+triggers_emitted: []
+
+gate_result:
+  gate_id: gate.implementation_sequence.output
+  status: pass
+  failures: []
+
+produced_outputs:
+  - .ai/reports/10-implementation-sequence.yaml
+  - .ai/reports/checkpoint-groups.yaml

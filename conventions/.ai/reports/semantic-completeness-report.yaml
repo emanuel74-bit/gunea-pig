@@ -1,0 +1,12 @@
+artifact: semantic_completeness_report
+generated_by: validate-semantic-completeness
+checked_convention_files: 159
+policy_driven: true
+forbidden_phrase_count: 36
+exact_forbidden_count: 3
+warning_phrase_count: 3
+route_backed: true
+phase_bundle_checked: false
+phase_output_checked: false
+error_count: 0
+warning_count: 253

@@ -1,0 +1,11 @@
+script_id: run-gate-check
+status: pass
+errors: []
+warnings: []
+info: []
+outputs:
+  - .ai/gates/gate.final_validation.output.gate-result.yaml
+summary:
+  gate_id: gate.final_validation.output
+  status: pass
+  decision: allow_transition

@@ -1,19 +1,177 @@
-mission_id: ""
-selected_profile: ""
-current_phase: "mission_profile_selection"
-implementation_allowed: false
+mission_id: "vdf-video-similarity-pipeline"
+selected_profile: "medium_feature"
+current_phase: "complete"
+implementation_allowed: true
 active_phase_plan:
-  ordered_phases: []
-  required_phases: []
-  conditional_phases: []
+  ordered_phases:
+    - mission_profile_selection
+    - mission_initialization
+    - active_context_manifest
+    - phase_accounting
+    - behavior_contract
+    - codebase_reconnaissance
+    - local_alignment
+    - risk_classification
+    - boundary_contract_classification
+    - dependency_classification
+    - architecture_decomposition
+    - draft_role_pass
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    - call_site_impact_analysis
+    - change_impact_analysis
+    - final_role_assignment
+    - pattern_selection
+    - structure_rendering
+    - test_derivation
+    - implementation_sequence
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - post_implementation_validation
+    - trigger_review
+    - report_artifact_validation
+    - final_validation
+  required_phases:
+    - mission_profile_selection
+    - mission_initialization
+    - active_context_manifest
+    - phase_accounting
+    - behavior_contract
+    - codebase_reconnaissance
+    - local_alignment
+    - risk_classification
+    - boundary_contract_classification
+    - dependency_classification
+    - architecture_decomposition
+    - draft_role_pass
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    - call_site_impact_analysis
+    - change_impact_analysis
+    - final_role_assignment
+    - pattern_selection
+    - structure_rendering
+    - test_derivation
+    - implementation_sequence
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - post_implementation_validation
+    - trigger_review
+    - report_artifact_validation
+    - final_validation
+  conditional_phases:
+    - refactor_strategy_selection
+    - failure_classification
+    - feedback_repair
   forbidden_phases: []
   skipped_phases: []
   blocked_phases: []
-phase_statuses: []
+  reorder_notes: >
+    Phase order adjusted by alpha_controller: local_alignment requires
+    codebase_reconnaissance outputs (03-codebase-reconnaissance.yaml,
+    local-convention-candidates.yaml) so behavior_contract and
+    codebase_reconnaissance must precede local_alignment. Dependency-respecting
+    order applied.
+phase_statuses:
+  - phase_id: mission_profile_selection
+    status: complete
+    report_ref: .ai/reports/00-mission-profile.yaml
+  - phase_id: mission_initialization
+    status: complete
+    report_ref: .ai/reports/report-registry.yaml
+  - phase_id: active_context_manifest
+    status: complete
+    report_ref: .ai/reports/01-active-context-manifest.yaml
+  - phase_id: phase_accounting
+    status: complete
+    report_ref: .ai/reports/phase-accounting.yaml
+  - phase_id: behavior_contract
+    status: complete
+    report_ref: .ai/reports/02-behavior-contract.yaml
+  - phase_id: codebase_reconnaissance
+    status: complete
+    report_ref: .ai/reports/03-codebase-reconnaissance.yaml
+  - phase_id: local_alignment
+    status: complete
+    report_ref: .ai/reports/local-alignment.yaml
+  - phase_id: risk_classification
+    status: complete
+    report_ref: .ai/reports/risk-classification.yaml
+  - phase_id: boundary_contract_classification
+    status: complete
+    report_ref: .ai/reports/boundary-contract-classification.yaml
+  - phase_id: dependency_classification
+    status: complete
+    report_ref: .ai/reports/dependency-classification.yaml
+  - phase_id: architecture_decomposition
+    status: complete
+    report_ref: .ai/reports/architecture-blueprint.yaml
+  - phase_id: draft_role_pass
+    status: complete
+    report_ref: .ai/reports/04-draft-role-signals.yaml
+  - phase_id: pattern_pressure_detection
+    status: complete
+    report_ref: .ai/reports/pattern-pressure.yaml
+  - phase_id: artifact_reuse_analysis
+    status: complete
+    report_ref: .ai/reports/artifact-reuse-analysis.yaml
+  - phase_id: artifact_action_resolution
+    status: complete
+    report_ref: .ai/reports/05-artifact-actions.yaml
+  - phase_id: call_site_impact_analysis
+    status: complete
+    report_ref: .ai/reports/call-site-impact.yaml
+  - phase_id: change_impact_analysis
+    status: complete
+    report_ref: .ai/reports/07-change-impact.yaml
+  - phase_id: final_role_assignment
+    status: complete
+    report_ref: .ai/reports/08-final-role-assignment.yaml
+  - phase_id: pattern_selection
+    status: complete
+    report_ref: .ai/reports/pattern-decision-log.yaml
+  - phase_id: structure_rendering
+    status: complete
+    report_ref: .ai/reports/final-file-tree.yaml
+  - phase_id: test_derivation
+    status: complete
+    report_ref: .ai/reports/09-test-plan.yaml
+  - phase_id: implementation_sequence
+    status: complete
+    report_ref: .ai/reports/10-implementation-sequence.yaml
+  - phase_id: checkpoint_validation_plan
+    status: complete
+    report_ref: .ai/reports/checkpoint-validation-plan.yaml
+  - phase_id: pre_implementation_gate
+    status: complete
+    report_ref: .ai/reports/pre-implementation-gate.yaml
+  - phase_id: implementation
+    status: complete
+    report_ref: .ai/reports/implementation-result.yaml
+  - phase_id: post_implementation_validation
+    status: complete
+    report_ref: .ai/reports/post-implementation-validation.yaml
+  - phase_id: trigger_review
+    status: complete
+    report_ref: .ai/reports/trigger-review.yaml
+  - phase_id: report_artifact_validation
+    status: complete
+    report_ref: .ai/reports/report-artifact-validation.yaml
+  - phase_id: final_validation
+    status: complete
+    report_ref: .ai/reports/99-validation-summary.yaml
 report_registry_ref: ".ai/reports/report-registry.yaml"
 active_triggers: []
 blocked_items: []
-completed_reports: []
+completed_reports:
+  - .ai/reports/00-mission-profile.yaml
+  - .ai/reports/report-registry.yaml
+  - .ai/reports/01-active-context-manifest.yaml
+  - .ai/reports/phase-accounting.yaml
 invalidated_outputs: []
 revision_history: []
 rerun_requests: []
