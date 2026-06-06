@@ -2231,6 +2231,62 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_telemetry_glob
+    path: .ai/telemetry/**
+    artifact_type: glob
+    schema: runtime_telemetry_outputs
+    producer: runtime_telemetry_executor_routes
+    producer_routes:
+    - collect_runtime_telemetry
+    consumers:
+    - telemetry/conventions.runtime-telemetry.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: append
+    required: context_dependent
+  - artifact_id: ai_runtime_telemetry_events_ndjson
+    path: .ai/telemetry/runtime-telemetry-events.ndjson
+    artifact_type: runtime_artifact
+    schema: runtime_telemetry_events_ndjson
+    producer: runtime_telemetry_executor_routes
+    producer_routes:
+    - collect_runtime_telemetry
+    consumers:
+    - telemetry/conventions.runtime-telemetry.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: append
+    required: after_runtime_telemetry_collection
+  - artifact_id: ai_runtime_telemetry_summary_yaml
+    path: .ai/telemetry/runtime-telemetry-summary.yaml
+    artifact_type: runtime_artifact
+    schema: runtime_telemetry_summary
+    producer: runtime_telemetry_executor_routes
+    producer_routes:
+    - collect_runtime_telemetry
+    consumers:
+    - telemetry/conventions.runtime-telemetry.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: after_runtime_telemetry_collection
+  - artifact_id: ai_runtime_telemetry_report_yaml
+    path: .ai/reports/runtime-telemetry-report.yaml
+    artifact_type: runtime_artifact
+    schema: runtime_telemetry_report
+    producer: runtime_telemetry_executor_routes
+    producer_routes:
+    - collect_runtime_telemetry
+    consumers:
+    - telemetry/conventions.runtime-telemetry.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: after_runtime_telemetry_collection
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated

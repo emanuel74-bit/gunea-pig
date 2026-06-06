@@ -1130,6 +1130,33 @@ sections:
         - multi-agent
         - agents
         executor_type: report
+      collect_runtime_telemetry:
+        description: Collect runtime telemetry events from mission journals, validation
+          outputs, evidence manifests, context traces, and report artifacts in observe
+          mode.
+        script: scripts/collect-runtime-telemetry.ts
+        required_inputs:
+        - runtime_artifacts
+        produced_outputs:
+        - runtime_telemetry_events
+        - runtime_telemetry_summary
+        - runtime_telemetry_report
+        allowed_write_paths:
+        - .ai/telemetry/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - after_phase_output
+        - before_mission_complete
+        - after_file_change
+        failure_behavior: warn
+        consumers:
+        - reports
+        - missions
+        - multi-agent
+        - executors
+        executor_type: report
     mission_controller:
       initialize_mission:
         description: Initialize authoritative mission runtime state in observe mode

@@ -1,0 +1,108 @@
+version: '1.0'
+file:
+  name: conventions.runtime-telemetry.yaml
+  path: telemetry/conventions.runtime-telemetry.yaml
+  role: runtime_telemetry_contract
+  executability: policy
+purpose: Define adapter-neutral runtime telemetry event collection for route, validation,
+  transition, context, evidence, and report activity without changing workflow decisions.
+ownership:
+  owns:
+  - runtime_telemetry_event_contract
+  - telemetry_collection_boundaries
+  - telemetry_observe_mode_policy
+  - runtime_event_summary_shape
+  does_not_own:
+  - workflow_transition_authority
+  - validation_pass_fail_policy
+  - report_claim_authority
+  - mission_state_mutation
+  - adapter_specific_analysis_policy
+activation:
+  mode: on_demand
+  activates_when:
+  - telemetry_collection_requested
+  - mission_observability_requested
+  - runtime_diagnostics_requested
+  skips_when:
+  - no_runtime_artifacts_exist
+inputs:
+  required: []
+  optional:
+  - mission_journal_events
+  - validation_results
+  - evidence_manifest
+  - context_load_trace
+  - route_outputs
+  - report_artifacts
+outputs:
+  produces:
+  - runtime_telemetry_events
+  - runtime_telemetry_summary
+  - runtime_telemetry_report
+dependencies:
+  required_files:
+  - executors/conventions.executor-routes.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  - validation/conventions.validation-result-contract.yaml
+  optional_files:
+  - missions/conventions.mission-journal.yaml
+  - reports/conventions.evidence-manifest.yaml
+  - context/conventions.retrieval-context-economy.yaml
+sections:
+  telemetry_authority_boundary:
+    mode: observe_only
+    mutation_allowed: false
+    decision_authority: none
+    telemetry_must_not_block_workflow: true
+    telemetry_must_not_change_validation_status: true
+  runtime_telemetry_event_contract:
+    required_fields:
+    - event_id
+    - event_type
+    - source_type
+    - source_path
+    - observed_at
+    - route_id
+    - script_id
+    - status
+    - blocking
+    - severity
+    event_type_values:
+    - mission_event_observed
+    - validation_result_observed
+    - evidence_manifest_observed
+    - context_load_trace_observed
+    - report_artifact_observed
+    - runtime_artifact_observed
+    normalization_rules:
+    - preserve_source_path
+    - derive_route_id_from_artifact_when_available
+    - derive_script_id_from_artifact_when_available
+    - record_unknown_values_explicitly
+    - never_invent_missing_source_data
+  telemetry_collection_sources:
+    mission_journals: .ai/missions/*/mission-journal.ndjson
+    validation_results: .ai/validation/*.yaml
+    evidence_manifest: .ai/reports/evidence-manifest.yaml
+    context_load_trace: .ai/context/context-load-trace.yaml
+    reports: .ai/reports/*.yaml
+  summary_dimensions:
+  - event_count
+  - event_counts_by_type
+  - route_event_counts
+  - blocking_event_count
+  - warning_event_count
+  - error_event_count
+  - source_path_count
+  rollout_policy:
+    initial_mode: observe
+    enforcement_mode: none
+    future_enforcement_requires_separate_plan_step: true
+validation:
+  required_checks:
+  - telemetry_event_shape_valid
+  - telemetry_outputs_under_ai_telemetry
+  - telemetry_report_output_under_ai_reports
+  - no_workflow_state_mutation
+  failure_behavior: block_only_malformed_telemetry_output

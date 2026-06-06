@@ -88,6 +88,7 @@ sections:
       - normalization
       - prompts
       - context
+      - telemetry
       skills:
       - run-phase
       - validate-phase
@@ -108,6 +109,7 @@ sections:
       - analyze_global_normalization
       - analyze_prompt_contracts
       - compile_context_bundle
+      - collect_runtime_telemetry
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -249,6 +251,7 @@ sections:
       - missions
       - policy
       - scoring
+      - telemetry
       skills:
       - validate-phase
       - collect-report-evidence
@@ -264,6 +267,7 @@ sections:
       - evaluate_score_decision
       - analyze_architecture_quality
       - analyze_global_normalization
+      - collect_runtime_telemetry
       agents:
       - validation_agent
       - testing_agent
@@ -277,6 +281,9 @@ sections:
       - .ai/reports/architecture-quality-report.yaml
       - .ai/source-artifacts/global-normalization-analysis.yaml
       - .ai/reports/global-normalization-report.yaml
+      - .ai/telemetry/runtime-telemetry-summary.yaml
+      - .ai/telemetry/runtime-telemetry-events.ndjson
+      - .ai/reports/runtime-telemetry-report.yaml
     claude_native_runtime:
       subsystems:
       - claude-code
