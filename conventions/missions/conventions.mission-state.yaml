@@ -4,8 +4,9 @@ file:
   path: missions/conventions.mission-state.yaml
   role: mission_state_storage_contract
   executability: state_schema
-purpose: Define mission state records, Alpha-only mutation rules, phase accounting references, trigger/revision instance storage,
-  implementation permission state, and final mission state semantics.
+purpose: Define mission state records, Alpha-only mutation rules, phase accounting
+  references, trigger/revision instance storage, implementation permission state,
+  and final mission state semantics.
 ownership:
   owns:
   - mission_state_schema
@@ -44,6 +45,7 @@ dependencies:
   - missions/conventions.active-phase-plan.yaml
   - phases/conventions.phase-lifecycle.yaml
   - reports/conventions.report-registry.yaml
+  - missions/conventions.mission-journal.yaml
   optional_files:
   - triggers/conventions.trigger-taxonomy.yaml
   - revisions/conventions.revision-taxonomy.yaml
@@ -66,6 +68,9 @@ sections:
     - user_approvals
     - invalidated_outputs
     - completed_reports
+    - controller_events
+    - mission_checkpoint_ref
+    - mission_journal_ref
   mission_state_record_shape:
     mission_id: ''
     selected_profile: ''
@@ -87,17 +92,26 @@ sections:
     revision_history: []
     rerun_requests: []
     user_approvals: []
+    controller_events: []
+    mission_journal_ref: .ai/missions/{mission_id}/mission-journal.ndjson
+    mission_checkpoint_ref: .ai/missions/{mission_id}/mission-checkpoint.yaml
   mission_state_mutation_policy:
     absolute_rules:
     - id: MISSION-STATE-MUTATION-ABS-001
       rule: Only Alpha may update mission state.
       fail_condition: non_alpha_updates_mission_state
     - id: MISSION-STATE-MUTATION-ABS-002
-      rule: Phase agents may request state changes only by reports, triggers, or revision requests.
+      rule: Phase agents may request state changes only by reports, triggers, or revision
+        requests.
       fail_condition: phase_agent_directly_mutated_mission_state
     - id: MISSION-STATE-MUTATION-ABS-003
-      rule: implementation_allowed must remain false until pre_implementation_gate passes.
+      rule: implementation_allowed must remain false until pre_implementation_gate
+        passes.
       fail_condition: implementation_allowed_without_pre_implementation_gate
+    - id: MISSION-STATE-MUTATION-ABS-004
+      rule: Mission controller state mutations must write a journal event and checkpoint
+        in the same route execution.
+      fail_condition: state_mutation_without_journal_or_checkpoint
   mission_state_transition_rules:
   - id: MISSION-STATE-TRANSITION-001
     from: mission_created
@@ -132,7 +146,8 @@ sections:
   trigger_revision_instance_storage:
     trigger_instances_use: triggers/conventions.trigger-taxonomy.yaml
     revision_instances_use: revisions/conventions.revision-taxonomy.yaml
-    rule: Mission state stores instances only; it does not define trigger or revision vocabulary.
+    rule: Mission state stores instances only; it does not define trigger or revision
+      vocabulary.
 validation:
   required_checks:
   - id: MISSION-STATE-CHECK-001

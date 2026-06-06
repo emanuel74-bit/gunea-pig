@@ -158,6 +158,37 @@ sections:
     lifecycle: runtime_state
     write_mode: append
     required: context_dependent
+  - artifact_id: ai_mission_journal_ndjson
+    path: .ai/missions/{mission_id}/mission-journal.ndjson
+    artifact_type: runtime_artifact
+    schema: mission_journal_ndjson
+    producer: mission_controller_executor_routes
+    producer_routes:
+    - initialize_mission
+    - advance_mission
+    consumers:
+    - missions/conventions.mission-journal.yaml
+    - missions/conventions.mission-state.yaml
+    scope: mission_runtime
+    lifecycle: runtime_state
+    write_mode: append
+    required: after_mission_initialization
+  - artifact_id: ai_mission_checkpoint_yaml
+    path: .ai/missions/{mission_id}/mission-checkpoint.yaml
+    artifact_type: runtime_artifact
+    schema: mission_checkpoint
+    producer: mission_controller_executor_routes
+    producer_routes:
+    - initialize_mission
+    - advance_mission
+    - inspect_mission_state
+    consumers:
+    - missions/conventions.mission-journal.yaml
+    - missions/conventions.mission-state.yaml
+    scope: mission_runtime
+    lifecycle: runtime_state
+    write_mode: single_writer
+    required: after_mission_initialization
   - artifact_id: ai_logs
     path: .ai/logs/**
     artifact_type: glob

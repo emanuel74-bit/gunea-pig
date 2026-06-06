@@ -1,0 +1,129 @@
+version: '1.0'
+file:
+  name: conventions.mission-journal.yaml
+  path: missions/conventions.mission-journal.yaml
+  role: mission_journal_checkpoint_contract
+  executability: runtime_schema
+purpose: Define the durable mission journal and checkpoint records used by the mission controller to preserve append-only mission history and resumable state observations.
+ownership:
+  owns:
+  - mission_journal_schema
+  - mission_checkpoint_schema
+  - mission_journal_append_only_policy
+  - mission_checkpoint_consistency_policy
+  does_not_own:
+  - transition_legality_graph
+  - mission_state_transition_decisions
+  - phase_contracts
+  - gate_result_schema
+  - report_evidence_schema
+activation:
+  mode: reference_only
+  activates_when:
+  - mission_controller_route_runs
+  skips_when: []
+inputs:
+  required:
+  - mission_state
+  optional:
+  - controller_event
+outputs:
+  produces:
+  - mission_journal
+  - mission_checkpoint
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - missions/conventions.mission-state.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  mission_journal_schema:
+    path_pattern: .ai/missions/{mission_id}/mission-journal.ndjson
+    format: ndjson
+    required_event_fields:
+    - event_type
+    - route_id
+    - mission_id
+    - timestamp
+    - event_sequence
+    - state_hash_after
+    optional_event_fields:
+    - previous_event_sequence
+    - previous_phase
+    - observed_next_phase
+    - controller_mode
+    - enforcement
+  mission_checkpoint_schema:
+    path_pattern: .ai/missions/{mission_id}/mission-checkpoint.yaml
+    required_fields:
+    - artifact
+    - schema_version
+    - mission_id
+    - controller_mode
+    - current_phase
+    - state_path
+    - journal_path
+    - journal_event_count
+    - last_event_sequence
+    - last_event_type
+    - state_hash
+    - updated_at
+    record_shape:
+      artifact: mission_checkpoint
+      schema_version: '1.0'
+      mission_id: ''
+      controller_mode: observe
+      current_phase: ''
+      state_path: .ai/missions/{mission_id}/mission-state.yaml
+      journal_path: .ai/missions/{mission_id}/mission-journal.ndjson
+      journal_event_count: 0
+      last_event_sequence: null
+      last_event_type: null
+      state_hash: ''
+      updated_at: ''
+  mission_journal_append_only_policy:
+    absolute_rules:
+    - id: MISSION-JOURNAL-APPEND-ONLY-001
+      rule: Mission controller routes must append journal events; they must not rewrite prior journal lines.
+      fail_condition: prior_journal_line_rewritten_or_removed
+    - id: MISSION-JOURNAL-APPEND-ONLY-002
+      rule: event_sequence must be contiguous and start at 1 for each mission.
+      fail_condition: mission_journal_sequence_gap_or_reorder
+    - id: MISSION-JOURNAL-APPEND-ONLY-003
+      rule: Mission controller routes must refuse to append when existing journal lines are malformed.
+      fail_condition: append_after_corrupted_journal
+  mission_checkpoint_consistency_policy:
+    absolute_rules:
+    - id: MISSION-CHECKPOINT-CONSISTENCY-001
+      rule: Mission checkpoint state_hash must match the current mission-state.yaml content.
+      fail_condition: checkpoint_state_hash_mismatch
+    - id: MISSION-CHECKPOINT-CONSISTENCY-002
+      rule: Mission checkpoint journal_event_count must match the journal line count.
+      fail_condition: checkpoint_event_count_mismatch
+    - id: MISSION-CHECKPOINT-CONSISTENCY-003
+      rule: Inspecting mission state must validate state, journal, and checkpoint together.
+      fail_condition: mission_inspection_skipped_journal_or_checkpoint_validation
+validation:
+  required_checks:
+  - id: MISSION-JOURNAL-CHECK-001
+    check: mission_journal_exists_after_initialization
+    applies_when:
+      mission_initialized: true
+  - id: MISSION-JOURNAL-CHECK-002
+    check: mission_checkpoint_exists_after_initialization
+    applies_when:
+      mission_initialized: true
+  - id: MISSION-JOURNAL-CHECK-003
+    check: mission_journal_append_only_sequence_valid
+    applies_when:
+      mission_journal_exists: true
+  fail_conditions:
+  - id: MISSION-JOURNAL-001
+    condition: mission_journal_malformed
+    message: Mission journal must remain parseable NDJSON with contiguous append-only event_sequence values.
+    severity: error
+  - id: MISSION-CHECKPOINT-001
+    condition: mission_checkpoint_inconsistent
+    message: Mission checkpoint must match the current mission state and journal event count.
+    severity: error

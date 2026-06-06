@@ -13,6 +13,8 @@ ownership:
   - missions_local_execution_order
   - missions_subsystem_contract
   - missions_integration_contract
+  - mission_journal_schema
+  - mission_checkpoint_schema
   does_not_own:
   - mission_profile_records
   - mission_state_storage_details
@@ -41,6 +43,7 @@ dependencies:
   - missions/conventions.mission-profiles.yaml
   - missions/conventions.active-phase-plan.yaml
   - missions/conventions.mission-state.yaml
+  - missions/conventions.mission-journal.yaml
   - missions/conventions.mission-validation.yaml
   - executors/conventions.executor-routes.yaml
   optional_files:
@@ -57,12 +60,14 @@ sections:
     active_phase_plan: missions/conventions.active-phase-plan.yaml
     mission_state: missions/conventions.mission-state.yaml
     validation: missions/conventions.mission-validation.yaml
+    mission_journal: missions/conventions.mission-journal.yaml
   missions_local_execution_order:
   - mission-profile-taxonomy
   - mission-profile-selection
   - mission-profiles
   - active-phase-plan
   - mission-state
+  - mission-journal
   - mission-validation
   missions_subsystem_contract:
     absolute_rules:
@@ -101,6 +106,7 @@ sections:
   required_executor_routes:
     before_mission_start:
     - initialize_mission
+    - inspect_mission_state
     - generate_mission_bundle
     - validate_executor_routes
     - compile_authority_topology

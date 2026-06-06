@@ -1,5 +1,16 @@
 import { finish, getArg, issue, resolveConventionsRoot, type Issue, type JsonMap } from "./lib/common.js";
-import { appendMissionEvent, hasBlockingMissionStateIssue, missionIdFromArgs, nowIso, readMissionState, validateMissionStateShape, writeMissionState } from "./mission-controller-common.js";
+import {
+  appendMissionEvent,
+  hasBlockingMissionStateIssue,
+  missionIdFromArgs,
+  nowIso,
+  readMissionState,
+  validateMissionCheckpoint,
+  validateMissionJournal,
+  validateMissionStateShape,
+  writeMissionCheckpoint,
+  writeMissionState,
+} from "./mission-controller-common.js";
 
 const SCRIPT_ID = "advance-mission";
 const root = resolveConventionsRoot();
@@ -15,6 +26,9 @@ if (!missionId) {
 
 const state = readMissionState(root, missionId);
 issues.push(...validateMissionStateShape(state, missionId));
+const preJournal = validateMissionJournal(root, missionId, Boolean(state));
+issues.push(...preJournal.issues);
+issues.push(...validateMissionCheckpoint(root, missionId, state, preJournal, Boolean(state)));
 if (!state || hasBlockingMissionStateIssue(issues)) {
   finish(SCRIPT_ID, issues, [], { advanced: false, mission_id: missionId });
 }
@@ -39,13 +53,17 @@ state.updated_at = timestamp;
 state.controller_events = Array.isArray(state.controller_events) ? state.controller_events : [];
 state.controller_events.push(event);
 writeMissionState(root, missionId, state);
-appendMissionEvent(root, missionId, event);
+const appended = appendMissionEvent(root, missionId, event, state);
+const postJournal = validateMissionJournal(root, missionId, true);
+writeMissionCheckpoint(root, missionId, state, postJournal);
 
-finish(SCRIPT_ID, issues, [`.ai/missions/${missionId}/mission-state.yaml`, `.ai/missions/${missionId}/mission-journal.ndjson`], {
+finish(SCRIPT_ID, issues, [`.ai/missions/${missionId}/mission-state.yaml`, `.ai/missions/${missionId}/mission-journal.ndjson`, `.ai/missions/${missionId}/mission-checkpoint.yaml`], {
   advanced: true,
   mission_id: missionId,
+  event_sequence: appended.event_sequence,
   previous_phase: previousPhase,
   current_phase: nextPhase,
+  journal_event_count: postJournal.eventCount,
   controller_mode: "observe",
   enforcement: "not_yet_enabled",
 });
