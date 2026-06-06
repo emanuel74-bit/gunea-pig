@@ -282,6 +282,15 @@ export function transitionLegalityGraphPath(root: string): string {
   return path.join(root, "transitions", "conventions.transition-legality-graph.yaml");
 }
 
+export interface TransitionPreconditionObservation {
+  id: string;
+  evidence_type: "gate_result" | "handoff_packet" | "revision_task";
+  required: boolean;
+  satisfied: boolean;
+  evidence_path: string | null;
+  reason: string;
+}
+
 export interface TransitionLegalityEvaluation {
   allowed: boolean;
   rollout_mode: "observe";
@@ -290,6 +299,91 @@ export interface TransitionLegalityEvaluation {
   expected_next_phase: string | null;
   reason: string;
   issues: Issue[];
+  preconditions: TransitionPreconditionObservation[];
+}
+
+
+function readYamlIfPresent(filePath: string): JsonMap | undefined {
+  if (!fs.existsSync(filePath)) return undefined;
+  try {
+    return readYamlFile(filePath);
+  } catch {
+    return undefined;
+  }
+}
+
+function listYamlArtifacts(dirPath: string): string[] {
+  if (!fs.existsSync(dirPath)) return [];
+  return fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter(entry => entry.isFile() && /\.ya?ml$/i.test(entry.name))
+    .map(entry => path.join(dirPath, entry.name))
+    .sort();
+}
+
+function observeGateEvidence(root: string, gateId: string, issues: Issue[], reason: string): TransitionPreconditionObservation {
+  const relPath = `.ai/gates/${gateId}.gate-result.yaml`;
+  const gate = readYamlIfPresent(path.join(root, relPath));
+  if (!gate) {
+    issues.push(issue("warning", "MISSION_TRANSITION_GATE_EVIDENCE_MISSING", `Transition precondition expects script-produced gate evidence ${relPath}`, relPath, { gate_id: gateId, reason }));
+    return { id: `gate:${gateId}`, evidence_type: "gate_result", required: true, satisfied: false, evidence_path: null, reason: "gate_result_missing" };
+  }
+  const generatedByValid = gate.generated_by === "run-gate-check";
+  const artifactValid = gate.artifact === "gate_result";
+  const statusPass = gate.status === "pass";
+  if (!artifactValid || !generatedByValid || !statusPass) {
+    issues.push(issue("warning", "MISSION_TRANSITION_GATE_EVIDENCE_NOT_PASSING", `Transition precondition gate evidence ${relPath} is not a script-produced pass result`, relPath, { gate_id: gateId, artifact: gate.artifact ?? null, generated_by: gate.generated_by ?? null, status: gate.status ?? null, reason }));
+    return { id: `gate:${gateId}`, evidence_type: "gate_result", required: true, satisfied: false, evidence_path: relPath, reason: "gate_result_not_passing" };
+  }
+  return { id: `gate:${gateId}`, evidence_type: "gate_result", required: true, satisfied: true, evidence_path: relPath, reason: "gate_result_passed" };
+}
+
+function observeLatestHandoffEvidence(root: string, issues: Issue[], previousPhase: string, requestedPhase: string): TransitionPreconditionObservation {
+  const dirPath = path.join(root, ".ai", "handoffs");
+  const candidates = listYamlArtifacts(dirPath)
+    .map(filePath => ({ filePath, artifact: readYamlIfPresent(filePath) }))
+    .filter(item => item.artifact?.artifact === "agent_handoff_packet" && item.artifact?.generated_by === "prepare-agent-handoff" && item.artifact?.status === "prepared");
+  if (candidates.length === 0) {
+    issues.push(issue("warning", "MISSION_TRANSITION_HANDOFF_EVIDENCE_MISSING", `Forward transition from ${previousPhase} to ${requestedPhase} has no observed script-produced handoff packet`, ".ai/handoffs", { previous_phase: previousPhase, requested_phase: requestedPhase }));
+    return { id: "handoff:latest", evidence_type: "handoff_packet", required: true, satisfied: false, evidence_path: null, reason: "handoff_packet_missing" };
+  }
+  const latest = candidates[candidates.length - 1]!;
+  return { id: "handoff:latest", evidence_type: "handoff_packet", required: true, satisfied: true, evidence_path: path.relative(root, latest.filePath).replace(/\\/g, "/"), reason: "handoff_packet_prepared" };
+}
+
+function observeLatestRevisionEvidence(root: string, issues: Issue[], previousPhase: string, requestedPhase: string): TransitionPreconditionObservation {
+  const dirPath = path.join(root, ".ai", "revisions");
+  const candidates = listYamlArtifacts(dirPath)
+    .map(filePath => ({ filePath, artifact: readYamlIfPresent(filePath) }))
+    .filter(item => item.artifact?.artifact === "revision_task" && item.artifact?.generated_by === "create-revision-task" && item.artifact?.status === "created");
+  if (candidates.length === 0) {
+    issues.push(issue("warning", "MISSION_TRANSITION_REVISION_EVIDENCE_MISSING", `Backward/revision transition from ${previousPhase} to ${requestedPhase} has no observed script-produced revision task`, ".ai/revisions", { previous_phase: previousPhase, requested_phase: requestedPhase }));
+    return { id: "revision:latest", evidence_type: "revision_task", required: true, satisfied: false, evidence_path: null, reason: "revision_task_missing" };
+  }
+  const latest = candidates[candidates.length - 1]!;
+  return { id: "revision:latest", evidence_type: "revision_task", required: true, satisfied: true, evidence_path: path.relative(root, latest.filePath).replace(/\\/g, "/"), reason: "revision_task_created" };
+}
+
+function observeTransitionPreconditions(root: string, previousPhase: string, requestedPhase: string, eventType: string, phaseOrder: string[], issues: Issue[]): TransitionPreconditionObservation[] {
+  const observations: TransitionPreconditionObservation[] = [];
+  const previousIndex = phaseOrder.indexOf(previousPhase);
+  const requestedIndex = phaseOrder.indexOf(requestedPhase);
+  const isForward = previousIndex >= 0 && requestedIndex === previousIndex + 1;
+  const isBackward = previousIndex >= 0 && requestedIndex >= 0 && requestedIndex < previousIndex;
+  const isRevisionEvent = eventType.includes("revision") || eventType.includes("rerun") || eventType.includes("repair");
+
+  if (requestedPhase === "implementation") {
+    observations.push(observeGateEvidence(root, "pre_implementation_gate", issues, "implementation_requires_pre_implementation_gate"));
+  }
+  if (requestedPhase === "mission_complete") {
+    observations.push(observeGateEvidence(root, "final_validation", issues, "mission_complete_requires_final_validation_gate"));
+  }
+  if (isForward && previousIndex >= 2 && requestedPhase !== "mission_complete") {
+    observations.push(observeLatestHandoffEvidence(root, issues, previousPhase, requestedPhase));
+  }
+  if (isBackward && isRevisionEvent) {
+    observations.push(observeLatestRevisionEvidence(root, issues, previousPhase, requestedPhase));
+  }
+  return observations;
 }
 
 export function evaluateTransitionLegality(root: string, previousPhase: string, requestedPhase: string, eventType: string): TransitionLegalityEvaluation {
@@ -352,5 +446,7 @@ export function evaluateTransitionLegality(root: string, previousPhase: string, 
     }
   }
 
-  return { allowed, rollout_mode: "observe", previous_phase: previousPhase, requested_phase: requestedPhase, expected_next_phase: expectedNextPhase, reason, issues };
+  const preconditions = observeTransitionPreconditions(root, previousPhase, requestedPhase, eventType, phaseOrder, issues);
+
+  return { allowed, rollout_mode: "observe", previous_phase: previousPhase, requested_phase: requestedPhase, expected_next_phase: expectedNextPhase, reason, issues, preconditions };
 }

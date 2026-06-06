@@ -36,6 +36,8 @@ finish(SCRIPT_ID, issues, [".ai/validation/validate-transition-legality.result.y
   requested_phase: requestedPhase || null,
   expected_next_phase: evaluation?.expected_next_phase ?? null,
   transition_reason: evaluation?.reason ?? null,
+  preconditions: evaluation?.preconditions ?? [],
+  missing_precondition_count: evaluation?.preconditions.filter(item => item.required && !item.satisfied).length ?? 0,
   rollout_mode: "observe",
   enforcement: "warn_only",
 });

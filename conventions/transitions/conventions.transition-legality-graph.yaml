@@ -127,6 +127,54 @@ sections:
     - mission_complete
     requires:
     - final_validation_observed
+  transition_precondition_observation:
+    rollout_mode: observe
+    behavior: warn_only
+    purpose: Record missing transition evidence before later enforcement without blocking mission progression.
+    observed_evidence_types:
+    - gate_result
+    - agent_handoff_packet
+    - revision_task
+    preconditions:
+    - id: MISSION-TRANSITION-PRECONDITION-OBS-001
+      applies_when:
+        requested_phase: implementation
+      expects:
+        artifact: gate_result
+        path: .ai/gates/pre_implementation_gate.gate-result.yaml
+        generated_by: run-gate-check
+        status: pass
+      missing_behavior: warn_only
+    - id: MISSION-TRANSITION-PRECONDITION-OBS-002
+      applies_when:
+        requested_phase: mission_complete
+      expects:
+        artifact: gate_result
+        path: .ai/gates/final_validation.gate-result.yaml
+        generated_by: run-gate-check
+        status: pass
+      missing_behavior: warn_only
+    - id: MISSION-TRANSITION-PRECONDITION-OBS-003
+      applies_when:
+        canonical_forward_transition_after: mission_initialization
+      expects:
+        artifact: agent_handoff_packet
+        path_glob: .ai/handoffs/*.yaml
+        generated_by: prepare-agent-handoff
+        status: prepared
+      missing_behavior: warn_only
+    - id: MISSION-TRANSITION-PRECONDITION-OBS-004
+      applies_when:
+        backward_transition_event_contains_any:
+        - revision
+        - rerun
+        - repair
+      expects:
+        artifact: revision_task
+        path_glob: .ai/revisions/*.yaml
+        generated_by: create-revision-task
+        status: created
+      missing_behavior: warn_only
   illegal_transition_signals:
   - id: MISSION-TRANSITION-WARN-001
     condition: requested_phase_unknown
@@ -144,12 +192,28 @@ sections:
     condition: requested_phase_after_terminal_phase
     severity: warning
     code: MISSION_TRANSITION_AFTER_TERMINAL
+  - id: MISSION-TRANSITION-WARN-005
+    condition: required_gate_evidence_missing_or_not_passing
+    severity: warning
+    code: MISSION_TRANSITION_GATE_EVIDENCE_MISSING
+  - id: MISSION-TRANSITION-WARN-006
+    condition: required_handoff_evidence_missing
+    severity: warning
+    code: MISSION_TRANSITION_HANDOFF_EVIDENCE_MISSING
+  - id: MISSION-TRANSITION-WARN-007
+    condition: required_revision_evidence_missing
+    severity: warning
+    code: MISSION_TRANSITION_REVISION_EVIDENCE_MISSING
 validation:
   required_checks:
   - id: TRANSITION-GRAPH-CHECK-001
     check: transition_graph_loaded_before_advance_mission_updates_state
     applies_when:
       advance_mission_route_runs: true
+  - id: TRANSITION-GRAPH-CHECK-002
+    check: gate_handoff_revision_preconditions_are_observed_before_transition_enforcement
+    applies_when:
+      transition_precondition_observation_enabled: true
   fail_conditions:
   - id: TRANSITION-GRAPH-001
     condition: transition_graph_missing_in_enforce_mode

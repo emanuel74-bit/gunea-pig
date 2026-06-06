@@ -54,6 +54,8 @@ const event: JsonMap = {
     rollout_mode: legality.rollout_mode,
     expected_next_phase: legality.expected_next_phase,
     reason: legality.reason,
+    preconditions: legality.preconditions,
+    missing_precondition_count: legality.preconditions.filter(item => item.required && !item.satisfied).length,
   },
 };
 
@@ -79,4 +81,6 @@ finish(SCRIPT_ID, issues, [`.ai/missions/${missionId}/mission-state.yaml`, `.ai/
   transition_legality_allowed: legality.allowed,
   transition_reason: legality.reason,
   expected_next_phase: legality.expected_next_phase,
+  transition_preconditions: legality.preconditions,
+  missing_precondition_count: legality.preconditions.filter(item => item.required && !item.satisfied).length,
 });
