@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { buildUniversalValidationResult, extractValidationDecision, finish, findFiles, issue, readText, readYamlFile, rel, resolveConventionsRoot, writeYamlFile, type Issue, type JsonMap } from "./lib/common.js";
+import { buildUniversalValidationResult, extractValidationDecision, finish, findFiles, issue, readExecutorRoutes, readText, readYamlFile, rel, resolveConventionsRoot, writeYamlFile, type Issue, type JsonMap } from "./lib/common.js";
 
 const SCRIPT_ID = "collect-evidence";
 const root = resolveConventionsRoot();
@@ -14,6 +14,8 @@ type EvidenceEntry = {
   path: string;
   source_type: string;
   generated_by: string;
+  producer_route_id: string | null;
+  route_produced: boolean;
   status: string;
   artifact?: string;
   blocking?: boolean;
@@ -79,6 +81,13 @@ function requireProducer(entryPath: string, generatedBy: string): boolean {
   return true;
 }
 
+function normalizeScriptIdToRouteId(generatedBy: string): string | null {
+  if (!generatedBy || generatedBy === "unknown") return null;
+  return generatedBy.replace(/-/g, "_");
+}
+
+const executorRouteIds = new Set(Array.from(readExecutorRoutes(root).keys()));
+const nonRouteSystemProducers = new Set(["verify-scripts"]);
 const aiRoot = path.join(root, ".ai");
 const files = fs.existsSync(aiRoot)
   ? findFiles(aiRoot, file => (file.endsWith(".yaml") || file.endsWith(".yml")) && !collectorOutputs.has(rel(root, file)))
@@ -125,12 +134,19 @@ for (const file of files) {
   }
   seenIds.set(evidenceId, relativePath);
   const producerVerified = requireProducer(relativePath, generatedBy);
+  const producerRouteId = normalizeScriptIdToRouteId(generatedBy);
+  const routeProduced = producerRouteId !== null && executorRouteIds.has(producerRouteId);
+  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact"].includes(sourceType)) {
+    issues.push(issue("warning", "EVIDENCE_ENTRY_ROUTE_NOT_REGISTERED", `Evidence producer does not map to a registered executor route: ${generatedBy}`, relativePath, { generated_by: generatedBy, expected_route_id: producerRouteId }));
+  }
 
   entries.push({
     evidence_id: evidenceId,
     path: relativePath,
     source_type: sourceType,
     generated_by: generatedBy,
+    producer_route_id: producerRouteId,
+    route_produced: routeProduced,
     status,
     artifact: typeof doc.artifact === "string" ? doc.artifact : undefined,
     content_sha256: sha256(file),

@@ -1,12 +1,15 @@
 import fs from "node:fs";
 import path from "node:path";
-import { buildUniversalValidationResult, finish, issue, readYamlFile, resolveConventionsRoot, writeYamlFile, type Issue } from "./lib/common.js";
+import { buildUniversalValidationResult, finish, issue, readExecutorRoutes, readYamlFile, resolveConventionsRoot, writeYamlFile, type Issue } from "./lib/common.js";
 
 const SCRIPT_ID = "validate-report-evidence";
 const root = resolveConventionsRoot();
 const issues: Issue[] = [];
 const manifestPath = path.join(root, ".ai", "reports", "evidence-manifest.yaml");
 const indexPath = path.join(root, ".ai", "reports", "evidence-index.yaml");
+const executorRouteIds = new Set(Array.from(readExecutorRoutes(root).keys()));
+const routeProducedSourceTypes = new Set(["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact"]);
+const nonRouteSystemProducers = new Set(["verify-scripts"]);
 
 let evidenceEntries: any[] = [];
 if (!fs.existsSync(manifestPath)) {
@@ -46,6 +49,15 @@ if (!fs.existsSync(manifestPath)) {
       if (!entry.generated_by || String(entry.generated_by) === "unknown") {
         issues.push(issue("warning", "EVIDENCE_ENTRY_GENERATOR_UNKNOWN", `Evidence entry does not identify a script generator: ${entryPath}`));
       }
+      const producerRouteId = typeof entry?.producer_route_id === "string" ? entry.producer_route_id : null;
+      const sourceType = String(entry?.source_type ?? "unknown");
+      if (routeProducedSourceTypes.has(sourceType) && !nonRouteSystemProducers.has(String(entry?.generated_by ?? ""))) {
+        if (!producerRouteId || entry?.route_produced !== true) {
+          issues.push(issue("error", "EVIDENCE_ENTRY_ROUTE_PRODUCTION_MISSING", `Core evidence entry must include route-produced metadata: ${entryPath}`, entryPath));
+        } else if (!executorRouteIds.has(producerRouteId)) {
+          issues.push(issue("error", "EVIDENCE_ENTRY_ROUTE_UNKNOWN", `Evidence entry producer route is not registered: ${producerRouteId}`, entryPath));
+        }
+      }
     }
   }
 }
@@ -73,6 +85,27 @@ for (const name of reportFiles) {
     }
     if (report.evidence_manifest !== ".ai/reports/evidence-manifest.yaml") {
       issues.push(issue("error", "FINAL_REPORT_MANIFEST_REF_MISSING", "Final mission report must reference evidence-manifest.yaml.", relative));
+    }
+    if (!Array.isArray(report.report_claims) || report.report_claims.length === 0) {
+      issues.push(issue("error", "FINAL_REPORT_CLAIMS_MISSING", "Final mission report must include manifest-backed report_claims.", relative));
+    } else {
+      for (const claim of report.report_claims) {
+        const claimId = String(claim?.claim_id ?? "unknown_claim");
+        if (String(claim?.claim_status ?? "") === "not_applicable") continue;
+        if (!Array.isArray(claim?.evidence_refs) || claim.evidence_refs.length === 0) {
+          issues.push(issue("error", "REPORT_CLAIM_EVIDENCE_REFS_MISSING", `Report claim must reference at least one evidence manifest entry: ${claimId}`, relative));
+          continue;
+        }
+        for (const ref of claim.evidence_refs) {
+          if (typeof ref !== "string" || !ref.startsWith(".ai/")) {
+            issues.push(issue("error", "REPORT_CLAIM_EVIDENCE_REF_INVALID", `Report claim evidence reference must be a .ai path: ${String(ref)}`, relative));
+          } else if (!fs.existsSync(path.join(root, ref))) {
+            issues.push(issue("error", "REPORT_CLAIM_EVIDENCE_REF_MISSING", `Report claim evidence reference does not exist: ${ref}`, relative));
+          } else if (evidenceEntries.length && !evidencePathSet.has(ref)) {
+            issues.push(issue("error", "REPORT_CLAIM_EVIDENCE_REF_NOT_IN_MANIFEST", `Report claim evidence reference is not listed in evidence_manifest_v2: ${ref}`, relative));
+          }
+        }
+      }
     }
   }
   if (report.generated_by && Array.isArray(report.evidence_refs)) {

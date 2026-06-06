@@ -48,6 +48,20 @@ const scoreDecisionEvidence = entries.filter((entry: any) => entry?.source_type 
 const scoreDecisionBlocking = scoreDecisionEvidence.filter((entry: any) => entry?.score_decision?.blocking_decision === true);
 const revisionLoopEvidence = entries.filter((entry: any) => entry?.source_type === "revision" && entry?.revision_loop_analysis);
 const revisionLoopBlocking = revisionLoopEvidence.filter((entry: any) => entry?.revision_loop_analysis?.blocking_decision === true);
+function paths(list: any[]): string[] {
+  return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
+}
+function claim(claim_id: string, claim_type: string, evidenceRefs: string[], claim_status = "supported"): any {
+  return { claim_id, claim_type, claim_status, evidence_refs: evidenceRefs };
+}
+const allEvidenceRefs = paths(entries);
+const reportClaims = [
+  claim("evidence_manifest_validated", "manifest_integrity", allEvidenceRefs, issues.length ? "blocked" : "supported"),
+  claim("validation_summary_backed", "validation", paths(entries.filter((entry: any) => entry.source_type === "validation"))),
+  claim("score_decision_summary_backed", "scoring", paths(scoreDecisionEvidence), scoreDecisionEvidence.length ? "supported" : "not_applicable"),
+  claim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), revisionLoopEvidence.length ? "supported" : "not_applicable"),
+  claim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type))))),
+].filter(entry => entry.claim_status === "not_applicable" || entry.evidence_refs.length > 0);
 const finalReport = {
   artifact: "final_mission_report",
   generated_by: SCRIPT_ID,
@@ -55,7 +69,8 @@ const finalReport = {
   summary: "Final mission report generated from validated evidence_manifest_v2 artifacts.",
   evidence_manifest: ".ai/reports/evidence-manifest.yaml",
   evidence_index: ".ai/reports/evidence-index.yaml",
-  evidence_refs: entries.map((entry: any) => entry.path).filter((value: any) => typeof value === "string"),
+  evidence_refs: allEvidenceRefs,
+  report_claims: reportClaims,
   evidence_counts_by_type: counts,
   evidence_manifest_summary: {
     schema_version: evidenceManifest.schema_version ?? null,
@@ -66,13 +81,13 @@ const finalReport = {
   },
   validation_summary: {
     blocking_evidence_count: blockingEvidence.length,
-    failed_evidence_refs: blockingEvidence.map((entry: any) => entry.path),
-    blocking_validation_refs: blockingEvidence.filter((entry: any) => entry.source_type === "validation").map((entry: any) => entry.path),
+    failed_evidence_refs: paths(blockingEvidence),
+    blocking_validation_refs: paths(blockingEvidence.filter((entry: any) => entry.source_type === "validation")),
   },
   score_decision_summary: {
-    score_decision_refs: scoreDecisionEvidence.map((entry: any) => entry.path),
+    score_decision_refs: paths(scoreDecisionEvidence),
     score_decision_count: scoreDecisionEvidence.length,
-    blocking_score_decision_refs: scoreDecisionBlocking.map((entry: any) => entry.path),
+    blocking_score_decision_refs: paths(scoreDecisionBlocking),
     observe_mode_only: scoreDecisionEvidence.every((entry: any) => entry?.score_decision?.blocking_decision !== true),
     recommendations: scoreDecisionEvidence.map((entry: any) => ({
       source: entry.path,
@@ -82,9 +97,9 @@ const finalReport = {
     })),
   },
   revision_loop_summary: {
-    revision_loop_refs: revisionLoopEvidence.map((entry: any) => entry.path),
+    revision_loop_refs: paths(revisionLoopEvidence),
     revision_loop_count: revisionLoopEvidence.length,
-    blocking_revision_loop_refs: revisionLoopBlocking.map((entry: any) => entry.path),
+    blocking_revision_loop_refs: paths(revisionLoopBlocking),
     observe_mode_only: revisionLoopEvidence.every((entry: any) => entry?.revision_loop_analysis?.blocking_decision !== true),
     repeated_fingerprint_count: revisionLoopEvidence.reduce((total: number, entry: any) => total + Number(entry?.revision_loop_analysis?.repeated_fingerprint_count ?? 0), 0),
     no_progress_suspected_count: revisionLoopEvidence.filter((entry: any) => entry?.revision_loop_analysis?.no_progress_suspected === true).length,
@@ -98,9 +113,9 @@ const finalReport = {
     })),
   },
   transition_evidence: {
-    gates: entries.filter((entry: any) => entry.source_type === "gate").map((entry: any) => entry.path),
-    handoffs: entries.filter((entry: any) => entry.source_type === "handoff").map((entry: any) => entry.path),
-    revisions: entries.filter((entry: any) => entry.source_type === "revision").map((entry: any) => entry.path),
+    gates: paths(entries.filter((entry: any) => entry.source_type === "gate")),
+    handoffs: paths(entries.filter((entry: any) => entry.source_type === "handoff")),
+    revisions: paths(entries.filter((entry: any) => entry.source_type === "revision")),
   },
   unresolved_issues: blockingEvidence.map((entry: any) => ({ source: entry.path, status: entry.status, blocking: entry.blocking === true })),
 };
@@ -113,6 +128,7 @@ writeYamlFile(path.join(root, ".ai", "reports", "mission-evidence-summary.yaml")
   evidence_manifest: ".ai/reports/evidence-manifest.yaml",
   evidence_counts_by_type: counts,
   evidence_manifest_summary: finalReport.evidence_manifest_summary,
+  report_claim_count: finalReport.report_claims.length,
 });
 
 finish(SCRIPT_ID, issues, [".ai/reports/final-mission-report.yaml", ".ai/reports/mission-evidence-summary.yaml"], {
