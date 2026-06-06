@@ -89,6 +89,7 @@ sections:
       - prompts
       - context
       - telemetry
+      - certification
       skills:
       - run-phase
       - validate-phase
@@ -111,6 +112,7 @@ sections:
       - compile_context_bundle
       - collect_runtime_telemetry
       - validate_runtime_telemetry
+      - run_dry_run_certification
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -138,6 +140,8 @@ sections:
       - .ai/context/compiled-context-bundle.yaml
       - .ai/context/context-load-trace.yaml
       - .ai/reports/context-bundle-report.yaml
+      - .ai/certification/dry-run-certification.yaml
+      - .ai/reports/dry-run-certification-report.yaml
     architecture_design:
       subsystems:
       - architecture
@@ -253,6 +257,7 @@ sections:
       - policy
       - scoring
       - telemetry
+      - certification
       skills:
       - validate-phase
       - collect-report-evidence
@@ -270,6 +275,7 @@ sections:
       - analyze_global_normalization
       - collect_runtime_telemetry
       - validate_runtime_telemetry
+      - run_dry_run_certification
       agents:
       - validation_agent
       - testing_agent
@@ -286,6 +292,8 @@ sections:
       - .ai/telemetry/runtime-telemetry-summary.yaml
       - .ai/telemetry/runtime-telemetry-events.ndjson
       - .ai/reports/runtime-telemetry-report.yaml
+      - .ai/certification/dry-run-certification.yaml
+      - .ai/reports/dry-run-certification-report.yaml
     claude_native_runtime:
       subsystems:
       - claude-code
@@ -338,6 +346,7 @@ sections:
   - transitions
   - triggers
   - normalization
+  - certification
 validation:
   required_checks:
   - all_convention_subsystems_mapped_to_at_least_one_workflow_lane

@@ -53,7 +53,8 @@
     "analyze:prompt-contracts": "tsx analyze-prompt-contracts.ts",
     "compile:context-bundle": "tsx compile-context-bundle.ts",
     "collect:runtime-telemetry": "tsx collect-runtime-telemetry.ts",
-    "validate:runtime-telemetry": "tsx validate-runtime-telemetry.ts"
+    "validate:runtime-telemetry": "tsx validate-runtime-telemetry.ts",
+    "run:dry-run-certification": "tsx run-dry-run-certification.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

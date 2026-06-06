@@ -1,0 +1,83 @@
+version: '1.0'
+file:
+  name: conventions.dry-run-certification.yaml
+  path: certification/conventions.dry-run-certification.yaml
+  role: dry_run_certification_contract
+  executability: policy
+purpose: Define adapter-neutral dry-run mission certification scenarios and evidence
+  requirements for end-to-end runtime validation without mutating production source
+  behavior.
+ownership:
+  owns:
+  - dry_run_certification_contract
+  - certification_scenario_model
+  - certification_evidence_requirements
+  does_not_own:
+  - runtime_route_implementation
+  - production_source_mutation
+  - language_or_framework_specific_quality_rules
+activation:
+  mode: on_demand
+  activates_when:
+  - milestone_certification_required
+  - end_to_end_dry_run_validation_required
+  skips_when:
+  - local_unit_validation_only
+sections:
+  certification_model:
+    rollout_mode: observe
+    mutation_allowed: false
+    scenario_execution: route_backed_simulation_or_artifact_presence_validation
+    full_completion_requirement: all_required_scenarios_have_evidence_and_no_blocking_validation_failures
+  required_scenarios:
+  - scenario_id: small_feature
+    required_evidence:
+    - mission_state
+    - phase_bundle
+    - validation_result
+    - evidence_manifest
+  - scenario_id: bugfix
+    required_evidence:
+    - mission_state
+    - validation_result
+    - evidence_manifest
+  - scenario_id: refactor
+    required_evidence:
+    - source_artifact_manifest
+    - architecture_quality_analysis
+    - safe_structure_analysis
+  - scenario_id: gate_block
+    required_evidence:
+    - gate_result
+    - validation_result
+  - scenario_id: revision_loop
+    required_evidence:
+    - revision_task
+    - revision_loop_analysis
+  - scenario_id: resume_after_shutdown
+    required_evidence:
+    - mission_checkpoint
+    - mission_journal
+  - scenario_id: final_report
+    required_evidence:
+    - evidence_manifest
+    - final_mission_report
+  - scenario_id: illegal_transition_rejection
+    required_evidence:
+    - transition_legality_result
+    - mission_controller_block
+  certification_boundaries:
+    language_neutral: true
+    framework_neutral: true
+    adapter_outputs_are_optional_evidence: true
+    scenario_policy_must_not_reference_project_specific_test_failures: true
+  validation:
+    required_checks:
+    - scenario_ids_unique
+    - required_scenarios_present
+    - certification_artifacts_written
+    - blocking_failures_reported
+    fail_conditions:
+    - unknown_requested_scenario
+    - missing_required_scenario_evidence
+    - malformed_certification_artifact

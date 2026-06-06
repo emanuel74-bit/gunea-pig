@@ -538,6 +538,31 @@ sections:
         - claude-code
         - executors
         executor_type: validation
+      run_dry_run_certification:
+        description: Run adapter-neutral dry-run mission certification checks from
+          generated runtime artifacts without mutating production source behavior.
+        script: scripts/run-dry-run-certification.ts
+        required_inputs:
+        - certification_scenarios
+        - runtime_artifacts
+        produced_outputs:
+        - dry_run_certification_result
+        - dry_run_certification_report
+        allowed_write_paths:
+        - .ai/certification/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_complete
+        - after_file_change
+        failure_behavior: warn
+        consumers:
+        - missions
+        - reports
+        - multi-agent
+        - executors
+        executor_type: validation
     compiler:
       compile_authority_topology:
         description: Compile distributed ownership declarations into an authority

@@ -2301,6 +2301,48 @@ sections:
     lifecycle: generated_validation_output
     write_mode: single_writer
     required: after_runtime_telemetry_validation
+  - artifact_id: ai_certification_dry_run_certification_yaml
+    path: .ai/certification/dry-run-certification.yaml
+    artifact_type: runtime_artifact
+    schema: dry_run_certification_result
+    producer: certification_executor_routes
+    producer_routes:
+    - run_dry_run_certification
+    consumers:
+    - certification/conventions.dry-run-certification.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_validation_output
+    write_mode: single_writer
+    required: after_dry_run_certification
+  - artifact_id: ai_reports_dry_run_certification_report_yaml
+    path: .ai/reports/dry-run-certification-report.yaml
+    artifact_type: runtime_artifact
+    schema: dry_run_certification_report
+    producer: certification_executor_routes
+    producer_routes:
+    - run_dry_run_certification
+    consumers:
+    - certification/conventions.dry-run-certification.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: after_dry_run_certification
+  - artifact_id: ai_certification_runtime_outputs_glob
+    path: .ai/certification/**
+    artifact_type: runtime_artifact_glob
+    schema: certification_runtime_outputs
+    producer: certification_executor_routes
+    producer_routes:
+    - run_dry_run_certification
+    consumers:
+    - certification/conventions.dry-run-certification.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_validation_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated
