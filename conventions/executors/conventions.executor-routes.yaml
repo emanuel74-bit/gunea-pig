@@ -409,6 +409,31 @@ sections:
         - multi-agent
         - missions
         executor_type: validation
+      validate_runtime_telemetry:
+        description: Validate runtime telemetry event, summary, and report artifact
+          shape/coverage without enforcing telemetry workflow policy.
+        script: scripts/validate-runtime-telemetry.ts
+        required_inputs:
+        - runtime_telemetry_events
+        - runtime_telemetry_summary
+        - runtime_telemetry_report
+        produced_outputs:
+        - runtime_telemetry_validation_report
+        allowed_write_paths:
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts:
+        - runtime_telemetry_events
+        - runtime_telemetry_summary
+        - runtime_telemetry_report
+        lifecycle_hooks:
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - reports
+        - missions
+        - executors
+        executor_type: validation
       validate_claude_execution_plan:
         description: Validate the generated Claude Code execution plan before Claude
           Code runs a mission or phase.

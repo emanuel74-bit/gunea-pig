@@ -110,6 +110,7 @@ sections:
       - analyze_prompt_contracts
       - compile_context_bundle
       - collect_runtime_telemetry
+      - validate_runtime_telemetry
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -268,6 +269,7 @@ sections:
       - analyze_architecture_quality
       - analyze_global_normalization
       - collect_runtime_telemetry
+      - validate_runtime_telemetry
       agents:
       - validation_agent
       - testing_agent

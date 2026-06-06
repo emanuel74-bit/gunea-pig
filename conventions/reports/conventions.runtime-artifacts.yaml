@@ -2287,6 +2287,20 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer
     required: after_runtime_telemetry_collection
+  - artifact_id: ai_runtime_telemetry_validation_report_yaml
+    path: .ai/reports/runtime-telemetry-validation-report.yaml
+    artifact_type: runtime_artifact
+    schema: runtime_telemetry_validation_report
+    producer: runtime_telemetry_executor_routes
+    producer_routes:
+    - validate_runtime_telemetry
+    consumers:
+    - telemetry/conventions.runtime-telemetry.yaml
+    - reports/conventions.evidence-manifest.yaml
+    scope: mission_runtime
+    lifecycle: generated_validation_output
+    write_mode: single_writer
+    required: after_runtime_telemetry_validation
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated

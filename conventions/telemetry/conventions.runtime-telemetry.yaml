@@ -40,6 +40,7 @@ outputs:
   - runtime_telemetry_events
   - runtime_telemetry_summary
   - runtime_telemetry_report
+  - runtime_telemetry_validation_report
 dependencies:
   required_files:
   - executors/conventions.executor-routes.yaml
