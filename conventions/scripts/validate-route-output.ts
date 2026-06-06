@@ -26,6 +26,37 @@ function readOutputText(): string {
   }
 }
 
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateIssueList(key: "errors" | "warnings" | "info", value: unknown): void {
+  if (!Array.isArray(value)) {
+    issues.push(issue("error", `ROUTE_OUTPUT_${key.toUpperCase()}_INVALID`, `Route output ${key} must be a list`));
+    return;
+  }
+
+  value.forEach((entry, index) => {
+    if (!isPlainObject(entry)) {
+      issues.push(issue("error", "ROUTE_OUTPUT_ISSUE_ENTRY_INVALID", `Route output ${key}[${index}] must be an issue object`, undefined, { field: key, index }));
+      return;
+    }
+
+    const severity = entry.severity;
+    const code = entry.code;
+    const message = entry.message;
+    if (severity !== "info" && severity !== "warning" && severity !== "error" && severity !== "critical") {
+      issues.push(issue("error", "ROUTE_OUTPUT_ISSUE_SEVERITY_INVALID", `Route output ${key}[${index}].severity must be info, warning, error, or critical`, undefined, { field: key, index }));
+    }
+    if (typeof code !== "string" || !code.trim()) {
+      issues.push(issue("error", "ROUTE_OUTPUT_ISSUE_CODE_INVALID", `Route output ${key}[${index}].code must be a non-empty string`, undefined, { field: key, index }));
+    }
+    if (typeof message !== "string" || !message.trim()) {
+      issues.push(issue("error", "ROUTE_OUTPUT_ISSUE_MESSAGE_INVALID", `Route output ${key}[${index}].message must be a non-empty string`, undefined, { field: key, index }));
+    }
+  });
+}
+
 if (!routeId) {
   issues.push(issue("error", "ROUTE_ID_MISSING", "Route output validation requires --route <route_id>"));
 } else if (!route) {
@@ -45,13 +76,24 @@ if (!parsed) {
   if (parsed.status !== "pass" && parsed.status !== "fail") {
     issues.push(issue("error", "ROUTE_OUTPUT_STATUS_INVALID", "Route output status must be pass or fail"));
   }
-  for (const key of ["errors", "warnings", "info"]) {
-    if (!Array.isArray(parsed[key])) {
-      issues.push(issue("error", `ROUTE_OUTPUT_${key.toUpperCase()}_INVALID`, `Route output ${key} must be a list`));
+
+  validateIssueList("errors", parsed.errors);
+  validateIssueList("warnings", parsed.warnings);
+  validateIssueList("info", parsed.info);
+
+  if ("outputs" in parsed) {
+    if (!Array.isArray(parsed.outputs)) {
+      issues.push(issue("error", "ROUTE_OUTPUT_OUTPUTS_INVALID", "Route output outputs must be a list when present"));
+    } else {
+      parsed.outputs.forEach((entry: unknown, index: number) => {
+        if (typeof entry !== "string" || !entry.trim()) {
+          issues.push(issue("error", "ROUTE_OUTPUT_OUTPUT_ENTRY_INVALID", `Route output outputs[${index}] must be a non-empty string`, undefined, { index }));
+        }
+      });
     }
   }
-  if ("outputs" in parsed && !Array.isArray(parsed.outputs)) {
-    issues.push(issue("error", "ROUTE_OUTPUT_OUTPUTS_INVALID", "Route output outputs must be a list when present"));
+  if ("summary" in parsed && !isPlainObject(parsed.summary)) {
+    issues.push(issue("error", "ROUTE_OUTPUT_SUMMARY_INVALID", "Route output summary must be an object when present"));
   }
 }
 
