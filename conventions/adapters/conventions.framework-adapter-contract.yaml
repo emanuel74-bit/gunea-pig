@@ -1,0 +1,81 @@
+version: '1.0'
+file:
+  name: conventions.framework-adapter-contract.yaml
+  path: adapters/conventions.framework-adapter-contract.yaml
+  role: framework_adapter_contract
+  executability: contract
+purpose: Define the universal contract for framework adapters that consume language
+  adapter output and produce framework-specific evidence without owning universal
+  architecture quality policy, scoring thresholds, or mission transition authority.
+ownership:
+  owns:
+  - framework_adapter_contract
+  - framework_analysis_artifact_shape
+  - framework_adapter_input_output_boundary
+  does_not_own:
+  - universal_architecture_quality_thresholds
+  - mission_mode_policy_thresholds
+  - mission_phase_transition_authority
+  - source_artifact_manifest_collection
+  - language_adapter_analysis
+activation:
+  mode: on_demand
+  activates_when:
+  - language_adapter_analysis_available
+  - framework_specific_source_truth_required
+  - adapter_backed_framework_evidence_required
+  skips_when:
+  - language_adapter_analysis_missing
+inputs:
+  required:
+  - language_source_analysis
+  - framework_adapter_contract
+  optional:
+  - source_artifact_manifest
+  - mission_context
+outputs:
+  produces:
+  - framework_source_analysis
+  - framework_adapter_report
+  - adapter_evidence_records
+dependencies:
+  required_files:
+  - adapters/conventions.language-adapter-contract.yaml
+  - source/conventions.source-artifact-model.yaml
+  - executors/conventions.executor-routes.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  optional_files:
+  - validation/conventions.validation-result-contract.yaml
+sections:
+  framework_adapter_contract:
+    required_input_artifacts:
+    - language_source_analysis
+    required_output_fields:
+    - artifact
+    - generated_by
+    - status
+    - adapter_kind
+    - framework
+    - language_analysis_path
+    - analyzed_file_count
+    - detected_file_count
+    - files
+    allowed_status_values:
+    - analyzed
+    - no_framework_files
+    - failed
+  adapter_boundary:
+    must_consume_language_adapter_output: true
+    must_not_scan_unbounded_project_roots: true
+    must_not_make_universal_architecture_quality_decisions: true
+    must_not_enforce_score_thresholds: true
+    may_extract_framework_specific_evidence: true
+    may_report_missing_framework_expected_shapes_as_evidence: true
+  rollout:
+    mode: collect_only
+    enforcement: none
+    later_phases:
+    - mission_mode_policy_layer
+    - scoring_decision_layer
+    - architecture_quality_gates
+    - adapter_certification_suite

@@ -621,6 +621,36 @@ sections:
         - reports
         - architecture
         executor_type: compiler
+      analyze_nestjs_source:
+        description: Consume TypeScript language-adapter evidence and emit NestJS
+          framework-adapter evidence without enforcing framework or architecture
+          quality policy.
+        script: scripts/analyze-nestjs-source.ts
+        required_inputs:
+        - typescript_source_analysis
+        - framework_adapter_contract
+        - nestjs_adapter_contract
+        produced_outputs:
+        - nestjs_source_analysis
+        - nestjs_adapter_report
+        allowed_write_paths:
+        - .ai/source-artifacts/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts:
+        - typescript_source_analysis
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - adapters
+        - source
+        - validation
+        - reports
+        - architecture
+        executor_type: compiler
     generator:
       generate_phase_bundle:
         description: Generate minimal phase context bundle from active mission, phase

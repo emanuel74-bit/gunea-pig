@@ -1851,6 +1851,36 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_nestjs_source_analysis_yaml
+    path: .ai/source-artifacts/nestjs-source-analysis.yaml
+    artifact_type: runtime_artifact
+    schema: nestjs_source_analysis_schema
+    producer: analyze_nestjs_source_route
+    producer_routes:
+    - analyze_nestjs_source
+    consumers:
+    - adapters/conventions.nestjs-adapter.yaml
+    - adapters/conventions.framework-adapter-contract.yaml
+    - reports/conventions.report-evidence.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_nestjs_source_analysis_report_yaml
+    path: .ai/reports/nestjs-source-analysis-report.yaml
+    artifact_type: runtime_artifact
+    schema: nestjs_adapter_report_schema
+    producer: analyze_nestjs_source_route
+    producer_routes:
+    - analyze_nestjs_source
+    consumers:
+    - adapters/conventions.nestjs-adapter.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated

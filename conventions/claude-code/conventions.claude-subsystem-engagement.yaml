@@ -88,6 +88,7 @@ sections:
       - collect_evidence
       - collect_source_artifacts
       - analyze_typescript_source
+      - analyze_nestjs_source
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -98,6 +99,7 @@ sections:
       - .ai/reports/evidence-index.yaml
       - .ai/source-artifacts/**
       - .ai/source-artifacts/typescript-source-analysis.yaml
+      - .ai/source-artifacts/nestjs-source-analysis.yaml
     architecture_design:
       subsystems:
       - architecture

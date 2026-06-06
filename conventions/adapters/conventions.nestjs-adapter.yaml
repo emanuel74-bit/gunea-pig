@@ -1,0 +1,76 @@
+version: '1.0'
+file:
+  name: conventions.nestjs-adapter.yaml
+  path: adapters/conventions.nestjs-adapter.yaml
+  role: nestjs_framework_adapter
+  executability: contract
+purpose: Define the NestJS framework adapter contract that consumes TypeScript language
+  adapter output and emits NestJS-specific source evidence without becoming core
+  architecture policy or enforcing framework quality gates.
+ownership:
+  owns:
+  - nestjs_framework_adapter_contract
+  - nestjs_source_analysis_shape
+  - nestjs_framework_evidence_fields
+  does_not_own:
+  - universal_architecture_quality_thresholds
+  - mission_transition_authority
+  - language_source_collection
+  - scoring_policy
+activation:
+  mode: on_demand
+  activates_when:
+  - typescript_source_analysis_available
+  - nestjs_framework_evidence_required
+  skips_when:
+  - typescript_source_analysis_missing
+inputs:
+  required:
+  - typescript_source_analysis
+  - framework_adapter_contract
+  - nestjs_adapter_contract
+  optional:
+  - source_artifact_manifest
+  - mission_context
+outputs:
+  produces:
+  - nestjs_source_analysis
+  - nestjs_adapter_report
+dependencies:
+  required_files:
+  - adapters/conventions.framework-adapter-contract.yaml
+  - adapters/conventions.typescript-adapter.yaml
+  - adapters/conventions.language-adapter-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  nestjs_analysis_contract:
+    generated_by: analyze-nestjs-source
+    produced_artifact: nestjs_source_analysis
+    produced_report: nestjs_adapter_report
+    required_file_fields:
+    - path
+    - decorators
+    - provider_indicators
+    - controller_indicators
+    - module_indicators
+    - injection_indicators
+    framework_markers:
+    - '@Module'
+    - '@Controller'
+    - '@Injectable'
+    - '@Inject'
+    - '@Get'
+    - '@Post'
+    - '@Put'
+    - '@Patch'
+    - '@Delete'
+    evidence_flags:
+    - has_nestjs_import
+    - has_module_decorator
+    - has_controller_decorator
+    - has_injectable_decorator
+    - has_constructor_injection
+  rollout:
+    mode: collect_only
+    enforcement: none

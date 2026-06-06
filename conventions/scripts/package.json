@@ -41,7 +41,8 @@
     "validate:transition-legality": "tsx validate-transition-legality.ts",
     "validate:validation-result": "tsx validate-validation-result.ts",
     "collect:source-artifacts": "tsx collect-source-artifacts.ts",
-    "analyze:typescript-source": "tsx analyze-typescript-source.ts"
+    "analyze:typescript-source": "tsx analyze-typescript-source.ts",
+    "analyze:nestjs-source": "tsx analyze-nestjs-source.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"
