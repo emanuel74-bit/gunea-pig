@@ -107,6 +107,7 @@ sections:
     before_mission_start:
     - initialize_mission
     - inspect_mission_state
+    - resume_mission
     - generate_mission_bundle
     - validate_executor_routes
     - compile_authority_topology

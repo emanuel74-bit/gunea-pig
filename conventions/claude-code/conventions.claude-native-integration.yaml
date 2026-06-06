@@ -72,6 +72,7 @@ sections:
       required_skills:
       - start-mission
       - run-alpha-cycle
+      - resume-mission
       - activate-agent
       - run-phase
       - validate-phase
@@ -121,6 +122,7 @@ sections:
       required_commands:
       - start-mission
       - run-alpha-cycle
+      - resume-mission
       - activate-agent
       - run-phase
       - validate-phase
@@ -131,6 +133,7 @@ sections:
     before_mission_start:
     - initialize_mission
     - inspect_mission_state
+    - resume_mission
     - generate_claude_execution_plan
     - validate_claude_execution_plan
     - generate_mission_bundle
@@ -140,6 +143,7 @@ sections:
     - validate_changed_files
     before_phase_start:
     - inspect_mission_state
+    - resume_mission
     - generate_phase_bundle
     - validate_phase_bundle
     before_transition_advance:

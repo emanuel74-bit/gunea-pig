@@ -70,6 +70,7 @@ sections:
     - completed_reports
     - controller_events
     - mission_checkpoint_ref
+    - last_resumed_at
     - mission_journal_ref
   mission_state_record_shape:
     mission_id: ''

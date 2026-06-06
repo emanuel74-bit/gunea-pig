@@ -12,7 +12,7 @@ allowed-tools:
 # Run Alpha Cycle
 
 
-Use this skill for every workflow cycle after mission start and after every transition.
+Use this skill for every workflow cycle after mission start and after every transition. If the session was interrupted, run `resume-mission` before this skill.
 
 Alpha responsibilities:
 

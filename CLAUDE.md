@@ -19,6 +19,7 @@ This project uses the Autonomous Agent Activator convention system. Claude Code 
 Use these Claude skills instead of improvising the workflow:
 
 - `start-mission`: mission intake, system integrity, Claude execution plan, first phase bundle.
+- `resume-mission`: recover from interruption using checkpointed mission state, append-only journal validation, and route-backed inspection.
 - `run-alpha-cycle`: Alpha selects/activates the next phase agent and controls lifecycle routing.
 - `activate-agent`: activate the correct Claude subagent from the phase bundle owner agent.
 - `run-phase`: execute phase work from the validated bundle.
@@ -32,13 +33,14 @@ Use these Claude skills instead of improvising the workflow:
 ## Standard mission ladder
 
 1. `start-mission`
-2. `run-alpha-cycle`
-3. `activate-agent`
-4. `run-phase`
-5. `validate-phase`
-6. `transition-phase`
-7. Repeat 2-6 until no phases remain.
-8. `complete-mission`
+2. `resume-mission` only after interruption or session restart
+3. `run-alpha-cycle`
+4. `activate-agent`
+5. `run-phase`
+6. `validate-phase`
+7. `transition-phase`
+8. Repeat 3-7 until no phases remain.
+9. `complete-mission`
 
 ## Subsystem engagement rule
 

@@ -73,6 +73,7 @@ sections:
     before_mission_start:
     - initialize_mission
     - inspect_mission_state
+    - resume_mission
     - generate_claude_execution_plan
     - validate_claude_execution_plan
     - generate_mission_bundle
@@ -82,6 +83,7 @@ sections:
     skills:
     - start-mission
     - run-alpha-cycle
+    - resume-mission
     - activate-agent
     - run-phase
     - validate-phase

@@ -30,6 +30,7 @@
     "mission:initialize": "npm run executor -- --route initialize_mission",
     "mission:inspect": "npm run executor -- --route inspect_mission_state",
     "mission:advance": "npm run executor -- --route advance_mission",
+    "mission:resume": "npm run invoke:route -- --route resume_mission",
     "claude:generate-plan": "npm run executor -- --route generate_claude_execution_plan",
     "claude:validate-plan": "npm run executor -- --route validate_claude_execution_plan",
     "claude:validate-changed-files": "npm run executor -- --route validate_changed_files",

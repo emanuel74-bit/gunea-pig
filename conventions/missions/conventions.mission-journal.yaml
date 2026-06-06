@@ -54,6 +54,8 @@ sections:
     - observed_next_phase
     - controller_mode
     - enforcement
+    - resumed_phase
+    - checkpoint_event_count_before_resume
   mission_checkpoint_schema:
     path_pattern: .ai/missions/{mission_id}/mission-checkpoint.yaml
     required_fields:
@@ -93,6 +95,14 @@ sections:
     - id: MISSION-JOURNAL-APPEND-ONLY-003
       rule: Mission controller routes must refuse to append when existing journal lines are malformed.
       fail_condition: append_after_corrupted_journal
+  mission_resume_policy:
+    absolute_rules:
+    - id: MISSION-JOURNAL-RESUME-001
+      rule: Resuming a mission must validate mission state, journal, and checkpoint before Claude continues workflow execution.
+      fail_condition: resume_without_state_journal_checkpoint_validation
+    - id: MISSION-JOURNAL-RESUME-002
+      rule: Resume must append a mission_resumed journal event and refresh checkpoint consistency.
+      fail_condition: resume_without_append_only_event_or_checkpoint_refresh
   mission_checkpoint_consistency_policy:
     absolute_rules:
     - id: MISSION-CHECKPOINT-CONSISTENCY-001

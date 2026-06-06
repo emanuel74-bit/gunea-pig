@@ -760,6 +760,36 @@ sections:
         - claude-code
         - reports
         executor_type: mission_controller
+      resume_mission:
+        description: Resume an interrupted mission by validating mission state, append-only journal, and checkpoint before Claude continues workflow execution.
+        script: scripts/resume-mission.ts
+        required_inputs:
+        - mission_id
+        - mission_state
+        - mission_journal
+        - mission_checkpoint
+        produced_outputs:
+        - mission_state
+        - mission_controller_event
+        - mission_resume_result
+        allowed_write_paths:
+        - .ai/missions/**
+        - .ai/validation/**
+        required_artifacts:
+        - mission_state
+        - mission_journal
+        - mission_checkpoint
+        lifecycle_hooks:
+        - before_phase_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - missions
+        - multi-agent
+        - claude-code
+        - reports
+        executor_type: mission_controller
       advance_mission:
         description: Advance mission state through the route-backed mission controller in observe mode; record proposed transitions before later enforcement phases add legality blocking.
         script: scripts/advance-mission.ts
@@ -875,6 +905,7 @@ validation:
   - reports_are_generated_from_script_evidence_not_agent_claims
   - claude_native_integration_validation_route_present
   - mission_controller_routes_present
+  - mission_resume_route_present
   - mission_controller_initializes_state_before_phase_execution
   - universal_route_invocation_contract_present
   - universal_route_output_contract_present

@@ -17,6 +17,7 @@ const slug = (value: string) => value.replaceAll("_", "-");
 const requiredSkills = [
   "start-mission",
   "run-alpha-cycle",
+  "resume-mission",
   "activate-agent",
   "run-phase",
   "validate-phase",
@@ -32,6 +33,7 @@ const requiredSkills = [
 const requiredCommands = [
   "start-mission",
   "run-alpha-cycle",
+  "resume-mission",
   "activate-agent",
   "run-phase",
   "validate-phase",
@@ -170,6 +172,7 @@ for (const agentId of agentIds) {
 const requiredRouteMentions = [
   "initialize_mission",
   "inspect_mission_state",
+  "resume_mission",
   "advance_mission",
   "generate_mission_bundle",
   "generate_claude_execution_plan",
