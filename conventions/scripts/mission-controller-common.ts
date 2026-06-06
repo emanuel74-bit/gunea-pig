@@ -416,33 +416,33 @@ export function evaluateTransitionLegality(root: string, previousPhase: string, 
   if (requestedIndex < 0) {
     allowed = false;
     reason = "requested_phase_unknown";
-    issues.push(issue("warning", "MISSION_TRANSITION_UNKNOWN_PHASE", `Requested phase ${requestedPhase} is not in the transition legality graph`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase }));
+    issues.push(issue("error", "MISSION_TRANSITION_UNKNOWN_PHASE", `Requested phase ${requestedPhase} is not in the transition legality graph`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, enforcement: "graph_illegal_blocked" }));
   } else if (previousIndex < 0) {
     allowed = false;
     reason = "previous_phase_unknown";
-    issues.push(issue("warning", "MISSION_TRANSITION_PREVIOUS_PHASE_UNKNOWN", `Previous phase ${previousPhase} is not in the transition legality graph`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase }));
+    issues.push(issue("error", "MISSION_TRANSITION_PREVIOUS_PHASE_UNKNOWN", `Previous phase ${previousPhase} is not in the transition legality graph`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, enforcement: "graph_illegal_blocked" }));
   } else if (terminalPhases.includes(previousPhase) && requestedPhase !== previousPhase) {
     allowed = false;
     reason = "requested_phase_after_terminal_phase";
-    issues.push(issue("warning", "MISSION_TRANSITION_AFTER_TERMINAL", `Mission transition requested after terminal phase ${previousPhase}`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase }));
+    issues.push(issue("error", "MISSION_TRANSITION_AFTER_TERMINAL", `Mission transition requested after terminal phase ${previousPhase}`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, enforcement: "graph_illegal_blocked" }));
   } else if (requestedPhase === previousPhase) {
     if (!samePhaseEvents.includes(eventType)) {
       allowed = false;
       reason = "same_phase_event_not_allowed";
-      issues.push(issue("warning", "MISSION_TRANSITION_SAME_PHASE_EVENT_UNEXPECTED", `Same-phase transition event ${eventType} is not explicitly allowed`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, event_type: eventType }));
+      issues.push(issue("error", "MISSION_TRANSITION_SAME_PHASE_EVENT_UNEXPECTED", `Same-phase transition event ${eventType} is not explicitly allowed`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, event_type: eventType, enforcement: "graph_illegal_blocked" }));
     }
   } else if (requestedIndex === previousIndex + 1) {
     allowed = true;
   } else if (requestedIndex > previousIndex + 1) {
     allowed = false;
     reason = "requested_phase_skips_canonical_order";
-    issues.push(issue("warning", "MISSION_TRANSITION_SKIPPED_PHASE_ORDER", `Transition from ${previousPhase} to ${requestedPhase} skips expected next phase ${expectedNextPhase}`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, expected_next_phase: expectedNextPhase }));
+    issues.push(issue("error", "MISSION_TRANSITION_SKIPPED_PHASE_ORDER", `Transition from ${previousPhase} to ${requestedPhase} skips expected next phase ${expectedNextPhase}`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, expected_next_phase: expectedNextPhase, enforcement: "graph_illegal_blocked" }));
   } else if (requestedIndex < previousIndex) {
     const revisionEvent = eventType.includes("revision") || eventType.includes("rerun") || eventType.includes("repair");
     if (!revisionEvent) {
       allowed = false;
       reason = "requested_phase_moves_back_without_revision_event";
-      issues.push(issue("warning", "MISSION_TRANSITION_BACKWARD_WITHOUT_REVISION", `Backward transition from ${previousPhase} to ${requestedPhase} requires revision, rerun, or repair event context`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, event_type: eventType }));
+      issues.push(issue("error", "MISSION_TRANSITION_BACKWARD_WITHOUT_REVISION", `Backward transition from ${previousPhase} to ${requestedPhase} requires revision, rerun, or repair event context`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, event_type: eventType, enforcement: "graph_illegal_blocked" }));
     }
   }
 

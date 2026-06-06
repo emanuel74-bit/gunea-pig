@@ -39,6 +39,21 @@ const previousPhase = String(state.current_phase ?? "mission_created");
 const nextPhase = requestedPhase && requestedPhase.trim() ? requestedPhase.trim() : previousPhase;
 const legality = evaluateTransitionLegality(root, previousPhase, nextPhase, requestedEvent);
 issues.push(...legality.issues);
+if (!legality.allowed && hasBlockingMissionStateIssue(legality.issues)) {
+  finish(SCRIPT_ID, issues, [], {
+    advanced: false,
+    mission_id: missionId,
+    previous_phase: previousPhase,
+    requested_phase: nextPhase,
+    controller_mode: "observe",
+    enforcement: "graph_illegal_blocked",
+    transition_legality_allowed: legality.allowed,
+    transition_reason: legality.reason,
+    expected_next_phase: legality.expected_next_phase,
+    transition_preconditions: legality.preconditions,
+    missing_precondition_count: legality.preconditions.filter(item => item.required && !item.satisfied).length,
+  });
+}
 
 const event: JsonMap = {
   event_type: requestedEvent,
@@ -48,7 +63,7 @@ const event: JsonMap = {
   controller_mode: "observe",
   previous_phase: previousPhase,
   observed_next_phase: nextPhase,
-  enforcement: "warn_only",
+  enforcement: legality.allowed ? "warn_only" : "graph_illegal_blocked",
   transition_legality: {
     allowed: legality.allowed,
     rollout_mode: legality.rollout_mode,
@@ -77,7 +92,7 @@ finish(SCRIPT_ID, issues, [`.ai/missions/${missionId}/mission-state.yaml`, `.ai/
   current_phase: nextPhase,
   journal_event_count: postJournal.eventCount,
   controller_mode: "observe",
-  enforcement: "warn_only",
+  enforcement: legality.allowed ? "warn_only" : "graph_illegal_blocked",
   transition_legality_allowed: legality.allowed,
   transition_reason: legality.reason,
   expected_next_phase: legality.expected_next_phase,

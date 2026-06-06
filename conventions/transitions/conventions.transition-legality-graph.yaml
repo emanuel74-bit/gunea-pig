@@ -5,8 +5,8 @@ file:
   role: mission_transition_legality_graph
   executability: state_machine
 purpose: Define the route-readable mission transition legality graph used by the mission
-  controller to observe and warn on illegal phase progression before enforcement is
-  enabled.
+  controller to block graph-illegal phase progression while continuing to observe
+  gate, handoff, and revision evidence preconditions in warn-only mode.
 ownership:
   owns:
   - mission_transition_legality_graph
@@ -51,10 +51,11 @@ dependencies:
 sections:
   transition_legality_policy:
     rollout_mode: observe
-    illegal_transition_behavior: warn_only
-    enforcement_target_phase: later_transition_graph_enforce_step
-    route_authority: advance_mission evaluates and records legality before mutating
-      mission state.
+    illegal_transition_behavior: block_graph_illegal
+    evidence_precondition_behavior: warn_only
+    enforcement_target_phase: graph_illegal_transitions_now_enforced
+    route_authority: advance_mission evaluates legality before mutating mission state;
+      graph-illegal transitions block mutation while evidence preconditions remain warnings.
     early_blocking_reserved_for:
     - missing_mission_id
     - malformed_mission_state
@@ -178,19 +179,19 @@ sections:
   illegal_transition_signals:
   - id: MISSION-TRANSITION-WARN-001
     condition: requested_phase_unknown
-    severity: warning
+    severity: error
     code: MISSION_TRANSITION_UNKNOWN_PHASE
   - id: MISSION-TRANSITION-WARN-002
     condition: requested_phase_skips_canonical_order
-    severity: warning
+    severity: error
     code: MISSION_TRANSITION_SKIPPED_PHASE_ORDER
   - id: MISSION-TRANSITION-WARN-003
     condition: requested_phase_moves_back_without_revision_event
-    severity: warning
+    severity: error
     code: MISSION_TRANSITION_BACKWARD_WITHOUT_REVISION
   - id: MISSION-TRANSITION-WARN-004
     condition: requested_phase_after_terminal_phase
-    severity: warning
+    severity: error
     code: MISSION_TRANSITION_AFTER_TERMINAL
   - id: MISSION-TRANSITION-WARN-005
     condition: required_gate_evidence_missing_or_not_passing
@@ -215,6 +216,11 @@ validation:
     applies_when:
       transition_precondition_observation_enabled: true
   fail_conditions:
+  - id: TRANSITION-GRAPH-000
+    condition: graph_illegal_transition_requested
+    message: Unknown, skipped, after-terminal, or backward-without-revision transitions
+      must block advance_mission before mission state mutation.
+    severity: error
   - id: TRANSITION-GRAPH-001
     condition: transition_graph_missing_in_enforce_mode
     message: Transition graph is required before mission transition enforcement can

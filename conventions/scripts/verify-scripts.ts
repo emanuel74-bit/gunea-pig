@@ -206,6 +206,53 @@ function writePhaseBundleFixture(fixtureRoot: string, mutator?: (bundle: JsonMap
   if (!writeManifest && fs.existsSync(manifestPath)) fs.rmSync(manifestPath);
 }
 
+
+const canonicalPhaseOrder = [
+  "mission_created",
+  "mission_profile_selection",
+  "mission_initialization",
+  "active_context_manifest",
+  "phase_accounting",
+  "behavior_contract",
+  "codebase_reconnaissance",
+  "local_alignment",
+  "risk_classification",
+  "boundary_contract_classification",
+  "dependency_classification",
+  "architecture_decomposition",
+  "draft_role_pass",
+  "pattern_pressure_detection",
+  "artifact_reuse_analysis",
+  "artifact_action_resolution",
+  "refactor_strategy_selection",
+  "call_site_impact_analysis",
+  "change_impact_analysis",
+  "final_role_assignment",
+  "pattern_selection",
+  "structure_rendering",
+  "test_derivation",
+  "implementation_sequence",
+  "checkpoint_validation_plan",
+  "pre_implementation_gate",
+  "implementation",
+  "failure_classification",
+  "feedback_repair",
+  "post_implementation_validation",
+  "trigger_review",
+  "report_artifact_validation",
+  "final_validation",
+  "mission_complete",
+];
+
+function advanceMissionToPhase(fixtureRoot: string, missionId: string, targetPhase: string): void {
+  const targetIndex = canonicalPhaseOrder.indexOf(targetPhase);
+  if (targetIndex < 0) throw new Error(`Unknown canonical target phase ${targetPhase}`);
+  for (const phase of canonicalPhaseOrder.slice(1, targetIndex + 1)) {
+    const result = runScript(fixtureRoot, "scripts/advance-mission.ts", ["--mission-id", missionId, "--to-phase", phase]);
+    if (result.exitCode !== 0) throw new Error(`Could not advance ${missionId} to ${phase}: ${result.stderr}`);
+  }
+}
+
 function testCases(): TestCase[] {
   return [
     // validate-executor-routes.ts
@@ -308,7 +355,7 @@ function testCases(): TestCase[] {
     { name: "mission initialization rejects unsafe id", routeId: "initialize_mission", script: "scripts/initialize-mission.ts", category: "malformed_input", args: ["--mission-id", "../unsafe"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_ID_INVALID"] },
     { name: "mission initialization rejects malformed existing state", routeId: "initialize_mission", script: "scripts/initialize-mission.ts", category: "invalid_state", args: ["--mission-id", "malformed_mission"], setup: r => writeYamlFile(path.join(r, ".ai", "missions", "malformed_mission", "mission-state.yaml"), { artifact: "mission_state", schema_version: "1.0", mission_id: "malformed_mission", controller_mode: "observe", current_phase: "", phase_statuses: "not-a-list" }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_STATE_CURRENT_PHASE_INVALID", "MISSION_STATE_PHASE_STATUSES_INVALID"] },
     { name: "mission state inspection passes initialized state", routeId: "inspect_mission_state", script: "scripts/inspect-mission-state.ts", category: "valid_input", args: ["--mission-id", "verify_mission"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "verify_mission"]); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/validation/inspect-mission-state.result.yaml"] },
-    { name: "mission resume validates checkpoint and appends event", routeId: "resume_mission", script: "scripts/resume-mission.ts", category: "valid_input", args: ["--mission-id", "resume_mission_verify"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "resume_mission_verify"]); runScript(r, "scripts/advance-mission.ts", ["--mission-id", "resume_mission_verify", "--to-phase", "planning"]); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/missions/resume_mission_verify/mission-state.yaml", ".ai/missions/resume_mission_verify/mission-journal.ndjson", ".ai/missions/resume_mission_verify/mission-checkpoint.yaml"] },
+    { name: "mission resume validates checkpoint and appends event", routeId: "resume_mission", script: "scripts/resume-mission.ts", category: "valid_input", args: ["--mission-id", "resume_mission_verify"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "resume_mission_verify"]); runScript(r, "scripts/advance-mission.ts", ["--mission-id", "resume_mission_verify", "--to-phase", "mission_profile_selection"]); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/missions/resume_mission_verify/mission-state.yaml", ".ai/missions/resume_mission_verify/mission-journal.ndjson", ".ai/missions/resume_mission_verify/mission-checkpoint.yaml"] },
     { name: "mission resume rejects missing id", routeId: "resume_mission", script: "scripts/resume-mission.ts", category: "missing_input", expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_ID_INVALID"] },
     { name: "mission resume rejects stale checkpoint", routeId: "resume_mission", script: "scripts/resume-mission.ts", category: "invalid_state", args: ["--mission-id", "resume_stale_checkpoint"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "resume_stale_checkpoint"]); mutateYaml(path.join(r, ".ai", "missions", "resume_stale_checkpoint", "mission-checkpoint.yaml"), doc => { doc.journal_event_count = 99; }); }, expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_CHECKPOINT_EVENT_COUNT_MISMATCH"] },
     { name: "mission state inspection rejects missing id", routeId: "inspect_mission_state", script: "scripts/inspect-mission-state.ts", category: "missing_input", expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_ID_INVALID"] },
@@ -318,14 +365,14 @@ function testCases(): TestCase[] {
     { name: "mission advance rejects missing id", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "missing_input", args: ["--to-phase", "planning"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_ID_INVALID"] },
     { name: "mission advance fails missing state", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "missing_input", args: ["--mission-id", "missing_mission", "--to-phase", "planning"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_STATE_MISSING"] },
     { name: "mission advance rejects malformed state", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "invalid_state", args: ["--mission-id", "malformed_mission", "--to-phase", "planning"], setup: r => writeYamlFile(path.join(r, ".ai", "missions", "malformed_mission", "mission-state.yaml"), { artifact: "mission_state", schema_version: "1.0", mission_id: "malformed_mission", controller_mode: "observe", current_phase: "mission_created", active_phase_plan: {}, phase_statuses: [] }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_STATE_REPORT_REGISTRY_REF_INVALID", "MISSION_STATE_ACTIVE_PHASE_PLAN_ORDERED_PHASES_INVALID"] },
-    { name: "mission advance records observe transition", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "valid_input", args: ["--mission-id", "verify_mission", "--to-phase", "planning"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "verify_mission"]); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/missions/verify_mission/mission-state.yaml", ".ai/missions/verify_mission/mission-journal.ndjson", ".ai/missions/verify_mission/mission-checkpoint.yaml"] },
-    { name: "mission advance rejects corrupted journal before append", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "invalid_state", args: ["--mission-id", "corrupt_before_advance", "--to-phase", "planning"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "corrupt_before_advance"]); fs.appendFileSync(path.join(r, ".ai", "missions", "corrupt_before_advance", "mission-journal.ndjson"), "not-json\n", "utf8"); }, expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_JOURNAL_LINE_UNPARSEABLE"] },
+    { name: "mission advance records observe transition", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "valid_input", args: ["--mission-id", "verify_mission", "--to-phase", "mission_profile_selection"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "verify_mission"]); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/missions/verify_mission/mission-state.yaml", ".ai/missions/verify_mission/mission-journal.ndjson", ".ai/missions/verify_mission/mission-checkpoint.yaml"] },
+    { name: "mission advance rejects corrupted journal before append", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "invalid_state", args: ["--mission-id", "corrupt_before_advance", "--to-phase", "mission_profile_selection"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "corrupt_before_advance"]); fs.appendFileSync(path.join(r, ".ai", "missions", "corrupt_before_advance", "mission-journal.ndjson"), "not-json\n", "utf8"); }, expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_JOURNAL_LINE_UNPARSEABLE"] },
     { name: "transition legality validation passes next phase", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "valid_input", args: ["--mission-id", "transition_verify", "--to-phase", "mission_profile_selection"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "transition_verify"]); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
-    { name: "transition legality validation warns skipped phase", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "operation_correctness", args: ["--mission-id", "transition_skip_verify", "--to-phase", "implementation"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "transition_skip_verify"]); }, expectedExit: 0, expectedStatus: "pass", expectedWarningCodes: ["MISSION_TRANSITION_SKIPPED_PHASE_ORDER", "MISSION_TRANSITION_GATE_EVIDENCE_MISSING"], expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
-    { name: "transition legality observes missing gate evidence", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "operation_correctness", args: ["--mission-id", "missing_gate_observe", "--to-phase", "implementation"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "missing_gate_observe"]); }, expectedExit: 0, expectedStatus: "pass", expectedWarningCodes: ["MISSION_TRANSITION_GATE_EVIDENCE_MISSING"], expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
+    { name: "transition legality validation blocks skipped phase", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "operation_correctness", args: ["--mission-id", "transition_skip_verify", "--to-phase", "implementation"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "transition_skip_verify"]); }, expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_TRANSITION_SKIPPED_PHASE_ORDER"], expectedWarningCodes: ["MISSION_TRANSITION_GATE_EVIDENCE_MISSING"], expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
+    { name: "transition legality observes missing gate evidence", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "operation_correctness", args: ["--mission-id", "missing_gate_observe", "--to-phase", "implementation"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "missing_gate_observe"]); advanceMissionToPhase(r, "missing_gate_observe", "pre_implementation_gate"); }, expectedExit: 0, expectedStatus: "pass", expectedWarningCodes: ["MISSION_TRANSITION_GATE_EVIDENCE_MISSING"], expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
     { name: "transition legality observes missing handoff evidence", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "operation_correctness", args: ["--mission-id", "missing_handoff_observe", "--to-phase", "active_context_manifest"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "missing_handoff_observe"]); runScript(r, "scripts/advance-mission.ts", ["--mission-id", "missing_handoff_observe", "--to-phase", "mission_profile_selection"]); runScript(r, "scripts/advance-mission.ts", ["--mission-id", "missing_handoff_observe", "--to-phase", "mission_initialization"]); }, expectedExit: 0, expectedStatus: "pass", expectedWarningCodes: ["MISSION_TRANSITION_HANDOFF_EVIDENCE_MISSING"], expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
     { name: "transition legality observes missing revision evidence", routeId: "validate_transition_legality", script: "scripts/validate-transition-legality.ts", category: "operation_correctness", args: ["--mission-id", "missing_revision_observe", "--to-phase", "mission_profile_selection", "--event", "revision_rerun_observed"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "missing_revision_observe"]); runScript(r, "scripts/advance-mission.ts", ["--mission-id", "missing_revision_observe", "--to-phase", "mission_profile_selection"]); runScript(r, "scripts/advance-mission.ts", ["--mission-id", "missing_revision_observe", "--to-phase", "mission_initialization"]); }, expectedExit: 0, expectedStatus: "pass", expectedWarningCodes: ["MISSION_TRANSITION_REVISION_EVIDENCE_MISSING"], expectedOutputs: [".ai/validation/validate-transition-legality.result.yaml"] },
-    { name: "mission advance records illegal transition warning in observe mode", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "operation_correctness", args: ["--mission-id", "illegal_observe", "--to-phase", "implementation"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "illegal_observe"]); }, expectedExit: 0, expectedStatus: "pass", expectedWarningCodes: ["MISSION_TRANSITION_SKIPPED_PHASE_ORDER", "MISSION_TRANSITION_GATE_EVIDENCE_MISSING"], expectedOutputs: [".ai/missions/illegal_observe/mission-state.yaml", ".ai/missions/illegal_observe/mission-journal.ndjson", ".ai/missions/illegal_observe/mission-checkpoint.yaml"] },
+    { name: "mission advance blocks illegal transition before mutation", routeId: "advance_mission", script: "scripts/advance-mission.ts", category: "operation_correctness", args: ["--mission-id", "illegal_observe", "--to-phase", "implementation"], preRun: r => { runScript(r, "scripts/initialize-mission.ts", ["--mission-id", "illegal_observe"]); }, expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["MISSION_TRANSITION_SKIPPED_PHASE_ORDER"], expectedWarningCodes: ["MISSION_TRANSITION_GATE_EVIDENCE_MISSING"] },
     { name: "claude execution plan generation writes plan", routeId: "generate_claude_execution_plan", script: "scripts/generate-claude-execution-plan.ts", category: "valid_input", expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/claude/execution-plan.yaml"] },
     { name: "claude execution plan validation fails missing plan", routeId: "validate_claude_execution_plan", script: "scripts/validate-claude-execution-plan.ts", category: "missing_input", expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["CLAUDE_EXECUTION_PLAN_MISSING"] },
     { name: "claude execution plan validation passes generated plan", routeId: "validate_claude_execution_plan", script: "scripts/validate-claude-execution-plan.ts", category: "valid_input", preRun: r => { runScript(r, "scripts/generate-claude-execution-plan.ts"); }, expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/reports/claude-execution-plan-validation.yaml"] },
@@ -357,11 +404,11 @@ const liveTestNames = new Set([
   "route invocation wrapper invokes known route",
   "mission resume validates checkpoint and appends event",
   "transition legality validation passes next phase",
-  "transition legality validation warns skipped phase",
+  "transition legality validation blocks skipped phase",
   "transition legality observes missing gate evidence",
   "transition legality observes missing handoff evidence",
   "transition legality observes missing revision evidence",
-  "mission advance records illegal transition warning in observe mode",
+  "mission advance blocks illegal transition before mutation",
   "route output validation passes standard result",
   "route output validation fails invalid issue entry",
   "route output validation fails invalid optional fields",

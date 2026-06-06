@@ -39,5 +39,5 @@ finish(SCRIPT_ID, issues, [".ai/validation/validate-transition-legality.result.y
   preconditions: evaluation?.preconditions ?? [],
   missing_precondition_count: evaluation?.preconditions.filter(item => item.required && !item.satisfied).length ?? 0,
   rollout_mode: "observe",
-  enforcement: "warn_only",
+  enforcement: evaluation?.allowed === false && hasBlockingMissionStateIssue(evaluation.issues) ? "graph_illegal_blocked" : "warn_only",
 });
