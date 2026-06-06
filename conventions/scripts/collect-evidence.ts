@@ -25,6 +25,7 @@ type EvidenceEntry = {
   safe_structure_analysis?: JsonMap;
   architecture_quality_analysis?: JsonMap;
   global_normalization_analysis?: JsonMap;
+  prompt_contract_analysis?: JsonMap;
   content_sha256: string;
   manifest_entry_schema: "evidence_manifest_v2_entry";
   producer_verified: boolean;
@@ -41,6 +42,7 @@ const sourceDirs: Record<string, string> = {
   scoring: ".ai/scoring",
   policy: ".ai/policy",
   source_artifact: ".ai/source-artifacts",
+  prompt_contract: ".ai/prompt-contracts",
 };
 
 const collectorOutputs = new Set([
@@ -171,6 +173,23 @@ for (const file of files) {
     warning_codes: Array.isArray(doc.warning_codes) ? doc.warning_codes.filter((value: unknown) => typeof value === "string") : [],
     error_codes: Array.isArray(doc.error_codes) ? doc.error_codes.filter((value: unknown) => typeof value === "string") : [],
   } : undefined;
+
+  const promptContractAnalysis = doc.artifact === "prompt_contract_analysis" ? {
+    rollout_mode: typeof doc.rollout_mode === "string" ? doc.rollout_mode : null,
+    enforcement_mode: typeof doc.enforcement_mode === "string" ? doc.enforcement_mode : null,
+    blocking_decision: doc.blocking_decision === true,
+    mutation_allowed: doc.mutation_allowed === true,
+    prompt_rewrite_allowed: doc.prompt_rewrite_allowed === true,
+    prompt_surface_count: typeof doc.summary?.prompt_surface_count === "number" ? doc.summary.prompt_surface_count : 0,
+    surfaces_with_complete_contract: typeof doc.summary?.surfaces_with_complete_contract === "number" ? doc.summary.surfaces_with_complete_contract : 0,
+    total_missing_sections: typeof doc.summary?.total_missing_sections === "number" ? doc.summary.total_missing_sections : 0,
+    warning_count: typeof doc.summary?.warning_count === "number" ? doc.summary.warning_count : 0,
+    error_count: typeof doc.summary?.error_count === "number" ? doc.summary.error_count : 0,
+    required_sections: Array.isArray(doc.contract_model?.required_sections) ? doc.contract_model.required_sections.filter((value: unknown) => typeof value === "string") : [],
+    missing_sections_behavior: typeof doc.contract_model?.missing_sections_behavior === "string" ? doc.contract_model.missing_sections_behavior : null,
+    unknown_route_behavior: typeof doc.contract_model?.unknown_route_behavior === "string" ? doc.contract_model.unknown_route_behavior : null,
+    direct_script_reference_behavior: typeof doc.contract_model?.direct_script_reference_behavior === "string" ? doc.contract_model.direct_script_reference_behavior : null,
+  } : undefined;
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = buildEvidenceId(relativePath);
   const priorPath = seenIds.get(evidenceId);
@@ -181,7 +200,7 @@ for (const file of files) {
   const producerVerified = requireProducer(relativePath, generatedBy);
   const producerRouteId = normalizeScriptIdToRouteId(generatedBy);
   const routeProduced = producerRouteId !== null && executorRouteIds.has(producerRouteId);
-  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact"].includes(sourceType)) {
+  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact", "prompt_contract"].includes(sourceType)) {
     issues.push(issue("warning", "EVIDENCE_ENTRY_ROUTE_NOT_REGISTERED", `Evidence producer does not map to a registered executor route: ${generatedBy}`, relativePath, { generated_by: generatedBy, expected_route_id: producerRouteId }));
   }
 
@@ -202,6 +221,7 @@ for (const file of files) {
     ...(safeStructureAnalysis ? { safe_structure_analysis: safeStructureAnalysis, blocking: safeStructureAnalysis.blocking_decision } : {}),
     ...(architectureQualityAnalysis ? { architecture_quality_analysis: architectureQualityAnalysis, blocking: architectureQualityAnalysis.blocking_decision } : {}),
     ...(globalNormalizationAnalysis ? { global_normalization_analysis: globalNormalizationAnalysis, blocking: globalNormalizationAnalysis.blocking_decision } : {}),
+    ...(promptContractAnalysis ? { prompt_contract_analysis: promptContractAnalysis, blocking: promptContractAnalysis.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {

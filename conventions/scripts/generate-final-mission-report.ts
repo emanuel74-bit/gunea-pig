@@ -54,6 +54,8 @@ const architectureQualityEvidence = entries.filter((entry: any) => entry?.source
 const architectureQualityBlocking = architectureQualityEvidence.filter((entry: any) => entry?.architecture_quality_analysis?.blocking_decision === true);
 const globalNormalizationEvidence = entries.filter((entry: any) => entry?.source_type === "source_artifact" && entry?.global_normalization_analysis);
 const globalNormalizationBlocking = globalNormalizationEvidence.filter((entry: any) => entry?.global_normalization_analysis?.blocking_decision === true);
+const promptContractEvidence = entries.filter((entry: any) => entry?.source_type === "prompt_contract" && entry?.prompt_contract_analysis);
+const promptContractBlocking = promptContractEvidence.filter((entry: any) => entry?.prompt_contract_analysis?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -82,6 +84,7 @@ const reportClaims = [
   optionalClaim("safe_structure_summary_backed", "safe_structure", paths(safeStructureEvidence), "No safe structure analysis artifact was present in the evidence manifest."),
   optionalClaim("architecture_quality_summary_backed", "architecture_quality", paths(architectureQualityEvidence), "No architecture quality analysis artifact was present in the evidence manifest."),
   optionalClaim("global_normalization_summary_backed", "global_normalization", paths(globalNormalizationEvidence), "No global normalization analysis artifact was present in the evidence manifest."),
+  optionalClaim("prompt_contract_summary_backed", "prompt_contract", paths(promptContractEvidence), "No prompt contract analysis artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -113,6 +116,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("safe_structure", "Safe structure evidence", "safe_structure_summary_backed", `Safe structure summary is backed by ${safeStructureEvidence.length} structure analysis artifact(s).`, "No safe structure analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("architecture_quality", "Architecture quality evidence", "architecture_quality_summary_backed", `Architecture quality summary is backed by ${architectureQualityEvidence.length} adapter-neutral architecture artifact(s).`, "No architecture quality analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("global_normalization", "Global normalization evidence", "global_normalization_summary_backed", `Global normalization summary is backed by ${globalNormalizationEvidence.length} abstract normalization artifact(s).`, "No global normalization analysis artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("prompt_contracts", "Prompt contract evidence", "prompt_contract_summary_backed", `Prompt contract summary is backed by ${promptContractEvidence.length} prompt contract analysis artifact(s).`, "No prompt contract analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -242,6 +246,31 @@ const finalReport = {
       finding_keys: entry.global_normalization_analysis?.finding_keys ?? [],
       warning_codes: entry.global_normalization_analysis?.warning_codes ?? [],
       blocking_decision: entry.global_normalization_analysis?.blocking_decision === true,
+    })),
+  },
+
+  prompt_contract_summary: {
+    prompt_contract_refs: paths(promptContractEvidence),
+    prompt_contract_count: promptContractEvidence.length,
+    blocking_prompt_contract_refs: paths(promptContractBlocking),
+    observe_mode_only: promptContractEvidence.every((entry: any) => entry?.prompt_contract_analysis?.blocking_decision !== true),
+    mutation_allowed: promptContractEvidence.some((entry: any) => entry?.prompt_contract_analysis?.mutation_allowed === true),
+    prompt_rewrite_allowed: promptContractEvidence.some((entry: any) => entry?.prompt_contract_analysis?.prompt_rewrite_allowed === true),
+    total_prompt_surface_count: promptContractEvidence.reduce((total: number, entry: any) => total + Number(entry?.prompt_contract_analysis?.prompt_surface_count ?? 0), 0),
+    total_missing_sections: promptContractEvidence.reduce((total: number, entry: any) => total + Number(entry?.prompt_contract_analysis?.total_missing_sections ?? 0), 0),
+    total_complete_contract_surfaces: promptContractEvidence.reduce((total: number, entry: any) => total + Number(entry?.prompt_contract_analysis?.surfaces_with_complete_contract ?? 0), 0),
+    analyses: promptContractEvidence.map((entry: any) => ({
+      source: entry.path,
+      rollout_mode: entry.prompt_contract_analysis?.rollout_mode ?? null,
+      enforcement_mode: entry.prompt_contract_analysis?.enforcement_mode ?? null,
+      prompt_surface_count: entry.prompt_contract_analysis?.prompt_surface_count ?? 0,
+      surfaces_with_complete_contract: entry.prompt_contract_analysis?.surfaces_with_complete_contract ?? 0,
+      total_missing_sections: entry.prompt_contract_analysis?.total_missing_sections ?? 0,
+      required_sections: entry.prompt_contract_analysis?.required_sections ?? [],
+      missing_sections_behavior: entry.prompt_contract_analysis?.missing_sections_behavior ?? null,
+      unknown_route_behavior: entry.prompt_contract_analysis?.unknown_route_behavior ?? null,
+      direct_script_reference_behavior: entry.prompt_contract_analysis?.direct_script_reference_behavior ?? null,
+      blocking_decision: entry.prompt_contract_analysis?.blocking_decision === true,
     })),
   },
   transition_evidence: {
