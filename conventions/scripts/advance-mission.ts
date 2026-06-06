@@ -1,6 +1,7 @@
 import { finish, getArg, issue, resolveConventionsRoot, type Issue, type JsonMap } from "./lib/common.js";
 import {
   appendMissionEvent,
+  evaluateTransitionLegality,
   hasBlockingMissionStateIssue,
   missionIdFromArgs,
   nowIso,
@@ -36,6 +37,9 @@ if (!state || hasBlockingMissionStateIssue(issues)) {
 const timestamp = nowIso();
 const previousPhase = String(state.current_phase ?? "mission_created");
 const nextPhase = requestedPhase && requestedPhase.trim() ? requestedPhase.trim() : previousPhase;
+const legality = evaluateTransitionLegality(root, previousPhase, nextPhase, requestedEvent);
+issues.push(...legality.issues);
+
 const event: JsonMap = {
   event_type: requestedEvent,
   route_id: "advance_mission",
@@ -44,7 +48,13 @@ const event: JsonMap = {
   controller_mode: "observe",
   previous_phase: previousPhase,
   observed_next_phase: nextPhase,
-  enforcement: "not_yet_enabled",
+  enforcement: "warn_only",
+  transition_legality: {
+    allowed: legality.allowed,
+    rollout_mode: legality.rollout_mode,
+    expected_next_phase: legality.expected_next_phase,
+    reason: legality.reason,
+  },
 };
 
 state.controller_mode = "observe";
@@ -65,5 +75,8 @@ finish(SCRIPT_ID, issues, [`.ai/missions/${missionId}/mission-state.yaml`, `.ai/
   current_phase: nextPhase,
   journal_event_count: postJournal.eventCount,
   controller_mode: "observe",
-  enforcement: "not_yet_enabled",
+  enforcement: "warn_only",
+  transition_legality_allowed: legality.allowed,
+  transition_reason: legality.reason,
+  expected_next_phase: legality.expected_next_phase,
 });

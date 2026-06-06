@@ -1,0 +1,158 @@
+version: '1.0'
+file:
+  name: conventions.transition-legality-graph.yaml
+  path: transitions/conventions.transition-legality-graph.yaml
+  role: mission_transition_legality_graph
+  executability: state_machine
+purpose: Define the route-readable mission transition legality graph used by the mission
+  controller to observe and warn on illegal phase progression before enforcement is
+  enabled.
+ownership:
+  owns:
+  - mission_transition_legality_graph
+  - mission_transition_observe_policy
+  - mission_transition_warning_codes
+  does_not_own:
+  - mission_state_storage
+  - phase_contracts
+  - gate_result_generation
+  - handoff_generation
+  - revision_task_generation
+activation:
+  mode: conditional
+  activates_when:
+  - advance_mission_route_runs
+  - mission_controller_evaluates_next_phase
+  skips_when:
+  - mission_state_missing_or_invalid
+inputs:
+  required:
+  - mission_state
+  - requested_next_phase
+  - transition_legality_graph
+  optional:
+  - gate_results
+  - handoff_results
+  - revision_results
+outputs:
+  produces:
+  - transition_legality_evaluation
+  - transition_legality_warning
+dependencies:
+  required_files:
+  - missions/conventions.mission-state.yaml
+  - phases/conventions.phase-taxonomy.yaml
+  - phases/conventions.phase-lifecycle.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files:
+  - gates/conventions.gate-validation.yaml
+  - handoffs/conventions.handoff-validation.yaml
+  - revisions/conventions.revision-validation.yaml
+sections:
+  transition_legality_policy:
+    rollout_mode: observe
+    illegal_transition_behavior: warn_only
+    enforcement_target_phase: later_transition_graph_enforce_step
+    route_authority: advance_mission evaluates and records legality before mutating
+      mission state.
+    early_blocking_reserved_for:
+    - missing_mission_id
+    - malformed_mission_state
+    - corrupted_mission_journal
+    - stale_mission_checkpoint
+  phase_transition_order:
+    canonical_order:
+    - mission_created
+    - mission_profile_selection
+    - mission_initialization
+    - active_context_manifest
+    - phase_accounting
+    - behavior_contract
+    - codebase_reconnaissance
+    - local_alignment
+    - risk_classification
+    - boundary_contract_classification
+    - dependency_classification
+    - architecture_decomposition
+    - draft_role_pass
+    - pattern_pressure_detection
+    - artifact_reuse_analysis
+    - artifact_action_resolution
+    - refactor_strategy_selection
+    - call_site_impact_analysis
+    - change_impact_analysis
+    - final_role_assignment
+    - pattern_selection
+    - structure_rendering
+    - test_derivation
+    - implementation_sequence
+    - checkpoint_validation_plan
+    - pre_implementation_gate
+    - implementation
+    - failure_classification
+    - feedback_repair
+    - post_implementation_validation
+    - trigger_review
+    - report_artifact_validation
+    - final_validation
+    - mission_complete
+    same_phase_allowed_when_event_type_in:
+    - advance_observed
+    - mission_resumed
+    - mission_initialization_observed
+    terminal_phases:
+    - mission_complete
+  allowed_transition_rules:
+  - id: MISSION-TRANSITION-OBS-001
+    from: mission_created
+    allowed_to:
+    - mission_created
+    - mission_profile_selection
+    requires:
+    - mission_state_valid
+    - journal_valid
+    - checkpoint_valid
+  - id: MISSION-TRANSITION-OBS-002
+    from: any_canonical_phase
+    allowed_to:
+    - same_phase
+    - next_canonical_phase
+    requires:
+    - mission_state_valid
+    - journal_valid
+    - checkpoint_valid
+  - id: MISSION-TRANSITION-OBS-003
+    from: final_validation
+    allowed_to:
+    - mission_complete
+    requires:
+    - final_validation_observed
+  illegal_transition_signals:
+  - id: MISSION-TRANSITION-WARN-001
+    condition: requested_phase_unknown
+    severity: warning
+    code: MISSION_TRANSITION_UNKNOWN_PHASE
+  - id: MISSION-TRANSITION-WARN-002
+    condition: requested_phase_skips_canonical_order
+    severity: warning
+    code: MISSION_TRANSITION_SKIPPED_PHASE_ORDER
+  - id: MISSION-TRANSITION-WARN-003
+    condition: requested_phase_moves_back_without_revision_event
+    severity: warning
+    code: MISSION_TRANSITION_BACKWARD_WITHOUT_REVISION
+  - id: MISSION-TRANSITION-WARN-004
+    condition: requested_phase_after_terminal_phase
+    severity: warning
+    code: MISSION_TRANSITION_AFTER_TERMINAL
+validation:
+  required_checks:
+  - id: TRANSITION-GRAPH-CHECK-001
+    check: transition_graph_loaded_before_advance_mission_updates_state
+    applies_when:
+      advance_mission_route_runs: true
+  fail_conditions:
+  - id: TRANSITION-GRAPH-001
+    condition: transition_graph_missing_in_enforce_mode
+    message: Transition graph is required before mission transition enforcement can
+      be enabled.
+    severity: error

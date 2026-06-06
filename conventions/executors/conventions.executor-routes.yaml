@@ -72,7 +72,9 @@ sections:
         - execution
         executor_type: validation
       validate_route_invocation:
-        description: Validate a normalized executor route invocation request before a route script runs; observe missing declared inputs while fail-closing unknown route IDs and direct script references.
+        description: Validate a normalized executor route invocation request before
+          a route script runs; observe missing declared inputs while fail-closing
+          unknown route IDs and direct script references.
         script: scripts/validate-route-invocation.ts
         required_inputs:
         - route_id
@@ -95,7 +97,8 @@ sections:
         - multi-agent
         executor_type: validation
       validate_route_output:
-        description: Validate a route script result against the universal route output contract in observe/normalization mode.
+        description: Validate a route script result against the universal route output
+          contract in observe/normalization mode.
         script: scripts/validate-route-output.ts
         required_inputs:
         - route_id
@@ -454,6 +457,35 @@ sections:
         - executors
         - reports
         executor_type: validation
+      validate_transition_legality:
+        description: Validate requested mission phase transition against the transition
+          legality graph in observe/warn mode.
+        script: scripts/validate-transition-legality.ts
+        required_inputs:
+        - mission_id
+        - mission_state
+        - requested_next_phase
+        - transition_legality_graph
+        produced_outputs:
+        - transition_legality_evaluation
+        - transition_legality_warning
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts:
+        - mission_state
+        - mission_journal
+        - mission_checkpoint
+        lifecycle_hooks:
+        - before_phase_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: warn
+        consumers:
+        - missions
+        - multi-agent
+        - claude-code
+        - executors
+        executor_type: validation
     compiler:
       compile_authority_topology:
         description: Compile distributed ownership declarations into an authority
@@ -712,10 +744,10 @@ sections:
         - multi-agent
         - agents
         executor_type: report
-
     mission_controller:
       initialize_mission:
-        description: Initialize authoritative mission runtime state in observe mode before Claude begins phase execution.
+        description: Initialize authoritative mission runtime state in observe mode
+          before Claude begins phase execution.
         script: scripts/initialize-mission.ts
         required_inputs:
         - mission_id
@@ -737,7 +769,8 @@ sections:
         - reports
         executor_type: mission_controller
       inspect_mission_state:
-        description: Inspect authoritative mission runtime state without mutating workflow authority.
+        description: Inspect authoritative mission runtime state without mutating
+          workflow authority.
         script: scripts/inspect-mission-state.ts
         required_inputs:
         - mission_id
@@ -761,7 +794,8 @@ sections:
         - reports
         executor_type: mission_controller
       resume_mission:
-        description: Resume an interrupted mission by validating mission state, append-only journal, and checkpoint before Claude continues workflow execution.
+        description: Resume an interrupted mission by validating mission state, append-only
+          journal, and checkpoint before Claude continues workflow execution.
         script: scripts/resume-mission.ts
         required_inputs:
         - mission_id
@@ -791,7 +825,9 @@ sections:
         - reports
         executor_type: mission_controller
       advance_mission:
-        description: Advance mission state through the route-backed mission controller in observe mode; record proposed transitions before later enforcement phases add legality blocking.
+        description: Advance mission state through the route-backed mission controller
+          in observe mode; record proposed transitions before later enforcement phases
+          add legality blocking.
         script: scripts/advance-mission.ts
         required_inputs:
         - mission_id
@@ -818,7 +854,8 @@ sections:
         executor_type: mission_controller
     invocation:
       invoke_route:
-        description: Invoke a centralized executor route through the universal invocation/output contract wrapper while preserving existing route IDs and script behavior.
+        description: Invoke a centralized executor route through the universal invocation/output
+          contract wrapper while preserving existing route IDs and script behavior.
         script: scripts/invoke-route.ts
         required_inputs:
         - route_id

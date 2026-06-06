@@ -46,6 +46,7 @@ dependencies:
   - phases/conventions.phase-lifecycle.yaml
   - reports/conventions.report-registry.yaml
   - missions/conventions.mission-journal.yaml
+  - transitions/conventions.transition-legality-graph.yaml
   optional_files:
   - triggers/conventions.trigger-taxonomy.yaml
   - revisions/conventions.revision-taxonomy.yaml
@@ -72,6 +73,7 @@ sections:
     - mission_checkpoint_ref
     - last_resumed_at
     - mission_journal_ref
+    - transition_legality_observations
   mission_state_record_shape:
     mission_id: ''
     selected_profile: ''

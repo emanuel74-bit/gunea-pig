@@ -4,8 +4,9 @@ file:
   path: claude-code/conventions.claude-subsystem-engagement.yaml
   role: claude_subsystem_engagement_map
   executability: mapping
-purpose: Provide Claude Code with a compact map from workflow lanes to subsystems, native agents, executor routes, and artifacts
-  so Claude engages the whole system without scanning the full convention tree.
+purpose: Provide Claude Code with a compact map from workflow lanes to subsystems,
+  native agents, executor routes, and artifacts so Claude engages the whole system
+  without scanning the full convention tree.
 ownership:
   owns:
   - claude_subsystem_engagement_map
@@ -155,6 +156,7 @@ sections:
       - reports
       - missions
       - multi-agent
+      - transitions
       skills:
       - transition-phase
       - run-gate
@@ -165,6 +167,7 @@ sections:
       - validate_gate_result
       - prepare_agent_handoff
       - validate_handoff
+      - validate_transition_legality
       - advance_mission
       - inspect_mission_state
       - create_revision_task
@@ -251,6 +254,7 @@ sections:
   - roles
   - structure
   - testing
+  - transitions
   - triggers
 validation:
   required_checks:

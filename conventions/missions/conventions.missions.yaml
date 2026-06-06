@@ -46,6 +46,7 @@ dependencies:
   - missions/conventions.mission-journal.yaml
   - missions/conventions.mission-validation.yaml
   - executors/conventions.executor-routes.yaml
+  - transitions/conventions.transition-legality-graph.yaml
   optional_files:
   - phases/conventions.phase-taxonomy.yaml
   - reports/conventions.report-registry.yaml
@@ -61,6 +62,7 @@ sections:
     mission_state: missions/conventions.mission-state.yaml
     validation: missions/conventions.mission-validation.yaml
     mission_journal: missions/conventions.mission-journal.yaml
+    transition_legality_graph: transitions/conventions.transition-legality-graph.yaml
   missions_local_execution_order:
   - mission-profile-taxonomy
   - mission-profile-selection
@@ -69,6 +71,7 @@ sections:
   - mission-state
   - mission-journal
   - mission-validation
+  - transition-legality-graph
   missions_subsystem_contract:
     absolute_rules:
     - id: MISSIONS-SYSTEM-ABS-001
@@ -109,6 +112,7 @@ sections:
     - inspect_mission_state
     - resume_mission
     - generate_mission_bundle
+    - validate_transition_legality
     - validate_executor_routes
     - compile_authority_topology
     - validate_authority_topology

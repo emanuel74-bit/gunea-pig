@@ -272,3 +272,85 @@ export function validateMissionStateShape(state: JsonMap | undefined, missionId:
 export function hasBlockingMissionStateIssue(issues: Issue[]): boolean {
   return issues.some(item => item.severity === "error" || item.severity === "critical");
 }
+
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(item => typeof item === "string").map(item => item.trim()).filter(Boolean);
+}
+
+export function transitionLegalityGraphPath(root: string): string {
+  return path.join(root, "transitions", "conventions.transition-legality-graph.yaml");
+}
+
+export interface TransitionLegalityEvaluation {
+  allowed: boolean;
+  rollout_mode: "observe";
+  previous_phase: string;
+  requested_phase: string;
+  expected_next_phase: string | null;
+  reason: string;
+  issues: Issue[];
+}
+
+export function evaluateTransitionLegality(root: string, previousPhase: string, requestedPhase: string, eventType: string): TransitionLegalityEvaluation {
+  const issues: Issue[] = [];
+  const graphPath = transitionLegalityGraphPath(root);
+  const relPath = "transitions/conventions.transition-legality-graph.yaml";
+  const fallbackOrder = ["mission_created", "mission_profile_selection", "mission_initialization", "active_context_manifest", "phase_accounting", "behavior_contract", "codebase_reconnaissance", "local_alignment", "risk_classification", "boundary_contract_classification", "dependency_classification", "architecture_decomposition", "draft_role_pass", "pattern_pressure_detection", "artifact_reuse_analysis", "artifact_action_resolution", "refactor_strategy_selection", "call_site_impact_analysis", "change_impact_analysis", "final_role_assignment", "pattern_selection", "structure_rendering", "test_derivation", "implementation_sequence", "checkpoint_validation_plan", "pre_implementation_gate", "implementation", "failure_classification", "feedback_repair", "post_implementation_validation", "trigger_review", "report_artifact_validation", "final_validation", "mission_complete"];
+  let phaseOrder = fallbackOrder;
+  let samePhaseEvents = ["advance_observed", "mission_resumed", "mission_initialization_observed"];
+  let terminalPhases = ["mission_complete"];
+
+  if (fs.existsSync(graphPath)) {
+    const graph = readYamlFile(graphPath);
+    const order = stringList(graph?.sections?.phase_transition_order?.canonical_order);
+    if (order.length > 0) phaseOrder = order;
+    const configuredSamePhaseEvents = stringList(graph?.sections?.phase_transition_order?.same_phase_allowed_when_event_type_in);
+    if (configuredSamePhaseEvents.length > 0) samePhaseEvents = configuredSamePhaseEvents;
+    const configuredTerminalPhases = stringList(graph?.sections?.phase_transition_order?.terminal_phases);
+    if (configuredTerminalPhases.length > 0) terminalPhases = configuredTerminalPhases;
+  } else {
+    issues.push(issue("warning", "MISSION_TRANSITION_GRAPH_MISSING", "Transition legality graph is missing; using compiled fallback order in observe mode", relPath));
+  }
+
+  const previousIndex = phaseOrder.indexOf(previousPhase);
+  const requestedIndex = phaseOrder.indexOf(requestedPhase);
+  const expectedNextPhase = previousIndex >= 0 && previousIndex + 1 < phaseOrder.length ? phaseOrder[previousIndex + 1] : null;
+  let allowed = true;
+  let reason = "transition_allowed_by_observe_graph";
+
+  if (requestedIndex < 0) {
+    allowed = false;
+    reason = "requested_phase_unknown";
+    issues.push(issue("warning", "MISSION_TRANSITION_UNKNOWN_PHASE", `Requested phase ${requestedPhase} is not in the transition legality graph`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase }));
+  } else if (previousIndex < 0) {
+    allowed = false;
+    reason = "previous_phase_unknown";
+    issues.push(issue("warning", "MISSION_TRANSITION_PREVIOUS_PHASE_UNKNOWN", `Previous phase ${previousPhase} is not in the transition legality graph`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase }));
+  } else if (terminalPhases.includes(previousPhase) && requestedPhase !== previousPhase) {
+    allowed = false;
+    reason = "requested_phase_after_terminal_phase";
+    issues.push(issue("warning", "MISSION_TRANSITION_AFTER_TERMINAL", `Mission transition requested after terminal phase ${previousPhase}`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase }));
+  } else if (requestedPhase === previousPhase) {
+    if (!samePhaseEvents.includes(eventType)) {
+      allowed = false;
+      reason = "same_phase_event_not_allowed";
+      issues.push(issue("warning", "MISSION_TRANSITION_SAME_PHASE_EVENT_UNEXPECTED", `Same-phase transition event ${eventType} is not explicitly allowed`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, event_type: eventType }));
+    }
+  } else if (requestedIndex === previousIndex + 1) {
+    allowed = true;
+  } else if (requestedIndex > previousIndex + 1) {
+    allowed = false;
+    reason = "requested_phase_skips_canonical_order";
+    issues.push(issue("warning", "MISSION_TRANSITION_SKIPPED_PHASE_ORDER", `Transition from ${previousPhase} to ${requestedPhase} skips expected next phase ${expectedNextPhase}`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, expected_next_phase: expectedNextPhase }));
+  } else if (requestedIndex < previousIndex) {
+    const revisionEvent = eventType.includes("revision") || eventType.includes("rerun") || eventType.includes("repair");
+    if (!revisionEvent) {
+      allowed = false;
+      reason = "requested_phase_moves_back_without_revision_event";
+      issues.push(issue("warning", "MISSION_TRANSITION_BACKWARD_WITHOUT_REVISION", `Backward transition from ${previousPhase} to ${requestedPhase} requires revision, rerun, or repair event context`, relPath, { previous_phase: previousPhase, requested_phase: requestedPhase, event_type: eventType }));
+    }
+  }
+
+  return { allowed, rollout_mode: "observe", previous_phase: previousPhase, requested_phase: requestedPhase, expected_next_phase: expectedNextPhase, reason, issues };
+}

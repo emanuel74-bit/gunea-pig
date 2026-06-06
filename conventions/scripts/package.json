@@ -37,7 +37,8 @@
     "validate:claude-native-integration": "tsx validate-claude-native-integration.ts",
     "invoke:route": "tsx invoke-route.ts",
     "validate:route-invocation": "tsx validate-route-invocation.ts",
-    "validate:route-output": "tsx validate-route-output.ts"
+    "validate:route-output": "tsx validate-route-output.ts",
+    "validate:transition-legality": "tsx validate-transition-legality.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"
