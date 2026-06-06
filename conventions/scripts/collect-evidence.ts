@@ -23,6 +23,7 @@ type EvidenceEntry = {
   score_decision?: JsonMap;
   revision_loop_analysis?: JsonMap;
   safe_structure_analysis?: JsonMap;
+  architecture_quality_analysis?: JsonMap;
   content_sha256: string;
   manifest_entry_schema: "evidence_manifest_v2_entry";
   producer_verified: boolean;
@@ -140,6 +141,18 @@ for (const file of files) {
     warning_codes: Array.isArray(doc.safety_observations?.warning_codes) ? doc.safety_observations.warning_codes.filter((value: unknown) => typeof value === "string") : [],
     error_codes: Array.isArray(doc.safety_observations?.error_codes) ? doc.safety_observations.error_codes.filter((value: unknown) => typeof value === "string") : [],
   } : undefined;
+  const architectureQualityAnalysis = doc.artifact === "architecture_quality_analysis" ? {
+    rollout_mode: typeof doc.rollout_mode === "string" ? doc.rollout_mode : null,
+    enforcement_mode: typeof doc.enforcement_mode === "string" ? doc.enforcement_mode : null,
+    blocking_decision: doc.blocking_decision === true,
+    adapter_neutral: doc.core_contract?.adapter_neutral === true,
+    adapter_discovery_source: typeof doc.core_contract?.adapter_discovery_source === "string" ? doc.core_contract.adapter_discovery_source : null,
+    language_adapter_count: typeof doc.adapter_evidence_summary?.language_adapter_count === "number" ? doc.adapter_evidence_summary.language_adapter_count : 0,
+    framework_adapter_count: typeof doc.adapter_evidence_summary?.framework_adapter_count === "number" ? doc.adapter_evidence_summary.framework_adapter_count : 0,
+    quality_dimension_count: Array.isArray(doc.quality_dimensions) ? doc.quality_dimensions.length : 0,
+    warning_codes: Array.isArray(doc.observations?.warning_codes) ? doc.observations.warning_codes.filter((value: unknown) => typeof value === "string") : [],
+    error_codes: Array.isArray(doc.observations?.error_codes) ? doc.observations.error_codes.filter((value: unknown) => typeof value === "string") : [],
+  } : undefined;
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = buildEvidenceId(relativePath);
   const priorPath = seenIds.get(evidenceId);
@@ -169,6 +182,7 @@ for (const file of files) {
     ...(scoreDecision ? { score_decision: scoreDecision, blocking: scoreDecision.blocking_decision } : {}),
     ...(revisionLoopAnalysis ? { revision_loop_analysis: revisionLoopAnalysis, blocking: revisionLoopAnalysis.blocking_decision } : {}),
     ...(safeStructureAnalysis ? { safe_structure_analysis: safeStructureAnalysis, blocking: safeStructureAnalysis.blocking_decision } : {}),
+    ...(architectureQualityAnalysis ? { architecture_quality_analysis: architectureQualityAnalysis, blocking: architectureQualityAnalysis.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {

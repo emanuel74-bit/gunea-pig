@@ -50,6 +50,8 @@ const revisionLoopEvidence = entries.filter((entry: any) => entry?.source_type =
 const revisionLoopBlocking = revisionLoopEvidence.filter((entry: any) => entry?.revision_loop_analysis?.blocking_decision === true);
 const safeStructureEvidence = entries.filter((entry: any) => entry?.source_type === "source_artifact" && entry?.safe_structure_analysis);
 const safeStructureBlocking = safeStructureEvidence.filter((entry: any) => entry?.safe_structure_analysis?.blocking_decision === true);
+const architectureQualityEvidence = entries.filter((entry: any) => entry?.source_type === "source_artifact" && entry?.architecture_quality_analysis);
+const architectureQualityBlocking = architectureQualityEvidence.filter((entry: any) => entry?.architecture_quality_analysis?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -76,6 +78,7 @@ const reportClaims = [
   optionalClaim("score_decision_summary_backed", "scoring", paths(scoreDecisionEvidence), "No score decision artifact was present in the evidence manifest."),
   optionalClaim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), "No revision loop analysis artifact was present in the evidence manifest."),
   optionalClaim("safe_structure_summary_backed", "safe_structure", paths(safeStructureEvidence), "No safe structure analysis artifact was present in the evidence manifest."),
+  optionalClaim("architecture_quality_summary_backed", "architecture_quality", paths(architectureQualityEvidence), "No architecture quality analysis artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -105,6 +108,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("score_decision", "Score decision evidence", "score_decision_summary_backed", `Score decision summary is backed by ${scoreDecisionEvidence.length} scoring artifact(s).`, "No score decision artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("revision_loop", "Revision loop evidence", "revision_loop_summary_backed", `Revision loop summary is backed by ${revisionLoopEvidence.length} revision analysis artifact(s).`, "No revision loop analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("safe_structure", "Safe structure evidence", "safe_structure_summary_backed", `Safe structure summary is backed by ${safeStructureEvidence.length} structure analysis artifact(s).`, "No safe structure analysis artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("architecture_quality", "Architecture quality evidence", "architecture_quality_summary_backed", `Architecture quality summary is backed by ${architectureQualityEvidence.length} adapter-neutral architecture artifact(s).`, "No architecture quality analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -191,6 +195,25 @@ const finalReport = {
       outbound_dependency_count: entry.safe_structure_analysis?.outbound_dependency_count ?? 0,
       warning_codes: entry.safe_structure_analysis?.warning_codes ?? [],
       blocking_decision: entry.safe_structure_analysis?.blocking_decision === true,
+    })),
+  },
+  architecture_quality_summary: {
+    architecture_quality_refs: paths(architectureQualityEvidence),
+    architecture_quality_count: architectureQualityEvidence.length,
+    blocking_architecture_quality_refs: paths(architectureQualityBlocking),
+    observe_mode_only: architectureQualityEvidence.every((entry: any) => entry?.architecture_quality_analysis?.blocking_decision !== true),
+    adapter_neutral_core: architectureQualityEvidence.every((entry: any) => entry?.architecture_quality_analysis?.adapter_neutral === true),
+    total_quality_dimension_count: architectureQualityEvidence.reduce((total: number, entry: any) => total + Number(entry?.architecture_quality_analysis?.quality_dimension_count ?? 0), 0),
+    warning_codes: Array.from(new Set(architectureQualityEvidence.flatMap((entry: any) => Array.isArray(entry?.architecture_quality_analysis?.warning_codes) ? entry.architecture_quality_analysis.warning_codes : []))).sort(),
+    analyses: architectureQualityEvidence.map((entry: any) => ({
+      source: entry.path,
+      adapter_discovery_source: entry.architecture_quality_analysis?.adapter_discovery_source ?? null,
+      adapter_neutral: entry.architecture_quality_analysis?.adapter_neutral === true,
+      language_adapter_count: entry.architecture_quality_analysis?.language_adapter_count ?? 0,
+      framework_adapter_count: entry.architecture_quality_analysis?.framework_adapter_count ?? 0,
+      quality_dimension_count: entry.architecture_quality_analysis?.quality_dimension_count ?? 0,
+      warning_codes: entry.architecture_quality_analysis?.warning_codes ?? [],
+      blocking_decision: entry.architecture_quality_analysis?.blocking_decision === true,
     })),
   },
   transition_evidence: {
