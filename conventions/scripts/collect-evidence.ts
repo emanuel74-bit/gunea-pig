@@ -29,6 +29,7 @@ type EvidenceEntry = {
   context_bundle?: JsonMap;
   runtime_telemetry?: JsonMap;
   runtime_telemetry_validation?: JsonMap;
+  dry_run_certification?: JsonMap;
   content_sha256: string;
   manifest_entry_schema: "evidence_manifest_v2_entry";
   producer_verified: boolean;
@@ -48,6 +49,7 @@ const sourceDirs: Record<string, string> = {
   prompt_contract: ".ai/prompt-contracts",
   context: ".ai/context",
   telemetry: ".ai/telemetry",
+  certification: ".ai/certification",
 };
 
 const collectorOutputs = new Set([
@@ -264,6 +266,37 @@ for (const file of files) {
     validation_result_status: typeof doc.validation_result?.status === "string" ? doc.validation_result.status : null,
     validation_result_severity: typeof doc.validation_result?.severity === "string" ? doc.validation_result.severity : null,
   } : undefined;
+
+  const dryRunCertification = doc.artifact === "dry_run_certification_result" ? {
+    artifact_kind: "result",
+    rollout_mode: typeof doc.rollout_mode === "string" ? doc.rollout_mode : null,
+    enforcement_mode: typeof doc.enforcement_mode === "string" ? doc.enforcement_mode : null,
+    mutation_allowed: doc.mutation_allowed === true,
+    language_neutral: doc.language_neutral === true,
+    framework_neutral: doc.framework_neutral === true,
+    adapter_outputs_required: doc.adapter_outputs_required === true,
+    selected_scenario_count: typeof doc.selected_scenario_count === "number" ? doc.selected_scenario_count : 0,
+    certified_scenario_count: typeof doc.certified_scenario_count === "number" ? doc.certified_scenario_count : 0,
+    incomplete_scenario_count: typeof doc.incomplete_scenario_count === "number" ? doc.incomplete_scenario_count : 0,
+    scenario_ids: Array.isArray(doc.scenario_results) ? doc.scenario_results.map((entry: JsonMap) => entry?.scenario_id).filter((value: unknown) => typeof value === "string") : [],
+    missing_evidence_types: Array.isArray(doc.scenario_results) ? Array.from(new Set(doc.scenario_results.flatMap((entry: JsonMap) => Array.isArray(entry?.missing_evidence) ? entry.missing_evidence : []).filter((value: unknown) => typeof value === "string"))).sort() : [],
+    blocking_decision: doc.blocking_decision === true,
+  } : doc.artifact === "dry_run_certification_report" ? {
+    artifact_kind: "report",
+    rollout_mode: "observe",
+    enforcement_mode: typeof doc.summary?.enforcement_mode === "string" ? doc.summary.enforcement_mode : null,
+    mutation_allowed: false,
+    language_neutral: true,
+    framework_neutral: true,
+    adapter_outputs_required: false,
+    selected_scenario_count: typeof doc.summary?.selected_scenario_count === "number" ? doc.summary.selected_scenario_count : 0,
+    certified_scenario_count: typeof doc.summary?.certified_scenario_count === "number" ? doc.summary.certified_scenario_count : 0,
+    incomplete_scenario_count: typeof doc.summary?.incomplete_scenario_count === "number" ? doc.summary.incomplete_scenario_count : 0,
+    scenario_ids: Array.isArray(doc.scenario_results) ? doc.scenario_results.map((entry: JsonMap) => entry?.scenario_id).filter((value: unknown) => typeof value === "string") : [],
+    missing_evidence_types: Array.isArray(doc.scenario_results) ? Array.from(new Set(doc.scenario_results.flatMap((entry: JsonMap) => Array.isArray(entry?.missing_evidence) ? entry.missing_evidence : []).filter((value: unknown) => typeof value === "string"))).sort() : [],
+    blocking_decision: doc.summary?.blocking_decision === true || doc.validation_result?.blocking === true,
+  } : undefined;
+
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = buildEvidenceId(relativePath);
   const priorPath = seenIds.get(evidenceId);
@@ -274,7 +307,7 @@ for (const file of files) {
   const producerVerified = requireProducer(relativePath, generatedBy);
   const producerRouteId = normalizeScriptIdToRouteId(generatedBy);
   const routeProduced = producerRouteId !== null && executorRouteIds.has(producerRouteId);
-  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact", "prompt_contract", "context", "telemetry"].includes(sourceType)) {
+  if (producerVerified && !routeProduced && !nonRouteSystemProducers.has(generatedBy) && ["validation", "gate", "handoff", "revision", "scoring", "policy", "source_artifact", "prompt_contract", "context", "telemetry", "certification"].includes(sourceType)) {
     issues.push(issue("warning", "EVIDENCE_ENTRY_ROUTE_NOT_REGISTERED", `Evidence producer does not map to a registered executor route: ${generatedBy}`, relativePath, { generated_by: generatedBy, expected_route_id: producerRouteId }));
   }
 
@@ -299,6 +332,7 @@ for (const file of files) {
     ...(contextBundle ? { context_bundle: contextBundle, blocking: contextBundle.blocking_decision } : {}),
     ...(runtimeTelemetry ? { runtime_telemetry: runtimeTelemetry, blocking: runtimeTelemetry.blocking_decision } : {}),
     ...(runtimeTelemetryValidation ? { runtime_telemetry_validation: runtimeTelemetryValidation, blocking: runtimeTelemetryValidation.blocking_decision } : {}),
+    ...(dryRunCertification ? { dry_run_certification: dryRunCertification, blocking: dryRunCertification.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {

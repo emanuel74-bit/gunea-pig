@@ -62,6 +62,8 @@ const runtimeTelemetryEvidence = entries.filter((entry: any) => entry?.runtime_t
 const runtimeTelemetryBlocking = runtimeTelemetryEvidence.filter((entry: any) => entry?.runtime_telemetry?.blocking_decision === true);
 const runtimeTelemetryValidationEvidence = entries.filter((entry: any) => entry?.runtime_telemetry_validation);
 const runtimeTelemetryValidationBlocking = runtimeTelemetryValidationEvidence.filter((entry: any) => entry?.runtime_telemetry_validation?.blocking_decision === true);
+const dryRunCertificationEvidence = entries.filter((entry: any) => entry?.dry_run_certification);
+const dryRunCertificationBlocking = dryRunCertificationEvidence.filter((entry: any) => entry?.dry_run_certification?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -94,6 +96,7 @@ const reportClaims = [
   optionalClaim("context_bundle_summary_backed", "context", paths(contextBundleEvidence), "No compiled context bundle or context-load trace artifact was present in the evidence manifest."),
   optionalClaim("runtime_telemetry_summary_backed", "telemetry", paths(runtimeTelemetryEvidence), "No runtime telemetry artifact was present in the evidence manifest."),
   optionalClaim("runtime_telemetry_validation_backed", "telemetry_validation", paths(runtimeTelemetryValidationEvidence), "No runtime telemetry validation artifact was present in the evidence manifest."),
+  optionalClaim("dry_run_certification_backed", "dry_run_certification", paths(dryRunCertificationEvidence), "No dry-run certification artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -129,6 +132,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("context_bundle", "Compiled context evidence", "context_bundle_summary_backed", `Compiled context summary is backed by ${contextBundleEvidence.length} context artifact(s).`, "No compiled context bundle or context-load trace artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("runtime_telemetry", "Runtime telemetry evidence", "runtime_telemetry_summary_backed", `Runtime telemetry summary is backed by ${runtimeTelemetryEvidence.length} telemetry artifact(s).`, "No runtime telemetry artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("runtime_telemetry_validation", "Runtime telemetry validation evidence", "runtime_telemetry_validation_backed", `Runtime telemetry validation summary is backed by ${runtimeTelemetryValidationEvidence.length} telemetry validation artifact(s).`, "No runtime telemetry validation artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("dry_run_certification", "Dry-run certification evidence", "dry_run_certification_backed", `Dry-run certification summary is backed by ${dryRunCertificationEvidence.length} certification artifact(s).`, "No dry-run certification artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -361,6 +365,34 @@ const finalReport = {
       validation_result_status: entry.runtime_telemetry_validation?.validation_result_status ?? null,
       validation_result_severity: entry.runtime_telemetry_validation?.validation_result_severity ?? null,
       blocking_decision: entry.runtime_telemetry_validation?.blocking_decision === true,
+    })),
+  },
+  dry_run_certification_summary: {
+    dry_run_certification_refs: paths(dryRunCertificationEvidence),
+    dry_run_certification_count: dryRunCertificationEvidence.length,
+    blocking_dry_run_certification_refs: paths(dryRunCertificationBlocking),
+    observe_mode_only: dryRunCertificationEvidence.every((entry: any) => entry?.dry_run_certification?.blocking_decision !== true),
+    mutation_allowed: dryRunCertificationEvidence.some((entry: any) => entry?.dry_run_certification?.mutation_allowed === true),
+    language_neutral: dryRunCertificationEvidence.every((entry: any) => entry?.dry_run_certification?.language_neutral === true),
+    framework_neutral: dryRunCertificationEvidence.every((entry: any) => entry?.dry_run_certification?.framework_neutral === true),
+    adapter_outputs_required: dryRunCertificationEvidence.some((entry: any) => entry?.dry_run_certification?.adapter_outputs_required === true),
+    total_selected_scenario_count: dryRunCertificationEvidence.reduce((total: number, entry: any) => total + Number(entry?.dry_run_certification?.selected_scenario_count ?? 0), 0),
+    total_certified_scenario_count: dryRunCertificationEvidence.reduce((total: number, entry: any) => total + Number(entry?.dry_run_certification?.certified_scenario_count ?? 0), 0),
+    total_incomplete_scenario_count: dryRunCertificationEvidence.reduce((total: number, entry: any) => total + Number(entry?.dry_run_certification?.incomplete_scenario_count ?? 0), 0),
+    scenario_ids: Array.from(new Set(dryRunCertificationEvidence.flatMap((entry: any) => Array.isArray(entry?.dry_run_certification?.scenario_ids) ? entry.dry_run_certification.scenario_ids : []))).sort(),
+    missing_evidence_types: Array.from(new Set(dryRunCertificationEvidence.flatMap((entry: any) => Array.isArray(entry?.dry_run_certification?.missing_evidence_types) ? entry.dry_run_certification.missing_evidence_types : []))).sort(),
+    analyses: dryRunCertificationEvidence.map((entry: any) => ({
+      source: entry.path,
+      artifact_kind: entry.dry_run_certification?.artifact_kind ?? null,
+      rollout_mode: entry.dry_run_certification?.rollout_mode ?? null,
+      enforcement_mode: entry.dry_run_certification?.enforcement_mode ?? null,
+      language_neutral: entry.dry_run_certification?.language_neutral === true,
+      framework_neutral: entry.dry_run_certification?.framework_neutral === true,
+      selected_scenario_count: entry.dry_run_certification?.selected_scenario_count ?? 0,
+      certified_scenario_count: entry.dry_run_certification?.certified_scenario_count ?? 0,
+      incomplete_scenario_count: entry.dry_run_certification?.incomplete_scenario_count ?? 0,
+      missing_evidence_types: entry.dry_run_certification?.missing_evidence_types ?? [],
+      blocking_decision: entry.dry_run_certification?.blocking_decision === true,
     })),
   },
   transition_evidence: {
