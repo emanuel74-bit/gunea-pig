@@ -4,7 +4,7 @@ file:
   path: architecture/conventions.safe-structure-change-protocol.yaml
   role: safe_structure_change_protocol
   executability: contract
-purpose: Define the observe-mode safety protocol for decomposition, deletion, and
+purpose: Define the controlled-enforcement safety protocol for decomposition, deletion, and
   consolidation proposals before any source artifact is removed, split, merged, or
   structurally reassigned.
 ownership:
@@ -51,8 +51,8 @@ dependencies:
   - validation/conventions.validation-result-contract.yaml
 sections:
   protocol_scope:
-    rollout_mode: observe
-    enforcement: none
+    rollout_mode: controlled_enforce
+    enforcement: selected_early_blocking_safe_cases
     route_id: analyze_safe_structure_change
     deletion_execution: forbidden
     consolidation_execution: forbidden
@@ -62,6 +62,7 @@ sections:
     - identify inbound dependency edges
     - identify route-backed scripts and convention-owned files
     - record safety warnings and required evidence
+    - block selected unsafe destructive structure-change requests before claiming safety
     - emit universal validation_result metadata
   structure_change_kinds:
     deletion:
@@ -94,6 +95,15 @@ sections:
     - missing_source_artifact_manifest
     - malformed_source_artifact_manifest
     - unknown_structure_change_kind
+    - unknown_safe_structure_enforcement_mode
+    controlled_enforcement_conditions:
+    - deletion_or_decomposition_missing_candidate_file
+    - consolidation_missing_target_file
+    - destructive_change_candidate_missing_from_source_manifest
+    - deletion_or_consolidation_of_route_backed_candidate_without_route_migration_evidence
+    - deletion_or_consolidation_of_convention_owned_candidate_without_ownership_transfer_evidence
+    - deletion_or_consolidation_with_inbound_dependencies_without_consumer_update_plan
+    - destructive_change_missing_behavior_preservation_evidence
     warning_conditions:
     - candidate_file_missing
     - inbound_dependencies_present
@@ -130,3 +140,5 @@ sections:
     - missing_source_artifact_manifest
     - malformed_source_artifact_manifest
     - unknown_structure_change_kind
+    - unknown_safe_structure_enforcement_mode
+    - selected_controlled_enforcement_condition_triggered

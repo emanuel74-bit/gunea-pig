@@ -24,6 +24,10 @@ const candidateFile = normalizeCandidate(getArg("candidate-file"));
 const targetFile = normalizeCandidate(getArg("target-file"));
 const behaviorEvidence = getArg("behavior-evidence");
 const consumerUpdatePlan = getArg("consumer-update-plan");
+const routeMigrationEvidence = getArg("route-migration-evidence");
+const ownershipTransferEvidence = getArg("ownership-transfer-evidence");
+const enforcementMode = getArg("enforcement-mode") ?? "controlled_enforce";
+const allowedEnforcementModes = new Set(["observe", "controlled_enforce"]);
 
 interface SourceFileRecord {
   path: string;
@@ -75,6 +79,14 @@ if (!fs.existsSync(manifestPath)) {
 if (!allowedChangeKinds.has(changeKind)) {
   issues.push(issue("error", "UNKNOWN_STRUCTURE_CHANGE_KIND", `Unknown structure change kind: ${changeKind}.`, undefined, { allowed_change_kinds: [...allowedChangeKinds].sort() }));
 }
+if (!allowedEnforcementModes.has(enforcementMode)) {
+  issues.push(issue("error", "UNKNOWN_SAFE_STRUCTURE_ENFORCEMENT_MODE", `Unknown safe-structure enforcement mode: ${enforcementMode}.`, undefined, { allowed_enforcement_modes: [...allowedEnforcementModes].sort() }));
+}
+
+const enforcementActive = enforcementMode === "controlled_enforce";
+function safetySeverity(shouldBlock: boolean): "warning" | "error" {
+  return enforcementActive && shouldBlock ? "error" : "warning";
+}
 
 const manifest = readYamlFile(manifestPath);
 if (manifest.artifact !== "source_artifact_manifest" || !Array.isArray(manifest.files) || !Array.isArray(manifest.dependency_edges)) {
@@ -89,31 +101,33 @@ const inboundEdges = candidateFile ? edges.filter(edge => pathMatches(edge.to, c
 const outboundEdges = candidateFile ? edges.filter(edge => pathMatches(edge.from, candidateFile)) : [];
 
 if (candidateFile && !candidateRecord) {
-  issues.push(issue("warning", "CANDIDATE_FILE_NOT_IN_SOURCE_MANIFEST", `Candidate file is not present in source artifact manifest: ${candidateFile}`, candidateFile));
+  const destructiveChange = ["deletion", "consolidation", "decomposition"].includes(changeKind);
+  issues.push(issue(safetySeverity(destructiveChange), "CANDIDATE_FILE_NOT_IN_SOURCE_MANIFEST", `Candidate file is not present in source artifact manifest: ${candidateFile}`, candidateFile));
 }
 if ((changeKind === "deletion" || changeKind === "decomposition") && !candidateFile) {
-  issues.push(issue("warning", "CANDIDATE_FILE_REQUIRED_FOR_STRUCTURE_CHANGE", `${changeKind} analysis should include --candidate-file.`, undefined, { change_kind: changeKind }));
+  issues.push(issue(safetySeverity(true), "CANDIDATE_FILE_REQUIRED_FOR_STRUCTURE_CHANGE", `${changeKind} analysis should include --candidate-file.`, undefined, { change_kind: changeKind }));
 }
 if (changeKind === "consolidation" && !targetFile) {
-  issues.push(issue("warning", "TARGET_FILE_REQUIRED_FOR_CONSOLIDATION", "Consolidation analysis should include --target-file.", undefined, { change_kind: changeKind }));
+  issues.push(issue(safetySeverity(true), "TARGET_FILE_REQUIRED_FOR_CONSOLIDATION", "Consolidation analysis should include --target-file.", undefined, { change_kind: changeKind }));
 }
 if (targetFile && !targetRecord) {
-  issues.push(issue("warning", "TARGET_FILE_NOT_IN_SOURCE_MANIFEST", `Target file is not present in source artifact manifest: ${targetFile}`, targetFile));
+  const requiresExistingTarget = changeKind === "consolidation";
+  issues.push(issue(safetySeverity(requiresExistingTarget), "TARGET_FILE_NOT_IN_SOURCE_MANIFEST", `Target file is not present in source artifact manifest: ${targetFile}`, targetFile));
 }
-if (candidateRecord && (candidateRecord.script_id || (candidateRecord.route_ids?.length ?? 0) > 0)) {
-  issues.push(issue("warning", "ROUTE_BACKED_OR_ROUTE_DECLARING_CANDIDATE", "Candidate is route-backed or declares executor routes; structural changes require route migration evidence.", candidateFile, { script_id: candidateRecord.script_id, route_ids: candidateRecord.route_ids ?? [] }));
+if (candidateRecord && (candidateRecord.script_id || (candidateRecord.route_ids?.length ?? 0) > 0) && !routeMigrationEvidence) {
+  issues.push(issue(safetySeverity(["deletion", "consolidation"].includes(changeKind)), "ROUTE_BACKED_OR_ROUTE_DECLARING_CANDIDATE", "Candidate is route-backed or declares executor routes; structural changes require route migration evidence.", candidateFile, { script_id: candidateRecord.script_id, route_ids: candidateRecord.route_ids ?? [] }));
 }
-if (candidateRecord && ((candidateRecord.owned_concepts?.length ?? 0) > 0 || candidateRecord.yaml_role)) {
-  issues.push(issue("warning", "CONVENTION_OWNED_CANDIDATE", "Candidate declares convention ownership metadata; structural changes require ownership transfer evidence.", candidateFile, { yaml_role: candidateRecord.yaml_role, owned_concepts: candidateRecord.owned_concepts ?? [] }));
+if (candidateRecord && ((candidateRecord.owned_concepts?.length ?? 0) > 0 || candidateRecord.yaml_role) && !ownershipTransferEvidence) {
+  issues.push(issue(safetySeverity(["deletion", "consolidation"].includes(changeKind)), "CONVENTION_OWNED_CANDIDATE", "Candidate declares convention ownership metadata; structural changes require ownership transfer evidence.", candidateFile, { yaml_role: candidateRecord.yaml_role, owned_concepts: candidateRecord.owned_concepts ?? [] }));
 }
 if (inboundEdges.length > 0) {
-  issues.push(issue("warning", "INBOUND_DEPENDENCIES_PRESENT", "Candidate has inbound dependency edges; safe deletion/consolidation requires consumer update evidence.", candidateFile, { inbound_dependency_count: inboundEdges.length, inbound_edges: inboundEdges.slice(0, 20) }));
+  issues.push(issue(safetySeverity(["deletion", "consolidation"].includes(changeKind) && !consumerUpdatePlan), "INBOUND_DEPENDENCIES_PRESENT", "Candidate has inbound dependency edges; safe deletion/consolidation requires consumer update evidence.", candidateFile, { inbound_dependency_count: inboundEdges.length, inbound_edges: inboundEdges.slice(0, 20) }));
 }
 if (["deletion", "consolidation", "decomposition"].includes(changeKind) && !behaviorEvidence) {
-  issues.push(issue("warning", "BEHAVIOR_PRESERVATION_EVIDENCE_MISSING", "Structure change is not proven behavior-preserving without explicit behavior evidence.", candidateFile));
+  issues.push(issue(safetySeverity(true), "BEHAVIOR_PRESERVATION_EVIDENCE_MISSING", "Structure change is not proven behavior-preserving without explicit behavior evidence.", candidateFile));
 }
 if (["deletion", "consolidation"].includes(changeKind) && inboundEdges.length > 0 && !consumerUpdatePlan) {
-  issues.push(issue("warning", "CONSUMER_UPDATE_PLAN_MISSING", "Inbound dependencies require a consumer update plan before enforcement can approve the change.", candidateFile));
+  issues.push(issue(safetySeverity(true), "CONSUMER_UPDATE_PLAN_MISSING", "Inbound dependencies require a consumer update plan before enforcement can approve the change.", candidateFile));
 }
 
 const warningCodes = issues.filter(entry => entry.severity === "warning").map(entry => entry.code);
@@ -123,14 +137,16 @@ const blockingDecision = errorCodes.length > 0;
 const analysis = {
   artifact: "safe_structure_change_analysis",
   generated_by: SCRIPT_ID,
-  rollout_mode: "observe",
-  enforcement_mode: "none",
+  rollout_mode: enforcementActive ? "controlled_enforce" : "observe",
+  enforcement_mode: enforcementMode,
   requested_change: {
     change_kind: changeKind,
     candidate_file: candidateFile ?? null,
     target_file: targetFile ?? null,
     behavior_evidence_provided: Boolean(behaviorEvidence),
     consumer_update_plan_provided: Boolean(consumerUpdatePlan),
+    route_migration_evidence_provided: Boolean(routeMigrationEvidence),
+    ownership_transfer_evidence_provided: Boolean(ownershipTransferEvidence),
   },
   source_manifest_summary: {
     source_file_count: files.length,
@@ -165,8 +181,8 @@ const report = {
     warning_count: warningCodes.length,
     error_count: errorCodes.length,
     blocking_decision: blockingDecision,
-    rollout_mode: "observe",
-    enforcement_mode: "none",
+    rollout_mode: enforcementActive ? "controlled_enforce" : "observe",
+    enforcement_mode: enforcementMode,
   },
 };
 
@@ -186,6 +202,6 @@ finish(SCRIPT_ID, issues, [analysisOut, reportOut], {
       { evidence_type: "source_artifact_manifest", path: ".ai/source-artifacts/source-artifact-manifest.yaml", producer_route: "collect_source_artifacts" },
       { evidence_type: "safe_structure_change_analysis", path: analysisOut, producer_route: ROUTE_ID },
     ],
-    summary: { change_kind: changeKind, candidate_file: candidateFile ?? null, warning_count: warningCodes.length, blocking_decision: blockingDecision },
+    summary: { change_kind: changeKind, candidate_file: candidateFile ?? null, warning_count: warningCodes.length, error_count: errorCodes.length, blocking_decision: blockingDecision, enforcement_mode: enforcementMode },
   }),
 });
