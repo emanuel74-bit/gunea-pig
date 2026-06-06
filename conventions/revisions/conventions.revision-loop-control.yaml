@@ -1,0 +1,102 @@
+version: '1.0'
+file:
+  name: conventions.revision-loop-control.yaml
+  path: revisions/conventions.revision-loop-control.yaml
+  role: revision_loop_control_contract
+  executability: observe_policy
+purpose: Define observe-mode revision loop control, failure fingerprinting, retry-budget visibility, and no-progress detection without blocking revision work yet.
+ownership:
+  owns:
+  - revision_failure_fingerprint_model
+  - revision_loop_observation_policy
+  - revision_retry_budget_observation
+  - revision_loop_analysis_schema
+  does_not_own:
+  - revision_task_authority
+  - transition_legality_enforcement
+  - score_threshold_enforcement
+  - source_artifact_collection
+activation:
+  mode: conditional
+  activates_when:
+  - revision_task_created
+  - validation_failure_repeats
+  - revision_rerun_requested
+  skips_when: []
+inputs:
+  required:
+  - revision_task
+  - failure_result
+  optional:
+  - mission_id
+  - explicit_failure_fingerprint
+outputs:
+  produces:
+  - revision_loop_analysis
+  - revision_loop_analysis_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - revisions/conventions.revision-validation.yaml
+  - executors/conventions.executor-routes.yaml
+  - validation/conventions.validation-result-contract.yaml
+  optional_files:
+  - missions/conventions.mission-journal.yaml
+sections:
+  revision_failure_fingerprint_model:
+    fingerprint_basis:
+    - failure_result.script_id
+    - failure_result.status
+    - failure_result.errors.code
+    - failure_result.warnings.code
+    - validation_result.validation_id
+    - validation_result.blocking
+    stability_rule: Same logical failure evidence must produce the same fingerprint across retry attempts.
+    privacy_rule: Fingerprints must summarize failure shape, not store large source content.
+  revision_loop_observation_policy:
+    rollout_mode: observe
+    enforcement: disabled
+    blocking_decision: false
+    absolute_rules:
+    - id: REVISION-LOOP-OBS-001
+      rule: analyze_revision_loop records repeated fingerprints and no-progress suspicion as warnings only during observe rollout.
+      fail_condition: revision_loop_observe_warning_blocked_work
+      severity: error
+    - id: REVISION-LOOP-OBS-002
+      rule: Revision tasks may include failure_fingerprint and retry_control metadata, but create_revision_task remains the only authoritative revision task producer.
+      fail_condition: revision_loop_metadata_authored_by_agent
+      severity: error
+  retry_budget_observation:
+    default_observe_retry_budget: 3
+    repeated_fingerprint_warning: REVISION_FAILURE_FINGERPRINT_REPEATED
+    retry_budget_warning: REVISION_RETRY_BUDGET_OBSERVED
+    no_progress_signal: no_progress_suspected
+    enforcement_transition: later_phase_warn_then_enforce
+  revision_loop_analysis_schema:
+    required_fields:
+    - artifact
+    - generated_by
+    - rollout_mode
+    - enforcement
+    - active_failure_fingerprint
+    - observe_retry_budget
+    - active_fingerprint_count
+    - repeated_fingerprints
+    - no_progress_suspected
+    - blocking_decision
+    - revision_task_count
+    - revision_tasks
+  required_executor_routes:
+    on_validation_failure:
+    - analyze_revision_loop
+validation:
+  required_checks:
+  - id: CONVENTIONS-REVISION-LOOP-YAML-CHECK-001
+    check: required_sections_present
+    applies_when:
+      revision_loop_control_contract: true
+  fail_conditions:
+  - id: REVISION-LOOP-CONTROL-001
+    condition: revision_loop_observe_warning_blocked_work
+    message: Observe-mode revision loop control must not block revision work.
+    severity: error

@@ -44,7 +44,8 @@
     "analyze:typescript-source": "tsx analyze-typescript-source.ts",
     "analyze:nestjs-source": "tsx analyze-nestjs-source.ts",
     "resolve:mission-mode-policy": "tsx resolve-mission-mode-policy.ts",
-    "evaluate:score-decision": "tsx evaluate-score-decision.ts"
+    "evaluate:score-decision": "tsx evaluate-score-decision.ts",
+    "analyze:revision-loop": "tsx analyze-revision-loop.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

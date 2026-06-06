@@ -1971,6 +1971,34 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_revision_loop_analysis_yaml
+    path: .ai/revisions/revision-loop-analysis.yaml
+    artifact_type: runtime_artifact
+    schema: revision_loop_analysis
+    producer: analyze_revision_loop
+    producer_routes:
+    - analyze_revision_loop
+    consumers:
+    - revisions/conventions.revision-loop-control.yaml
+    - reports/conventions.report-validation.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: context_dependent
+  - artifact_id: ai_revision_loop_analysis_report_yaml
+    path: .ai/reports/revision-loop-analysis-report.yaml
+    artifact_type: report
+    schema: revision_loop_analysis_report
+    producer: analyze_revision_loop
+    producer_routes:
+    - analyze_revision_loop
+    consumers:
+    - reports/conventions.reports.yaml
+    - revisions/conventions.revision-loop-control.yaml
+    scope: mission_runtime
+    lifecycle: generated_report_output
+    write_mode: single_writer
+    required: context_dependent
   runtime_artifact_enforcement_model:
     route_backed_generation: runtime artifacts must be produced by declared executor
       routes or explicitly marked as runtime-context generated

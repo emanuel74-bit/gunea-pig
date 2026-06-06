@@ -835,6 +835,31 @@ sections:
         - risk
         - multi-agent
         executor_type: revision
+      analyze_revision_loop:
+        description: Analyze revision retry fingerprints and no-progress signals in
+          observe mode before revision reruns continue; records warnings without blocking.
+        script: scripts/analyze-revision-loop.ts
+        required_inputs:
+        - revision_task
+        - failure_result
+        - mission_context
+        produced_outputs:
+        - revision_loop_analysis
+        - revision_loop_analysis_report
+        allowed_write_paths:
+        - .ai/revisions/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - on_validation_failure
+        failure_behavior: warn
+        consumers:
+        - revisions
+        - risk
+        - multi-agent
+        - reports
+        executor_type: revision
     report:
       collect_phase_report:
         description: Collect phase evidence, validation results, gate outcomes, and
