@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: role_agent-handoff
-status: prepared
-source_output: .ai/reports/07-change-impact.yaml
-target_agent: role_agent
-evidence_refs:
-  - .ai/reports/07-change-impact.yaml
-source_summary: {}

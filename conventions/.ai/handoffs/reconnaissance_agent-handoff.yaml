@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: reconnaissance_agent-handoff
-status: prepared
-source_output: .ai/reports/03-codebase-reconnaissance.yaml
-target_agent: reconnaissance_agent
-evidence_refs:
-  - .ai/reports/03-codebase-reconnaissance.yaml
-source_summary: {}

@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: execution_planning_agent-handoff
-status: prepared
-source_output: .ai/reports/10-implementation-sequence.yaml
-target_agent: execution_planning_agent
-evidence_refs:
-  - .ai/reports/10-implementation-sequence.yaml
-source_summary: {}

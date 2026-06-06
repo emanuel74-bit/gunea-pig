@@ -1,9 +1,0 @@
-artifact: agent_handoff_packet
-generated_by: prepare-agent-handoff
-handoff_id: impact_agent-handoff
-status: prepared
-source_output: .ai/reports/call-site-impact.yaml
-target_agent: impact_agent
-evidence_refs:
-  - .ai/reports/call-site-impact.yaml
-source_summary: {}

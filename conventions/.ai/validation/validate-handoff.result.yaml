@@ -1,9 +1,0 @@
-script_id: validate-handoff
-status: pass
-errors: []
-warnings: []
-info: []
-outputs:
-  - .ai/validation/validate-handoff.result.yaml
-summary:
-  handoff: .ai/handoffs/validation_agent-handoff.yaml
