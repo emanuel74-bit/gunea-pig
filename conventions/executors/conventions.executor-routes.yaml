@@ -4,8 +4,7 @@ file:
   path: executors/conventions.executor-routes.yaml
   role: central_executor_route_map
   executability: router
-purpose: Define the central route map that agents use to resolve declared executor route IDs
-  into script-backed runtime actions.
+purpose: Define the central route map that agents use to resolve declared executor route IDs into script-backed runtime actions.
 ownership:
   owns:
   - central_executor_route_map
@@ -72,9 +71,7 @@ sections:
         - execution
         executor_type: validation
       validate_route_invocation:
-        description: Validate a normalized executor route invocation request before a route
-          script runs; observe missing declared inputs while fail-closing unknown route IDs
-          and direct script references.
+        description: Validate a normalized executor route invocation request before a route script runs; observe missing declared inputs while fail-closing unknown route IDs and direct script references.
         script: scripts/validate-route-invocation.ts
         required_inputs:
         - route_id
@@ -97,8 +94,7 @@ sections:
         - multi-agent
         executor_type: validation
       validate_route_output:
-        description: Validate a route script result against the universal route output contract
-          in observe/normalization mode.
+        description: Validate a route script result against the universal route output contract in observe/normalization mode.
         script: scripts/validate-route-output.ts
         required_inputs:
         - route_id
@@ -120,8 +116,7 @@ sections:
         - multi-agent
         executor_type: validation
       validate_authority_topology:
-        description: Validate compiled authority topology against distributed ownership declarations
-          and single-owner rules.
+        description: Validate compiled authority topology against distributed ownership declarations and single-owner rules.
         script: scripts/validate-authority-topology.ts
         required_inputs:
         - authority_topology
@@ -228,9 +223,7 @@ sections:
         - reports
         executor_type: validation
       validate_runtime_artifacts:
-        description: Validate runtime artifact topology, declarations, normalized paths, required
-          identity fields, producer-route coverage, consumer lists, lifecycle, scope, and write
-          modes.
+        description: Validate runtime artifact topology, declarations, normalized paths, required identity fields, producer-route coverage, consumer lists, lifecycle, scope, and write modes.
         script: scripts/validate-runtime-artifacts.ts
         required_inputs:
         - runtime_artifact_topology
@@ -257,8 +250,7 @@ sections:
         - multi-agent
         executor_type: validation
       validate_script_execution:
-        description: Verify executor route scripts with fixture-based valid and invalid input
-          cases, output shape checks, exit-code checks, and allowed-write-path checks.
+        description: Verify executor route scripts with fixture-based valid and invalid input cases, output shape checks, exit-code checks, and allowed-write-path checks.
         script: scripts/verify-scripts.ts
         required_inputs:
         - central_executor_route_map
@@ -281,9 +273,7 @@ sections:
         - reports
         executor_type: validation
       validate_semantic_completeness:
-        description: Validate semantic completeness of convention declarations, phase bundles,
-          and phase outputs so work cannot pass with placeholders, vague executable content,
-          missing required evidence, or shallow completion claims.
+        description: Validate semantic completeness of convention declarations, phase bundles, and phase outputs so work cannot pass with placeholders, vague executable content, missing required evidence, or shallow completion claims.
         script: scripts/validate-semantic-completeness.ts
         required_inputs:
         - semantic_completeness_contract
@@ -308,8 +298,7 @@ sections:
         - missions
         executor_type: validation
       validate_gate_result:
-        description: Validate a script-produced gate result before Alpha or a downstream phase
-          consumes it; reject manually authored gate decisions.
+        description: Validate a script-produced gate result before Alpha or a downstream phase consumes it; reject manually authored gate decisions.
         script: scripts/validate-gate-result.ts
         required_inputs:
         - gate_result
@@ -332,8 +321,7 @@ sections:
         - phases
         executor_type: validation
       validate_handoff:
-        description: Validate a script-produced handoff packet before the target agent or phase
-          consumes it; reject manually authored handoff packets.
+        description: Validate a script-produced handoff packet before the target agent or phase consumes it; reject manually authored handoff packets.
         script: scripts/validate-handoff.ts
         required_inputs:
         - agent_handoff_packet
@@ -357,8 +345,7 @@ sections:
         - phases
         executor_type: validation
       validate_revision_task:
-        description: Validate a script-produced revision task before revision work starts or
-          mission state records it as actionable; reject manually authored revision decisions.
+        description: Validate a script-produced revision task before revision work starts or mission state records it as actionable; reject manually authored revision decisions.
         script: scripts/validate-revision-task.ts
         required_inputs:
         - revision_task
@@ -381,8 +368,7 @@ sections:
         - reports
         executor_type: validation
       validate_report_evidence:
-        description: Validate evidence_manifest_v2 and report evidence references before report
-          consumption.
+        description: Validate evidence_manifest_v2 and report evidence references before report consumption.
         script: scripts/validate-report-evidence.ts
         required_inputs:
         - evidence_manifest_v2
@@ -405,8 +391,7 @@ sections:
         - missions
         executor_type: validation
       validate_claude_execution_plan:
-        description: Validate the generated Claude Code execution plan before Claude Code runs
-          a mission or phase.
+        description: Validate the generated Claude Code execution plan before Claude Code runs a mission or phase.
         script: scripts/validate-claude-execution-plan.ts
         required_inputs:
         - claude_execution_plan
@@ -429,8 +414,7 @@ sections:
         - reports
         executor_type: validation
       validate_claude_native_integration:
-        description: Validate Claude Code native integration files, skills, subagents, hooks,
-          and route-backed command usage.
+        description: Validate Claude Code native integration files, skills, subagents, hooks, and route-backed command usage.
         script: scripts/validate-claude-native-integration.ts
         required_inputs:
         - claude_project_files
@@ -452,8 +436,7 @@ sections:
         - reports
         executor_type: validation
       validate_validation_result:
-        description: Validate and normalize validator output against the universal validation
-          result contract while preserving existing validator pass/fail policy during rollout.
+        description: Validate and normalize validator output against the universal validation result contract while preserving existing validator pass/fail policy during rollout.
         script: scripts/validate-validation-result.ts
         required_inputs:
         - validation_result
@@ -479,8 +462,7 @@ sections:
         - multi-agent
         executor_type: validation
       validate_transition_legality:
-        description: Validate requested mission phase transition against the transition legality
-          graph in observe/warn mode.
+        description: Validate requested mission phase transition against the transition legality graph in observe/warn mode.
         script: scripts/validate-transition-legality.ts
         required_inputs:
         - mission_id
@@ -509,8 +491,7 @@ sections:
         executor_type: validation
     compiler:
       compile_authority_topology:
-        description: Compile distributed ownership declarations into an authority topology and
-          conflict report.
+        description: Compile distributed ownership declarations into an authority topology and conflict report.
         script: scripts/compile-authority-topology.ts
         required_inputs:
         - parsed_convention_files
@@ -532,9 +513,7 @@ sections:
         - execution
         executor_type: compiler
       compile_runtime_artifact_topology:
-        description: Compile runtime artifact declarations and .ai usages into an artifact topology
-          with path normalization, declaration coverage, producer-route inference, and conflict
-          reporting.
+        description: Compile runtime artifact declarations and .ai usages into an artifact topology with path normalization, declaration coverage, producer-route inference, and conflict reporting.
         script: scripts/compile-runtime-artifact-topology.ts
         required_inputs:
         - runtime_artifact_declarations
@@ -558,9 +537,7 @@ sections:
         - revisions
         executor_type: compiler
       compile_adapter_topology:
-        description: Compile adapter convention declarations, executor route mappings, and runtime
-          artifact registrations into generated adapter topology for adapter-neutral runtime
-          consumers.
+        description: Compile adapter convention declarations, executor route mappings, and runtime artifact registrations into generated adapter topology for adapter-neutral runtime consumers.
         script: scripts/compile-adapter-topology.ts
         required_inputs:
         - adapter_convention_files
@@ -587,8 +564,7 @@ sections:
         - reports
         executor_type: compiler
       collect_source_artifacts:
-        description: Collect universal source artifact records, source file hashes, and lightweight
-          dependency edges as source-truth evidence for later adapters and quality gates.
+        description: Collect universal source artifact records, source file hashes, and lightweight dependency edges as source-truth evidence for later adapters and quality gates.
         script: scripts/collect-source-artifacts.ts
         required_inputs:
         - project_source_tree
@@ -614,8 +590,7 @@ sections:
         - architecture
         executor_type: compiler
       analyze_typescript_source:
-        description: Consume the universal source artifact manifest and emit TypeScript language-adapter
-          evidence without enforcing framework or architecture quality policy.
+        description: Consume the universal source artifact manifest and emit TypeScript language-adapter evidence without enforcing framework or architecture quality policy.
         script: scripts/analyze-typescript-source.ts
         required_inputs:
         - source_artifact_manifest
@@ -642,8 +617,7 @@ sections:
         - architecture
         executor_type: compiler
       analyze_nestjs_source:
-        description: Consume TypeScript language-adapter evidence and emit NestJS framework-adapter
-          evidence without enforcing framework or architecture quality policy.
+        description: Consume TypeScript language-adapter evidence and emit NestJS framework-adapter evidence without enforcing framework or architecture quality policy.
         script: scripts/analyze-nestjs-source.ts
         required_inputs:
         - typescript_source_analysis
@@ -671,9 +645,7 @@ sections:
         - architecture
         executor_type: compiler
       analyze_safe_structure_change:
-        description: Analyze proposed decomposition, deletion, or consolidation changes against
-          the universal source artifact manifest in observe mode without executing structural
-          changes or enforcing architecture gates.
+        description: Analyze proposed decomposition, deletion, or consolidation changes against the universal source artifact manifest in observe mode without executing structural changes or enforcing architecture gates.
         script: scripts/analyze-safe-structure-change.ts
         required_inputs:
         - source_artifact_manifest
@@ -700,8 +672,7 @@ sections:
         - reports
         executor_type: compiler
       resolve_mission_mode_policy:
-        description: Resolve mission-mode policy in observe mode from mission profile, mission
-          state, and adapter evidence without enforcing score thresholds.
+        description: Resolve mission-mode policy in observe mode from mission profile, mission state, and adapter evidence without enforcing score thresholds.
         script: scripts/resolve-mission-mode-policy.ts
         required_inputs:
         - mission_profile
@@ -729,8 +700,7 @@ sections:
         - executors
         executor_type: compiler
       evaluate_score_decision:
-        description: Evaluate observe-mode score vectors against resolved mission-mode thresholds
-          and emit deterministic decision artifacts without blocking workflow.
+        description: Evaluate observe-mode score vectors against resolved mission-mode thresholds and emit deterministic decision artifacts without blocking workflow.
         script: scripts/evaluate-score-decision.ts
         required_inputs:
         - resolved_mission_mode_policy
@@ -759,9 +729,7 @@ sections:
         - gates
         executor_type: compiler
       analyze_architecture_quality:
-        description: Analyze architecture quality evidence from source artifacts, generated
-          adapter topology, optional adapter outputs, mission-mode policy, and safe-structure
-          outputs in observe mode without enforcing architecture quality gates.
+        description: Analyze architecture quality evidence from source artifacts, generated adapter topology, optional adapter outputs, mission-mode policy, and safe-structure outputs in observe mode without enforcing architecture quality gates.
         script: scripts/analyze-architecture-quality.ts
         required_inputs:
         - source_artifact_manifest
@@ -795,9 +763,7 @@ sections:
         - gates
         executor_type: compiler
       analyze_global_normalization:
-        description: Analyze global normalization evidence from the source artifact manifest,
-          generated adapter topology, optional adapter outputs, and architecture-quality outputs
-          in observe mode without rewriting files or enforcing normalization decisions.
+        description: Analyze global normalization evidence from the source artifact manifest, generated adapter topology, optional adapter outputs, and architecture-quality outputs in observe mode without rewriting files or enforcing normalization decisions.
         script: scripts/analyze-global-normalization.ts
         required_inputs:
         - source_artifact_manifest
@@ -829,10 +795,36 @@ sections:
         - reports
         - gates
         executor_type: compiler
+      analyze_prompt_contracts:
+        description: Analyze Claude-facing prompt surfaces against the prompt contract standardization model in observe mode without rewriting prompt content.
+        script: scripts/analyze-prompt-contracts.ts
+        required_inputs:
+        - claude_prompt_surfaces
+        - central_executor_route_map
+        - prompt_contract_standardization_protocol
+        produced_outputs:
+        - prompt_contract_analysis
+        - prompt_contract_report
+        allowed_write_paths:
+        - .ai/prompt-contracts/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: warn
+        consumers:
+        - claude-code
+        - agents
+        - prompts
+        - validation
+        - reports
+        executor_type: compiler
     generator:
       generate_phase_bundle:
-        description: Generate minimal phase context bundle from active mission, phase contract,
-          owner agent, executor routes, and relevant convention slices.
+        description: Generate minimal phase context bundle from active mission, phase contract, owner agent, executor routes, and relevant convention slices.
         script: scripts/generate-phase-bundle.ts
         required_inputs:
         - mission_context
@@ -861,8 +853,7 @@ sections:
         - executors
         executor_type: generator
       generate_claude_execution_plan:
-        description: Generate the Claude Code mission execution plan from the harness contract
-          and central executor routes.
+        description: Generate the Claude Code mission execution plan from the harness contract and central executor routes.
         script: scripts/generate-claude-execution-plan.ts
         required_inputs:
         - claude_code_harness_contract
@@ -885,8 +876,7 @@ sections:
         executor_type: generator
     gate:
       run_gate_check:
-        description: Run declared gate checks and write the only authoritative machine-readable
-          gate result; agents and Alpha may not manually decide gate pass/fail.
+        description: Run declared gate checks and write the only authoritative machine-readable gate result; agents and Alpha may not manually decide gate pass/fail.
         script: scripts/run-gate-check.ts
         required_inputs:
         - gate_id
@@ -909,8 +899,7 @@ sections:
         executor_type: gate
     handoff:
       prepare_agent_handoff:
-        description: Generate the only authoritative handoff packet from a source phase output
-          and target agent requirements; agents may not manually author handoff packets.
+        description: Generate the only authoritative handoff packet from a source phase output and target agent requirements; agents may not manually author handoff packets.
         script: scripts/prepare-agent-handoff.ts
         required_inputs:
         - source_phase_output
@@ -931,9 +920,7 @@ sections:
         executor_type: handoff
     revision:
       create_revision_task:
-        description: Generate the only authoritative revision task/decision from a failed validation
-          or gate result; agents and Alpha may trigger this route but may not manually author
-          revision decisions.
+        description: Generate the only authoritative revision task/decision from a failed validation or gate result; agents and Alpha may trigger this route but may not manually author revision decisions.
         script: scripts/create-revision-task.ts
         required_inputs:
         - failure_result
@@ -954,8 +941,7 @@ sections:
         - multi-agent
         executor_type: revision
       analyze_revision_loop:
-        description: Analyze revision retry fingerprints and no-progress signals in observe
-          mode before revision reruns continue; records warnings without blocking.
+        description: Analyze revision retry fingerprints and no-progress signals in observe mode before revision reruns continue; records warnings without blocking.
         script: scripts/analyze-revision-loop.ts
         required_inputs:
         - revision_task
@@ -980,8 +966,7 @@ sections:
         executor_type: revision
     report:
       collect_phase_report:
-        description: Collect phase evidence, validation results, gate outcomes, and unresolved
-          issues into a phase report.
+        description: Collect phase evidence, validation results, gate outcomes, and unresolved issues into a phase report.
         script: scripts/collect-phase-report.ts
         required_inputs:
         - phase_output
@@ -1002,8 +987,7 @@ sections:
         - multi-agent
         executor_type: report
       collect_evidence:
-        description: Collect script-produced runtime evidence into validated evidence_manifest_v2
-          plus legacy evidence index compatibility output.
+        description: Collect script-produced runtime evidence into validated evidence_manifest_v2 plus legacy evidence index compatibility output.
         script: scripts/collect-evidence.ts
         required_inputs:
         - validation_results
@@ -1033,8 +1017,7 @@ sections:
         - revisions
         executor_type: report
       generate_final_mission_report:
-        description: Generate the final mission report from collected executor/script evidence,
-          validation results, transition artifacts, and unresolved issue records.
+        description: Generate the final mission report from collected executor/script evidence, validation results, transition artifacts, and unresolved issue records.
         script: scripts/generate-final-mission-report.ts
         required_inputs:
         - evidence_index
@@ -1062,8 +1045,7 @@ sections:
         executor_type: report
     mission_controller:
       initialize_mission:
-        description: Initialize authoritative mission runtime state in observe mode before Claude
-          begins phase execution.
+        description: Initialize authoritative mission runtime state in observe mode before Claude begins phase execution.
         script: scripts/initialize-mission.ts
         required_inputs:
         - mission_id
@@ -1109,8 +1091,7 @@ sections:
         - reports
         executor_type: mission_controller
       resume_mission:
-        description: Resume an interrupted mission by validating mission state, append-only
-          journal, and checkpoint before Claude continues workflow execution.
+        description: Resume an interrupted mission by validating mission state, append-only journal, and checkpoint before Claude continues workflow execution.
         script: scripts/resume-mission.ts
         required_inputs:
         - mission_id
@@ -1140,8 +1121,7 @@ sections:
         - reports
         executor_type: mission_controller
       advance_mission:
-        description: Advance mission state through the route-backed mission controller in observe
-          mode; record proposed transitions before later enforcement phases add legality blocking.
+        description: Advance mission state through the route-backed mission controller in observe mode; record proposed transitions before later enforcement phases add legality blocking.
         script: scripts/advance-mission.ts
         required_inputs:
         - mission_id
@@ -1168,8 +1148,7 @@ sections:
         executor_type: mission_controller
     invocation:
       invoke_route:
-        description: Invoke a centralized executor route through the universal invocation/output
-          contract wrapper while preserving existing route IDs and script behavior.
+        description: Invoke a centralized executor route through the universal invocation/output contract wrapper while preserving existing route IDs and script behavior.
         script: scripts/invoke-route.ts
         required_inputs:
         - route_id

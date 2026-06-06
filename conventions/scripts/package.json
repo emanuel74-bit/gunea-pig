@@ -49,7 +49,8 @@
     "analyze:revision-loop": "tsx analyze-revision-loop.ts",
     "analyze:safe-structure-change": "tsx analyze-safe-structure-change.ts",
     "analyze:architecture-quality": "tsx analyze-architecture-quality.ts",
-    "analyze:global-normalization": "tsx analyze-global-normalization.ts"
+    "analyze:global-normalization": "tsx analyze-global-normalization.ts",
+    "analyze:prompt-contracts": "tsx analyze-prompt-contracts.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

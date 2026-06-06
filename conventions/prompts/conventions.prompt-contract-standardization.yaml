@@ -1,0 +1,138 @@
+version: '1.0'
+file:
+  name: conventions.prompt-contract-standardization.yaml
+  path: prompts/conventions.prompt-contract-standardization.yaml
+  role: prompt_contract_standardization_protocol
+  executability: policy
+purpose: Define an observe-mode, reusable contract model for Claude-facing prompts so commands, skills, agents, and project entrypoints expose purpose, authority, inputs, outputs, route dependencies, forbidden actions, and completion conditions without rewriting prompt content.
+ownership:
+  owns:
+  - prompt_contract_standardization_protocol
+  - prompt_contract_required_section_model
+  - prompt_contract_observe_mode_analysis
+  - claude_prompt_surface_contract_categories
+  does_not_own:
+  - prompt_rewrites
+  - prompt_compression
+  - prompt_content_generation
+  - agent_behavior_policy
+  - executor_route_definitions
+  - route_enforcement
+activation:
+  mode: on_demand
+  activates_when:
+  - prompt_contract_review_required
+  - claude_native_surface_review_required
+  - pre_completion_prompt_governance_review_required
+  skips_when:
+  - claude_prompt_surface_missing
+inputs:
+  required:
+  - claude_prompt_surfaces
+  - executor_route_map
+  optional:
+  - adapter_topology
+  - phase_bundle_context
+outputs:
+  produces:
+  - prompt_contract_analysis
+  - prompt_contract_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - claude-code/conventions.claude-code.yaml
+  - claude-code/conventions.claude-route-invocation.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files: []
+sections:
+  authority_boundary:
+    mutation_allowed: false
+    prompt_rewrite_allowed: false
+    enforcement_allowed: false
+    analysis_only: true
+    route_authority: analyze_prompt_contracts
+  runtime_route:
+    route_id: analyze_prompt_contracts
+    script: scripts/analyze-prompt-contracts.ts
+    rollout_mode: observe
+    enforcement_mode: observe
+    failure_behavior: warn
+  contract_sections:
+  - id: purpose
+    description: Prompt states what it is for and when it is used.
+    required_for:
+    - commands
+    - skills
+    - agents
+    - project_entrypoints
+    missing_behavior: warning_only
+  - id: authority_boundary
+    description: Prompt states what Claude or the surface may not decide, mutate, approve, or bypass.
+    required_for:
+    - commands
+    - skills
+    - agents
+    - project_entrypoints
+    missing_behavior: warning_only
+  - id: required_inputs
+    description: Prompt identifies required user, mission, phase, artifact, or route inputs.
+    required_for:
+    - commands
+    - skills
+    - agents
+    missing_behavior: warning_only
+  - id: allowed_outputs
+    description: Prompt identifies allowed outputs, artifacts, route calls, or summaries.
+    required_for:
+    - commands
+    - skills
+    - agents
+    missing_behavior: warning_only
+  - id: forbidden_actions
+    description: Prompt identifies forbidden actions such as manual transition approval, direct script selection, unsupported claims, or broad rewrites.
+    required_for:
+    - commands
+    - skills
+    - agents
+    - project_entrypoints
+    missing_behavior: warning_only
+  - id: route_dependencies
+    description: Prompt identifies executor route dependencies through route IDs or invoke_route usage when runtime actions are required.
+    required_for:
+    - commands
+    - skills
+    - project_entrypoints
+    missing_behavior: warning_only
+  - id: completion_condition
+    description: Prompt states the condition under which the step, skill, command, or agent handoff is complete.
+    required_for:
+    - commands
+    - skills
+    - agents
+    missing_behavior: warning_only
+  prompt_surface_categories:
+    project_entrypoint:
+      paths:
+      - CLAUDE.md
+    command:
+      paths:
+      - .claude/commands/*.md
+    skill:
+      paths:
+      - .claude/skills/*/SKILL.md
+    agent:
+      paths:
+      - .claude/agents/*.md
+    hook_documentation:
+      paths:
+      - .claude/hooks/*.md
+    claude_convention:
+      paths:
+      - conventions/claude-code/*.yaml
+  standardization_rules:
+    observe_only: true
+    missing_sections_are_warnings: true
+    generated_analysis_must_not_rewrite_prompts: true
+    route_ids_must_resolve_when_detected: true
+    direct_script_selection_by_prompt_is_warning: true
+    prompt_contract_detection_is_heuristic_until_prompt_contracts_are_formalized: true

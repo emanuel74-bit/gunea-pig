@@ -4,9 +4,7 @@ file:
   path: claude-code/conventions.claude-subsystem-engagement.yaml
   role: claude_subsystem_engagement_map
   executability: mapping
-purpose: Provide Claude Code with a compact map from workflow lanes to subsystems, native agents,
-  executor routes, and artifacts so Claude engages the whole system without scanning the full
-  convention tree.
+purpose: Provide Claude Code with a compact map from workflow lanes to subsystems, native agents, executor routes, and artifacts so Claude engages the whole system without scanning the full convention tree.
 ownership:
   owns:
   - claude_subsystem_engagement_map
@@ -49,6 +47,7 @@ sections:
       - phases
       - executors
       - execution
+      - prompts
       skills:
       - start-mission
       - run-alpha-cycle
@@ -80,6 +79,7 @@ sections:
       - policy
       - scoring
       - normalization
+      - prompts
       skills:
       - run-phase
       - validate-phase
@@ -98,6 +98,7 @@ sections:
       - evaluate_score_decision
       - analyze_architecture_quality
       - analyze_global_normalization
+      - analyze_prompt_contracts
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -120,6 +121,8 @@ sections:
       - .ai/reports/architecture-quality-report.yaml
       - .ai/source-artifacts/global-normalization-analysis.yaml
       - .ai/reports/global-normalization-report.yaml
+      - .ai/prompt-contracts/prompt-contract-analysis.yaml
+      - .ai/reports/prompt-contract-report.yaml
     architecture_design:
       subsystems:
       - architecture

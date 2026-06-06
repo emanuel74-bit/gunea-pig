@@ -4,8 +4,7 @@ file:
   path: reports/conventions.runtime-artifacts.yaml
   role: runtime_artifact_identity_registry
   executability: registry
-purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules
-  for runtime artifacts such as .ai reports, manifests, validation summaries, and phase outputs.
+purpose: Define canonical identity, path normalization, ownership, lifecycle, and conflict rules for runtime artifacts such as .ai reports, manifests, validation summaries, and phase outputs.
 ownership:
   owns:
   - runtime_artifact_identity_model
@@ -2132,14 +2131,41 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer
     required: context_dependent
+  - artifact_id: ai_prompt_contract_analysis_yaml
+    path: .ai/prompt-contracts/prompt-contract-analysis.yaml
+    artifact_type: runtime_artifact
+    schema: prompt_contract_analysis
+    producer: executor_route
+    producer_routes:
+    - analyze_prompt_contracts
+    consumers:
+    - prompts/conventions.prompt-contract-standardization.yaml
+    - claude-code/conventions.claude-code.yaml
+    - reports/conventions.report-validation.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: context_dependent
+  - artifact_id: ai_reports_prompt_contract_report_yaml
+    path: .ai/reports/prompt-contract-report.yaml
+    artifact_type: runtime_artifact
+    schema: prompt_contract_report
+    producer: executor_route
+    producer_routes:
+    - analyze_prompt_contracts
+    consumers:
+    - prompts/conventions.prompt-contract-standardization.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer
+    required: context_dependent
   runtime_artifact_enforcement_model:
-    route_backed_generation: runtime artifacts must be produced by declared executor routes
-      or explicitly marked as runtime-context generated
+    route_backed_generation: runtime artifacts must be produced by declared executor routes or explicitly marked as runtime-context generated
     required_validation_sequence:
     - compile_runtime_artifact_topology
     - validate_runtime_artifacts
-    path_authority: runtime artifact paths are normalized and validated by runtime artifact
-      topology scripts
+    path_authority: runtime artifact paths are normalized and validated by runtime artifact topology scripts
     script_selection: agents never call artifact scripts directly; they use executor routes
   runtime_artifact_allowed_values:
     scope:
