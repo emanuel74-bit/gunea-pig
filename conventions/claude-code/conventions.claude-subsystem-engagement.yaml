@@ -90,6 +90,7 @@ sections:
       - analyze_safe_structure_change
       - collect_evidence
       - collect_source_artifacts
+      - compile_adapter_topology
       - analyze_typescript_source
       - analyze_nestjs_source
       - resolve_mission_mode_policy
@@ -104,12 +105,15 @@ sections:
       - declared_phase_reports
       - .ai/reports/evidence-index.yaml
       - .ai/source-artifacts/**
+      - .ai/topologies/adapter-topology.yaml
+      - .ai/reports/adapter-topology-report.yaml
       - .ai/source-artifacts/typescript-source-analysis.yaml
       - .ai/source-artifacts/nestjs-source-analysis.yaml
       - .ai/policy/mission-mode-policy.yaml
       - .ai/reports/mission-mode-policy-report.yaml
       - .ai/scoring/score-decision.yaml
       - .ai/reports/score-decision-report.yaml
+      - .ai/topologies/adapter-topology.yaml
       - .ai/source-artifacts/architecture-quality-analysis.yaml
       - .ai/reports/architecture-quality-report.yaml
     architecture_design:
@@ -131,6 +135,7 @@ sections:
       - validate_semantic_completeness
       - collect_phase_report
       - analyze_safe_structure_change
+      - compile_adapter_topology
       - analyze_architecture_quality
       agents:
       - architecture_agent

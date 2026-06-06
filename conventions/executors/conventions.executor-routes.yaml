@@ -563,6 +563,35 @@ sections:
         - handoffs
         - revisions
         executor_type: compiler
+      compile_adapter_topology:
+        description: Compile adapter convention declarations, executor route mappings,
+          and runtime artifact registrations into generated adapter topology for
+          adapter-neutral runtime consumers.
+        script: scripts/compile-adapter-topology.ts
+        required_inputs:
+        - adapter_convention_files
+        - central_executor_route_map
+        - runtime_artifact_registry
+        produced_outputs:
+        - adapter_topology
+        - adapter_topology_report
+        allowed_write_paths:
+        - .ai/topologies/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - adapters
+        - architecture
+        - source
+        - validation
+        - reports
+        executor_type: compiler
       collect_source_artifacts:
         description: Collect universal source artifact records, source file hashes,
           and lightweight dependency edges as source-truth evidence for later adapters
@@ -740,13 +769,15 @@ sections:
         executor_type: compiler
       analyze_architecture_quality:
         description: Analyze architecture quality evidence from source artifacts,
-          TypeScript adapter, NestJS adapter, mission-mode policy, and safe-structure
-          outputs in observe mode without enforcing architecture quality gates.
+          generated adapter topology, optional adapter outputs, mission-mode policy,
+          and safe-structure outputs in observe mode without enforcing architecture
+          quality gates.
         script: scripts/analyze-architecture-quality.ts
         required_inputs:
         - source_artifact_manifest
-        - typescript_source_analysis
-        - nestjs_source_analysis
+        - adapter_topology
+        - optional_language_analysis_outputs
+        - optional_framework_analysis_outputs
         - mission_mode_policy
         - architecture_quality_gate_contract
         produced_outputs:
@@ -758,6 +789,7 @@ sections:
         - .ai/validation/**
         required_artifacts:
         - source_artifact_manifest
+        - adapter_topology
         lifecycle_hooks:
         - before_phase_start
         - after_file_change

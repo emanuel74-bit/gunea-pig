@@ -19,6 +19,7 @@ const issues: Issue[] = [];
 const manifestPath = path.join(root, ".ai", "source-artifacts", "source-artifact-manifest.yaml");
 const policyPath = path.join(root, ".ai", "policy", "mission-mode-policy.yaml");
 const safeStructurePath = path.join(root, ".ai", "source-artifacts", "safe-structure-change-analysis.yaml");
+const adapterTopologyPath = path.join(root, ".ai", "topologies", "adapter-topology.yaml");
 
 interface ManifestFile {
   path: string;
@@ -57,10 +58,22 @@ interface AdapterInput {
   aggregate: JsonMap;
 }
 
-const optionalAdapterSources: Array<{ adapter_id: string; adapter_kind: "language" | "framework"; path: string; expected_artifact: string }> = [
-  { adapter_id: "typescript", adapter_kind: "language", path: ".ai/source-artifacts/typescript-source-analysis.yaml", expected_artifact: "typescript_source_analysis" },
-  { adapter_id: "nestjs", adapter_kind: "framework", path: ".ai/source-artifacts/nestjs-source-analysis.yaml", expected_artifact: "nestjs_source_analysis" },
-];
+interface AdapterTopologyArtifact {
+  path: string;
+  artifact_id?: string;
+  schema?: string;
+  artifact_type?: string;
+}
+
+interface AdapterTopologyEntry {
+  adapter_id: string;
+  adapter_kind: "language" | "framework";
+  convention_path?: string;
+  producer_route_id?: string;
+  produced_artifact?: string;
+  output_artifacts?: AdapterTopologyArtifact[];
+  required?: boolean;
+}
 
 function asManifestFiles(value: unknown): ManifestFile[] {
   if (!Array.isArray(value)) return [];
@@ -102,21 +115,51 @@ function warnWhen(condition: boolean, code: string, message: string, file?: stri
   if (condition) issues.push(issue("warning", code, message, file, detail));
 }
 
-function loadAdapterInputs(): AdapterInput[] {
+function asAdapterTopologyEntries(value: unknown): AdapterTopologyEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is AdapterTopologyEntry => {
+    if (!entry || typeof entry !== "object") return false;
+    const candidate = entry as AdapterTopologyEntry;
+    return typeof candidate.adapter_id === "string" && (candidate.adapter_kind === "language" || candidate.adapter_kind === "framework");
+  });
+}
+
+function outputArtifacts(entry: AdapterTopologyEntry): AdapterTopologyArtifact[] {
+  return Array.isArray(entry.output_artifacts)
+    ? entry.output_artifacts.filter((artifact): artifact is AdapterTopologyArtifact => Boolean(artifact) && typeof artifact === "object" && typeof (artifact as AdapterTopologyArtifact).path === "string")
+    : [];
+}
+
+function loadAdapterInputs(topology: JsonMap): AdapterInput[] {
   const adapters: AdapterInput[] = [];
-  for (const source of optionalAdapterSources) {
-    const absolutePath = path.join(root, source.path);
-    const data = readOptionalYaml(absolutePath);
-    if (!data) continue;
-    const artifact = typeof data.artifact === "string" ? data.artifact : "unknown_adapter_artifact";
-    if (artifact !== source.expected_artifact) {
-      issues.push(issue("warning", "ADAPTER_OUTPUT_UNEXPECTED_ARTIFACT", "Adapter output exists but does not match the registered adapter artifact shape.", source.path, { adapter_id: source.adapter_id, expected_artifact: source.expected_artifact, actual_artifact: artifact }));
+  for (const entry of asAdapterTopologyEntries(topology.adapters)) {
+    const artifacts = outputArtifacts(entry);
+    const analysisArtifact = artifacts.find(artifact => artifact.path.startsWith(".ai/source-artifacts/") && artifact.path.endsWith("-source-analysis.yaml"))
+      ?? artifacts.find(artifact => artifact.artifact_type === "runtime_artifact" && artifact.path.startsWith(".ai/source-artifacts/"));
+    if (!analysisArtifact) {
+      issues.push(issue("warning", "ADAPTER_TOPOLOGY_ANALYSIS_ARTIFACT_MISSING", "Adapter topology entry has no registered source-analysis artifact.", entry.convention_path, { adapter_id: entry.adapter_id, adapter_kind: entry.adapter_kind }));
       continue;
     }
+
+    const absolutePath = path.join(root, analysisArtifact.path);
+    const data = readOptionalYaml(absolutePath);
+    if (!data) {
+      if (entry.required === true) {
+        issues.push(issue("error", "REQUIRED_ADAPTER_OUTPUT_MISSING", "Required adapter output declared in topology is missing.", analysisArtifact.path, { adapter_id: entry.adapter_id, adapter_kind: entry.adapter_kind }));
+      }
+      continue;
+    }
+
+    const artifact = typeof data.artifact === "string" ? data.artifact : "unknown_adapter_artifact";
+    if (entry.produced_artifact && artifact !== entry.produced_artifact) {
+      issues.push(issue("warning", "ADAPTER_OUTPUT_UNEXPECTED_ARTIFACT", "Adapter output exists but does not match the generated adapter topology declaration.", analysisArtifact.path, { adapter_id: entry.adapter_id, expected_artifact: entry.produced_artifact, actual_artifact: artifact }));
+      continue;
+    }
+
     adapters.push({
-      adapter_id: source.adapter_id,
-      adapter_kind: source.adapter_kind,
-      path: source.path,
+      adapter_id: entry.adapter_id,
+      adapter_kind: entry.adapter_kind,
+      path: analysisArtifact.path,
       artifact,
       files: asAdapterFiles(data.files),
       aggregate: jsonMap(data.aggregate),
@@ -127,24 +170,30 @@ function loadAdapterInputs(): AdapterInput[] {
 
 if (!fs.existsSync(manifestPath)) {
   issues.push(issue("error", "SOURCE_ARTIFACT_MANIFEST_MISSING", "Architecture quality analysis requires .ai/source-artifacts/source-artifact-manifest.yaml. Run collect_source_artifacts first.", ".ai/source-artifacts/source-artifact-manifest.yaml"));
+}
+if (!fs.existsSync(adapterTopologyPath)) {
+  issues.push(issue("error", "ADAPTER_TOPOLOGY_MISSING", "Architecture quality analysis requires generated .ai/topologies/adapter-topology.yaml. Run compile_adapter_topology first.", ".ai/topologies/adapter-topology.yaml"));
+}
+if (issues.some(entry => entry.severity === "error" || entry.severity === "critical")) {
   finish(SCRIPT_ID, issues, [], {
     validation_result: buildUniversalValidationResult(SCRIPT_ID, issues, { route_id: ROUTE_ID, evidence: [] }),
   });
 }
 
 const manifest = readYamlFile(manifestPath);
+const adapterTopology = readYamlFile(adapterTopologyPath);
 if (manifest.artifact !== "source_artifact_manifest" || !Array.isArray(manifest.files) || !Array.isArray(manifest.dependency_edges)) {
   issues.push(issue("error", "SOURCE_ARTIFACT_MANIFEST_INVALID", "Source artifact manifest has invalid shape for architecture quality analysis.", ".ai/source-artifacts/source-artifact-manifest.yaml"));
 }
 
 const policy = readOptionalYaml(policyPath);
 const safeStructure = readOptionalYaml(safeStructurePath);
-const adapterInputs = loadAdapterInputs();
+const adapterInputs = loadAdapterInputs(adapterTopology);
 const languageAdapters = adapterInputs.filter(adapter => adapter.adapter_kind === "language");
 const frameworkAdapters = adapterInputs.filter(adapter => adapter.adapter_kind === "framework");
 
-if (languageAdapters.length === 0) issues.push(issue("warning", "LANGUAGE_ADAPTER_EVIDENCE_MISSING", "Architecture quality analysis is adapter-neutral and can run without language adapter output, but language-specific evidence is limited.", ".ai/source-artifacts"));
-if (frameworkAdapters.length === 0) issues.push(issue("warning", "FRAMEWORK_ADAPTER_EVIDENCE_MISSING", "Architecture quality analysis is adapter-neutral and can run without framework adapter output, but framework-specific evidence is limited.", ".ai/source-artifacts"));
+if (languageAdapters.length === 0) issues.push(issue("warning", "LANGUAGE_ADAPTER_EVIDENCE_MISSING", "Architecture quality analysis is adapter-neutral and can run without language adapter output, but language-specific evidence is limited.", ".ai/topologies/adapter-topology.yaml"));
+if (frameworkAdapters.length === 0) issues.push(issue("warning", "FRAMEWORK_ADAPTER_EVIDENCE_MISSING", "Architecture quality analysis is adapter-neutral and can run without framework adapter output, but framework-specific evidence is limited.", ".ai/topologies/adapter-topology.yaml"));
 if (!policy) issues.push(issue("warning", "MISSION_MODE_POLICY_MISSING", "Architecture quality analysis is using generic observe thresholds without mission-mode policy.", ".ai/policy/mission-mode-policy.yaml"));
 
 const manifestFiles = asManifestFiles(manifest.files);
@@ -218,6 +267,7 @@ const analysisOut = ".ai/source-artifacts/architecture-quality-analysis.yaml";
 const reportOut = ".ai/reports/architecture-quality-report.yaml";
 const evidenceInputs = {
   source_artifact_manifest: true,
+  adapter_topology: true,
   language_analysis_outputs: languageAdapters.map(adapter => ({ adapter_id: adapter.adapter_id, artifact: adapter.artifact, path: adapter.path, file_count: adapter.files.length })),
   framework_analysis_outputs: frameworkAdapters.map(adapter => ({ adapter_id: adapter.adapter_id, artifact: adapter.artifact, path: adapter.path, file_count: adapter.files.length })),
   mission_mode_policy: Boolean(policy),
@@ -233,6 +283,8 @@ const analysis = {
     adapter_neutral: true,
     requires_specific_language_adapter: false,
     requires_specific_framework_adapter: false,
+    hardcoded_adapter_discovery_allowed: false,
+    adapter_discovery_source: "generated_adapter_topology",
   },
   evidence_inputs: evidenceInputs,
   adapter_evidence_summary: {
@@ -292,6 +344,7 @@ finish(SCRIPT_ID, issues, [analysisOut, reportOut], {
     route_id: ROUTE_ID,
     evidence: [
       { evidence_type: "source_artifact_manifest", path: ".ai/source-artifacts/source-artifact-manifest.yaml", producer_route: "collect_source_artifacts" },
+      { evidence_type: "adapter_topology", path: ".ai/topologies/adapter-topology.yaml", producer_route: "compile_adapter_topology" },
       ...languageAdapters.map(adapter => ({ evidence_type: "language_adapter_analysis", adapter_id: adapter.adapter_id, path: adapter.path })),
       ...frameworkAdapters.map(adapter => ({ evidence_type: "framework_adapter_analysis", adapter_id: adapter.adapter_id, path: adapter.path })),
       { evidence_type: "architecture_quality_analysis", path: analysisOut, producer_route: ROUTE_ID },

@@ -1821,6 +1821,38 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: before_mission_start
+  - artifact_id: ai_adapter_topology_yaml
+    path: .ai/topologies/adapter-topology.yaml
+    artifact_type: runtime_topology
+    schema: adapter_topology
+    producer: compile_adapter_topology_route
+    producer_routes:
+    - compile_adapter_topology
+    consumers:
+    - adapters/conventions.language-adapter-contract.yaml
+    - adapters/conventions.framework-adapter-contract.yaml
+    - architecture/conventions.architecture-quality-gates.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_adapter_topology_report_yaml
+    path: .ai/reports/adapter-topology-report.yaml
+    artifact_type: runtime_artifact
+    schema: adapter_topology_report
+    producer: compile_adapter_topology_route
+    producer_routes:
+    - compile_adapter_topology
+    consumers:
+    - adapters/conventions.language-adapter-contract.yaml
+    - adapters/conventions.framework-adapter-contract.yaml
+    - architecture/conventions.architecture-quality-gates.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   - artifact_id: ai_source_artifacts_glob
     path: .ai/source-artifacts/**
     artifact_type: glob

@@ -9,6 +9,7 @@
     "validate:references": "tsx validate-references.ts",
     "validate:changed-files": "tsx validate-changed-files.ts",
     "compile:runtime-artifact-topology": "tsx compile-runtime-artifact-topology.ts",
+    "compile:adapter-topology": "tsx compile-adapter-topology.ts",
     "validate:runtime-artifacts": "tsx validate-runtime-artifacts.ts",
     "generate:phase-bundle": "tsx generate-phase-bundle.ts",
     "validate:phase-bundle": "tsx validate-phase-bundle.ts",

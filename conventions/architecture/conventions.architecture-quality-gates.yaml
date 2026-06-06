@@ -4,7 +4,7 @@ file:
   path: architecture/conventions.architecture-quality-gates.yaml
   role: architecture_quality_gate_contract
   executability: policy_contract
-purpose: Define observe-mode architecture quality gates that consume source truth and adapter evidence before later enforcement phases.
+purpose: Define observe-mode architecture quality gates that consume source truth and generated adapter topology before using optional adapter evidence in later enforcement phases.
 ownership:
   owns:
   - architecture_quality_gate_dimensions
@@ -26,6 +26,7 @@ activation:
 inputs:
   required:
   - source_artifact_manifest
+  - adapter_topology
   optional:
   - language_analysis_outputs
   - framework_analysis_outputs
@@ -49,6 +50,7 @@ sections:
   - id: role_shape_integrity
     evidence_sources:
     - source_artifact_manifest
+    - adapter_topology
     - language_analysis_outputs
     observe_signal: adapter_reported_multi_role_or_low_symbol_clarity_files
   - id: layer_boundary_integrity
@@ -97,11 +99,15 @@ sections:
 validation:
   required_checks:
   - source_artifact_manifest_required
+  - generated_adapter_topology_required
   - language_and_framework_adapter_outputs_optional_but_reported
   - warnings_do_not_block_in_observe_mode
   - output_includes_universal_validation_result
   - core_contract_contains_no_language_or_framework_specific_required_input
+  - architecture_quality_consumes_generated_adapter_topology_not_hardcoded_adapter_paths
   fail_conditions:
   - missing_source_artifact_manifest
   - malformed_source_artifact_manifest
+  - missing_adapter_topology
+  - malformed_adapter_topology
   - malformed_architecture_quality_analysis
