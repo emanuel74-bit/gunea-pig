@@ -4,9 +4,9 @@ file:
   path: claude-code/conventions.claude-subsystem-engagement.yaml
   role: claude_subsystem_engagement_map
   executability: mapping
-purpose: Provide Claude Code with a compact map from workflow lanes to subsystems,
-  native agents, executor routes, and artifacts so Claude engages the whole system
-  without scanning the full convention tree.
+purpose: Provide Claude Code with a compact map from workflow lanes to subsystems, native agents,
+  executor routes, and artifacts so Claude engages the whole system without scanning the full
+  convention tree.
 ownership:
   owns:
   - claude_subsystem_engagement_map
@@ -79,6 +79,7 @@ sections:
       - adapters
       - policy
       - scoring
+      - normalization
       skills:
       - run-phase
       - validate-phase
@@ -96,6 +97,7 @@ sections:
       - resolve_mission_mode_policy
       - evaluate_score_decision
       - analyze_architecture_quality
+      - analyze_global_normalization
       agents:
       - behavior_agent
       - reconnaissance_agent
@@ -116,6 +118,8 @@ sections:
       - .ai/topologies/adapter-topology.yaml
       - .ai/source-artifacts/architecture-quality-analysis.yaml
       - .ai/reports/architecture-quality-report.yaml
+      - .ai/source-artifacts/global-normalization-analysis.yaml
+      - .ai/reports/global-normalization-report.yaml
     architecture_design:
       subsystems:
       - architecture
@@ -126,6 +130,7 @@ sections:
       - dependencies
       - contracts
       - actions
+      - normalization
       skills:
       - run-phase
       - generate-artifact
@@ -137,6 +142,7 @@ sections:
       - analyze_safe_structure_change
       - compile_adapter_topology
       - analyze_architecture_quality
+      - analyze_global_normalization
       agents:
       - architecture_agent
       - role_agent
@@ -151,6 +157,8 @@ sections:
       - pattern_decisions
       - .ai/source-artifacts/architecture-quality-analysis.yaml
       - .ai/reports/architecture-quality-report.yaml
+      - .ai/source-artifacts/global-normalization-analysis.yaml
+      - .ai/reports/global-normalization-report.yaml
     implementation_and_refactoring:
       subsystems:
       - execution
@@ -240,6 +248,7 @@ sections:
       - resolve_mission_mode_policy
       - evaluate_score_decision
       - analyze_architecture_quality
+      - analyze_global_normalization
       agents:
       - validation_agent
       - testing_agent
@@ -251,6 +260,8 @@ sections:
       - .ai/scoring/score-decision.yaml
       - .ai/source-artifacts/architecture-quality-analysis.yaml
       - .ai/reports/architecture-quality-report.yaml
+      - .ai/source-artifacts/global-normalization-analysis.yaml
+      - .ai/reports/global-normalization-report.yaml
     claude_native_runtime:
       subsystems:
       - claude-code
@@ -302,6 +313,7 @@ sections:
   - testing
   - transitions
   - triggers
+  - normalization
 validation:
   required_checks:
   - all_convention_subsystems_mapped_to_at_least_one_workflow_lane

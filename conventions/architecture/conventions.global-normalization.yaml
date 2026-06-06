@@ -1,0 +1,176 @@
+version: '1.1'
+file:
+  name: conventions.global-normalization.yaml
+  path: architecture/conventions.global-normalization.yaml
+  role: global_normalization_protocol
+  executability: policy
+purpose: Define the adapter-neutral global normalization pass as an abstract, reusable architecture review layer that detects normalization opportunities without encoding project-specific incidents, test-run symptoms, or language/framework-specific rules.
+ownership:
+  owns:
+  - global_normalization_protocol
+  - universal_normalization_dimensions
+  - normalization_evidence_category_model
+  - normalization_no_mutation_boundary
+  - adapter_neutral_normalization_evidence_model
+  does_not_own:
+  - project_specific_bug_patterns
+  - test_run_specific_issue_lists
+  - language_specific_parsing_rules
+  - framework_specific_parsing_rules
+  - automatic_source_rewrites
+  - deletion_or_consolidation_authority
+  - architecture_quality_gate_enforcement
+activation:
+  mode: on_demand
+  activates_when:
+  - normalization_review_required
+  - pre_completion_architecture_consistency_review_required
+  - post_implementation_shape_review_required
+  - architecture_quality_followup_required
+  skips_when:
+  - source_artifact_manifest_missing
+  - adapter_topology_missing
+inputs:
+  required:
+  - source_artifact_manifest
+  - adapter_topology
+  optional:
+  - language_analysis_outputs
+  - framework_analysis_outputs
+  - architecture_quality_analysis
+  - mission_mode_policy
+outputs:
+  produces:
+  - global_normalization_analysis
+  - global_normalization_report
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - source/conventions.source-artifact-model.yaml
+  - adapters/conventions.language-adapter-contract.yaml
+  - adapters/conventions.framework-adapter-contract.yaml
+  - architecture/conventions.architecture-quality-gates.yaml
+  optional_files: []
+sections:
+  authority_boundary:
+    mutation_allowed: false
+    automatic_rewrites_allowed: false
+    deletion_authority: forbidden
+    consolidation_authority: forbidden
+    decomposition_authority: forbidden
+    required_followup_for_mutation: analyze_safe_structure_change
+  runtime_route:
+    route_id: analyze_global_normalization
+    script: scripts/analyze-global-normalization.ts
+    rollout_mode: observe
+    enforcement_mode: observe
+    failure_behavior: warn
+  adapter_neutrality:
+    core_script_must_not_hardcode_language_or_framework: true
+    adapter_outputs_source: generated_adapter_topology
+    missing_adapter_outputs_behavior: warning_limited_evidence
+    adapter_specific_rules_location: adapter_scripts_only
+  abstraction_boundary:
+    core_protocol_must_define: universal_normalization_dimensions
+    detector_scripts_may_emit: concrete_evidence_signals
+    concrete_signals_are_not_policy: true
+    project_specific_findings_must_not_become_core_rules: true
+    new_issue_patterns_must_map_to_existing_universal_dimensions: true
+  universal_normalization_dimensions:
+  - id: conceptual_overlap
+    purpose: Identify multiple artifacts that appear to represent the same responsibility, concept, capability, or abstraction boundary.
+    evidence_categories:
+    - naming_similarity
+    - shared_symbol_or_route_concepts
+    - adapter_reported_semantic_overlap
+    - repeated ownership metadata
+    allowed_detector_examples:
+    - repeated base names
+    - duplicate route or role ownership hints
+    behavior: observe_warning_only
+  - id: responsibility_granularity
+    purpose: Identify artifacts whose boundaries appear too fragmented or too broad for their declared responsibility.
+    evidence_categories:
+    - artifact_size_distribution
+    - directory_cohesion_distribution
+    - adapter_reported_symbol_density
+    - ownership breadth
+    allowed_detector_examples:
+    - unusually small artifact clusters
+    - unusually large artifacts
+    behavior: observe_warning_only
+  - id: shared_mechanism_consistency
+    purpose: Identify repeated mechanisms, dependency hotspots, or parallel implementations that may need a common abstraction or clearer boundary.
+    evidence_categories:
+    - dependency_concentration
+    - repeated implementation mechanism
+    - cross_artifact shared behavior
+    - adapter_reported import or reference clusters
+    allowed_detector_examples:
+    - repeated local import targets
+    - repeated helper/client/provider patterns
+    behavior: observe_warning_only
+  - id: configuration_and_policy_boundary
+    purpose: Identify values, configuration access, or policy decisions that may belong behind explicit configuration or policy boundaries.
+    evidence_categories:
+    - configuration_access
+    - literal_value_clusters
+    - environment_boundary_crossing
+    - policy embedded in implementation
+    allowed_detector_examples:
+    - direct environment access evidence
+    - repeated literal/config markers from adapters
+    behavior: observe_warning_only
+  - id: unresolved_work_normalization
+    purpose: Identify unresolved implementation or architecture work that must be converted into tracked tasks, explicit risks, or revision items before completion.
+    evidence_categories:
+    - unresolved markers
+    - incomplete implementation marker
+    - deferred decisions
+    - incomplete evidence chains
+    allowed_detector_examples:
+    - unresolved-work marker evidence
+    - adapter-reported incomplete-work flags
+    behavior: observe_warning_only
+  - id: ownership_and_transition_safety
+    purpose: Identify artifacts whose route ownership, convention ownership, dependencies, or produced outputs make structural changes unsafe without explicit migration evidence.
+    evidence_categories:
+    - route ownership
+    - convention ownership
+    - produced artifact ownership
+    - inbound dependency evidence
+    allowed_detector_examples:
+    - route-backed script candidates
+    - YAML-owned concept candidates
+    behavior: observe_warning_only
+  - id: architecture_quality_correlation
+    purpose: Correlate normalization opportunities with architecture-quality evidence without duplicating or replacing architecture quality gates.
+    evidence_categories:
+    - architecture quality warnings
+    - adapter-neutral quality dimensions
+    - mission-mode policy context
+    - safe-structure decisions
+    allowed_detector_examples:
+    - architecture-quality analysis summary
+    behavior: observe_warning_only
+  output_contract:
+    analysis_artifact: .ai/source-artifacts/global-normalization-analysis.yaml
+    report_artifact: .ai/reports/global-normalization-report.yaml
+    required_fields:
+    - artifact
+    - generated_by
+    - rollout_mode
+    - enforcement_mode
+    - blocking_decision
+    - mutation_allowed
+    - automatic_rewrites_allowed
+    - adapter_counts
+    - analyzed_counts
+    - normalization_dimensions
+    - detector_signals
+    - findings
+    - warning_codes
+    - error_codes
+  completion_condition:
+    required: global_normalization_analysis_written
+    validation: universal_validation_result_emitted
