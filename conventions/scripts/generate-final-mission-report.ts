@@ -52,6 +52,8 @@ const safeStructureEvidence = entries.filter((entry: any) => entry?.source_type 
 const safeStructureBlocking = safeStructureEvidence.filter((entry: any) => entry?.safe_structure_analysis?.blocking_decision === true);
 const architectureQualityEvidence = entries.filter((entry: any) => entry?.source_type === "source_artifact" && entry?.architecture_quality_analysis);
 const architectureQualityBlocking = architectureQualityEvidence.filter((entry: any) => entry?.architecture_quality_analysis?.blocking_decision === true);
+const globalNormalizationEvidence = entries.filter((entry: any) => entry?.source_type === "source_artifact" && entry?.global_normalization_analysis);
+const globalNormalizationBlocking = globalNormalizationEvidence.filter((entry: any) => entry?.global_normalization_analysis?.blocking_decision === true);
 function paths(list: any[]): string[] {
   return list.map((entry: any) => entry.path).filter((value: any) => typeof value === "string");
 }
@@ -79,6 +81,7 @@ const reportClaims = [
   optionalClaim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), "No revision loop analysis artifact was present in the evidence manifest."),
   optionalClaim("safe_structure_summary_backed", "safe_structure", paths(safeStructureEvidence), "No safe structure analysis artifact was present in the evidence manifest."),
   optionalClaim("architecture_quality_summary_backed", "architecture_quality", paths(architectureQualityEvidence), "No architecture quality analysis artifact was present in the evidence manifest."),
+  optionalClaim("global_normalization_summary_backed", "global_normalization", paths(globalNormalizationEvidence), "No global normalization analysis artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
 const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
@@ -109,6 +112,7 @@ const narrativeSummary = {
     claimBackedNarrativeSection("revision_loop", "Revision loop evidence", "revision_loop_summary_backed", `Revision loop summary is backed by ${revisionLoopEvidence.length} revision analysis artifact(s).`, "No revision loop analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("safe_structure", "Safe structure evidence", "safe_structure_summary_backed", `Safe structure summary is backed by ${safeStructureEvidence.length} structure analysis artifact(s).`, "No safe structure analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("architecture_quality", "Architecture quality evidence", "architecture_quality_summary_backed", `Architecture quality summary is backed by ${architectureQualityEvidence.length} adapter-neutral architecture artifact(s).`, "No architecture quality analysis artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("global_normalization", "Global normalization evidence", "global_normalization_summary_backed", `Global normalization summary is backed by ${globalNormalizationEvidence.length} abstract normalization artifact(s).`, "No global normalization analysis artifact was present in the evidence manifest."),
     claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
   ],
 };
@@ -214,6 +218,30 @@ const finalReport = {
       quality_dimension_count: entry.architecture_quality_analysis?.quality_dimension_count ?? 0,
       warning_codes: entry.architecture_quality_analysis?.warning_codes ?? [],
       blocking_decision: entry.architecture_quality_analysis?.blocking_decision === true,
+    })),
+  },
+  global_normalization_summary: {
+    global_normalization_refs: paths(globalNormalizationEvidence),
+    global_normalization_count: globalNormalizationEvidence.length,
+    blocking_global_normalization_refs: paths(globalNormalizationBlocking),
+    observe_mode_only: globalNormalizationEvidence.every((entry: any) => entry?.global_normalization_analysis?.blocking_decision !== true),
+    adapter_neutral_core: globalNormalizationEvidence.every((entry: any) => entry?.global_normalization_analysis?.adapter_neutral === true),
+    abstract_policy_only: globalNormalizationEvidence.every((entry: any) => entry?.global_normalization_analysis?.policy_abstraction === "universal_normalization_dimensions" && entry?.global_normalization_analysis?.concrete_signals_are_policy === false),
+    mutation_allowed: globalNormalizationEvidence.some((entry: any) => entry?.global_normalization_analysis?.mutation_allowed === true),
+    total_normalization_dimension_count: globalNormalizationEvidence.reduce((total: number, entry: any) => total + Number(entry?.global_normalization_analysis?.normalization_dimension_count ?? 0), 0),
+    warning_codes: Array.from(new Set(globalNormalizationEvidence.flatMap((entry: any) => Array.isArray(entry?.global_normalization_analysis?.warning_codes) ? entry.global_normalization_analysis.warning_codes : []))).sort(),
+    analyses: globalNormalizationEvidence.map((entry: any) => ({
+      source: entry.path,
+      policy_abstraction: entry.global_normalization_analysis?.policy_abstraction ?? null,
+      adapter_neutral: entry.global_normalization_analysis?.adapter_neutral === true,
+      concrete_signals_are_policy: entry.global_normalization_analysis?.concrete_signals_are_policy === true,
+      project_specific_rules_allowed: entry.global_normalization_analysis?.project_specific_rules_allowed === true,
+      mutation_allowed: entry.global_normalization_analysis?.mutation_allowed === true,
+      normalization_dimension_count: entry.global_normalization_analysis?.normalization_dimension_count ?? 0,
+      detector_signal_keys: entry.global_normalization_analysis?.detector_signal_keys ?? [],
+      finding_keys: entry.global_normalization_analysis?.finding_keys ?? [],
+      warning_codes: entry.global_normalization_analysis?.warning_codes ?? [],
+      blocking_decision: entry.global_normalization_analysis?.blocking_decision === true,
     })),
   },
   transition_evidence: {
