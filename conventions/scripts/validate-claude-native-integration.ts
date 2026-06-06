@@ -1,7 +1,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { finish, issue, readExecutorRoutes, readYamlFile, resolveConventionsRoot, type Issue } from "./lib/common.js";
+import { buildUniversalValidationResult, finish, issue, readExecutorRoutes, readYamlFile, resolveConventionsRoot, type Issue } from "./lib/common.js";
 
 const SCRIPT_ID = "validate-claude-native-integration";
 const root = resolveConventionsRoot();
@@ -199,10 +199,22 @@ for (const routeId of requiredRouteMentions) {
   }
 }
 
-finish(SCRIPT_ID, issues, [".ai/validation/validate-claude-native-integration.result.yaml"], {
+const outputPath = ".ai/validation/validate-claude-native-integration.result.yaml";
+finish(SCRIPT_ID, issues, [outputPath], {
   required_file_count: requiredFiles.length,
   native_agent_count: agentIds.length,
   required_skill_count: requiredSkills.length,
   route_count: routes.size,
   mapped_subsystem_count: mappedSubsystems.size,
+  validation_result: buildUniversalValidationResult(SCRIPT_ID, issues, {
+    route_id: "validate_claude_native_integration",
+    evidence: [{ evidence_type: "validation_artifact", path: outputPath, producer_route: "validate_claude_native_integration" }],
+    summary: {
+      required_file_count: requiredFiles.length,
+      native_agent_count: agentIds.length,
+      required_skill_count: requiredSkills.length,
+      route_count: routes.size,
+      mapped_subsystem_count: mappedSubsystems.size,
+    },
+  }),
 });

@@ -136,7 +136,7 @@ function normalizeLegacyScriptResult(parsed: JsonMap): NormalizedValidationResul
       ? "passed_with_warnings"
       : "passed";
 
-  return {
+  const legacyNormalized: NormalizedValidationResult = {
     validation_id: parsed.script_id.trim(),
     status,
     severity,
@@ -150,6 +150,31 @@ function normalizeLegacyScriptResult(parsed: JsonMap): NormalizedValidationResul
     source_status: String(parsed.status),
     ...(summary ? { summary } : {}),
   };
+
+  if (summary && isPlainObject(summary.validation_result)) {
+    const direct = normalizeUniversalValidationResult(summary.validation_result);
+    if (!direct) return undefined;
+    const legacyFailed = parsed.status === "fail";
+    const directFailed = direct.blocking === true || ["failed", "blocked"].includes(direct.status);
+    if (legacyFailed !== directFailed) {
+      issues.push(issue("error", "VALIDATION_RESULT_POLICY_MISMATCH", "summary.validation_result must preserve the legacy validator pass/fail policy"));
+      return undefined;
+    }
+    if (direct.source_script_id && direct.source_script_id !== parsed.script_id.trim()) {
+      issues.push(issue("error", "VALIDATION_RESULT_SOURCE_ID_MISMATCH", "summary.validation_result source_script_id must match legacy script_id"));
+      return undefined;
+    }
+    return {
+      ...direct,
+      source_script_id: parsed.script_id.trim(),
+      source_status: String(parsed.status),
+      ...(routeId && !direct.route_id ? { route_id: routeId } : {}),
+      ...(missionId && !direct.mission_id ? { mission_id: missionId } : {}),
+      ...(phaseId && !direct.phase_id ? { phase_id: phaseId } : {}),
+    };
+  }
+
+  return legacyNormalized;
 }
 
 function normalizeUniversalValidationResult(parsed: JsonMap): NormalizedValidationResult | undefined {

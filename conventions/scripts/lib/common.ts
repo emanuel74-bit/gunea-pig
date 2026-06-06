@@ -161,6 +161,60 @@ export function issue(severity: Severity, code: string, message: string, file?: 
   return { severity, code, message, file, detail };
 }
 
+
+export type UniversalValidationStatus = "passed" | "passed_with_warnings" | "failed" | "blocked" | "not_applicable";
+
+export interface UniversalValidationResult {
+  validation_id: string;
+  status: UniversalValidationStatus;
+  severity: Severity;
+  blocking: boolean;
+  issues: Issue[];
+  evidence: JsonMap[];
+  route_id?: string;
+  mission_id?: string;
+  phase_id?: string;
+  source_script_id?: string;
+  source_status?: string;
+  summary?: JsonMap;
+}
+
+export function buildUniversalValidationResult(
+  validationId: string,
+  issues: Issue[],
+  options: {
+    route_id?: string;
+    mission_id?: string;
+    phase_id?: string;
+    evidence?: JsonMap[];
+    summary?: JsonMap;
+    status_override?: UniversalValidationStatus;
+  } = {},
+): UniversalValidationResult {
+  const hasCritical = issues.some(entry => entry.severity === "critical");
+  const hasError = issues.some(entry => entry.severity === "error");
+  const hasWarning = issues.some(entry => entry.severity === "warning");
+  const severity: Severity = hasCritical ? "critical" : hasError ? "error" : hasWarning ? "warning" : "info";
+  const sourceStatus = hasError || hasCritical ? "fail" : "pass";
+  const status: UniversalValidationStatus = options.status_override
+    ?? (sourceStatus === "fail" ? "failed" : hasWarning ? "passed_with_warnings" : "passed");
+
+  return {
+    validation_id: validationId,
+    status,
+    severity,
+    blocking: sourceStatus === "fail" || status === "failed" || status === "blocked",
+    issues,
+    evidence: options.evidence ?? [],
+    ...(options.route_id ? { route_id: options.route_id } : {}),
+    ...(options.mission_id ? { mission_id: options.mission_id } : {}),
+    ...(options.phase_id ? { phase_id: options.phase_id } : {}),
+    source_script_id: validationId,
+    source_status: sourceStatus,
+    ...(options.summary ? { summary: options.summary } : {}),
+  };
+}
+
 export function finish(scriptId: string, issues: Issue[], outputs: string[] = [], summary: JsonMap = {}): never {
   const errors = issues.filter(i => i.severity === "error" || i.severity === "critical");
   const warnings = issues.filter(i => i.severity === "warning");
@@ -317,12 +371,23 @@ export interface ValidationDecision {
   status: string;
   severity?: Severity | string;
   blocking: boolean;
-  source_shape: "universal" | "normalized_summary" | "legacy_script_result" | "unknown";
+  source_shape: "universal" | "universal_summary" | "normalized_summary" | "legacy_script_result" | "unknown";
 }
 
 export function extractValidationDecision(doc: JsonMap): ValidationDecision {
+  const directSummary = isJsonMap(doc?.summary?.validation_result) ? doc.summary.validation_result as JsonMap : undefined;
   const normalized = isJsonMap(doc?.summary?.normalized_result) ? doc.summary.normalized_result as JsonMap : undefined;
-  const source = normalized ?? doc;
+  const source = directSummary ?? normalized ?? doc;
+
+  if (directSummary && typeof directSummary.status === "string") {
+    return {
+      validation_id: typeof directSummary.validation_id === "string" ? directSummary.validation_id : undefined,
+      status: directSummary.status,
+      severity: typeof directSummary.severity === "string" ? directSummary.severity : undefined,
+      blocking: directSummary.blocking === true || ["failed", "blocked"].includes(String(directSummary.status)),
+      source_shape: "universal_summary",
+    };
+  }
 
   if (normalized && typeof normalized.status === "string") {
     return {

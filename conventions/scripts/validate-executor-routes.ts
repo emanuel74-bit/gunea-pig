@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  buildUniversalValidationResult,
   collectLocalRequiredRoutes,
   finish,
   issue,
@@ -96,7 +97,13 @@ for (const local of collectLocalRequiredRoutes(root)) {
   }
 }
 
-finish(SCRIPT_ID, issues, [".ai/validation/validate-executor-routes.result.yaml"], {
+const outputPath = ".ai/validation/validate-executor-routes.result.yaml";
+finish(SCRIPT_ID, issues, [outputPath], {
   route_count: routes.size,
   local_requirement_blocks: collectLocalRequiredRoutes(root).length,
+  validation_result: buildUniversalValidationResult(SCRIPT_ID, issues, {
+    route_id: "validate_executor_routes",
+    evidence: [{ evidence_type: "validation_artifact", path: outputPath, producer_route: "validate_executor_routes" }],
+    summary: { route_count: routes.size, local_requirement_blocks: collectLocalRequiredRoutes(root).length },
+  }),
 });
