@@ -16,6 +16,7 @@ type EvidenceEntry = {
   blocking?: boolean;
   validation_result?: JsonMap;
   score_decision?: JsonMap;
+  revision_loop_analysis?: JsonMap;
 };
 
 const sourceDirs: Record<string, string> = {
@@ -67,6 +68,18 @@ for (const file of files) {
     missing_score_keys: Array.isArray(doc.missing_score_keys) ? doc.missing_score_keys : [],
     threshold_result_count: Array.isArray(doc.score_threshold_results) ? doc.score_threshold_results.length : 0,
   } : undefined;
+  const revisionLoopAnalysis = doc.artifact === "revision_loop_analysis" ? {
+    mission_id: typeof doc.mission_id === "string" ? doc.mission_id : null,
+    active_failure_fingerprint: typeof doc.active_failure_fingerprint === "string" ? doc.active_failure_fingerprint : null,
+    active_fingerprint_count: typeof doc.active_fingerprint_count === "number" ? doc.active_fingerprint_count : 0,
+    observe_retry_budget: typeof doc.observe_retry_budget === "number" ? doc.observe_retry_budget : null,
+    repeated_fingerprint_count: Array.isArray(doc.repeated_fingerprints) ? doc.repeated_fingerprints.length : 0,
+    no_progress_suspected: doc.no_progress_suspected === true,
+    blocking_decision: doc.blocking_decision === true,
+    rollout_mode: typeof doc.rollout_mode === "string" ? doc.rollout_mode : null,
+    enforcement: typeof doc.enforcement === "string" ? doc.enforcement : null,
+    warning_codes: Array.isArray(doc.warnings) ? doc.warnings.filter((value: unknown) => typeof value === "string") : [],
+  } : undefined;
   const status = validationDecision ? validationDecision.status : String(doc.status ?? doc.result ?? (Array.isArray(doc.errors) && doc.errors.length ? "fail" : "unknown"));
   const evidenceId = relativePath.replace(/^\.ai\//, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
   entries.push({
@@ -77,6 +90,7 @@ for (const file of files) {
     status,
     artifact: typeof doc.artifact === "string" ? doc.artifact : undefined,
     ...(scoreDecision ? { score_decision: scoreDecision, blocking: scoreDecision.blocking_decision } : {}),
+    ...(revisionLoopAnalysis ? { revision_loop_analysis: revisionLoopAnalysis, blocking: revisionLoopAnalysis.blocking_decision } : {}),
     ...(validationDecision ? {
       blocking: validationDecision.blocking,
       validation_result: {

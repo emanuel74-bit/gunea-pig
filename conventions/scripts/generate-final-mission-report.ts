@@ -32,6 +32,8 @@ const blockingStatuses = new Set(["fail", "failed", "blocked"]);
 const blockingEvidence = entries.filter((entry: any) => entry?.blocking === true || blockingStatuses.has(String(entry?.status ?? "").toLowerCase()));
 const scoreDecisionEvidence = entries.filter((entry: any) => entry?.source_type === "scoring" && entry?.score_decision);
 const scoreDecisionBlocking = scoreDecisionEvidence.filter((entry: any) => entry?.score_decision?.blocking_decision === true);
+const revisionLoopEvidence = entries.filter((entry: any) => entry?.source_type === "revision" && entry?.revision_loop_analysis);
+const revisionLoopBlocking = revisionLoopEvidence.filter((entry: any) => entry?.revision_loop_analysis?.blocking_decision === true);
 const finalReport = {
   artifact: "final_mission_report",
   generated_by: SCRIPT_ID,
@@ -55,6 +57,22 @@ const finalReport = {
       mission_mode: entry.score_decision?.mission_mode ?? null,
       deterministic_recommendation: entry.score_decision?.deterministic_recommendation ?? null,
       blocking_decision: entry.score_decision?.blocking_decision === true,
+    })),
+  },
+  revision_loop_summary: {
+    revision_loop_refs: revisionLoopEvidence.map((entry: any) => entry.path),
+    revision_loop_count: revisionLoopEvidence.length,
+    blocking_revision_loop_refs: revisionLoopBlocking.map((entry: any) => entry.path),
+    observe_mode_only: revisionLoopEvidence.every((entry: any) => entry?.revision_loop_analysis?.blocking_decision !== true),
+    repeated_fingerprint_count: revisionLoopEvidence.reduce((total: number, entry: any) => total + Number(entry?.revision_loop_analysis?.repeated_fingerprint_count ?? 0), 0),
+    no_progress_suspected_count: revisionLoopEvidence.filter((entry: any) => entry?.revision_loop_analysis?.no_progress_suspected === true).length,
+    analyses: revisionLoopEvidence.map((entry: any) => ({
+      source: entry.path,
+      mission_id: entry.revision_loop_analysis?.mission_id ?? null,
+      active_failure_fingerprint: entry.revision_loop_analysis?.active_failure_fingerprint ?? null,
+      active_fingerprint_count: entry.revision_loop_analysis?.active_fingerprint_count ?? 0,
+      no_progress_suspected: entry.revision_loop_analysis?.no_progress_suspected === true,
+      blocking_decision: entry.revision_loop_analysis?.blocking_decision === true,
     })),
   },
   transition_evidence: {
