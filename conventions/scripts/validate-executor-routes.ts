@@ -26,7 +26,7 @@ const requiredFields = [
   "failure_behavior",
   "consumers",
 ];
-const allowedTypes = new Set(["validation", "compiler", "generator", "gate", "handoff", "revision", "report", "bundle", "mission_controller"]);
+const allowedTypes = new Set(["validation", "compiler", "generator", "gate", "handoff", "revision", "report", "bundle", "mission_controller", "invocation"]);
 const allowedFailure = new Set(["block", "warn", "retry", "revise", "report_only"]);
 const allowedHooks = new Set([
   "before_mission_start",

@@ -214,6 +214,15 @@ function testCases(): TestCase[] {
     { name: "executor route validation fails forbidden failure policy field", routeId: "validate_executor_routes", script: "scripts/validate-executor-routes.ts", category: "malformed_input", setup: r => mutateExecutorRoute(r, routes => { routes.validation.validate_executor_routes.failure_policy = { behavior: "block" }; }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["FORBIDDEN_FAILURE_POLICY"] },
     { name: "executor route validation fails unknown lifecycle hook", routeId: "validate_executor_routes", script: "scripts/validate-executor-routes.ts", category: "malformed_input", setup: r => mutateExecutorRoute(r, routes => { routes.validation.validate_executor_routes.lifecycle_hooks = ["while_moon_is_full"]; }), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["UNKNOWN_LIFECYCLE_HOOK"] },
 
+    // universal route invocation/output contracts
+    { name: "route invocation validation passes known route", routeId: "validate_route_invocation", script: "scripts/validate-route-invocation.ts", category: "valid_input", args: ["--route", "validate_executor_routes"], expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/validation/validate-route-invocation.result.yaml"] },
+    { name: "route invocation validation fails unknown route", routeId: "validate_route_invocation", script: "scripts/validate-route-invocation.ts", category: "invalid_state", args: ["--route", "missing_route_for_test"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["UNKNOWN_EXECUTOR_ROUTE"] },
+    { name: "route invocation validation rejects direct script path", routeId: "validate_route_invocation", script: "scripts/validate-route-invocation.ts", category: "malformed_input", args: ["--route", "scripts/validate-executor-routes.ts"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["DIRECT_SCRIPT_INVOCATION_FORBIDDEN"] },
+    { name: "route output validation passes standard result", routeId: "validate_route_output", script: "scripts/validate-route-output.ts", category: "valid_input", args: ["--route", "validate_executor_routes", "--output-file", "route-output-fixture.yaml"], setup: r => writeYamlFile(path.join(r, "route-output-fixture.yaml"), { script_id: "validate-executor-routes", status: "pass", errors: [], warnings: [], info: [], outputs: [".ai/validation/validate-executor-routes.result.yaml"], summary: {} }), expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/validation/validate-route-output.result.yaml"] },
+    { name: "route output validation fails malformed result", routeId: "validate_route_output", script: "scripts/validate-route-output.ts", category: "malformed_input", args: ["--route", "validate_executor_routes", "--output-file", "route-output-fixture.yaml"], setup: r => fs.writeFileSync(path.join(r, "route-output-fixture.yaml"), "not: [valid", "utf8"), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["ROUTE_OUTPUT_UNPARSEABLE"] },
+    { name: "route invocation wrapper invokes known route", routeId: "invoke_route", script: "scripts/invoke-route.ts", category: "valid_input", args: ["--route", "initialize_mission", "--mission-id", "invoke_verify"], expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/missions/invoke_verify/mission-state.yaml", ".ai/missions/invoke_verify/mission-journal.ndjson"] },
+    { name: "route invocation wrapper rejects unknown route", routeId: "invoke_route", script: "scripts/invoke-route.ts", category: "invalid_state", args: ["--route", "missing_route_for_test"], expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["UNKNOWN_EXECUTOR_ROUTE"] },
+
     // compile-authority-topology.ts / validate-authority-topology.ts
     { name: "authority topology compile valid input passes", routeId: "compile_authority_topology", script: "scripts/compile-authority-topology.ts", category: "valid_input", expectedExit: 0, expectedStatus: "pass", expectedOutputs: [".ai/topologies/authority-topology.yaml", ".ai/reports/authority-conflict-report.yaml"] },
     { name: "authority topology compile fails duplicate owner", routeId: "compile_authority_topology", script: "scripts/compile-authority-topology.ts", category: "invalid_state", setup: r => addFixtureConvention(r, "core/conventions.duplicate-owner-fixture.yaml", validConvention("core/conventions.duplicate-owner-fixture.yaml", "central_executor_route_map")), expectedExit: 1, expectedStatus: "fail", expectedErrorCodes: ["DUPLICATE_CONCEPT_OWNER"] },
@@ -325,6 +334,9 @@ function testCases(): TestCase[] {
 const routes = readExecutorRoutes(root);
 const liveTestNames = new Set([
   "executor routes valid input passes",
+  "route invocation wrapper invokes known route",
+  "route output validation passes standard result",
+  "route invocation validation passes known route",
   "reference validation valid input passes",
   "changed files validation passes valid file",
   "runtime artifact topology compile valid input passes",

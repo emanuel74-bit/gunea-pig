@@ -217,6 +217,47 @@ export function isGlobPath(value: string): boolean {
   return value.includes("*") || value.includes("{") || value.includes("}");
 }
 
+
+export function isJsonMap(value: unknown): value is JsonMap {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+export function parseStructuredOutput(text: string): JsonMap | undefined {
+  const trimmed = text.trim();
+  if (!trimmed) return undefined;
+  try {
+    const parsed = JSON.parse(trimmed);
+    return isJsonMap(parsed) ? parsed : undefined;
+  } catch {
+    try {
+      const parsed = YAML.parse(trimmed);
+      return isJsonMap(parsed) ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+}
+
+export function expectedScriptIdFromRoute(route: JsonMap): string {
+  const script = typeof route.script === "string" ? route.script : "";
+  const base = path.basename(script).replace(/\.ts$/, "");
+  return base || String(route.route_id ?? "");
+}
+
+export function removeRouteArgs(args: string[]): string[] {
+  const out: string[] = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const current = args[index];
+    if (current === "--route") {
+      index += 1;
+      continue;
+    }
+    if (current.startsWith("--route=")) continue;
+    out.push(current);
+  }
+  return out;
+}
+
 export interface RuntimeArtifactDeclaration {
   artifact_id: string;
   path: string;

@@ -33,7 +33,10 @@
     "claude:generate-plan": "npm run executor -- --route generate_claude_execution_plan",
     "claude:validate-plan": "npm run executor -- --route validate_claude_execution_plan",
     "claude:validate-changed-files": "npm run executor -- --route validate_changed_files",
-    "validate:claude-native-integration": "tsx validate-claude-native-integration.ts"
+    "validate:claude-native-integration": "tsx validate-claude-native-integration.ts",
+    "invoke:route": "tsx invoke-route.ts",
+    "validate:route-invocation": "tsx validate-route-invocation.ts",
+    "validate:route-output": "tsx validate-route-output.ts"
   },
   "dependencies": {
     "yaml": "^2.4.5"

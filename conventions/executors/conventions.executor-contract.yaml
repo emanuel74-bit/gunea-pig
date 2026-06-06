@@ -88,6 +88,8 @@ sections:
   - revision
   - report
   - bundle
+  - mission_controller
+  - invocation
   route_naming_policy:
     format: verb_noun
     allowed_subsystem_prefix: <subsystem_id>.<verb_noun>
@@ -100,6 +102,40 @@ sections:
     values: route_id_list
     script_paths_allowed: false
     execution_order: declared_order
+  universal_route_invocation_contract:
+    contract_version: '1.0'
+    rollout_mode: observe
+    route_id_source: central_executor_route_map
+    direct_script_invocation: forbidden
+    unknown_route_behavior: fail_closed
+    malformed_invocation_behavior: fail_closed
+    missing_declared_input_behavior: warn_observe
+    normalized_invocation_fields:
+    - route_id
+    - executor_type
+    - script
+    - required_inputs
+    - supplied_inputs
+    - mission_id
+    - phase_id
+    - controller_mode
+  universal_route_output_contract:
+    contract_version: '1.0'
+    rollout_mode: observe
+    required_fields:
+    - script_id
+    - status
+    - errors
+    - warnings
+    - info
+    allowed_statuses:
+    - pass
+    - fail
+    optional_fields:
+    - outputs
+    - summary
+    malformed_output_behavior: fail_closed
+    script_id_mismatch_behavior: warn_observe
 validation:
   required_checks:
   - required_executor_route_fields_present

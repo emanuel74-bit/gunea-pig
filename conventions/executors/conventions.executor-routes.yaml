@@ -71,6 +71,51 @@ sections:
         - multi-agent
         - execution
         executor_type: validation
+      validate_route_invocation:
+        description: Validate a normalized executor route invocation request before a route script runs; observe missing declared inputs while fail-closing unknown route IDs and direct script references.
+        script: scripts/validate-route-invocation.ts
+        required_inputs:
+        - route_id
+        - central_executor_route_map
+        produced_outputs:
+        - route_invocation_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - before_phase_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - executors
+        - claude-code
+        - missions
+        - multi-agent
+        executor_type: validation
+      validate_route_output:
+        description: Validate a route script result against the universal route output contract in observe/normalization mode.
+        script: scripts/validate-route-output.ts
+        required_inputs:
+        - route_id
+        - route_output
+        - central_executor_route_map
+        produced_outputs:
+        - route_output_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - executors
+        - claude-code
+        - missions
+        - multi-agent
+        executor_type: validation
       validate_authority_topology:
         description: Validate compiled authority topology against distributed ownership
           declarations and single-owner rules.
@@ -741,6 +786,35 @@ sections:
         - claude-code
         - reports
         executor_type: mission_controller
+    invocation:
+      invoke_route:
+        description: Invoke a centralized executor route through the universal invocation/output contract wrapper while preserving existing route IDs and script behavior.
+        script: scripts/invoke-route.ts
+        required_inputs:
+        - route_id
+        - central_executor_route_map
+        produced_outputs:
+        - route_invocation_result
+        - route_output_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        - .ai/missions/**
+        - .ai/bundles/**
+        - .ai/topologies/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        - before_phase_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - executors
+        - claude-code
+        - missions
+        - multi-agent
+        executor_type: invocation
     bundle:
       generate_mission_bundle:
         description: Generate mission-level context bundle and execution route list.
@@ -802,6 +876,11 @@ validation:
   - claude_native_integration_validation_route_present
   - mission_controller_routes_present
   - mission_controller_initializes_state_before_phase_execution
+  - universal_route_invocation_contract_present
+  - universal_route_output_contract_present
+  - route_invocation_validation_route_present
+  - route_output_validation_route_present
+  - route_invocation_wrapper_route_present
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -841,3 +920,9 @@ validation:
   - missing_claude_native_integration_validation_route
   - missing_mission_controller_route
   - mission_state_advanced_without_controller_route
+  - missing_universal_route_invocation_contract
+  - missing_universal_route_output_contract
+  - missing_route_invocation_validation_route
+  - missing_route_output_validation_route
+  - missing_route_invocation_wrapper_route
+  - malformed_route_output_unblocked
