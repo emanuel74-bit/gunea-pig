@@ -1896,6 +1896,36 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_safe_structure_change_analysis_yaml
+    path: .ai/source-artifacts/safe-structure-change-analysis.yaml
+    artifact_type: runtime_artifact
+    schema: safe_structure_change_analysis
+    producer: analyze_safe_structure_change_route
+    producer_routes:
+    - analyze_safe_structure_change
+    consumers:
+    - architecture/conventions.safe-structure-change-protocol.yaml
+    - source/conventions.source-artifact-model.yaml
+    - reports/conventions.report-evidence.yaml
+    - validation/conventions.validation-result-contract.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
+  - artifact_id: ai_reports_safe_structure_change_report_yaml
+    path: .ai/reports/safe-structure-change-report.yaml
+    artifact_type: runtime_artifact
+    schema: safe_structure_change_report
+    producer: analyze_safe_structure_change_route
+    producer_routes:
+    - analyze_safe_structure_change
+    consumers:
+    - architecture/conventions.safe-structure-change-protocol.yaml
+    - reports/conventions.reports.yaml
+    scope: mission_runtime
+    lifecycle: generated_runtime_output
+    write_mode: single_writer_unless_append_or_aggregate_declared
+    required: context_dependent
   - artifact_id: ai_policy_glob
     path: .ai/policy/**
     artifact_type: glob

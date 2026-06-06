@@ -650,6 +650,35 @@ sections:
         - reports
         - architecture
         executor_type: compiler
+      analyze_safe_structure_change:
+        description: Analyze proposed decomposition, deletion, or consolidation changes
+          against the universal source artifact manifest in observe mode without
+          executing structural changes or enforcing architecture gates.
+        script: scripts/analyze-safe-structure-change.ts
+        required_inputs:
+        - source_artifact_manifest
+        - safe_structure_change_protocol
+        produced_outputs:
+        - safe_structure_change_analysis
+        - safe_structure_change_report
+        allowed_write_paths:
+        - .ai/source-artifacts/**
+        - .ai/reports/**
+        - .ai/validation/**
+        required_artifacts:
+        - source_artifact_manifest
+        lifecycle_hooks:
+        - before_phase_start
+        - after_file_change
+        - before_mission_complete
+        failure_behavior: warn
+        consumers:
+        - architecture
+        - refactoring
+        - source
+        - validation
+        - reports
+        executor_type: compiler
       resolve_mission_mode_policy:
         description: Resolve mission-mode policy in observe mode from mission profile,
           mission state, and adapter evidence without enforcing score thresholds.

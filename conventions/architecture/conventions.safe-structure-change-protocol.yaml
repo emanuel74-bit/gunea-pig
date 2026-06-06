@@ -1,0 +1,132 @@
+version: '1.0'
+file:
+  name: conventions.safe-structure-change-protocol.yaml
+  path: architecture/conventions.safe-structure-change-protocol.yaml
+  role: safe_structure_change_protocol
+  executability: contract
+purpose: Define the observe-mode safety protocol for decomposition, deletion, and
+  consolidation proposals before any source artifact is removed, split, merged, or
+  structurally reassigned.
+ownership:
+  owns:
+  - safe_decomposition_protocol
+  - safe_deletion_protocol
+  - safe_consolidation_protocol
+  - source_artifact_impact_observation
+  does_not_own:
+  - source_file_collection
+  - language_specific_ast_rules
+  - framework_specific_quality_gates
+  - deletion_execution
+  - transition_authority
+activation:
+  mode: conditional
+  activates_when:
+  - decomposition_change_proposed
+  - deletion_change_proposed
+  - consolidation_change_proposed
+  - architecture_quality_review_requires_source_impact_observation
+  skips_when:
+  - no_source_artifact_manifest_available
+inputs:
+  required:
+  - source_artifact_manifest
+  - proposed_structure_change
+  optional:
+  - typescript_source_analysis
+  - nestjs_source_analysis
+  - mission_mode_policy
+outputs:
+  produces:
+  - safe_structure_change_analysis
+  - safe_structure_change_report
+dependencies:
+  required_files:
+  - source/conventions.source-artifact-model.yaml
+  - executors/conventions.executor-routes.yaml
+  - reports/conventions.runtime-artifacts.yaml
+  optional_files:
+  - adapters/conventions.language-adapter-contract.yaml
+  - adapters/conventions.framework-adapter-contract.yaml
+  - validation/conventions.validation-result-contract.yaml
+sections:
+  protocol_scope:
+    rollout_mode: observe
+    enforcement: none
+    route_id: analyze_safe_structure_change
+    deletion_execution: forbidden
+    consolidation_execution: forbidden
+    decomposition_execution: forbidden
+    permitted_behavior:
+    - inspect source artifact manifest
+    - identify inbound dependency edges
+    - identify route-backed scripts and convention-owned files
+    - record safety warnings and required evidence
+    - emit universal validation_result metadata
+  structure_change_kinds:
+    deletion:
+      required_evidence:
+      - candidate_file_exists
+      - no_inbound_dependencies_or_update_plan
+      - no_executor_route_script_binding_or_replacement_route
+      - no_runtime_artifact_producer_dependency_or_migration_plan
+      - behavior_preservation_evidence
+    consolidation:
+      required_evidence:
+      - source_files_exist
+      - target_owner_exists_or_is_declared
+      - duplicate_or_parallel_responsibility_evidence
+      - consumer_update_plan
+      - behavior_preservation_evidence
+    decomposition:
+      required_evidence:
+      - source_file_exists
+      - new_responsibility_boundaries
+      - import_export_update_plan
+      - behavior_preservation_evidence
+      - rollback_plan
+    inventory_review:
+      required_evidence:
+      - source_artifact_manifest
+      - dependency_edge_summary
+  observation_rules:
+    fail_closed_conditions:
+    - missing_source_artifact_manifest
+    - malformed_source_artifact_manifest
+    - unknown_structure_change_kind
+    warning_conditions:
+    - candidate_file_missing
+    - inbound_dependencies_present
+    - route_backed_script_candidate
+    - convention_owned_candidate
+    - missing_target_file_for_consolidation
+    - behavior_preservation_evidence_missing
+    - consumer_update_plan_missing
+  output_contract:
+    safe_structure_change_analysis:
+      artifact: safe_structure_change_analysis
+      required_fields:
+      - artifact
+      - generated_by
+      - rollout_mode
+      - enforcement_mode
+      - requested_change
+      - source_manifest_summary
+      - safety_observations
+      - blocking_decision
+    safe_structure_change_report:
+      artifact: safe_structure_change_report
+      required_fields:
+      - artifact
+      - generated_by
+      - status
+      - summary
+  validation:
+    required_checks:
+    - source_manifest_shape_valid
+    - requested_change_kind_known
+    - analysis_written_before_claimed_safe_change
+    fail_conditions:
+    - missing_source_artifact_manifest
+    - malformed_source_artifact_manifest
+    - unknown_structure_change_kind

@@ -87,6 +87,7 @@ sections:
       - validate_phase_output
       - validate_semantic_completeness
       - collect_phase_report
+      - analyze_safe_structure_change
       - collect_evidence
       - collect_source_artifacts
       - analyze_typescript_source
@@ -126,6 +127,7 @@ sections:
       - validate_phase_output
       - validate_semantic_completeness
       - collect_phase_report
+      - analyze_safe_structure_change
       agents:
       - architecture_agent
       - role_agent
@@ -147,6 +149,7 @@ sections:
       - contracts
       - testing
       - risk
+      - source
       skills:
       - run-phase
       - validate-phase
@@ -155,6 +158,7 @@ sections:
       - validate_changed_files
       - validate_phase_output
       - validate_semantic_completeness
+      - analyze_safe_structure_change
       agents:
       - execution_planning_agent
       - implementation_agent
@@ -164,6 +168,8 @@ sections:
       - changed_file_manifest
       - implementation_report
       - refactor_plan
+      - .ai/source-artifacts/safe-structure-change-analysis.yaml
+      - .ai/reports/safe-structure-change-report.yaml
     transition_control:
       subsystems:
       - gates
