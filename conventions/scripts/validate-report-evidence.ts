@@ -89,6 +89,8 @@ for (const name of reportFiles) {
     if (!report.report_claim_schema || report.report_claim_schema.schema_version !== "1.0") {
       issues.push(issue("error", "FINAL_REPORT_CLAIM_SCHEMA_MISSING", "Final mission report must declare report_claim_schema schema_version 1.0.", relative));
     }
+    const finalReportClaims = Array.isArray(report.report_claims) ? report.report_claims : [];
+    const finalReportClaimById = new Map(finalReportClaims.map((claim: any) => [String(claim?.claim_id ?? ""), claim]));
     if (!Array.isArray(report.report_claims) || report.report_claims.length === 0) {
       issues.push(issue("error", "FINAL_REPORT_CLAIMS_MISSING", "Final mission report must include manifest-backed report_claims.", relative));
     } else {
@@ -130,6 +132,48 @@ for (const name of reportFiles) {
           } else if (evidenceEntries.length && !evidencePathSet.has(ref)) {
             issues.push(issue("error", "REPORT_CLAIM_EVIDENCE_REF_NOT_IN_MANIFEST", `Report claim evidence reference is not listed in evidence_manifest_v2: ${ref}`, relative));
           }
+        }
+      }
+    }
+    if (report.summary_source !== "typed_report_claims") {
+      issues.push(issue("error", "FINAL_REPORT_SUMMARY_SOURCE_INVALID", "Final report summary must declare typed_report_claims as its source.", relative));
+    }
+    const narrativeSummary = report.narrative_summary;
+    if (!narrativeSummary || narrativeSummary.narrative_schema_version !== "1.0" || narrativeSummary.generated_from_report_claims !== true || narrativeSummary.freeform_narrative_allowed !== false) {
+      issues.push(issue("error", "FINAL_REPORT_NARRATIVE_SCHEMA_INVALID", "Final report narrative_summary must be generated from typed report_claims with freeform narrative disabled.", relative));
+    } else if (!Array.isArray(narrativeSummary.sections) || narrativeSummary.sections.length === 0) {
+      issues.push(issue("error", "FINAL_REPORT_NARRATIVE_SECTIONS_MISSING", "Final report narrative_summary must include claim-derived sections.", relative));
+    } else {
+      for (const section of narrativeSummary.sections) {
+        const sectionId = String(section?.section_id ?? "unknown_section");
+        const sourceClaimId = String(section?.source_claim_id ?? "");
+        const sourceClaim = finalReportClaimById.get(sourceClaimId);
+        if (section?.section_schema_version !== "1.0" || section?.generated_from !== "report_claim") {
+          issues.push(issue("error", "FINAL_REPORT_NARRATIVE_SECTION_SCHEMA_INVALID", `Narrative section must declare report-claim derivation: ${sectionId}`, relative));
+        }
+        if (!sourceClaim) {
+          issues.push(issue("error", "FINAL_REPORT_NARRATIVE_SOURCE_CLAIM_MISSING", `Narrative section references missing report claim: ${sectionId}`, relative));
+          continue;
+        }
+        if (section?.claim_status !== sourceClaim.claim_status) {
+          issues.push(issue("error", "FINAL_REPORT_NARRATIVE_CLAIM_STATUS_MISMATCH", `Narrative section claim_status must match source claim: ${sectionId}`, relative));
+        }
+        if (typeof section?.summary_text !== "string" || !section.summary_text.trim()) {
+          issues.push(issue("error", "FINAL_REPORT_NARRATIVE_TEXT_MISSING", `Narrative section must include deterministic summary_text: ${sectionId}`, relative));
+        }
+        const sectionRefs = Array.isArray(section?.evidence_refs) ? section.evidence_refs : [];
+        const claimRefs = Array.isArray(sourceClaim.evidence_refs) ? sourceClaim.evidence_refs : [];
+        if (sourceClaim.claim_status === "supported") {
+          if (!sectionRefs.length) {
+            issues.push(issue("error", "FINAL_REPORT_NARRATIVE_EVIDENCE_REFS_MISSING", `Supported narrative section must cite source-claim evidence refs: ${sectionId}`, relative));
+          }
+          for (const ref of sectionRefs) {
+            if (!claimRefs.includes(ref)) {
+              issues.push(issue("error", "FINAL_REPORT_NARRATIVE_EVIDENCE_REF_NOT_CLAIM_BACKED", `Narrative section evidence ref is not backed by its source claim: ${String(ref)}`, relative));
+            }
+          }
+        } else if (sourceClaim.claim_status === "not_applicable" && sectionRefs.length > 0) {
+          issues.push(issue("error", "FINAL_REPORT_NARRATIVE_NOT_APPLICABLE_HAS_EVIDENCE", `Not-applicable narrative section must not cite evidence refs: ${sectionId}`, relative));
         }
       }
     }

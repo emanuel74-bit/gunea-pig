@@ -85,6 +85,9 @@ sections:
     - id: REPORT-VALIDATION-ABS-009
       rule: Final mission report validation must reject unsupported, unverified, missing-evidence, or schema-less report claims.
       fail_condition: final_report_contains_unsupported_claim
+    - id: REPORT-VALIDATION-ABS-010
+      rule: Final mission report narrative summaries must be generated only from typed report_claims and manifest-backed claim evidence.
+      fail_condition: final_report_contains_freeform_or_unbacked_narrative
   report_validation_check_catalog:
   - check_id: report_file_exists
     applies_when:

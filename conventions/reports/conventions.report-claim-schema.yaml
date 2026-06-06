@@ -38,6 +38,9 @@ sections:
     - evidence_refs
     - claim_schema_version
     - support_mode
+    final_report_required_fields:
+    - summary_source
+    - narrative_summary
     allowed_claim_statuses:
     - supported
     - not_applicable
@@ -59,13 +62,27 @@ sections:
     - claim_status_is_not_applicable
     - explicit_not_applicable_reason
     - evidence_refs_empty_or_omitted
+  narrative_summary_contract:
+    required:
+    - summary_source_is_typed_report_claims
+    - narrative_summary_schema_version_1_0
+    - generated_from_report_claims_true
+    - freeform_narrative_allowed_false
+    - every_narrative_section_references_existing_report_claim
+    - supported_narrative_sections_cite_source_claim_evidence_refs
+    - not_applicable_narrative_sections_do_not_cite_evidence
+    forbidden:
+    - freeform_final_report_narrative_without_source_claim_id
+    - narrative_evidence_refs_not_present_in_source_claim
   unsupported_claim_policy:
-    rule: Final mission reports must not contain unsupported, unverified, or missing-evidence claims.
+    rule: Final mission reports must not contain unsupported, unverified, missing-evidence, or freeform narrative claims.
     result: block_report_evidence_validation
     validation_codes:
     - REPORT_CLAIM_UNSUPPORTED
     - REPORT_CLAIM_SCHEMA_INVALID
     - REPORT_CLAIM_EVIDENCE_REFS_MISSING
+    - FINAL_REPORT_NARRATIVE_SCHEMA_INVALID
+    - FINAL_REPORT_NARRATIVE_SOURCE_CLAIM_MISSING
   validation_rules:
   - id: REPORT-CLAIM-SCHEMA-VERSION
     condition: claim_schema_version_missing_or_not_1_0
@@ -81,6 +98,10 @@ sections:
     severity: blocking
   - id: REPORT-CLAIM-NOT-APPLICABLE-REASON
     condition: not_applicable_claim_missing_reason
+    result: invalid
+    severity: blocking
+  - id: REPORT-CLAIM-NARRATIVE-DERIVATION
+    condition: narrative_summary_missing_or_not_derived_from_typed_report_claims
     result: invalid
     severity: blocking
 rollout:

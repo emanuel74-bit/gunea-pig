@@ -75,6 +75,35 @@ const reportClaims = [
   optionalClaim("revision_loop_summary_backed", "revision", paths(revisionLoopEvidence), "No revision loop analysis artifact was present in the evidence manifest."),
   optionalClaim("transition_evidence_backed", "transition", paths(entries.filter((entry: any) => ["gate", "handoff", "revision"].includes(String(entry.source_type)))), "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
 ];
+const reportClaimsById = new Map(reportClaims.map((entry: any) => [String(entry.claim_id), entry]));
+function claimBackedNarrativeSection(sectionId: string, title: string, sourceClaimId: string, supportedText: string, notApplicableText: string): any {
+  const sourceClaim = reportClaimsById.get(sourceClaimId);
+  const claimStatus = String(sourceClaim?.claim_status ?? "unsupported");
+  const evidenceRefs = claimStatus === "supported" && Array.isArray(sourceClaim?.evidence_refs) ? sourceClaim.evidence_refs : [];
+  return {
+    section_schema_version: "1.0",
+    section_id: sectionId,
+    title,
+    generated_from: "report_claim",
+    source_claim_id: sourceClaimId,
+    claim_status: claimStatus,
+    support_mode: sourceClaim?.support_mode ?? null,
+    evidence_refs: evidenceRefs,
+    summary_text: claimStatus === "supported" ? supportedText : notApplicableText,
+  };
+}
+const narrativeSummary = {
+  narrative_schema_version: "1.0",
+  generated_from_report_claims: true,
+  freeform_narrative_allowed: false,
+  sections: [
+    claimBackedNarrativeSection("evidence_manifest", "Evidence manifest", "evidence_manifest_validated", `Final report is based on ${entries.length} manifest-backed evidence artifact(s).`, "Evidence manifest was not available for narrative summary generation."),
+    claimBackedNarrativeSection("validation", "Validation evidence", "validation_summary_backed", `Validation summary is backed by ${counts.validation ?? 0} validation evidence artifact(s).`, "No validation evidence entries were present in the evidence manifest."),
+    claimBackedNarrativeSection("score_decision", "Score decision evidence", "score_decision_summary_backed", `Score decision summary is backed by ${scoreDecisionEvidence.length} scoring artifact(s).`, "No score decision artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("revision_loop", "Revision loop evidence", "revision_loop_summary_backed", `Revision loop summary is backed by ${revisionLoopEvidence.length} revision analysis artifact(s).`, "No revision loop analysis artifact was present in the evidence manifest."),
+    claimBackedNarrativeSection("transition", "Transition evidence", "transition_evidence_backed", "Transition evidence summary is backed by gate, handoff, or revision artifacts.", "No gate, handoff, or revision transition evidence was present in the evidence manifest."),
+  ],
+};
 const unsupportedReportClaims = reportClaims.filter((entry: any) => {
   if (entry.claim_status === "supported") return !Array.isArray(entry.evidence_refs) || entry.evidence_refs.length === 0;
   if (entry.claim_status === "not_applicable") return typeof entry.not_applicable_reason !== "string" || !entry.not_applicable_reason.trim();
@@ -87,7 +116,8 @@ const finalReport = {
   artifact: "final_mission_report",
   generated_by: SCRIPT_ID,
   status: issues.length || blockingEvidence.length ? "blocked" : "complete",
-  summary: "Final mission report generated from validated evidence_manifest_v2 artifacts.",
+  summary: "Final mission report generated from typed report_claims and validated evidence_manifest_v2 artifacts.",
+  summary_source: "typed_report_claims",
   evidence_manifest: ".ai/reports/evidence-manifest.yaml",
   evidence_index: ".ai/reports/evidence-index.yaml",
   evidence_refs: allEvidenceRefs,
@@ -99,6 +129,7 @@ const finalReport = {
     unsupported_claim_count: unsupportedReportClaims.length,
   },
   report_claims: reportClaims,
+  narrative_summary: narrativeSummary,
   evidence_counts_by_type: counts,
   evidence_manifest_summary: {
     schema_version: evidenceManifest.schema_version ?? null,
@@ -157,6 +188,7 @@ writeYamlFile(path.join(root, ".ai", "reports", "mission-evidence-summary.yaml")
   evidence_counts_by_type: counts,
   evidence_manifest_summary: finalReport.evidence_manifest_summary,
   report_claim_count: finalReport.report_claims.length,
+  narrative_summary_section_count: finalReport.narrative_summary.sections.length,
 });
 
 finish(SCRIPT_ID, issues, [".ai/reports/final-mission-report.yaml", ".ai/reports/mission-evidence-summary.yaml"], {
