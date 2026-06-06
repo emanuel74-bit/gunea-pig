@@ -457,6 +457,34 @@ sections:
         - executors
         - reports
         executor_type: validation
+      validate_validation_result:
+        description: Validate and normalize validator output against the universal
+          validation result contract while preserving existing validator pass/fail
+          policy during rollout.
+        script: scripts/validate-validation-result.ts
+        required_inputs:
+        - validation_result
+        - validation_result_contract
+        produced_outputs:
+        - validation_result_contract_check
+        - normalized_validation_result
+        allowed_write_paths:
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - after_phase_output
+        - on_gate_check
+        - on_validation_failure
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - core
+        - executors
+        - gates
+        - reports
+        - missions
+        - multi-agent
+        executor_type: validation
       validate_transition_legality:
         description: Validate requested mission phase transition against the transition
           legality graph in observe/warn mode.

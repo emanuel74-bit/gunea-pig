@@ -119,6 +119,19 @@ sections:
     - mission_id
     - phase_id
     - controller_mode
+  universal_validation_result_contract:
+    contract_version: '1.0'
+    rollout_mode: normalize_observe
+    required_fields:
+    - validation_id
+    - status
+    - severity
+    - blocking
+    - issues
+    - evidence
+    legacy_script_result_shape_accepted: true
+    malformed_result_behavior: fail_closed
+    policy_change_allowed: false
   universal_route_output_contract:
     contract_version: '1.0'
     rollout_mode: observe

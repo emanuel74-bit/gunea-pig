@@ -185,6 +185,7 @@ sections:
     validation_reporting_completion:
       subsystems:
       - reports
+      - validation
       - execution
       - executors
       - core
@@ -199,6 +200,7 @@ sections:
       - validate_report_evidence
       - generate_final_mission_report
       - validate_executor_routes
+      - validate_validation_result
       - validate_references
       agents:
       - validation_agent

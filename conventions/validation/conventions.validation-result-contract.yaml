@@ -1,0 +1,138 @@
+version: '1.0'
+file:
+  name: conventions.validation-result-contract.yaml
+  path: validation/conventions.validation-result-contract.yaml
+  role: universal_validation_result_contract
+  executability: schema
+purpose: Define the normalized validation result shape used by validators, gates, mission control, and reports without changing existing validator pass/fail policy during rollout.
+ownership:
+  owns:
+  - universal_validation_result_contract
+  - validation_result_normalization_rules
+  - validation_status_semantics
+  - validation_issue_severity_semantics
+  - validation_evidence_reference_contract
+  does_not_own:
+  - specialized_validator_business_rules
+  - validator_threshold_policy
+  - route_output_contract
+  - mission_transition_decisions
+activation:
+  mode: on_validation_result
+  activates_when:
+  - validator_result_produced
+  - validator_result_consumed_by_gate_or_report
+  - validator_result_normalization_required
+  skips_when:
+  - no_validation_result_available
+inputs:
+  required:
+  - validation_result
+  optional:
+  - route_id
+  - mission_id
+  - phase_id
+  - evidence_manifest
+outputs:
+  produces:
+  - normalized_validation_result
+  - validation_result_contract_check
+  - validation_result_contract_warnings
+dependencies:
+  required_files:
+  - core/conventions.file-contract.yaml
+  - core/conventions.validation.yaml
+  - executors/conventions.executor-contract.yaml
+  - executors/conventions.executor-routes.yaml
+  optional_files:
+  - reports/conventions.report-schemas.yaml
+  - reports/conventions.runtime-artifacts.yaml
+sections:
+  rollout:
+    mode: normalize_observe
+    policy_change_allowed: false
+    validator_decision_authority: preserve_existing_validator_status
+    malformed_shape_behavior: fail_closed
+    legacy_script_result_behavior: normalize_without_policy_change
+  universal_validation_result_contract:
+    contract_version: '1.0'
+    required_fields:
+    - validation_id
+    - status
+    - severity
+    - blocking
+    - issues
+    - evidence
+    optional_fields:
+    - mission_id
+    - phase_id
+    - route_id
+    - source_script_id
+    - source_status
+    - summary
+    allowed_statuses:
+    - passed
+    - passed_with_warnings
+    - failed
+    - blocked
+    - not_applicable
+    allowed_severities:
+    - info
+    - warning
+    - error
+    - critical
+  legacy_script_result_normalization:
+    accepted_source_shape:
+      required_fields:
+      - script_id
+      - status
+      - errors
+      - warnings
+      - info
+      allowed_statuses:
+      - pass
+      - fail
+    mapping:
+      validation_id: script_id
+      source_script_id: script_id
+      source_status: status
+      status:
+        pass_without_warnings: passed
+        pass_with_warnings: passed_with_warnings
+        fail: failed
+      issues: errors_plus_warnings_plus_info
+      severity: highest_issue_severity_or_info
+      blocking: true_when_status_fail_or_error_or_critical_issue_present
+      evidence: summary.evidence_when_present_else_empty_list
+  issue_contract:
+    required_fields:
+    - severity
+    - code
+    - message
+    optional_fields:
+    - file
+    - detail
+    code_policy: non_empty_string
+    message_policy: non_empty_string
+  evidence_reference_contract:
+    required_fields:
+    - evidence_type
+    - path
+    optional_fields:
+    - producer_route
+    - hash
+    - claim_id
+    path_policy: non_empty_string_or_runtime_artifact_path
+validation:
+  required_checks:
+  - validation_result_has_required_shape_or_legacy_script_result_shape
+  - validation_status_is_known
+  - issue_entries_have_severity_code_message
+  - evidence_entries_have_type_and_path
+  - normalization_preserves_source_status
+  fail_conditions:
+  - malformed_validation_result_shape
+  - unknown_validation_status
+  - invalid_issue_entry
+  - invalid_evidence_entry
+  - normalization_changes_existing_validator_policy
