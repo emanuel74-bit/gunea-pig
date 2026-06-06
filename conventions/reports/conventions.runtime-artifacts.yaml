@@ -142,6 +142,22 @@ sections:
     lifecycle: generated_runtime_output
     write_mode: single_writer_unless_append_or_aggregate_declared
     required: context_dependent
+  - artifact_id: ai_missions_glob
+    path: .ai/missions/**
+    artifact_type: glob
+    schema: mission_runtime_state_and_controller_events
+    producer: mission_controller_executor_routes
+    producer_routes:
+    - initialize_mission
+    - advance_mission
+    consumers:
+    - missions/conventions.mission-state.yaml
+    - multi-agent/conventions.alpha-state-transitions.yaml
+    - reports/conventions.report-validation.yaml
+    scope: mission_runtime
+    lifecycle: runtime_state
+    write_mode: append
+    required: context_dependent
   - artifact_id: ai_logs
     path: .ai/logs/**
     artifact_type: glob

@@ -667,6 +667,80 @@ sections:
         - multi-agent
         - agents
         executor_type: report
+
+    mission_controller:
+      initialize_mission:
+        description: Initialize authoritative mission runtime state in observe mode before Claude begins phase execution.
+        script: scripts/initialize-mission.ts
+        required_inputs:
+        - mission_id
+        - mission_context
+        produced_outputs:
+        - mission_state
+        - mission_controller_event
+        allowed_write_paths:
+        - .ai/missions/**
+        - .ai/validation/**
+        required_artifacts: []
+        lifecycle_hooks:
+        - before_mission_start
+        failure_behavior: block
+        consumers:
+        - missions
+        - multi-agent
+        - claude-code
+        - reports
+        executor_type: mission_controller
+      inspect_mission_state:
+        description: Inspect authoritative mission runtime state without mutating workflow authority.
+        script: scripts/inspect-mission-state.ts
+        required_inputs:
+        - mission_id
+        - mission_state
+        produced_outputs:
+        - mission_state_inspection_result
+        allowed_write_paths:
+        - .ai/validation/**
+        - .ai/reports/**
+        required_artifacts:
+        - mission_state
+        lifecycle_hooks:
+        - before_phase_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - missions
+        - multi-agent
+        - claude-code
+        - reports
+        executor_type: mission_controller
+      advance_mission:
+        description: Advance mission state through the route-backed mission controller in observe mode; record proposed transitions before later enforcement phases add legality blocking.
+        script: scripts/advance-mission.ts
+        required_inputs:
+        - mission_id
+        - mission_state
+        - transition_request
+        produced_outputs:
+        - mission_state
+        - mission_controller_event
+        allowed_write_paths:
+        - .ai/missions/**
+        - .ai/validation/**
+        required_artifacts:
+        - mission_state
+        lifecycle_hooks:
+        - before_phase_start
+        - after_phase_output
+        - before_mission_complete
+        failure_behavior: block
+        consumers:
+        - missions
+        - multi-agent
+        - claude-code
+        - reports
+        executor_type: mission_controller
     bundle:
       generate_mission_bundle:
         description: Generate mission-level context bundle and execution route list.
@@ -726,6 +800,8 @@ validation:
   - final_mission_report_generation_route_present
   - reports_are_generated_from_script_evidence_not_agent_claims
   - claude_native_integration_validation_route_present
+  - mission_controller_routes_present
+  - mission_controller_initializes_state_before_phase_execution
   fail_conditions:
   - unknown_executor_route
   - direct_script_reference_from_local_subsystem_file
@@ -763,3 +839,5 @@ validation:
   - agent_authored_final_report_without_evidence_index
   - report_generated_without_script_evidence
   - missing_claude_native_integration_validation_route
+  - missing_mission_controller_route
+  - mission_state_advanced_without_controller_route

@@ -27,18 +27,20 @@
     "generate:claude-execution-plan": "tsx generate-claude-execution-plan.ts",
     "validate:claude-execution-plan": "tsx validate-claude-execution-plan.ts",
     "executor": "tsx run-executor-route.ts",
+    "mission:initialize": "npm run executor -- --route initialize_mission",
+    "mission:inspect": "npm run executor -- --route inspect_mission_state",
+    "mission:advance": "npm run executor -- --route advance_mission",
     "claude:generate-plan": "npm run executor -- --route generate_claude_execution_plan",
     "claude:validate-plan": "npm run executor -- --route validate_claude_execution_plan",
     "claude:validate-changed-files": "npm run executor -- --route validate_changed_files",
     "validate:claude-native-integration": "tsx validate-claude-native-integration.ts"
   },
   "dependencies": {
-    "gunea-pig": "file:../..",
     "yaml": "^2.4.5"
   },
   "devDependencies": {
-    "@types/node": "^20.14.10",
     "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.10"
   }
 }
