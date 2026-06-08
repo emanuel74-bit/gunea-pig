@@ -528,11 +528,14 @@ function artifactMatchesEvidenceType(file: string, evidenceType: string): boolea
       return false;
     }
   }
-  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis", "evidence_manifest", "final_mission_report", "transition_legality_result", "mission_controller_block"].includes(evidenceType)) return true;
+  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis", "evidence_manifest", "final_mission_report", "transition_legality_result", "mission_controller_block", "source_artifact_manifest", "architecture_quality_analysis", "safe_structure_analysis"].includes(evidenceType)) return true;
   try {
     const doc = readYamlFile(path.join(root, file));
     if (evidenceType === "mission_state") return doc.artifact === "mission_state";
     if (evidenceType === "mission_checkpoint") return doc.artifact === "mission_checkpoint";
+    if (evidenceType === "source_artifact_manifest") return doc.artifact === "source_artifact_manifest" && doc.generated_by === "collect-source-artifacts" && Array.isArray(doc.files) && Array.isArray(doc.dependency_edges) && typeof doc.source_file_count === "number";
+    if (evidenceType === "architecture_quality_analysis") return doc.artifact === "architecture_quality_analysis" && doc.generated_by === "analyze-architecture-quality" && doc.core_contract?.adapter_neutral === true && doc.core_contract?.hardcoded_adapter_discovery_allowed === false && Array.isArray(doc.quality_dimensions);
+    if (evidenceType === "safe_structure_analysis") return doc.artifact === "safe_structure_change_analysis" && doc.generated_by === "analyze-safe-structure-change" && doc.requested_change?.behavior_evidence_provided === true && doc.requested_change?.consumer_update_plan_provided === true && doc.blocking_decision === false;
     if (evidenceType === "revision_task") return doc.artifact === "revision_task";
     if (evidenceType === "revision_loop_analysis") return doc.artifact === "revision_loop_analysis";
     if (evidenceType === "evidence_manifest") return doc.artifact === "evidence_manifest_v2" && doc.schema_version === "2.0" && doc.generated_by === "collect-evidence" && Array.isArray(doc.entries);

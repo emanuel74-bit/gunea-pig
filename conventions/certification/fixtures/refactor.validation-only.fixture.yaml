@@ -1,0 +1,72 @@
+version: '1.0'
+file:
+  name: refactor.validation-only.fixture.yaml
+  path: certification/fixtures/refactor.validation-only.fixture.yaml
+  role: dry_run_scenario_fixture
+  executability: fixture
+purpose: Provide a concrete adapter-neutral dry-run certification fixture for the refactor scenario using non-mutating source, architecture-quality, and safe-structure artifact presence validation only.
+ownership:
+  owns:
+  - refactor_dry_run_fixture
+  - source_truth_quality_certification_input
+  does_not_own:
+  - production_source_mutation
+  - source_artifact_collection
+  - architecture_quality_analysis
+  - safe_structure_change_analysis
+  - language_or_framework_specific_test_rules
+  - scenario_enforcement_decision
+sections:
+  fixture_identity:
+    fixture_id: refactor_minimal_source_quality_only
+    scenario_id: refactor
+    mission_profile: refactor
+    execution_mode: artifact_presence_validation
+  fixture_boundaries:
+    mutation_allowed: false
+    source_mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
+    adapter_outputs_required: false
+    real_source_artifact_manifest_provenance_claimed: false
+    real_architecture_quality_provenance_claimed: false
+    real_safe_structure_provenance_claimed: false
+  expected_certification_behavior:
+    rollout_mode: observe
+    enforcement_mode: observe
+    incomplete_evidence_is_warning: true
+    blocking_decision_expected: false
+    source_mutation_expected: false
+    report_shape_expected: source_truth_plus_quality_analysis_evidence
+  required_evidence:
+  - evidence_type: source_artifact_manifest
+    accepted_paths:
+    - .ai/source-artifacts/source-artifact-manifest.yaml
+    required_artifact: source_artifact_manifest
+    required_producer: collect-source-artifacts
+  - evidence_type: architecture_quality_analysis
+    accepted_paths:
+    - .ai/source-artifacts/architecture-quality-analysis.yaml
+    required_artifact: architecture_quality_analysis
+    required_producer: analyze-architecture-quality
+  - evidence_type: safe_structure_analysis
+    accepted_paths:
+    - .ai/source-artifacts/safe-structure-change-analysis.yaml
+    required_artifact: safe_structure_change_analysis
+    required_producer: analyze-safe-structure-change
+  fixture_evidence_artifacts:
+    materialization_mode: explicit_route_argument_only
+    materialization_argument: --materialize-fixture-evidence
+    generated_by: run-dry-run-certification
+    mutation_allowed: false
+    artifacts: []
+    materialization_notes:
+    - source_artifact_manifest remains owned by collect_source_artifacts and is not fabricated by this fixture.
+    - architecture_quality_analysis remains owned by analyze_architecture_quality and is not fabricated by this fixture.
+    - safe_structure_change_analysis remains owned by analyze_safe_structure_change and is not fabricated by this fixture.
+    - run_dry_run_certification validates artifact presence and producer ownership after the existing evidence-producing routes run.
+  validation_contract:
+    route_id: run_dry_run_certification
+    required_result_artifact: .ai/certification/dry-run-certification.yaml
+    required_report_artifact: .ai/reports/dry-run-certification-report.yaml
+    fixture_status_when_shape_valid: fixture_valid
