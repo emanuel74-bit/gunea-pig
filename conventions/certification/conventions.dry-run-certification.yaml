@@ -4,9 +4,8 @@ file:
   path: certification/conventions.dry-run-certification.yaml
   role: dry_run_certification_contract
   executability: policy
-purpose: Define adapter-neutral dry-run mission certification scenarios and evidence
-  requirements for end-to-end runtime validation without mutating production source
-  behavior.
+purpose: Define adapter-neutral dry-run mission certification scenarios and evidence requirements
+  for end-to-end runtime validation without mutating production source behavior.
 ownership:
   owns:
   - dry_run_certification_contract
@@ -70,6 +69,13 @@ sections:
   - fixture_id: resume_after_shutdown_minimal_recovery_only
     scenario_id: resume_after_shutdown
     fixture_path: certification/fixtures/resume-after-shutdown.validation-only.fixture.yaml
+    execution_mode: artifact_presence_validation
+    mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
+  - fixture_id: illegal_transition_rejection_minimal_controller_block_only
+    scenario_id: illegal_transition_rejection
+    fixture_path: certification/fixtures/illegal-transition-rejection.validation-only.fixture.yaml
     execution_mode: artifact_presence_validation
     mutation_allowed: false
     language_neutral: true

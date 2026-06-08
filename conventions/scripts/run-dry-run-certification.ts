@@ -338,7 +338,67 @@ function materializeEvidenceArtifact(fixture: ScenarioFixture, artifact: Fixture
             dry_run_checkpoint: true,
             real_resume_provenance_claimed: false,
           }
-        : artifact.evidence_type === "mission_journal"
+        : artifact.evidence_type === "transition_legality_result"
+          ? {
+              ...baseArtifact,
+              artifact: "transition_legality_result",
+              status: "failed",
+              result: "fail",
+              valid_transition: false,
+              previous_phase: "mission_created",
+              requested_phase: "implementation",
+              expected_next_phase: "mission_profile_selection",
+              transition_reason: "dry_run_illegal_transition_rejection_fixture",
+              rollout_mode: "observe",
+              enforcement: "graph_illegal_blocked",
+              blocked_transition: true,
+              transition_legality_allowed: false,
+              transition_legality: {
+                allowed: false,
+                expected_next_phase: "mission_profile_selection",
+                requested_phase: "implementation",
+                reason: "dry_run_illegal_transition_rejection_fixture",
+                preconditions: [
+                  { precondition_id: "phase_order", required: true, satisfied: false, expected: "mission_profile_selection", actual: "implementation" },
+                ],
+                missing_precondition_count: 1,
+              },
+              validation_result: buildUniversalValidationResult(`${fixture.fixture_id}-transition-legality`, [issue("error", "DRY_RUN_ILLEGAL_TRANSITION_REJECTED", "Dry-run illegal_transition_rejection fixture intentionally materializes a rejected transition legality result.")], {
+                route_id: "run_dry_run_certification",
+                evidence: [{ evidence_type: artifact.evidence_type, path: artifact.path, scenario_id: fixture.scenario_id, fixture_id: fixture.fixture_id }],
+                summary: { dry_run_fixture: true, materialized_by: SCRIPT_ID, illegal_transition_rejected: true },
+              }),
+              dry_run_transition_legality_result: true,
+              real_transition_legality_provenance_claimed: false,
+            }
+          : artifact.evidence_type === "mission_controller_block"
+            ? {
+                ...baseArtifact,
+                artifact: "mission_controller_block",
+                status: "blocked",
+                result: "fail",
+                advanced: false,
+                mission_id: `dry-run-${fixture.scenario_id}`,
+                previous_phase: "mission_created",
+                requested_phase: "implementation",
+                controller_mode: "observe",
+                enforcement: "graph_illegal_blocked",
+                transition_legality_allowed: false,
+                transition_reason: "dry_run_illegal_transition_rejection_fixture",
+                expected_next_phase: "mission_profile_selection",
+                transition_preconditions: [
+                  { precondition_id: "phase_order", required: true, satisfied: false, expected: "mission_profile_selection", actual: "implementation" },
+                ],
+                missing_precondition_count: 1,
+                validation_result: buildUniversalValidationResult(`${fixture.fixture_id}-controller-block`, [issue("error", "DRY_RUN_MISSION_CONTROLLER_BLOCKED_ILLEGAL_TRANSITION", "Dry-run illegal_transition_rejection fixture intentionally materializes a controller block result.")], {
+                  route_id: "run_dry_run_certification",
+                  evidence: [{ evidence_type: artifact.evidence_type, path: artifact.path, scenario_id: fixture.scenario_id, fixture_id: fixture.fixture_id }],
+                  summary: { dry_run_fixture: true, materialized_by: SCRIPT_ID, controller_blocked: true },
+                }),
+                dry_run_mission_controller_block: true,
+                real_mission_controller_block_provenance_claimed: false,
+              }
+            : artifact.evidence_type === "mission_journal"
           ? [
               {
                 mission_id: `dry-run-${fixture.scenario_id}`,
@@ -468,14 +528,15 @@ function artifactMatchesEvidenceType(file: string, evidenceType: string): boolea
       return false;
     }
   }
-  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis"].includes(evidenceType)) return true;
+  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis", "transition_legality_result", "mission_controller_block"].includes(evidenceType)) return true;
   try {
     const doc = readYamlFile(path.join(root, file));
     if (evidenceType === "mission_state") return doc.artifact === "mission_state";
     if (evidenceType === "mission_checkpoint") return doc.artifact === "mission_checkpoint";
-    return evidenceType === "revision_task"
-      ? doc.artifact === "revision_task"
-      : doc.artifact === "revision_loop_analysis";
+    if (evidenceType === "revision_task") return doc.artifact === "revision_task";
+    if (evidenceType === "revision_loop_analysis") return doc.artifact === "revision_loop_analysis";
+    if (evidenceType === "transition_legality_result") return doc.artifact === "transition_legality_result" && doc.valid_transition === false && doc.transition_legality_allowed === false && doc.real_transition_legality_provenance_claimed === false;
+    return doc.artifact === "mission_controller_block" && doc.advanced === false && doc.transition_legality_allowed === false && doc.real_mission_controller_block_provenance_claimed === false;
   } catch {
     return false;
   }
