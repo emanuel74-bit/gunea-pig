@@ -21,6 +21,7 @@ const issues: Issue[] = [];
 const scenarioArg = getArg("scenario");
 const enforcementMode = getArg("enforcement-mode") ?? "observe";
 const materializeFixtureEvidence = ["true", "1", "yes"].includes(String(getArg("materialize-fixture-evidence") ?? "false"));
+const requireAllDeclaredScenarios = ["true", "1", "yes"].includes(String(getArg("require-all-declared-scenarios") ?? "false"));
 const allowedModes = new Set(["observe", "controlled_enforce"]);
 if (!allowedModes.has(enforcementMode)) {
   issues.push(issue("error", "UNKNOWN_CERTIFICATION_ENFORCEMENT_MODE", `Unknown dry-run certification enforcement mode: ${enforcementMode}`));
@@ -82,6 +83,15 @@ for (const scenarioId of requestedScenarioIds) {
   if (!knownScenarioIds.has(scenarioId)) {
     issues.push(issue("error", "UNKNOWN_DRY_RUN_CERTIFICATION_SCENARIO", `Unknown dry-run certification scenario: ${scenarioId}`));
   }
+}
+
+const uniqueRequestedScenarioIds = [...new Set(requestedScenarioIds)];
+const missingRequiredScenarioSelections = scenarios
+  .map(scenario => scenario.scenario_id)
+  .filter(scenarioId => !uniqueRequestedScenarioIds.includes(scenarioId));
+const unknownRequestedScenarioIds = uniqueRequestedScenarioIds.filter(scenarioId => !knownScenarioIds.has(scenarioId));
+if (requireAllDeclaredScenarios && (missingRequiredScenarioSelections.length || unknownRequestedScenarioIds.length || uniqueRequestedScenarioIds.length !== scenarios.length)) {
+  issues.push(issue("error", "DRY_RUN_AGGREGATE_SCENARIO_SELECTION_INCOMPLETE", "Aggregate dry-run certification requires selecting every declared scenario and no unknown scenarios."));
 }
 
 const fixtureEntries: ScenarioFixture[] = Array.isArray(convention.sections?.scenario_fixtures)
@@ -469,7 +479,7 @@ function materializeSelectedFixtureEvidence(): string[] {
 
 const materializedFixtureEvidence = materializeSelectedFixtureEvidence();
 
-const selectedScenarios = scenarios.filter(scenario => requestedScenarioIds.includes(scenario.scenario_id));
+const selectedScenarios = scenarios.filter(scenario => uniqueRequestedScenarioIds.includes(scenario.scenario_id));
 const evidencePaths: Record<string, string[]> = {
   mission_state: [".ai/missions/**/mission-state.yaml"],
   mission_checkpoint: [".ai/missions/**/mission-checkpoint.yaml"],
@@ -585,7 +595,15 @@ if (!scenarios.length) {
 }
 
 const incompleteCount = scenarioResults.filter(result => result.status !== "certified").length;
-const blockingDecision = enforcementMode === "controlled_enforce" && incompleteCount > 0;
+const aggregateAllDeclaredScenariosCertified = requireAllDeclaredScenarios
+  && missingRequiredScenarioSelections.length === 0
+  && unknownRequestedScenarioIds.length === 0
+  && selectedScenarios.length === scenarios.length
+  && incompleteCount === 0;
+if (requireAllDeclaredScenarios && incompleteCount > 0) {
+  issues.push(issue("error", "DRY_RUN_AGGREGATE_CERTIFICATION_INCOMPLETE", "Aggregate dry-run certification requires every declared scenario to be certified."));
+}
+const blockingDecision = enforcementMode === "controlled_enforce" && (incompleteCount > 0 || (requireAllDeclaredScenarios && !aggregateAllDeclaredScenariosCertified));
 if (blockingDecision) {
   issues.push(issue("error", "DRY_RUN_CERTIFICATION_INCOMPLETE", "Dry-run certification is incomplete in controlled enforcement mode."));
 }
@@ -606,6 +624,17 @@ const certification = {
   valid_fixture_count: fixtureChecks.filter(check => check.status === "fixture_valid").length,
   materialized_fixture_evidence_count: materializedFixtureEvidence.length,
   materialized_fixture_evidence_paths: materializedFixtureEvidence,
+  require_all_declared_scenarios: requireAllDeclaredScenarios,
+  aggregate_required_scenario_validation: {
+    required: requireAllDeclaredScenarios,
+    declared_scenario_count: scenarios.length,
+    selected_scenario_count: selectedScenarios.length,
+    all_declared_scenarios_selected: missingRequiredScenarioSelections.length === 0 && unknownRequestedScenarioIds.length === 0 && selectedScenarios.length === scenarios.length,
+    all_declared_scenarios_certified: aggregateAllDeclaredScenariosCertified,
+    missing_required_scenario_selections: missingRequiredScenarioSelections,
+    unknown_requested_scenario_ids: unknownRequestedScenarioIds,
+    selected_scenario_ids: selectedScenarios.map(scenario => scenario.scenario_id),
+  },
   blocking_decision: blockingDecision,
   scenario_results: scenarioResults,
 };
@@ -620,6 +649,8 @@ const validationResult = buildUniversalValidationResult(SCRIPT_ID, issues, {
     fixture_count: certification.fixture_count,
     valid_fixture_count: certification.valid_fixture_count,
     materialized_fixture_evidence_count: certification.materialized_fixture_evidence_count,
+    require_all_declared_scenarios: requireAllDeclaredScenarios,
+    all_declared_scenarios_certified: aggregateAllDeclaredScenariosCertified,
     enforcement_mode: enforcementMode,
   },
 });
@@ -638,6 +669,8 @@ writeYamlFile(reportPath, {
     fixture_count: certification.fixture_count,
     valid_fixture_count: certification.valid_fixture_count,
     materialized_fixture_evidence_count: certification.materialized_fixture_evidence_count,
+    require_all_declared_scenarios: requireAllDeclaredScenarios,
+    all_declared_scenarios_certified: aggregateAllDeclaredScenariosCertified,
     blocking_decision: blockingDecision,
     enforcement_mode: enforcementMode,
   },

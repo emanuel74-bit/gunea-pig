@@ -136,13 +136,22 @@ sections:
     framework_neutral: true
     adapter_outputs_are_optional_evidence: true
     scenario_policy_must_not_reference_project_specific_test_failures: true
+  aggregate_certification_model:
+    purpose: prove_all_declared_required_scenarios_certify_together_from_clean_runtime_artifacts
+    activation_argument: --require-all-declared-scenarios
+    required_runtime_state: clean_ai_runtime_artifacts_before_evidence_materialization
+    required_scenario_selection: every_declared_required_scenario
+    required_result: all_declared_scenarios_certified
+    enforcement_mode: controlled_enforce_after_required_evidence_routes_run
   validation:
     required_checks:
     - scenario_ids_unique
     - required_scenarios_present
     - certification_artifacts_written
     - blocking_failures_reported
+    - aggregate_all_declared_scenarios_certified_when_required
     fail_conditions:
     - unknown_requested_scenario
     - missing_required_scenario_evidence
     - malformed_certification_artifact
+    - aggregate_required_scenario_missing_or_incomplete
