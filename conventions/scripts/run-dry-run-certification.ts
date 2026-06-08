@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -23,6 +24,22 @@ const materializeFixtureEvidence = ["true", "1", "yes"].includes(String(getArg("
 const allowedModes = new Set(["observe", "controlled_enforce"]);
 if (!allowedModes.has(enforcementMode)) {
   issues.push(issue("error", "UNKNOWN_CERTIFICATION_ENFORCEMENT_MODE", `Unknown dry-run certification enforcement mode: ${enforcementMode}`));
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.entries(value as JsonMap).sort(([a], [b]) => a.localeCompare(b)).map(([key, nested]) => `${JSON.stringify(key)}:${stableStringify(nested)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function sha256(value: unknown): string {
+  return crypto.createHash("sha256").update(stableStringify(value)).digest("hex");
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
 }
 
 type Scenario = {
@@ -269,14 +286,84 @@ function materializeEvidenceArtifact(fixture: ScenarioFixture, artifact: Fixture
     : artifact.evidence_type === "mission_state"
       ? {
           ...baseArtifact,
+          artifact: "mission_state",
+          schema_version: "1.0",
           status: "observed",
           mission_id: `dry-run-${fixture.scenario_id}`,
+          selected_profile: fixture.scenario_id,
           mission_profile: fixture.scenario_id,
           controller_mode: "observe",
-          current_phase: "validation",
+          current_phase: fixture.scenario_id === "resume_after_shutdown" ? "resume_validation" : "validation",
+          implementation_allowed: false,
+          active_phase_plan: {
+            ordered_phases: ["mission_profile_selection", "validation", "resume_validation"],
+            required_phases: ["validation"],
+            conditional_phases: ["resume_validation"],
+            forbidden_phases: [],
+            skipped_phases: [],
+            blocked_phases: [],
+          },
+          phase_statuses: [],
+          report_registry_ref: ".ai/reports/report-registry.yaml",
+          active_triggers: [],
+          blocked_items: [],
+          completed_reports: [],
+          invalidated_outputs: [],
+          revision_history: [],
+          rerun_requests: [],
+          user_approvals: [],
+          controller_events: [],
+          created_by: SCRIPT_ID,
+          created_at: nowIso(),
+          updated_at: nowIso(),
           dry_run_state: true,
+          real_resume_provenance_claimed: false,
         }
-      : artifact.evidence_type === "phase_bundle"
+      : artifact.evidence_type === "mission_checkpoint"
+        ? {
+            ...baseArtifact,
+            artifact: "mission_checkpoint",
+            schema_version: "1.0",
+            status: "present",
+            mission_id: `dry-run-${fixture.scenario_id}`,
+            controller_mode: "observe",
+            current_phase: "resume_validation",
+            state_path: `.ai/missions/dry-run-${fixture.scenario_id}/mission-state.yaml`,
+            journal_path: `.ai/missions/dry-run-${fixture.scenario_id}/mission-journal.ndjson`,
+            journal_event_count: 2,
+            last_event_sequence: 2,
+            last_event_type: "resume_requested",
+            state_hash: sha256({ mission_id: `dry-run-${fixture.scenario_id}`, scenario_id: fixture.scenario_id, current_phase: "resume_validation" }),
+            updated_at: nowIso(),
+            dry_run_checkpoint: true,
+            real_resume_provenance_claimed: false,
+          }
+        : artifact.evidence_type === "mission_journal"
+          ? [
+              {
+                mission_id: `dry-run-${fixture.scenario_id}`,
+                event_sequence: 1,
+                previous_event_sequence: null,
+                event_type: "mission_initialized",
+                route_id: "run_dry_run_certification",
+                timestamp: nowIso(),
+                state_hash_after: sha256({ mission_id: `dry-run-${fixture.scenario_id}`, scenario_id: fixture.scenario_id, current_phase: "validation" }),
+                dry_run_fixture: true,
+                fixture_id: fixture.fixture_id,
+              },
+              {
+                mission_id: `dry-run-${fixture.scenario_id}`,
+                event_sequence: 2,
+                previous_event_sequence: 1,
+                event_type: "resume_requested",
+                route_id: "run_dry_run_certification",
+                timestamp: nowIso(),
+                state_hash_after: sha256({ mission_id: `dry-run-${fixture.scenario_id}`, scenario_id: fixture.scenario_id, current_phase: "resume_validation" }),
+                dry_run_fixture: true,
+                fixture_id: fixture.fixture_id,
+              },
+            ]
+          : artifact.evidence_type === "phase_bundle"
         ? {
             ...baseArtifact,
             status: "present",
@@ -290,7 +377,13 @@ function materializeEvidenceArtifact(fixture: ScenarioFixture, artifact: Fixture
             status: "present",
           };
 
-  writeYamlFile(path.join(root, artifact.path), content);
+  const outputPath = path.join(root, artifact.path);
+  if (artifact.evidence_type === "mission_journal") {
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    fs.writeFileSync(outputPath, `${(content as JsonMap[]).map(entry => JSON.stringify(entry)).join("\n")}\n`, "utf8");
+  } else {
+    writeYamlFile(outputPath, content as JsonMap);
+  }
   return artifact.path;
 }
 
@@ -357,9 +450,29 @@ function listAiFiles(): string[] {
 
 const aiFiles = listAiFiles();
 function artifactMatchesEvidenceType(file: string, evidenceType: string): boolean {
-  if (!["revision_task", "revision_loop_analysis"].includes(evidenceType)) return true;
+  if (evidenceType === "mission_journal") {
+    try {
+      const lines = fs.readFileSync(path.join(root, file), "utf8").split(/\r?\n/).filter(line => line.trim());
+      if (!lines.length) return false;
+      return lines.every((line, index) => {
+        const event = JSON.parse(line) as JsonMap;
+        return event && typeof event === "object"
+          && event.event_sequence === index + 1
+          && typeof event.mission_id === "string"
+          && typeof event.event_type === "string"
+          && typeof event.route_id === "string"
+          && typeof event.timestamp === "string"
+          && typeof event.state_hash_after === "string";
+      });
+    } catch {
+      return false;
+    }
+  }
+  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis"].includes(evidenceType)) return true;
   try {
     const doc = readYamlFile(path.join(root, file));
+    if (evidenceType === "mission_state") return doc.artifact === "mission_state";
+    if (evidenceType === "mission_checkpoint") return doc.artifact === "mission_checkpoint";
     return evidenceType === "revision_task"
       ? doc.artifact === "revision_task"
       : doc.artifact === "revision_loop_analysis";
