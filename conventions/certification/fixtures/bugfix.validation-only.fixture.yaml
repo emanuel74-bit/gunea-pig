@@ -1,0 +1,61 @@
+version: '1.0'
+file:
+  name: bugfix.validation-only.fixture.yaml
+  path: certification/fixtures/bugfix.validation-only.fixture.yaml
+  role: dry_run_scenario_fixture
+  executability: fixture
+purpose: Provide a concrete adapter-neutral dry-run certification fixture for the
+  bugfix scenario using non-mutating artifact presence validation only.
+ownership:
+  owns:
+  - bugfix_dry_run_fixture
+  - validation_only_certification_input
+  does_not_own:
+  - production_source_mutation
+  - scenario_enforcement_decision
+  - language_or_framework_specific_test_rules
+sections:
+  fixture_identity:
+    fixture_id: bugfix_minimal_validation_only
+    scenario_id: bugfix
+    mission_profile: bugfix
+    execution_mode: artifact_presence_validation
+  fixture_boundaries:
+    mutation_allowed: false
+    source_mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
+    adapter_outputs_required: false
+  expected_certification_behavior:
+    rollout_mode: observe
+    enforcement_mode: observe
+    incomplete_evidence_is_warning: true
+    blocking_decision_expected: false
+  required_evidence:
+  - evidence_type: mission_state
+    accepted_paths:
+    - .ai/missions/**/mission-state.yaml
+  - evidence_type: validation_result
+    accepted_paths:
+    - .ai/validation/*.result.yaml
+  - evidence_type: evidence_manifest
+    accepted_paths:
+    - .ai/reports/evidence-manifest.yaml
+
+  fixture_evidence_artifacts:
+    materialization_mode: explicit_route_argument_only
+    materialization_argument: --materialize-fixture-evidence
+    generated_by: run-dry-run-certification
+    mutation_allowed: false
+    artifacts:
+    - evidence_type: mission_state
+      path: .ai/missions/dry-run-bugfix/mission-state.yaml
+      artifact: dry_run_bugfix_fixture_mission_state
+    - evidence_type: validation_result
+      path: .ai/validation/dry-run-bugfix.result.yaml
+      artifact: dry_run_bugfix_fixture_validation_result
+  validation_contract:
+    route_id: run_dry_run_certification
+    required_result_artifact: .ai/certification/dry-run-certification.yaml
+    required_report_artifact: .ai/reports/dry-run-certification-report.yaml
+    fixture_status_when_shape_valid: fixture_valid
