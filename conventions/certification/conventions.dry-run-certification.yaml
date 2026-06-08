@@ -36,6 +36,8 @@ sections:
     fixture_execution_mode: artifact_presence_validation
     fixture_scope: one_scenario_per_fixture
     fixture_must_not_mutate_production_source: true
+    fixture_evidence_materialization: explicit_route_argument_only
+    fixture_evidence_outputs_are_limited_to_ai_runtime_artifacts: true
   scenario_fixtures:
   - fixture_id: small_feature_minimal_validation_only
     scenario_id: small_feature

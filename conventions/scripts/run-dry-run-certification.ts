@@ -19,6 +19,7 @@ const issues: Issue[] = [];
 
 const scenarioArg = getArg("scenario");
 const enforcementMode = getArg("enforcement-mode") ?? "observe";
+const materializeFixtureEvidence = ["true", "1", "yes"].includes(String(getArg("materialize-fixture-evidence") ?? "false"));
 const allowedModes = new Set(["observe", "controlled_enforce"]);
 if (!allowedModes.has(enforcementMode)) {
   issues.push(issue("error", "UNKNOWN_CERTIFICATION_ENFORCEMENT_MODE", `Unknown dry-run certification enforcement mode: ${enforcementMode}`));
@@ -37,6 +38,12 @@ type ScenarioFixture = {
   mutation_allowed: boolean;
   language_neutral: boolean;
   framework_neutral: boolean;
+};
+
+type FixtureEvidenceArtifact = {
+  evidence_type: string;
+  path: string;
+  artifact: string;
 };
 
 const certificationConvention = path.join(root, "certification", "conventions.dry-run-certification.yaml");
@@ -120,6 +127,128 @@ function validateScenarioFixture(fixture: ScenarioFixture): JsonMap {
 }
 
 const fixtureChecks = fixtureEntries.map(validateScenarioFixture);
+
+function selectedFixtures(): ScenarioFixture[] {
+  const requested = new Set(requestedScenarioIds);
+  return fixtureEntries.filter(fixture => requested.has(fixture.scenario_id));
+}
+
+function readFixtureEvidenceArtifacts(fixture: ScenarioFixture): FixtureEvidenceArtifact[] {
+  if (!fixture.fixture_path) return [];
+  const absoluteFixturePath = path.join(root, fixture.fixture_path);
+  if (!fs.existsSync(absoluteFixturePath)) return [];
+  const fixtureDocument = readYamlFile(absoluteFixturePath);
+  const evidenceConfig = fixtureDocument.sections?.fixture_evidence_artifacts ?? {};
+  if (evidenceConfig.materialization_mode && evidenceConfig.materialization_mode !== "explicit_route_argument_only") {
+    issues.push(issue("error", "DRY_RUN_FIXTURE_EVIDENCE_MODE_UNSUPPORTED", `Dry-run fixture ${fixture.fixture_id} uses unsupported evidence materialization mode ${evidenceConfig.materialization_mode}.`, fixture.fixture_path));
+    return [];
+  }
+  if (evidenceConfig.mutation_allowed === true) {
+    issues.push(issue("error", "DRY_RUN_FIXTURE_EVIDENCE_MUTATION_ALLOWED", `Dry-run fixture ${fixture.fixture_id} evidence materialization allows mutation.`, fixture.fixture_path));
+    return [];
+  }
+  return Array.isArray(evidenceConfig.artifacts)
+    ? evidenceConfig.artifacts
+        .filter((entry: JsonMap) => entry && typeof entry === "object")
+        .map((entry: JsonMap) => ({
+          evidence_type: typeof entry.evidence_type === "string" ? entry.evidence_type : "",
+          path: typeof entry.path === "string" ? entry.path : "",
+          artifact: typeof entry.artifact === "string" ? entry.artifact : "",
+        }))
+    : [];
+}
+
+function materializeEvidenceArtifact(fixture: ScenarioFixture, artifact: FixtureEvidenceArtifact): string | null {
+  if (!artifact.evidence_type || !artifact.path || !artifact.artifact) {
+    issues.push(issue("error", "DRY_RUN_FIXTURE_EVIDENCE_ARTIFACT_MALFORMED", `Dry-run fixture ${fixture.fixture_id} declares malformed evidence artifact metadata.`, fixture.fixture_path));
+    return null;
+  }
+  if (!artifact.path.startsWith(".ai/")) {
+    issues.push(issue("error", "DRY_RUN_FIXTURE_EVIDENCE_PATH_OUTSIDE_AI", `Dry-run fixture evidence artifact must be written under .ai: ${artifact.path}`, fixture.fixture_path));
+    return null;
+  }
+
+  const requiredEvidenceTypes = new Set(scenarios.find(scenario => scenario.scenario_id === fixture.scenario_id)?.required_evidence ?? []);
+  if (!requiredEvidenceTypes.has(artifact.evidence_type)) {
+    issues.push(issue("error", "DRY_RUN_FIXTURE_EVIDENCE_TYPE_NOT_REQUIRED", `Dry-run fixture ${fixture.fixture_id} declares evidence type not required by scenario ${fixture.scenario_id}: ${artifact.evidence_type}`, fixture.fixture_path));
+    return null;
+  }
+
+  const baseArtifact = {
+    artifact: artifact.artifact,
+    generated_by: SCRIPT_ID,
+    producer_route_id: "run_dry_run_certification",
+    route_produced: true,
+    dry_run_fixture: true,
+    fixture_id: fixture.fixture_id,
+    scenario_id: fixture.scenario_id,
+    evidence_type: artifact.evidence_type,
+    rollout_mode: "observe",
+    mutation_allowed: false,
+    language_neutral: true,
+    framework_neutral: true,
+  };
+
+  const content = artifact.evidence_type === "validation_result"
+    ? {
+        ...baseArtifact,
+        status: "pass",
+        result: "pass",
+        validation_result: buildUniversalValidationResult(`${fixture.fixture_id}-validation-only`, [], {
+          route_id: "run_dry_run_certification",
+          evidence: [{ evidence_type: artifact.evidence_type, path: artifact.path, scenario_id: fixture.scenario_id, fixture_id: fixture.fixture_id }],
+          summary: { dry_run_fixture: true, materialized_by: SCRIPT_ID },
+        }),
+      }
+    : artifact.evidence_type === "mission_state"
+      ? {
+          ...baseArtifact,
+          status: "observed",
+          mission_id: `dry-run-${fixture.scenario_id}`,
+          mission_profile: fixture.scenario_id,
+          controller_mode: "observe",
+          current_phase: "validation",
+          dry_run_state: true,
+        }
+      : artifact.evidence_type === "phase_bundle"
+        ? {
+            ...baseArtifact,
+            status: "present",
+            mission_profile: fixture.scenario_id,
+            bundle_scope: "dry_run_validation_only",
+            included_runtime_context: [],
+            required_executor_routes: ["run_dry_run_certification", "collect_evidence"],
+          }
+        : {
+            ...baseArtifact,
+            status: "present",
+          };
+
+  writeYamlFile(path.join(root, artifact.path), content);
+  return artifact.path;
+}
+
+function materializeSelectedFixtureEvidence(): string[] {
+  if (!materializeFixtureEvidence) return [];
+  const written: string[] = [];
+  for (const fixture of selectedFixtures()) {
+    const fixtureCheck = fixtureChecks.find(check => check.fixture_id === fixture.fixture_id);
+    if (fixtureCheck?.status !== "fixture_valid") {
+      issues.push(issue("warning", "DRY_RUN_FIXTURE_EVIDENCE_SKIPPED_INVALID_FIXTURE", `Dry-run fixture evidence materialization skipped invalid fixture ${fixture.fixture_id}.`, fixture.fixture_path));
+      continue;
+    }
+    for (const artifact of readFixtureEvidenceArtifacts(fixture)) {
+      const writtenPath = materializeEvidenceArtifact(fixture, artifact);
+      if (writtenPath) written.push(writtenPath);
+    }
+  }
+  if (!written.length) {
+    issues.push(issue("warning", "DRY_RUN_FIXTURE_EVIDENCE_NOT_MATERIALIZED", "No dry-run fixture evidence artifacts were materialized."));
+  }
+  return written;
+}
+
+const materializedFixtureEvidence = materializeSelectedFixtureEvidence();
 
 const selectedScenarios = scenarios.filter(scenario => requestedScenarioIds.includes(scenario.scenario_id));
 const evidencePaths: Record<string, string[]> = {
@@ -218,6 +347,8 @@ const certification = {
   incomplete_scenario_count: incompleteCount,
   fixture_count: fixtureChecks.length,
   valid_fixture_count: fixtureChecks.filter(check => check.status === "fixture_valid").length,
+  materialized_fixture_evidence_count: materializedFixtureEvidence.length,
+  materialized_fixture_evidence_paths: materializedFixtureEvidence,
   blocking_decision: blockingDecision,
   scenario_results: scenarioResults,
 };
@@ -231,6 +362,7 @@ const validationResult = buildUniversalValidationResult(SCRIPT_ID, issues, {
     incomplete_scenario_count: certification.incomplete_scenario_count,
     fixture_count: certification.fixture_count,
     valid_fixture_count: certification.valid_fixture_count,
+    materialized_fixture_evidence_count: certification.materialized_fixture_evidence_count,
     enforcement_mode: enforcementMode,
   },
 });
@@ -248,15 +380,18 @@ writeYamlFile(reportPath, {
     incomplete_scenario_count: certification.incomplete_scenario_count,
     fixture_count: certification.fixture_count,
     valid_fixture_count: certification.valid_fixture_count,
+    materialized_fixture_evidence_count: certification.materialized_fixture_evidence_count,
     blocking_decision: blockingDecision,
     enforcement_mode: enforcementMode,
   },
   scenario_results: scenarioResults,
+  materialized_fixture_evidence_paths: materializedFixtureEvidence,
   validation_result: validationResult,
 });
 
-finish(SCRIPT_ID, issues, [".ai/certification/dry-run-certification.yaml", ".ai/reports/dry-run-certification-report.yaml"], {
+finish(SCRIPT_ID, issues, [".ai/certification/dry-run-certification.yaml", ".ai/reports/dry-run-certification-report.yaml", ...materializedFixtureEvidence], {
   certification_result: ".ai/certification/dry-run-certification.yaml",
   certification_report: ".ai/reports/dry-run-certification-report.yaml",
+  materialized_fixture_evidence_paths: materializedFixtureEvidence,
   validation_result: validationResult,
 });
