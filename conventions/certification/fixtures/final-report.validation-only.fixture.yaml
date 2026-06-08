@@ -1,0 +1,60 @@
+version: '1.0'
+file:
+  name: final-report.validation-only.fixture.yaml
+  path: certification/fixtures/final-report.validation-only.fixture.yaml
+  role: dry_run_scenario_fixture
+  executability: fixture
+purpose: Provide a concrete adapter-neutral dry-run certification fixture for the final_report
+  scenario using non-mutating evidence-manifest and final-report artifact presence validation only.
+ownership:
+  owns:
+  - final_report_dry_run_fixture
+  - evidence_backed_report_certification_input
+  does_not_own:
+  - production_source_mutation
+  - evidence_manifest_generation
+  - final_report_generation
+  - scenario_enforcement_decision
+  - language_or_framework_specific_test_rules
+sections:
+  fixture_identity:
+    fixture_id: final_report_minimal_evidence_backed_only
+    scenario_id: final_report
+    mission_profile: final_report
+    execution_mode: artifact_presence_validation
+  fixture_boundaries:
+    mutation_allowed: false
+    source_mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
+    adapter_outputs_required: false
+    real_evidence_manifest_provenance_claimed: false
+    real_final_report_provenance_claimed: false
+  expected_certification_behavior:
+    rollout_mode: observe
+    enforcement_mode: observe
+    incomplete_evidence_is_warning: true
+    blocking_decision_expected: false
+    report_shape_expected: typed_report_claims_with_manifest_backed_evidence_refs
+  required_evidence:
+  - evidence_type: evidence_manifest
+    accepted_paths:
+    - .ai/reports/evidence-manifest.yaml
+  - evidence_type: final_mission_report
+    accepted_paths:
+    - .ai/reports/final-mission-report.yaml
+  fixture_evidence_artifacts:
+    materialization_mode: explicit_route_argument_only
+    materialization_argument: --materialize-fixture-evidence
+    generated_by: run-dry-run-certification
+    mutation_allowed: false
+    artifacts: []
+    materialization_notes:
+    - evidence_manifest remains owned by collect_evidence and is not fabricated by this fixture.
+    - final_mission_report remains owned by generate_final_mission_report and is not fabricated by this fixture.
+    - run_dry_run_certification writes certification seed artifacts that collect_evidence and generate_final_mission_report can consume.
+  validation_contract:
+    route_id: run_dry_run_certification
+    required_result_artifact: .ai/certification/dry-run-certification.yaml
+    required_report_artifact: .ai/reports/dry-run-certification-report.yaml
+    fixture_status_when_shape_valid: fixture_valid

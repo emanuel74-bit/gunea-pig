@@ -528,13 +528,15 @@ function artifactMatchesEvidenceType(file: string, evidenceType: string): boolea
       return false;
     }
   }
-  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis", "transition_legality_result", "mission_controller_block"].includes(evidenceType)) return true;
+  if (!["mission_state", "mission_checkpoint", "revision_task", "revision_loop_analysis", "evidence_manifest", "final_mission_report", "transition_legality_result", "mission_controller_block"].includes(evidenceType)) return true;
   try {
     const doc = readYamlFile(path.join(root, file));
     if (evidenceType === "mission_state") return doc.artifact === "mission_state";
     if (evidenceType === "mission_checkpoint") return doc.artifact === "mission_checkpoint";
     if (evidenceType === "revision_task") return doc.artifact === "revision_task";
     if (evidenceType === "revision_loop_analysis") return doc.artifact === "revision_loop_analysis";
+    if (evidenceType === "evidence_manifest") return doc.artifact === "evidence_manifest_v2" && doc.schema_version === "2.0" && doc.generated_by === "collect-evidence" && Array.isArray(doc.entries);
+    if (evidenceType === "final_mission_report") return doc.artifact === "final_mission_report" && doc.generated_by === "generate-final-mission-report" && doc.summary_source === "typed_report_claims" && doc.evidence_manifest === ".ai/reports/evidence-manifest.yaml" && Array.isArray(doc.report_claims);
     if (evidenceType === "transition_legality_result") return doc.artifact === "transition_legality_result" && doc.valid_transition === false && doc.transition_legality_allowed === false && doc.real_transition_legality_provenance_claimed === false;
     return doc.artifact === "mission_controller_block" && doc.advanced === false && doc.transition_legality_allowed === false && doc.real_mission_controller_block_provenance_claimed === false;
   } catch {
