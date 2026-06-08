@@ -225,6 +225,47 @@ function materializeEvidenceArtifact(fixture: ScenarioFixture, artifact: Fixture
           real_gate_result_provenance_claimed: false,
           errors: validationIssues,
         }
+    : artifact.evidence_type === "revision_task"
+      ? {
+          ...baseArtifact,
+          artifact: "revision_task",
+          status: "created",
+          revision_id: `dry-run-${fixture.scenario_id}`,
+          failure: "dry_run_revision_loop_fixture_failure",
+          failure_fingerprint: "dry-run-revision-loop-fingerprint",
+          required_action: "resolve_blocking_failure_and_revalidate",
+          validation_required_routes: ["validate_revision_task", "validate_changed_files"],
+          dry_run_revision_task: true,
+          real_revision_task_provenance_claimed: false,
+          retry_control: { rollout_mode: "observe", enforcement: "disabled", analyzer_route: "analyze_revision_loop" },
+        }
+    : artifact.evidence_type === "revision_loop_analysis"
+      ? {
+          ...baseArtifact,
+          artifact: "revision_loop_analysis",
+          rollout_mode: "observe",
+          enforcement: "disabled",
+          mission_id: `dry-run-${fixture.scenario_id}`,
+          active_failure_fingerprint: "dry-run-revision-loop-fingerprint",
+          observe_retry_budget: 3,
+          active_fingerprint_count: 1,
+          repeated_fingerprints: [],
+          no_progress_suspected: false,
+          blocking_decision: false,
+          revision_task_count: 1,
+          revision_tasks: readFixtureEvidenceArtifacts(fixture)
+            .filter(item => item.evidence_type === "revision_task")
+            .map(item => ({
+              path: item.path,
+              revision_id: `dry-run-${fixture.scenario_id}`,
+              status: "created",
+              failure_fingerprint: "dry-run-revision-loop-fingerprint",
+              required_action: "resolve_blocking_failure_and_revalidate",
+            })),
+          warnings: [],
+          dry_run_revision_loop_analysis: true,
+          real_revision_loop_analysis_provenance_claimed: false,
+        }
     : artifact.evidence_type === "mission_state"
       ? {
           ...baseArtifact,
@@ -287,7 +328,7 @@ const evidencePaths: Record<string, string[]> = {
   architecture_quality_analysis: [".ai/source-artifacts/architecture-quality-analysis.yaml"],
   safe_structure_analysis: [".ai/source-artifacts/safe-structure-change-analysis.yaml"],
   gate_result: [".ai/gates/*.gate-result.yaml"],
-  revision_task: [".ai/revisions/*.yaml"],
+  revision_task: [".ai/revisions/*.revision-task.yaml", ".ai/revisions/*.yaml"],
   revision_loop_analysis: [".ai/revisions/revision-loop-analysis.yaml"],
   final_mission_report: [".ai/reports/final-mission-report.yaml"],
   transition_legality_result: [".ai/validation/validate-transition-legality.result.yaml"],
@@ -315,9 +356,21 @@ function listAiFiles(): string[] {
 }
 
 const aiFiles = listAiFiles();
+function artifactMatchesEvidenceType(file: string, evidenceType: string): boolean {
+  if (!["revision_task", "revision_loop_analysis"].includes(evidenceType)) return true;
+  try {
+    const doc = readYamlFile(path.join(root, file));
+    return evidenceType === "revision_task"
+      ? doc.artifact === "revision_task"
+      : doc.artifact === "revision_loop_analysis";
+  } catch {
+    return false;
+  }
+}
+
 function matchingFiles(evidenceType: string): string[] {
   const patterns = evidencePaths[evidenceType] ?? [];
-  return aiFiles.filter(file => patterns.some(pattern => globToRegExp(pattern).test(file)));
+  return aiFiles.filter(file => patterns.some(pattern => globToRegExp(pattern).test(file)) && artifactMatchesEvidenceType(file, evidenceType));
 }
 
 const scenarioResults = selectedScenarios.map(scenario => {
