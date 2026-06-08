@@ -29,6 +29,21 @@ sections:
     mutation_allowed: false
     scenario_execution: route_backed_simulation_or_artifact_presence_validation
     full_completion_requirement: all_required_scenarios_have_evidence_and_no_blocking_validation_failures
+  scenario_fixture_model:
+    fixture_purpose: deterministic_non_mutating_scenario_input
+    fixture_registration: explicit_path_in_scenario_fixtures
+    fixture_validation: route_validates_fixture_shape_and_scenario_alignment
+    fixture_execution_mode: artifact_presence_validation
+    fixture_scope: one_scenario_per_fixture
+    fixture_must_not_mutate_production_source: true
+  scenario_fixtures:
+  - fixture_id: small_feature_minimal_validation_only
+    scenario_id: small_feature
+    fixture_path: certification/fixtures/small-feature.validation-only.fixture.yaml
+    execution_mode: artifact_presence_validation
+    mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
   required_scenarios:
   - scenario_id: small_feature
     required_evidence:

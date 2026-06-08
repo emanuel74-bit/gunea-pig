@@ -1,0 +1,52 @@
+version: '1.0'
+file:
+  name: small-feature.validation-only.fixture.yaml
+  path: certification/fixtures/small-feature.validation-only.fixture.yaml
+  role: dry_run_scenario_fixture
+  executability: fixture
+purpose: Provide the first concrete adapter-neutral dry-run certification fixture for
+  the small_feature scenario using non-mutating artifact presence validation only.
+ownership:
+  owns:
+  - small_feature_dry_run_fixture
+  - validation_only_certification_input
+  does_not_own:
+  - production_source_mutation
+  - scenario_enforcement_decision
+  - language_or_framework_specific_test_rules
+sections:
+  fixture_identity:
+    fixture_id: small_feature_minimal_validation_only
+    scenario_id: small_feature
+    mission_profile: small_feature
+    execution_mode: artifact_presence_validation
+  fixture_boundaries:
+    mutation_allowed: false
+    source_mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
+    adapter_outputs_required: false
+  expected_certification_behavior:
+    rollout_mode: observe
+    enforcement_mode: observe
+    incomplete_evidence_is_warning: true
+    blocking_decision_expected: false
+  required_evidence:
+  - evidence_type: mission_state
+    accepted_paths:
+    - .ai/missions/**/mission-state.yaml
+  - evidence_type: phase_bundle
+    accepted_paths:
+    - .ai/bundles/**
+    - .ai/phase-bundles/**
+  - evidence_type: validation_result
+    accepted_paths:
+    - .ai/validation/*.result.yaml
+  - evidence_type: evidence_manifest
+    accepted_paths:
+    - .ai/reports/evidence-manifest.yaml
+  validation_contract:
+    route_id: run_dry_run_certification
+    required_result_artifact: .ai/certification/dry-run-certification.yaml
+    required_report_artifact: .ai/reports/dry-run-certification-report.yaml
+    fixture_status_when_shape_valid: fixture_valid
