@@ -602,7 +602,7 @@ const aggregateAllDeclaredScenariosCertified = requireAllDeclaredScenarios
   && unknownRequestedScenarioIds.length === 0
   && selectedScenarios.length === scenarios.length
   && incompleteCount === 0;
-const phase20CompletionReady = writeCompletionMarker
+const dryRunCompletionReady = writeCompletionMarker
   && requireAllDeclaredScenarios
   && allDeclaredScenariosFixtureBacked
   && aggregateAllDeclaredScenariosCertified;
@@ -610,20 +610,20 @@ if (requireAllDeclaredScenarios && incompleteCount > 0) {
   issues.push(issue("error", "DRY_RUN_AGGREGATE_CERTIFICATION_INCOMPLETE", "Aggregate dry-run certification requires every declared scenario to be certified."));
 }
 if (writeCompletionMarker && !requireAllDeclaredScenarios) {
-  issues.push(issue("error", "PHASE20_COMPLETION_MARKER_REQUIRES_AGGREGATE_CERTIFICATION", "Phase 20 completion marker requires --require-all-declared-scenarios true."));
+  issues.push(issue("error", "DRY_RUN_COMPLETION_MARKER_REQUIRES_AGGREGATE_CERTIFICATION", "Dry-run certification completion marker requires --require-all-declared-scenarios true."));
 }
 if (writeCompletionMarker && requireAllDeclaredScenarios && !allDeclaredScenariosFixtureBacked) {
-  issues.push(issue("error", "PHASE20_COMPLETION_MARKER_FIXTURE_BACKING_INCOMPLETE", "Phase 20 completion marker requires every declared scenario to have a valid registered fixture."));
+  issues.push(issue("error", "DRY_RUN_COMPLETION_MARKER_FIXTURE_BACKING_INCOMPLETE", "Dry-run certification completion marker requires every declared scenario to have a valid registered fixture."));
 }
 if (writeCompletionMarker && requireAllDeclaredScenarios && !aggregateAllDeclaredScenariosCertified) {
-  issues.push(issue("error", "PHASE20_COMPLETION_MARKER_CERTIFICATION_INCOMPLETE", "Phase 20 completion marker requires every declared scenario to be certified."));
+  issues.push(issue("error", "DRY_RUN_COMPLETION_MARKER_CERTIFICATION_INCOMPLETE", "Dry-run certification completion marker requires every declared scenario to be certified."));
 }
-const blockingDecision = enforcementMode === "controlled_enforce" && (incompleteCount > 0 || (requireAllDeclaredScenarios && !aggregateAllDeclaredScenariosCertified) || (writeCompletionMarker && !phase20CompletionReady));
+const blockingDecision = enforcementMode === "controlled_enforce" && (incompleteCount > 0 || (requireAllDeclaredScenarios && !aggregateAllDeclaredScenariosCertified) || (writeCompletionMarker && !dryRunCompletionReady));
 if (blockingDecision) {
   issues.push(issue("error", "DRY_RUN_CERTIFICATION_INCOMPLETE", "Dry-run certification is incomplete in controlled enforcement mode."));
 }
 
-const completionMarkerPath = ".ai/certification/phase20-dry-run-completion.yaml";
+const completionMarkerPath = ".ai/certification/dry-run-certification-completion.yaml";
 
 const certification = {
   artifact: "dry_run_certification_result",
@@ -643,8 +643,8 @@ const certification = {
   materialized_fixture_evidence_paths: materializedFixtureEvidence,
   require_all_declared_scenarios: requireAllDeclaredScenarios,
   completion_marker_requested: writeCompletionMarker,
-  completion_marker_written: phase20CompletionReady,
-  completion_marker_path: phase20CompletionReady ? completionMarkerPath : null,
+  completion_marker_written: dryRunCompletionReady,
+  completion_marker_path: dryRunCompletionReady ? completionMarkerPath : null,
   aggregate_required_scenario_validation: {
     required: requireAllDeclaredScenarios,
     declared_scenario_count: scenarios.length,
@@ -674,7 +674,7 @@ const validationResult = buildUniversalValidationResult(SCRIPT_ID, issues, {
     all_declared_scenarios_fixture_backed: allDeclaredScenariosFixtureBacked,
     all_declared_scenarios_certified: aggregateAllDeclaredScenariosCertified,
     completion_marker_requested: writeCompletionMarker,
-    completion_marker_written: phase20CompletionReady,
+    completion_marker_written: dryRunCompletionReady,
     enforcement_mode: enforcementMode,
   },
 });
@@ -684,9 +684,9 @@ const certificationPath = path.join(root, ".ai", "certification", "dry-run-certi
 const reportPath = path.join(root, ".ai", "reports", "dry-run-certification-report.yaml");
 const completionMarkerOutputPaths: string[] = [];
 writeYamlFile(certificationPath, certification);
-if (phase20CompletionReady) {
+if (dryRunCompletionReady) {
   writeYamlFile(path.join(root, completionMarkerPath), {
-    artifact: "phase20_dry_run_certification_completion",
+    artifact: "dry_run_certification_completion",
     generated_by: SCRIPT_ID,
     producer_route_id: "run_dry_run_certification",
     route_produced: true,
@@ -694,7 +694,6 @@ if (phase20CompletionReady) {
     language_neutral: true,
     framework_neutral: true,
     completion_status: "complete",
-    plan_phase: "Phase 20",
     completion_scope: "all_declared_dry_run_certification_scenarios",
     based_on_certification_result: ".ai/certification/dry-run-certification.yaml",
     certification_result_sha256: sha256(certification),
@@ -718,7 +717,7 @@ if (phase20CompletionReady) {
       required_evidence: result.required_evidence,
       missing_evidence: result.missing_evidence,
     })),
-    validation_result: buildUniversalValidationResult("phase20_dry_run_certification_completion", [], {
+    validation_result: buildUniversalValidationResult("dry_run_certification_completion", [], {
       route_id: "run_dry_run_certification",
       evidence: [{ evidence_type: "dry_run_certification_result", path: ".ai/certification/dry-run-certification.yaml" }],
       summary: {
@@ -746,15 +745,15 @@ writeYamlFile(reportPath, {
     all_declared_scenarios_fixture_backed: allDeclaredScenariosFixtureBacked,
     all_declared_scenarios_certified: aggregateAllDeclaredScenariosCertified,
     completion_marker_requested: writeCompletionMarker,
-    completion_marker_written: phase20CompletionReady,
-    completion_marker_path: phase20CompletionReady ? completionMarkerPath : null,
+    completion_marker_written: dryRunCompletionReady,
+    completion_marker_path: dryRunCompletionReady ? completionMarkerPath : null,
     blocking_decision: blockingDecision,
     enforcement_mode: enforcementMode,
   },
   scenario_results: scenarioResults,
   materialized_fixture_evidence_paths: materializedFixtureEvidence,
-  completion_marker_path: phase20CompletionReady ? completionMarkerPath : null,
-  completion_marker_written: phase20CompletionReady,
+  completion_marker_path: dryRunCompletionReady ? completionMarkerPath : null,
+  completion_marker_written: dryRunCompletionReady,
   validation_result: validationResult,
 });
 
@@ -762,7 +761,7 @@ finish(SCRIPT_ID, issues, [".ai/certification/dry-run-certification.yaml", ".ai/
   certification_result: ".ai/certification/dry-run-certification.yaml",
   certification_report: ".ai/reports/dry-run-certification-report.yaml",
   materialized_fixture_evidence_paths: materializedFixtureEvidence,
-  completion_marker_path: phase20CompletionReady ? completionMarkerPath : null,
-  completion_marker_written: phase20CompletionReady,
+  completion_marker_path: dryRunCompletionReady ? completionMarkerPath : null,
+  completion_marker_written: dryRunCompletionReady,
   validation_result: validationResult,
 });

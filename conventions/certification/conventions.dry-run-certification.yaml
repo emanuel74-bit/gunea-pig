@@ -152,7 +152,7 @@ sections:
     - certification_artifacts_written
     - blocking_failures_reported
     - aggregate_all_declared_scenarios_certified_when_required
-    - phase20_completion_marker_requires_aggregate_certification_when_requested
+    - dry_run_completion_marker_requires_aggregate_certification_when_requested
     fail_conditions:
     - unknown_requested_scenario
     - missing_required_scenario_evidence
@@ -160,7 +160,7 @@ sections:
     - aggregate_required_scenario_missing_or_incomplete
     - completion_marker_requested_without_complete_aggregate_certification
 
-  phase20_operator_completion_sequence:
+  dry_run_certification_operator_completion_sequence:
     purpose: document_exact_clean_aggregate_completion_sequence_for_claude_code_or_operator_use
     route_invocation_boundary: use_executor_route_id_run_dry_run_certification_not_direct_script_authoring
     required_starting_state: remove_existing_ai_runtime_artifacts_before_certification_run
@@ -200,21 +200,21 @@ sections:
       purpose: include final mission report in evidence manifest
     - step_id: CERTIFY_ALL_DECLARED_SCENARIOS_AND_WRITE_COMPLETION_MARKER
       command: npm --prefix conventions/scripts run executor -- --route run_dry_run_certification --require-all-declared-scenarios true --write-completion-marker true --enforcement-mode controlled_enforce
-      purpose: certify every declared scenario and write the Phase 20 completion marker
+      purpose: certify every declared scenario and write the Dry-run certification completion marker
     expected_completion_artifacts:
     - .ai/certification/dry-run-certification.yaml
-    - .ai/certification/phase20-dry-run-completion.yaml
+    - .ai/certification/dry-run-certification-completion.yaml
     - .ai/reports/dry-run-certification-report.yaml
     - .ai/reports/evidence-manifest.yaml
     - .ai/reports/final-mission-report.yaml
-  phase20_completion_checkpoint_model:
-    purpose: record_phase20_completion_only_after_all_declared_dry_run_scenarios_are_fixture_backed_evidence_backed_and_aggregate_certified
+  dry_run_certification_completion_checkpoint_model:
+    purpose: record_dry_run_certification_completion_only_after_all_declared_scenarios_are_fixture_backed_evidence_backed_and_aggregate_certified
     activation_argument: --write-completion-marker
     required_companion_arguments:
     - --require-all-declared-scenarios true
     - --enforcement-mode controlled_enforce
-    produced_artifact: .ai/certification/phase20-dry-run-completion.yaml
-    artifact_identity: phase20_dry_run_certification_completion
+    produced_artifact: .ai/certification/dry-run-certification-completion.yaml
+    artifact_identity: dry_run_certification_completion
     completion_requirements:
     - all_declared_scenarios_selected
     - all_declared_scenarios_fixture_backed

@@ -224,7 +224,7 @@ sections:
     - --write-completion-marker true
     - --enforcement-mode controlled_enforce
     fail_when:
-    - phase20_completion_marker_missing
+    - dry_run_certification_completion_marker_missing
     - aggregate_dry_run_certification_incomplete
 validation:
   required_checks:

@@ -13,14 +13,14 @@ validation_report:
     registered_dry_run_fixture_count: 8
     evidence_backed_dry_run_scenario_count: 8
     aggregate_dry_run_certification: passed
-    phase20_completion_marker: .ai/certification/phase20-dry-run-completion.yaml generated
+    dry_run_completion_marker: .ai/certification/dry-run-certification-completion.yaml generated
       during validation and excluded from package
     generated_runtime_artifacts_packaged: false
     node_modules_packaged: false
     package_lock_packaged: false
     claude_hidden_project_files_packaged: false
     claude_code_convention_files: 9
-  phase20_certification:
+  dry_run_certification:
     declared_required_scenarios:
     - small_feature
     - bugfix
@@ -46,7 +46,7 @@ validation_report:
     completion_marker_command: npm --prefix conventions/scripts run executor -- --route
       run_dry_run_certification --require-all-declared-scenarios true --write-completion-marker
       true --enforcement-mode controlled_enforce
-  validations_run_for_phase20_final_checkpoint:
+  validations_run_for_dry_run_certification_checkpoint:
   - name: yaml_parse_validation
     result: passed
     details: 186 YAML files parsed successfully

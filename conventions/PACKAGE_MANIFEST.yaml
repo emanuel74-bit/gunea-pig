@@ -6,12 +6,12 @@ package_manifest:
   json_file_count: 2
   total_file_count: 242
   root_folder: conventions/
-  latest_package: conventions_phase20_step15_final_validation_checkpoint.zip
-  phase20_completion:
+  latest_package: conventions_dry_run_completion_marker_generic_rename.zip
+  dry_run_certification_completion:
     required_dry_run_scenario_count: 8
     registered_fixture_count: 8
     aggregate_certification: passed_during_validation
-    completion_marker: .ai/certification/phase20-dry-run-completion.yaml generated_during_validation_excluded_from_package
+    completion_marker: .ai/certification/dry-run-certification-completion.yaml generated_during_validation_excluded_from_package
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included

@@ -56,7 +56,7 @@ npm --prefix conventions/scripts run executor -- --route run_dry_run_certificati
 Expected completion artifacts:
 
 - `.ai/certification/dry-run-certification.yaml`
-- `.ai/certification/phase20-dry-run-completion.yaml`
+- `.ai/certification/dry-run-certification-completion.yaml`
 - `.ai/reports/dry-run-certification-report.yaml`
 - `.ai/reports/evidence-manifest.yaml`
 - `.ai/reports/final-mission-report.yaml`
