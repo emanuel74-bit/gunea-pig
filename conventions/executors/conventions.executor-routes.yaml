@@ -548,6 +548,7 @@ sections:
         produced_outputs:
         - dry_run_certification_result
         - dry_run_certification_report
+        - phase20_dry_run_certification_completion
         allowed_write_paths:
         - .ai/certification/**
         - .ai/reports/**

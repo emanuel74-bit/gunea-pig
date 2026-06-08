@@ -48,6 +48,7 @@ dependencies:
   - reports/conventions.reports.yaml
   - claude-code/conventions.claude-route-invocation.yaml
   - claude-code/conventions.claude-stop-conditions.yaml
+  - certification/conventions.dry-run-certification.yaml
   optional_files: []
 sections:
   mission_start_sequence:
@@ -182,6 +183,49 @@ sections:
     - gate_result_invalid
     - handoff_invalid
     - final_report_not_script_generated
+
+  dry_run_certification_completion_sequence:
+  - step_id: CLEAN_AI_RUNTIME_ARTIFACTS
+    action: remove_runtime_artifacts_before_certification
+    required_state: clean_ai_runtime_artifacts
+    fail_when:
+    - stale_runtime_artifacts_present
+  - step_id: MATERIALIZE_DRY_RUN_FIXTURE_EVIDENCE
+    action: invoke_executor_route
+    required_executor_routes:
+    - run_dry_run_certification
+    required_arguments:
+    - --materialize-fixture-evidence true
+    fail_when:
+    - dry_run_fixture_evidence_missing
+  - step_id: PRODUCE_REFACTOR_CERTIFICATION_EVIDENCE
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - collect_source_artifacts
+    - compile_adapter_topology
+    - analyze_safe_structure_change
+    - analyze_architecture_quality
+    fail_when:
+    - source_or_architecture_evidence_missing
+  - step_id: PRODUCE_FINAL_REPORT_CERTIFICATION_EVIDENCE
+    action: invoke_executor_routes_in_declared_order
+    required_executor_routes:
+    - collect_evidence
+    - generate_final_mission_report
+    - collect_evidence
+    fail_when:
+    - final_report_or_evidence_manifest_missing
+  - step_id: CERTIFY_ALL_DECLARED_DRY_RUN_SCENARIOS
+    action: invoke_executor_route
+    required_executor_routes:
+    - run_dry_run_certification
+    required_arguments:
+    - --require-all-declared-scenarios true
+    - --write-completion-marker true
+    - --enforcement-mode controlled_enforce
+    fail_when:
+    - phase20_completion_marker_missing
+    - aggregate_dry_run_certification_incomplete
 validation:
   required_checks:
   - mission_controller_routes_declared

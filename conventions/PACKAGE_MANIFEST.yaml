@@ -1,27 +1,39 @@
 package_manifest:
   generated_for: Autonomous Agent Activator conventions system
-  milestone: phase_8_2_claude_native_workflow_engine
-  yaml_file_count: 158
-  typescript_script_file_count: 28
-  claude_project_file_count: 10
-  total_file_count: 195
+  milestone: phase_20_dry_run_certification_complete
+  yaml_file_count: 186
+  typescript_script_file_count: 53
+  json_file_count: 2
+  total_file_count: 242
   root_folder: conventions/
+  latest_package: conventions_phase20_step15_final_validation_checkpoint.zip
+  phase20_completion:
+    required_dry_run_scenario_count: 8
+    registered_fixture_count: 8
+    aggregate_certification: passed_during_validation
+    completion_marker: .ai/certification/phase20-dry-run-completion.yaml generated_during_validation_excluded_from_package
   notes:
   - scripts/ is implementation-only, not a convention subsystem
   - no package-lock.json included
   - no node_modules included
   - no generated .ai artifacts included
-  - phase 8.2 replaces shallow/full-system engagement branch with Claude-native workflow engine
-  - one Claude subagent per convention agent
-  - workflow lanes engage every subsystem through compact map
+  - Phase 20 completes evidence-backed dry-run certification for all declared required
+    scenarios
+  - Claude hidden project files are not included in this ZIP package surface; claude-code
+    convention YAML files remain packaged
   files:
   - PACKAGE_MANIFEST.yaml
+  - README.md
   - VALIDATION_REPORT.yaml
   - actions/conventions.action-collisions.yaml
   - actions/conventions.action-followups.yaml
   - actions/conventions.action-resolution.yaml
   - actions/conventions.action-taxonomy.yaml
   - actions/conventions.actions.yaml
+  - adapters/conventions.framework-adapter-contract.yaml
+  - adapters/conventions.language-adapter-contract.yaml
+  - adapters/conventions.nestjs-adapter.yaml
+  - adapters/conventions.typescript-adapter.yaml
   - agents/conventions.agent-activation-policy.yaml
   - agents/conventions.agent-capabilities.yaml
   - agents/conventions.agent-contracts.yaml
@@ -31,7 +43,10 @@ package_manifest:
   - agents/conventions.agent-taxonomy.yaml
   - agents/conventions.agent-validation.yaml
   - agents/conventions.agents.yaml
+  - architecture/conventions.architecture-quality-gates.yaml
   - architecture/conventions.architecture.yaml
+  - architecture/conventions.global-normalization.yaml
+  - architecture/conventions.safe-structure-change-protocol.yaml
   - architecture/conventions.structure-strategy.yaml
   - architecture/conventions.structure.yaml
   - boundaries/conventions.boundaries.yaml
@@ -40,6 +55,15 @@ package_manifest:
   - boundaries/conventions.boundary-leak-detection.yaml
   - boundaries/conventions.boundary-taxonomy.yaml
   - boundaries/conventions.boundary-validation.yaml
+  - certification/conventions.dry-run-certification.yaml
+  - certification/fixtures/bugfix.validation-only.fixture.yaml
+  - certification/fixtures/final-report.validation-only.fixture.yaml
+  - certification/fixtures/gate-block.validation-only.fixture.yaml
+  - certification/fixtures/illegal-transition-rejection.validation-only.fixture.yaml
+  - certification/fixtures/refactor.validation-only.fixture.yaml
+  - certification/fixtures/resume-after-shutdown.validation-only.fixture.yaml
+  - certification/fixtures/revision-loop.validation-only.fixture.yaml
+  - certification/fixtures/small-feature.validation-only.fixture.yaml
   - claude-code/conventions.claude-agent-activation-map.yaml
   - claude-code/conventions.claude-code.yaml
   - claude-code/conventions.claude-execution-harness.yaml
@@ -49,6 +73,7 @@ package_manifest:
   - claude-code/conventions.claude-route-invocation.yaml
   - claude-code/conventions.claude-stop-conditions.yaml
   - claude-code/conventions.claude-subsystem-engagement.yaml
+  - context/conventions.retrieval-context-economy.yaml
   - contracts/conventions.compatibility.yaml
   - contracts/conventions.contract-change-taxonomy.yaml
   - contracts/conventions.contract-classification.yaml
@@ -92,6 +117,7 @@ package_manifest:
   - handoffs/conventions.handoff-validation.yaml
   - handoffs/conventions.handoffs.yaml
   - missions/conventions.active-phase-plan.yaml
+  - missions/conventions.mission-journal.yaml
   - missions/conventions.mission-profile-selection.yaml
   - missions/conventions.mission-profile-taxonomy.yaml
   - missions/conventions.mission-profiles.yaml
@@ -125,6 +151,8 @@ package_manifest:
   - planning/conventions.local-alignment.yaml
   - planning/conventions.planning.yaml
   - planning/conventions.scope.yaml
+  - policy/conventions.mission-mode-policy.yaml
+  - prompts/conventions.prompt-contract-standardization.yaml
   - refactoring/conventions.behavior-preservation.yaml
   - refactoring/conventions.refactor-classification.yaml
   - refactoring/conventions.refactor-safety.yaml
@@ -132,7 +160,9 @@ package_manifest:
   - refactoring/conventions.refactor-taxonomy.yaml
   - refactoring/conventions.refactor-validation.yaml
   - refactoring/conventions.refactoring.yaml
+  - reports/conventions.evidence-manifest.yaml
   - reports/conventions.report-artifacts.yaml
+  - reports/conventions.report-claim-schema.yaml
   - reports/conventions.report-consumption-policy.yaml
   - reports/conventions.report-lifecycle.yaml
   - reports/conventions.report-registry.yaml
@@ -144,6 +174,7 @@ package_manifest:
   - reports/conventions.runtime-artifacts.yaml
   - revisions/conventions.invalidation-policy.yaml
   - revisions/conventions.rerun-policy.yaml
+  - revisions/conventions.revision-loop-control.yaml
   - revisions/conventions.revision-request-policy.yaml
   - revisions/conventions.revision-taxonomy.yaml
   - revisions/conventions.revision-validation.yaml
@@ -160,6 +191,64 @@ package_manifest:
   - roles/conventions.role-resolution.yaml
   - roles/conventions.role-taxonomy.yaml
   - roles/conventions.roles.yaml
+  - scoring/conventions.score-decision-contract.yaml
+  - scripts/advance-mission.ts
+  - scripts/analyze-architecture-quality.ts
+  - scripts/analyze-global-normalization.ts
+  - scripts/analyze-nestjs-source.ts
+  - scripts/analyze-prompt-contracts.ts
+  - scripts/analyze-revision-loop.ts
+  - scripts/analyze-safe-structure-change.ts
+  - scripts/analyze-typescript-source.ts
+  - scripts/collect-evidence.ts
+  - scripts/collect-phase-report.ts
+  - scripts/collect-runtime-telemetry.ts
+  - scripts/collect-source-artifacts.ts
+  - scripts/compile-adapter-topology.ts
+  - scripts/compile-authority-topology.ts
+  - scripts/compile-context-bundle.ts
+  - scripts/compile-runtime-artifact-topology.ts
+  - scripts/create-revision-task.ts
+  - scripts/evaluate-score-decision.ts
+  - scripts/generate-claude-execution-plan.ts
+  - scripts/generate-final-mission-report.ts
+  - scripts/generate-mission-bundle.ts
+  - scripts/generate-phase-bundle.ts
+  - scripts/initialize-mission.ts
+  - scripts/inspect-mission-state.ts
+  - scripts/invoke-route.ts
+  - scripts/lib/common.ts
+  - scripts/mission-controller-common.ts
+  - scripts/package.json
+  - scripts/prepare-agent-handoff.ts
+  - scripts/resolve-mission-mode-policy.ts
+  - scripts/resume-mission.ts
+  - scripts/run-dry-run-certification.ts
+  - scripts/run-executor-route.ts
+  - scripts/run-gate-check.ts
+  - scripts/tsconfig.json
+  - scripts/validate-authority-topology.ts
+  - scripts/validate-changed-files.ts
+  - scripts/validate-claude-execution-plan.ts
+  - scripts/validate-claude-native-integration.ts
+  - scripts/validate-executor-routes.ts
+  - scripts/validate-gate-result.ts
+  - scripts/validate-handoff.ts
+  - scripts/validate-phase-bundle.ts
+  - scripts/validate-phase-output.ts
+  - scripts/validate-references.ts
+  - scripts/validate-report-evidence.ts
+  - scripts/validate-revision-task.ts
+  - scripts/validate-route-invocation.ts
+  - scripts/validate-route-output.ts
+  - scripts/validate-runtime-artifacts.ts
+  - scripts/validate-runtime-telemetry.ts
+  - scripts/validate-semantic-completeness.ts
+  - scripts/validate-transition-legality.ts
+  - scripts/validate-validation-result.ts
+  - scripts/verify-scripts.ts
+  - source/conventions.source-artifact-model.yaml
+  - telemetry/conventions.runtime-telemetry.yaml
   - testing/conventions.characterization-testing.yaml
   - testing/conventions.regression-testing.yaml
   - testing/conventions.test-derivation.yaml
@@ -167,23 +256,46 @@ package_manifest:
   - testing/conventions.testing-matrix.yaml
   - testing/conventions.testing-taxonomy.yaml
   - testing/conventions.testing.yaml
+  - transitions/conventions.transition-legality-graph.yaml
   - triggers/conventions.trigger-blocking-policy.yaml
   - triggers/conventions.trigger-emission-policy.yaml
   - triggers/conventions.trigger-resolution.yaml
   - triggers/conventions.trigger-taxonomy.yaml
   - triggers/conventions.trigger-validation.yaml
   - triggers/conventions.triggers.yaml
+  - validation/conventions.validation-result-contract.yaml
   typescript_scripts:
+  - scripts/advance-mission.ts
+  - scripts/analyze-architecture-quality.ts
+  - scripts/analyze-global-normalization.ts
+  - scripts/analyze-nestjs-source.ts
+  - scripts/analyze-prompt-contracts.ts
+  - scripts/analyze-revision-loop.ts
+  - scripts/analyze-safe-structure-change.ts
+  - scripts/analyze-typescript-source.ts
   - scripts/collect-evidence.ts
   - scripts/collect-phase-report.ts
+  - scripts/collect-runtime-telemetry.ts
+  - scripts/collect-source-artifacts.ts
+  - scripts/compile-adapter-topology.ts
   - scripts/compile-authority-topology.ts
+  - scripts/compile-context-bundle.ts
   - scripts/compile-runtime-artifact-topology.ts
   - scripts/create-revision-task.ts
+  - scripts/evaluate-score-decision.ts
   - scripts/generate-claude-execution-plan.ts
   - scripts/generate-final-mission-report.ts
   - scripts/generate-mission-bundle.ts
   - scripts/generate-phase-bundle.ts
+  - scripts/initialize-mission.ts
+  - scripts/inspect-mission-state.ts
+  - scripts/invoke-route.ts
+  - scripts/lib/common.ts
+  - scripts/mission-controller-common.ts
   - scripts/prepare-agent-handoff.ts
+  - scripts/resolve-mission-mode-policy.ts
+  - scripts/resume-mission.ts
+  - scripts/run-dry-run-certification.ts
   - scripts/run-executor-route.ts
   - scripts/run-gate-check.ts
   - scripts/validate-authority-topology.ts
@@ -198,21 +310,30 @@ package_manifest:
   - scripts/validate-references.ts
   - scripts/validate-report-evidence.ts
   - scripts/validate-revision-task.ts
+  - scripts/validate-route-invocation.ts
+  - scripts/validate-route-output.ts
   - scripts/validate-runtime-artifacts.ts
+  - scripts/validate-runtime-telemetry.ts
   - scripts/validate-semantic-completeness.ts
+  - scripts/validate-transition-legality.ts
+  - scripts/validate-validation-result.ts
   - scripts/verify-scripts.ts
-  claude_project_files:
-  - CLAUDE.md
-  - .claude/agents/alpha.md
-  - .claude/agents/phase-agent.md
-  - .claude/agents/reviewer.md
-  - .claude/hooks/README.md
-  - .claude/settings.json
-  - .claude/skills/complete-mission/SKILL.md
-  - .claude/skills/run-phase/SKILL.md
-  - .claude/skills/start-mission/SKILL.md
-  - .claude/skills/validate-phase/SKILL.md
-  claude_native_agent_count: 18
-  claude_native_skill_count: 12
-  latest_package: conventions_claude_native_workflow_engine.zip
-  claude_native_command_count: 8
+  dry_run_fixture_files:
+  - certification/fixtures/bugfix.validation-only.fixture.yaml
+  - certification/fixtures/final-report.validation-only.fixture.yaml
+  - certification/fixtures/gate-block.validation-only.fixture.yaml
+  - certification/fixtures/illegal-transition-rejection.validation-only.fixture.yaml
+  - certification/fixtures/refactor.validation-only.fixture.yaml
+  - certification/fixtures/resume-after-shutdown.validation-only.fixture.yaml
+  - certification/fixtures/revision-loop.validation-only.fixture.yaml
+  - certification/fixtures/small-feature.validation-only.fixture.yaml
+  claude_code_convention_files:
+  - claude-code/conventions.claude-agent-activation-map.yaml
+  - claude-code/conventions.claude-code.yaml
+  - claude-code/conventions.claude-execution-harness.yaml
+  - claude-code/conventions.claude-native-integration.yaml
+  - claude-code/conventions.claude-native-workflow-engine.yaml
+  - claude-code/conventions.claude-project-files.yaml
+  - claude-code/conventions.claude-route-invocation.yaml
+  - claude-code/conventions.claude-stop-conditions.yaml
+  - claude-code/conventions.claude-subsystem-engagement.yaml

@@ -4,7 +4,9 @@ file:
   path: certification/conventions.dry-run-certification.yaml
   role: dry_run_certification_contract
   executability: policy
-purpose: Define adapter-neutral dry-run mission certification scenarios and evidence requirements for end-to-end runtime validation without mutating production source behavior.
+purpose: Define adapter-neutral dry-run mission certification scenarios and evidence
+  requirements for end-to-end runtime validation without mutating production source
+  behavior.
 ownership:
   owns:
   - dry_run_certification_contract
@@ -150,8 +152,76 @@ sections:
     - certification_artifacts_written
     - blocking_failures_reported
     - aggregate_all_declared_scenarios_certified_when_required
+    - phase20_completion_marker_requires_aggregate_certification_when_requested
     fail_conditions:
     - unknown_requested_scenario
     - missing_required_scenario_evidence
     - malformed_certification_artifact
     - aggregate_required_scenario_missing_or_incomplete
+    - completion_marker_requested_without_complete_aggregate_certification
+
+  phase20_operator_completion_sequence:
+    purpose: document_exact_clean_aggregate_completion_sequence_for_claude_code_or_operator_use
+    route_invocation_boundary: use_executor_route_id_run_dry_run_certification_not_direct_script_authoring
+    required_starting_state: remove_existing_ai_runtime_artifacts_before_certification_run
+    sequence_is_documentation_only: true
+    completion_marker_command_requires:
+    - all_declared_scenarios_selected
+    - all_required_evidence_routes_completed
+    - final_report_generated_from_typed_claims
+    - aggregate_certification_controlled_enforce
+    commands:
+    - step_id: CLEAN_AI_RUNTIME_ARTIFACTS
+      command: rm -rf .ai
+      purpose: ensure certification starts from a clean runtime artifact state
+    - step_id: MATERIALIZE_DRY_RUN_FIXTURE_EVIDENCE
+      command: npm --prefix conventions/scripts run executor -- --route run_dry_run_certification --materialize-fixture-evidence true
+      purpose: create only non-mutating dry-run runtime artifacts for declared fixtures
+    - step_id: COLLECT_SOURCE_ARTIFACTS
+      command: npm --prefix conventions/scripts run executor -- --route collect_source_artifacts
+      purpose: produce source artifact manifest evidence for refactor certification
+    - step_id: COMPILE_ADAPTER_TOPOLOGY
+      command: npm --prefix conventions/scripts run executor -- --route compile_adapter_topology
+      purpose: produce adapter topology evidence consumed by architecture quality analysis
+    - step_id: ANALYZE_SAFE_STRUCTURE_CHANGE
+      command: npm --prefix conventions/scripts run executor -- --route analyze_safe_structure_change --change-kind deletion --candidate-file conventions/scripts/validate-executor-routes.ts --behavior-evidence verified --consumer-update-plan updated --route-migration-evidence replacement-route --ownership-transfer-evidence ownership-transferred
+      purpose: produce safe structure evidence required by the refactor scenario
+    - step_id: ANALYZE_ARCHITECTURE_QUALITY
+      command: npm --prefix conventions/scripts run executor -- --route analyze_architecture_quality --enforcement-mode observe
+      purpose: produce adapter-neutral architecture quality evidence required by the refactor scenario
+    - step_id: COLLECT_INITIAL_EVIDENCE_MANIFEST
+      command: npm --prefix conventions/scripts run executor -- --route collect_evidence
+      purpose: collect evidence required before final report generation
+    - step_id: GENERATE_FINAL_MISSION_REPORT
+      command: npm --prefix conventions/scripts run executor -- --route generate_final_mission_report
+      purpose: produce script-owned final mission report evidence
+    - step_id: REFRESH_EVIDENCE_MANIFEST_AFTER_REPORT
+      command: npm --prefix conventions/scripts run executor -- --route collect_evidence
+      purpose: include final mission report in evidence manifest
+    - step_id: CERTIFY_ALL_DECLARED_SCENARIOS_AND_WRITE_COMPLETION_MARKER
+      command: npm --prefix conventions/scripts run executor -- --route run_dry_run_certification --require-all-declared-scenarios true --write-completion-marker true --enforcement-mode controlled_enforce
+      purpose: certify every declared scenario and write the Phase 20 completion marker
+    expected_completion_artifacts:
+    - .ai/certification/dry-run-certification.yaml
+    - .ai/certification/phase20-dry-run-completion.yaml
+    - .ai/reports/dry-run-certification-report.yaml
+    - .ai/reports/evidence-manifest.yaml
+    - .ai/reports/final-mission-report.yaml
+  phase20_completion_checkpoint_model:
+    purpose: record_phase20_completion_only_after_all_declared_dry_run_scenarios_are_fixture_backed_evidence_backed_and_aggregate_certified
+    activation_argument: --write-completion-marker
+    required_companion_arguments:
+    - --require-all-declared-scenarios true
+    - --enforcement-mode controlled_enforce
+    produced_artifact: .ai/certification/phase20-dry-run-completion.yaml
+    artifact_identity: phase20_dry_run_certification_completion
+    completion_requirements:
+    - all_declared_scenarios_selected
+    - all_declared_scenarios_fixture_backed
+    - all_declared_scenarios_certified
+    - no_blocking_validation_failures
+    does_not_replace:
+    - evidence_manifest
+    - final_mission_report
+    - dry_run_certification_result
+    mutation_allowed: false

@@ -34,3 +34,29 @@ Claude Code integration is now workflow-native rather than folder-discovery base
 - gates, handoffs, revisions, reports, phase bundles, validation, and artifact generation are exposed through route-backed workflow skills;
 - `claude-code/conventions.claude-subsystem-engagement.yaml` maps workflow lanes to every convention subsystem so Claude knows where to look and what to activate without scanning the full package;
 - transition and report artifacts remain script-produced only.
+
+
+## Phase 20 — Dry-run certification completion
+
+Use this sequence only for the Phase 20 aggregate dry-run certification checkpoint. Start from a clean `.ai` runtime artifact state, invoke routes through the executor route wrapper, and do not manually author certification, report, gate, handoff, revision, mission, or evidence artifacts.
+
+```bash
+rm -rf .ai
+npm --prefix conventions/scripts run executor -- --route run_dry_run_certification --materialize-fixture-evidence true
+npm --prefix conventions/scripts run executor -- --route collect_source_artifacts
+npm --prefix conventions/scripts run executor -- --route compile_adapter_topology
+npm --prefix conventions/scripts run executor -- --route analyze_safe_structure_change --change-kind deletion --candidate-file conventions/scripts/validate-executor-routes.ts --behavior-evidence verified --consumer-update-plan updated --route-migration-evidence replacement-route --ownership-transfer-evidence ownership-transferred
+npm --prefix conventions/scripts run executor -- --route analyze_architecture_quality --enforcement-mode observe
+npm --prefix conventions/scripts run executor -- --route collect_evidence
+npm --prefix conventions/scripts run executor -- --route generate_final_mission_report
+npm --prefix conventions/scripts run executor -- --route collect_evidence
+npm --prefix conventions/scripts run executor -- --route run_dry_run_certification --require-all-declared-scenarios true --write-completion-marker true --enforcement-mode controlled_enforce
+```
+
+Expected completion artifacts:
+
+- `.ai/certification/dry-run-certification.yaml`
+- `.ai/certification/phase20-dry-run-completion.yaml`
+- `.ai/reports/dry-run-certification-report.yaml`
+- `.ai/reports/evidence-manifest.yaml`
+- `.ai/reports/final-mission-report.yaml`
