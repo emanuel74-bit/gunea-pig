@@ -189,17 +189,42 @@ function materializeEvidenceArtifact(fixture: ScenarioFixture, artifact: Fixture
     framework_neutral: true,
   };
 
+  const validationIssues = fixture.scenario_id === "gate_block"
+    ? [issue("error", "DRY_RUN_GATE_BLOCK_FIXTURE_BLOCKING_VALIDATION", "Dry-run gate_block fixture intentionally materializes a blocking validation result for certification evidence.")]
+    : [];
+
   const content = artifact.evidence_type === "validation_result"
     ? {
         ...baseArtifact,
-        status: "pass",
-        result: "pass",
-        validation_result: buildUniversalValidationResult(`${fixture.fixture_id}-validation-only`, [], {
+        status: validationIssues.length ? "failed" : "pass",
+        result: validationIssues.length ? "fail" : "pass",
+        expected_gate_decision: fixture.scenario_id === "gate_block" ? "block_transition" : undefined,
+        validation_result: buildUniversalValidationResult(`${fixture.fixture_id}-validation-only`, validationIssues, {
           route_id: "run_dry_run_certification",
           evidence: [{ evidence_type: artifact.evidence_type, path: artifact.path, scenario_id: fixture.scenario_id, fixture_id: fixture.fixture_id }],
-          summary: { dry_run_fixture: true, materialized_by: SCRIPT_ID },
+          summary: { dry_run_fixture: true, materialized_by: SCRIPT_ID, intentionally_blocking: fixture.scenario_id === "gate_block" },
         }),
       }
+    : artifact.evidence_type === "gate_result"
+      ? {
+          ...baseArtifact,
+          artifact: "gate_result",
+          status: "blocked",
+          gate_id: `dry-run-${fixture.scenario_id}`,
+          validation_status: "failed",
+          validation_result_contract: {
+            validation_id: `${fixture.fixture_id}-validation-only`,
+            status: "failed",
+            severity: "error",
+            blocking: true,
+            source_shape: "universal",
+          },
+          decision: "block_transition",
+          evidence_refs: readFixtureEvidenceArtifacts(fixture).filter(item => item.evidence_type === "validation_result").map(item => item.path),
+          dry_run_gate_result: true,
+          real_gate_result_provenance_claimed: false,
+          errors: validationIssues,
+        }
     : artifact.evidence_type === "mission_state"
       ? {
           ...baseArtifact,

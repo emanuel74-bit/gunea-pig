@@ -1,0 +1,61 @@
+version: '1.0'
+file:
+  name: gate-block.validation-only.fixture.yaml
+  path: certification/fixtures/gate-block.validation-only.fixture.yaml
+  role: dry_run_scenario_fixture
+  executability: fixture
+purpose: Provide a concrete adapter-neutral dry-run certification fixture for the
+  gate_block scenario using non-mutating artifact presence validation only.
+ownership:
+  owns:
+  - gate_block_dry_run_fixture
+  - blocked_gate_certification_input
+  does_not_own:
+  - production_source_mutation
+  - real_gate_execution_decision
+  - scenario_enforcement_decision
+  - language_or_framework_specific_test_rules
+sections:
+  fixture_identity:
+    fixture_id: gate_block_minimal_validation_only
+    scenario_id: gate_block
+    mission_profile: gate_block
+    execution_mode: artifact_presence_validation
+  fixture_boundaries:
+    mutation_allowed: false
+    source_mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
+    adapter_outputs_required: false
+    real_gate_result_provenance_claimed: false
+  expected_certification_behavior:
+    rollout_mode: observe
+    enforcement_mode: observe
+    incomplete_evidence_is_warning: true
+    blocking_decision_expected: false
+    gate_decision_shape_expected: block_transition
+  required_evidence:
+  - evidence_type: gate_result
+    accepted_paths:
+    - .ai/gates/*.gate-result.yaml
+  - evidence_type: validation_result
+    accepted_paths:
+    - .ai/validation/*.result.yaml
+
+  fixture_evidence_artifacts:
+    materialization_mode: explicit_route_argument_only
+    materialization_argument: --materialize-fixture-evidence
+    generated_by: run-dry-run-certification
+    mutation_allowed: false
+    artifacts:
+    - evidence_type: validation_result
+      path: .ai/validation/dry-run-gate-block.result.yaml
+      artifact: dry_run_gate_block_fixture_validation_result
+    - evidence_type: gate_result
+      path: .ai/gates/dry-run-gate-block.gate-result.yaml
+      artifact: dry_run_gate_block_fixture_gate_result
+  validation_contract:
+    route_id: run_dry_run_certification
+    required_result_artifact: .ai/certification/dry-run-certification.yaml
+    required_report_artifact: .ai/reports/dry-run-certification-report.yaml
+    fixture_status_when_shape_valid: fixture_valid

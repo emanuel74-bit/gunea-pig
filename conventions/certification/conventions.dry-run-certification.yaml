@@ -53,6 +53,13 @@ sections:
     mutation_allowed: false
     language_neutral: true
     framework_neutral: true
+  - fixture_id: gate_block_minimal_validation_only
+    scenario_id: gate_block
+    fixture_path: certification/fixtures/gate-block.validation-only.fixture.yaml
+    execution_mode: artifact_presence_validation
+    mutation_allowed: false
+    language_neutral: true
+    framework_neutral: true
   required_scenarios:
   - scenario_id: small_feature
     required_evidence:
